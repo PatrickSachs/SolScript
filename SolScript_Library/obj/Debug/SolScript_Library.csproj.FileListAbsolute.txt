@@ -1,0 +1,14 @@
+C:\7BiT Studios\SolScript\SolScript_Library\bin\Debug\SolScript_Library.dll
+C:\7BiT Studios\SolScript\SolScript_Library\bin\Debug\SolScript_Library.pdb
+C:\7BiT Studios\SolScript\SolScript_Library\bin\Debug\Irony.dll
+C:\7BiT Studios\SolScript\SolScript_Library\bin\Debug\Irony.pdb
+C:\7BiT Studios\SolScript\SolScript_Library\obj\Debug\SolScript_Library.dll
+C:\7BiT Studios\SolScript\SolScript_Library\obj\Debug\SolScript_Library.pdb
+C:\7BiT Studios\SolScript\SolScript_Library\obj\Debug\SolScript_Library.csprojResolveAssemblyReference.cache
+C:\7BiT Studios\SolScript\SolScript_Library\bin\Debug\Irony.Interpreter.dll
+C:\7BiT Studios\SolScript\SolScript_Library\bin\Debug\JetBrains.Annotations.dll
+C:\7BiT Studios\SolScript\SolScript_Library\bin\Debug\JetBrains.Annotations.xml
+C:\7BiT Studios\SolScript\SolScript_Library\bin\Debug\LINQPad.exe
+C:\7BiT Studios\SolScript\SolScript_Library\bin\Debug\Newtonsoft.Json.dll
+C:\7BiT Studios\SolScript\SolScript_Library\bin\Debug\Newtonsoft.Json.xml
+C:\7BiT Studios\SolScript\SolScript_Library\bin\Debug\Ionic.Zip.dll

@@ -1,0 +1,13 @@
+C:\7BiT Studios\SolScript\SolScript\bin\Debug\SolScript.exe.config
+C:\7BiT Studios\SolScript\SolScript\bin\Debug\SolScript.exe
+C:\7BiT Studios\SolScript\SolScript\bin\Debug\SolScript.pdb
+C:\7BiT Studios\SolScript\SolScript\bin\Debug\Irony.dll
+C:\7BiT Studios\SolScript\SolScript\bin\Debug\JetBrains.Annotations.dll
+C:\7BiT Studios\SolScript\SolScript\bin\Debug\SolScript_Library.dll
+C:\7BiT Studios\SolScript\SolScript\bin\Debug\SolScript_Library.pdb
+C:\7BiT Studios\SolScript\SolScript\bin\Debug\Irony.pdb
+C:\7BiT Studios\SolScript\SolScript\bin\Debug\JetBrains.Annotations.xml
+C:\7BiT Studios\SolScript\SolScript\obj\Debug\SolScript_Console.csprojResolveAssemblyReference.cache
+C:\7BiT Studios\SolScript\SolScript\obj\Debug\SolScript.exe
+C:\7BiT Studios\SolScript\SolScript\obj\Debug\SolScript.pdb
+C:\7BiT Studios\SolScript\SolScript\bin\Debug\Ionic.Zip.dll
