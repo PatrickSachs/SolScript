@@ -1,88 +1,90 @@
-﻿using System.Collections.Generic;
-using Irony.Parsing;
+﻿using System.Text;
 using JetBrains.Annotations;
 using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Statements;
 using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter {
-    public class SolChunk : ICanTerminateParent {
-        #region Delegates
-
-        public delegate void ContextEditor(SolExecutionContext context);
-
-        #endregion
-
-        #region ContextMode enum
-
-        public enum ContextMode {
-            RunInParameter,
-            RunInLocal
+    public class SolChunk : ITerminateable {
+        public SolChunk(SolAssembly assembly) {
+            Assembly = assembly;
+            Id = ++s_LastId;
         }
 
-        #endregion
-
-        public SolChunk() {
-            Id = ++lastId;
-        }
-
-        private static readonly SolExpression defaultReturn = new Expression_Nil(default(SourceLocation));
-
-        private static int lastId = -1;
+        private static int s_LastId = -1;
+        public readonly SolAssembly Assembly;
         public readonly int Id;
 
-        private bool m_didTerminate;
-
-        [CanBeNull] public SolExpression ReturnExpression;
+        [CanBeNull] public TerminatingSolExpression ReturnExpression;
 
         public SolStatement[] Statements;
 
-        #region ICanTerminateParent Members
+        #region ITerminateable Members
 
-        public bool DidTerminateParent => ReturnExpression != null || m_didTerminate;
+        public Terminators Terminators { get; private set; }
 
         #endregion
+
+        #region Overrides
 
         public override int GetHashCode() {
             return 30 + Id;
         }
 
-        public SolValue Execute(SolExecutionContext context, ContextMode mode = ContextMode.RunInLocal,
-            [CanBeNull] ContextEditor editor = null) {
-            //SolExecutionContext localContext = mode == ContextMode.RunInLocal ? SolExecutionContext.CreateFrom(context) : context;
-            SolExecutionContext localContext = mode == ContextMode.RunInLocal ? new SolExecutionContext(context.Assembly) : context;
-            if (mode == ContextMode.RunInLocal) {
-                localContext.VariableContext.ParentContext = context.VariableContext;
-            }
-            //SolDebug.WriteLine("CHUNK ! " + editor);
-            if (editor != null) {
-                //SolDebug.WriteLine(" aand the editor is there ! " + editor);
-                editor(localContext);
-            }
-            //editor?.Invoke(localContext);
+        public override string ToString() {
+            return ToString(0);
+        }
 
-            m_didTerminate = false;
+        #endregion
+
+        public string ToString(int indent) {
+            string indentStr = new string(' ', indent);
+            StringBuilder builder = new StringBuilder();
             foreach (SolStatement statement in Statements) {
-                //SolDebug.WriteLine("Calling " + statement);
-                SolValue value = statement.Execute(localContext);
-                if (statement.DidTerminateParent) {
-                    m_didTerminate = true;
-                    //SolDebug.WriteLine("  ... Manually Terminated");
+                builder.AppendLine(indentStr + statement);
+            }
+            if (ReturnExpression != null) {
+                builder.Append(indentStr + "return ");
+                builder.AppendLine(ReturnExpression.ToString());
+            }
+            return builder.ToString();
+        }
+
+        public SolValue ExecuteInTarget(SolExecutionContext context, IVariables variables) {
+            Terminators = Terminators.None;
+            foreach (SolStatement statement in Statements) {
+                SolValue value = statement.Execute(context, variables);
+                Terminators = statement.Terminators;
+                // If either return, break, or continue occured we break out of the current chunk.
+                if (Terminators != Terminators.None) {
                     return value;
                 }
             }
             if (ReturnExpression != null) {
-                //SolDebug.WriteLine("  ... Terminated by return");
-                m_didTerminate = true;
-                return ReturnExpression.Evaluate(localContext);
+                SolValue value = ReturnExpression.Evaluate(context, variables);
+                Terminators = ReturnExpression.Terminators;
+                return value;
             }
-            //SolDebug.WriteLine("  ... No termination");
-            return defaultReturn.Evaluate(localContext);
+            return SolNil.Instance;
         }
 
-        public override string ToString() {
-            return
-                $"SolChunk(Statements=[{string.Join(",", (IEnumerable<SolStatement>) Statements)}], ReturnExpression={ReturnExpression})";
+        public SolValue ExecuteInNew(SolExecutionContext context) {
+            Terminators = Terminators.None;
+            ChunkVariables variables = new ChunkVariables(Assembly);
+            foreach (SolStatement statement in Statements) {
+                statement.Execute(context, variables);
+                Terminators = statement.Terminators;
+                // If either return, break, or continue occured we break out of the current chunk.
+                if (Terminators != Terminators.None) {
+                    return SolNil.Instance;
+                }
+            }
+            if (ReturnExpression != null) {
+                SolValue value = ReturnExpression.Evaluate(context, variables);
+                Terminators = ReturnExpression.Terminators;
+                return value;
+            }
+            return SolNil.Instance;
         }
     }
 }

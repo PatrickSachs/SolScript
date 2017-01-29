@@ -21,7 +21,7 @@ namespace SolScript.Parser.Terminals
             Priority = TerminalPriority.High;
         }
 
-        private const string START_SYMBOL = "--";
+        private const string START_SYMBOL = "//";
 
         #region overrides
         public override void Init(GrammarData grammarData)
@@ -79,7 +79,8 @@ namespace SolScript.Parser.Terminals
 
             //Found starting --, now determine whether this is a long comment.
             string text = source.Text.Substring(source.PreviewPosition + START_SYMBOL.Length);
-            var match = Regex.Match(text, @"^\[(=*)\[");
+            var match = Regex.Match(text, @"/\*");
+            //var match = Regex.Match(text, @"^\[(=*)\[");
             if (match.Value != string.Empty)
             {
                 commentLevel = (byte)(match.Groups[1].Value.Length + 1);
@@ -112,7 +113,8 @@ namespace SolScript.Parser.Terminals
             while (!source.EOF())
             {
                 string text = source.Text.Substring(source.PreviewPosition);
-                var matches = Regex.Matches(text, @"\](=*)\]");
+                //var matches = Regex.Matches(text, @"\](=*)\]");
+                var matches = Regex.Matches(text, @"\*/");
                 foreach (Match match in matches)
                 {
                     if (match.Groups[1].Value.Length == (int)commentLevel - 1)

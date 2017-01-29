@@ -4,8 +4,8 @@ using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter.Statements {
     public class Statement_Iterate : SolStatement {
-        public Statement_Iterate(SourceLocation location, SolExpression iteratorGetter, string iteratorName,
-            SolChunk chunk) : base(location) {
+        public Statement_Iterate(SolAssembly assembly, SolSourceLocation location, SolExpression iteratorGetter, string iteratorName,
+            SolChunk chunk) : base(assembly, location) {
             IteratorGetter = iteratorGetter;
             IteratorName = iteratorName;
             Chunk = chunk;
@@ -15,25 +15,38 @@ namespace SolScript.Interpreter.Statements {
         public readonly SolExpression IteratorGetter;
         public readonly string IteratorName;
 
-        public override SolValue Execute(SolExecutionContext context) {
-            DidTerminateParent = false;
-            SolExecutionContext localContext = new SolExecutionContext(context.Assembly);
-            localContext.VariableContext.ParentContext = context.VariableContext;
-            SolValue iterator = IteratorGetter.Evaluate(localContext);
-            foreach (SolValue value in iterator.Iterate()) {
-                localContext.VariableContext.SetValue(IteratorName, value, new SolType(value.Type, value.Type == "nil"),
-                    true);
-                SolValue returnValue = Chunk.Execute(localContext, SolChunk.ContextMode.RunInLocal);
-                if (Chunk.DidTerminateParent) {
+        #region Overrides
+
+        public override SolValue Execute(SolExecutionContext context, IVariables parentVariables) {
+            Terminators = Terminators.None;
+            ChunkVariables vars = new ChunkVariables(Assembly) {Parent = parentVariables};
+            SolValue iterator = IteratorGetter.Evaluate(context, parentVariables);
+            vars.Declare(IteratorName, new SolType("any", true));
+            foreach (SolValue value in iterator.Iterate(context)) {
+                ChunkVariables chunkVariables = new ChunkVariables(Assembly) {Parent = vars };
+                vars.Assign(IteratorName, value);
+                SolValue returnValue = Chunk.ExecuteInTarget(context, chunkVariables);
+                Terminators terminators = Chunk.Terminators;
+                if (InternalHelper.DidReturn(terminators)) {
+                    Terminators = Terminators.Return;
                     return returnValue;
                 }
+                if (InternalHelper.DidBreak(terminators)) {
+                    Terminators = Terminators.None;
+                    break;
+                }
+                // Continue is breaking the chunk execution.
+                if (InternalHelper.DidContinue(terminators)) {
+                    Terminators = Terminators.None;
+                }
             }
-            // what should an iterator block return?
             return SolNil.Instance;
         }
 
         protected override string ToString_Impl() {
             return $"Statement_Iterate(IteratorGetter={IteratorGetter}, IteratorName={IteratorName}, Chunk={Chunk})";
         }
+
+        #endregion
     }
 }

@@ -3,165 +3,229 @@ using System.Globalization;
 using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
 
-namespace SolScript.Interpreter.Types {
-    public class SolNumber : SolValue {
-        public SolNumber(double value) {
+namespace SolScript.Interpreter.Types
+{
+    public class SolNumber : SolValue
+    {
+        public SolNumber(double value)
+        {
             Value = value;
         }
 
-        public double Value;
+        public readonly double Value;
 
-        public override string Type { get; protected set; } = "number";
+        public const string TYPE = "number";
 
-        /// <summary> Tries to convert the local value into a value of a C# type. May
-        ///     return null. </summary>
+        public override string Type => TYPE;
+
+        #region Overrides
+
+        /// <summary>
+        ///     Tries to convert the local value into a value of a C# type. May
+        ///     return null.
+        /// </summary>
         /// <param name="type"> The target type </param>
         /// <returns> The object </returns>
-        /// <exception cref="LPPMarshallingException"> The value cannot be converted. </exception>
+        /// <exception cref="SolMarshallingException"> The value cannot be converted. </exception>
         [CanBeNull]
-        public override object ConvertTo(Type type) {
-            if (type == typeof (SolValue) || type == typeof (SolNumber)) {
+        public override object ConvertTo(Type type)
+        {
+            if (type == typeof(SolValue) || type == typeof(SolNumber)) {
                 return this;
             }
-            if (type == typeof (double)) {
+            if (type == typeof(double)) {
                 return Value;
             }
-            if (type == typeof (float)) {
+            if (type == typeof(float)) {
                 return (float) Value;
             }
-            if (type == typeof (int)) {
+            if (type == typeof(int)) {
                 return (int) Value;
             }
-            if (type == typeof (uint)) {
+            if (type == typeof(uint)) {
                 return (uint) Value;
             }
-            if (type == typeof (long)) {
+            if (type == typeof(long)) {
                 return (long) Value;
             }
-            if (type == typeof (ulong)) {
+            if (type == typeof(ulong)) {
                 return (ulong) Value;
             }
-            if (type == typeof (byte)) {
+            if (type == typeof(byte)) {
                 return (byte) Value;
             }
-            if (type == typeof (short)) {
+            if (type == typeof(short)) {
                 return (short) Value;
             }
-            if (type == typeof (ushort)) {
+            if (type == typeof(ushort)) {
                 return (ushort) Value;
             }
-            throw new SolScriptMarshallingException("number", type);
+            throw new SolMarshallingException("number", type);
         }
 
-        protected override string ToString_Impl() {
-            return Value.ToString(CultureInfo.CurrentCulture);
+        protected override string ToString_Impl([CanBeNull] SolExecutionContext context)
+        {
+            return Value.ToString(CultureInfo.InvariantCulture);
         }
 
-        protected override int GetHashCode_Impl() {
+        public override int GetHashCode()
+        {
             unchecked {
                 return 2 + Value.GetHashCode();
             }
         }
 
-        public override bool IsEqual(SolValue other) {
+        public override bool IsEqual(SolExecutionContext context, SolValue other)
+        {
             SolNumber otherNbr = other as SolNumber;
-            return otherNbr != null && Value == otherNbr.Value;
+            return otherNbr != null && Value.Equals(otherNbr.Value);
         }
 
-        public override bool NotEqual(SolValue other) {
+        public override bool NotEqual(SolExecutionContext context, SolValue other)
+        {
             SolNumber otherNbr = other as SolNumber;
-            return otherNbr == null || Value != otherNbr.Value;
+            return otherNbr == null || Value.Equals(otherNbr.Value);
         }
 
-        public override bool SmallerThan(SolValue other) {
+        public override bool SmallerThan(SolExecutionContext context, SolValue other)
+        {
             if (other.Type != "number") {
-                return Bool_HelperThrowNotSupported("compare(smaller)", "number", other.Type);
+                return Bool_HelperThrowNotSupported(context, "compare(smaller)", "number", other.Type);
             }
             SolNumber otherNbr = (SolNumber) other;
             return Value < otherNbr.Value;
         }
 
-        public override bool GreaterThan(SolValue other) {
+        public override bool GreaterThan(SolExecutionContext context, SolValue other)
+        {
             if (other.Type != "number") {
-                return Bool_HelperThrowNotSupported("compare(greater)", "number", other.Type);
+                return Bool_HelperThrowNotSupported(context, "compare(greater)", "number", other.Type);
             }
             SolNumber otherNbr = (SolNumber) other;
             return Value > otherNbr.Value;
         }
 
-        public override SolValue Minus() {
+        public override SolValue Minus(SolExecutionContext context)
+        {
             return new SolNumber(-Value);
         }
 
-        public override SolValue Plus() {
+        public override SolValue Plus(SolExecutionContext context)
+        {
             return new SolNumber(+Value);
         }
 
-        public override SolValue Modulu(SolValue other) {
+        public override SolValue Modulo(SolExecutionContext context, SolValue other)
+        {
             SolNumber otherNumber = other as SolNumber;
             if (otherNumber == null) {
-                return Nil_HelperThrowNotSupported("modulu", "number", other.Type);
+                return Sol_HelperThrowNotSupported<SolValue>(context, "modulo", "number", other.Type);
             }
-            return new SolNumber(Value%otherNumber.Value);
+            try {
+                return new SolNumber(Value % otherNumber.Value);
+            } catch (ArithmeticException ex) {
+                throw new SolRuntimeException(context, "Failed to get the reminder of the division of " + Value + " by " + otherNumber.Value + ".", ex);
+            }
         }
 
-        public override SolValue Subtract(SolValue other) {
+        public override SolValue Subtract(SolExecutionContext context, SolValue other)
+        {
             SolNumber otherNumber = other as SolNumber;
             if (otherNumber == null) {
-                return Nil_HelperThrowNotSupported("subtract", "number", other.Type);
+                return Sol_HelperThrowNotSupported<SolValue>(context, "subtract", "number", other.Type);
             }
-            return new SolNumber(Value - otherNumber.Value);
+            try {
+                return new SolNumber(Value - otherNumber.Value);
+            } catch (ArithmeticException ex) {
+                throw new SolRuntimeException(context, "Failed to subtract number " + Value + " from " + otherNumber.Value + ".", ex);
+            }
         }
 
-        public override SolValue Add(SolValue other) {
+        public override SolNumber Add(SolExecutionContext context, SolValue other)
+        {
             SolNumber otherNumber = other as SolNumber;
             if (otherNumber == null) {
-                return Nil_HelperThrowNotSupported("add", "number", other.Type);
+                return Sol_HelperThrowNotSupported<SolNumber>(context, "add", "number", other.Type);
             }
-            return new SolNumber(Value + otherNumber.Value);
+            try {
+                return new SolNumber(Value + otherNumber.Value);
+            } catch (ArithmeticException ex) {
+                throw new SolRuntimeException(context, "Failed to add number " + Value + " to " + otherNumber.Value + ".", ex);
+            }
         }
 
-        public override SolValue Multiply(SolValue other) {
+        public override SolValue Multiply(SolExecutionContext context, SolValue other)
+        {
             SolNumber otherNumber = other as SolNumber;
             if (otherNumber == null) {
-                return Nil_HelperThrowNotSupported("multiply", "number", other.Type);
+                return Sol_HelperThrowNotSupported<SolValue>(context, "multiply", "number", other.Type);
             }
-            return new SolNumber(Value*otherNumber.Value);
+            try {
+                return new SolNumber(Value * otherNumber.Value);
+            } catch (ArithmeticException ex) {
+                throw new SolRuntimeException(context, "Failed to multiply number " + Value + " times " + otherNumber.Value + ".", ex);
+            }
         }
 
-        public override SolValue Divide(SolValue other) {
+        public override SolValue Divide(SolExecutionContext context, SolValue other)
+        {
             SolNumber otherNumber = other as SolNumber;
             if (otherNumber == null) {
-                return Nil_HelperThrowNotSupported("multiply", "number", other.Type);
+                return Sol_HelperThrowNotSupported<SolValue>(context, "multiply", "number", other.Type);
             }
-            if (otherNumber.Value == 0) {
-                throw new SolScriptInterpreterException("Tried to divide " + Value + " by zero!");
+            try {
+                return new SolNumber(Value / otherNumber.Value);
+            } catch (ArithmeticException ex) {
+                throw new SolRuntimeException(context, "Failed to divide number " + Value + " by " + otherNumber.Value + ".", ex);
             }
-            return new SolNumber(Value/otherNumber.Value);
         }
 
-        public override SolValue Exponentiate(SolValue other) {
+        public override SolValue Exponentiate(SolExecutionContext context, SolValue other)
+        {
             SolNumber otherNumber = other as SolNumber;
             if (otherNumber == null) {
-                return Nil_HelperThrowNotSupported("exponentiate", "number", other.Type);
+                return Sol_HelperThrowNotSupported<SolValue>(context, "exponentiate", "number", other.Type);
             }
-            return new SolNumber(Math.Pow(Value, otherNumber.Value));
+            try {
+                return new SolNumber(Math.Pow(Value, otherNumber.Value));
+            } catch (ArithmeticException ex) {
+                throw new SolRuntimeException(context, "Failed to expotentiate " + Value + " by " + otherNumber.Value + ".", ex);
+            }
         }
 
-        public override bool SmallerThanOrEqual(SolValue other) {
+        public override bool SmallerThanOrEqual(SolExecutionContext context, SolValue other)
+        {
             SolNumber otherNumber = other as SolNumber;
             if (otherNumber == null) {
-                return Bool_HelperThrowNotSupported("compare(smaller or equal)", "number", other.Type);
+                return Bool_HelperThrowNotSupported(context, "compare(smaller or equal)", "number", other.Type);
             }
             return Value <= otherNumber.Value;
         }
 
-        public override bool GreaterThanOrEqual(SolValue other) {
+        public override bool GreaterThanOrEqual(SolExecutionContext context, SolValue other)
+        {
             SolNumber otherNumber = other as SolNumber;
             if (otherNumber == null) {
-                return Bool_HelperThrowNotSupported("compare(greater or equal)", "number", other.Type);
+                return Bool_HelperThrowNotSupported(context, "compare(greater or equal)", "number", other.Type);
             }
             return Value >= otherNumber.Value;
         }
+
+        public override bool Equals(object other)
+        {
+            if (ReferenceEquals(other, this)) {
+                return true;
+            }
+            if (ReferenceEquals(other, null)) {
+                return false;
+            }
+            SolNumber otherNumber = other as SolNumber;
+            if (otherNumber == null) {
+                return false;
+            }
+            return otherNumber.Value.Equals(Value);
+        }
+
+        #endregion
     }
 }

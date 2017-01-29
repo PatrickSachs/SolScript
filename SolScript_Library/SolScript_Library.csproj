@@ -35,10 +35,10 @@
       <HintPath>..\packages\DotNetZip\Ionic.Zip.dll</HintPath>
     </Reference>
     <Reference Include="Irony">
-      <HintPath>..\Irony.dll</HintPath>
+      <HintPath>..\..\..\..\7BiT Studios\LuaIrony\Irony.dll</HintPath>
     </Reference>
     <Reference Include="Irony.Interpreter">
-      <HintPath>..\..\LuaIrony\Irony.Interpreter.dll</HintPath>
+      <HintPath>..\..\..\..\7BiT Studios\LuaIrony\Irony.Interpreter.dll</HintPath>
     </Reference>
     <Reference Include="JetBrains.Annotations, Version=10.1.5.0, Culture=neutral, PublicKeyToken=1010a0d8d6380325, processorArchitecture=MSIL">
       <HintPath>..\packages\JetBrains.Annotations.10.1.5\lib\net\JetBrains.Annotations.dll</HintPath>
@@ -63,45 +63,90 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Compiler\SolScriptCompiler.cs" />
+    <Compile Include="Interpreter\AccessModifier.cs" />
+    <Compile Include="Interpreter\ChunkVariables.cs" />
+    <Compile Include="Interpreter\ClassGlobalVariables.cs" />
+    <Compile Include="Interpreter\ClassInheritanceVariables.cs" />
+    <Compile Include="Interpreter\ClassInternalVariables.cs" />
+    <Compile Include="Interpreter\ClassVariables.cs" />
     <Compile Include="Interpreter\CodeLocation.cs" />
+    <Compile Include="Interpreter\Exceptions\SolInterpreterException.cs" />
+    <Compile Include="Interpreter\Exceptions\SolRuntimeException.cs" />
+    <Compile Include="Interpreter\Exceptions\SolTypeRegistryException.cs" />
+    <Compile Include="Interpreter\Exceptions\SolVariableException.cs" />
+    <Compile Include="Interpreter\Expressions\Expression_Return.cs" />
     <Compile Include="Interpreter\Expressions\Expression_TableConstructor.cs" />
     <Compile Include="Interpreter\Expressions\Expression_Unary.cs" />
+    <Compile Include="Interpreter\Expressions\TerminatingSolExpression.cs" />
+    <Compile Include="Interpreter\GlobalInternalVariables.cs" />
+    <Compile Include="Interpreter\GlobalLocalVariables.cs" />
+    <Compile Include="Interpreter\GlobalVariables.cs" />
     <Compile Include="Interpreter\InspectorField.cs" />
     <Compile Include="Interpreter\ISourceLocateable.cs" />
-    <Compile Include="Interpreter\Library\FileHandle.cs" />
-    <Compile Include="Interpreter\Library\GlobalsModule.cs" />
-    <Compile Include="Interpreter\Library\IOModule.cs" />
+    <Compile Include="Interpreter\IStatementOrExpressionWrittenInClass.cs" />
+    <Compile Include="Interpreter\IVariables.cs" />
+    <Compile Include="Interpreter\Library\Annotations\PreCtorTest.cs" />
+    <Compile Include="Interpreter\Library\Annotations\ReadOnlyAnnotation.cs" />
+    <Compile Include="Interpreter\Library\Classes\EmissionModule.cs" />
+    <Compile Include="Interpreter\Library\Classes\IOModule.cs" />
+    <Compile Include="Interpreter\Library\Classes\ReflectionModule.cs" />
+    <Compile Include="Interpreter\Library\Classes\TestClass.cs" />
+    <Compile Include="Interpreter\Library\SolContractAttribute.cs" />
+    <Compile Include="Interpreter\Library\SolGlobalAttribute.cs" />
+    <Compile Include="Interpreter\Library\SolLibraryAccessModifierAttribute.cs" />
     <Compile Include="Interpreter\Library\SolLibraryClassAttribute.cs" />
-    <Compile Include="Interpreter\Library\SolLibraryGlobalsAttribute.cs" />
     <Compile Include="Interpreter\Library\SolLibraryNameAttribute.cs" />
     <Compile Include="Interpreter\Library\SolLibraryVisibilityAttribute.cs" />
-    <Compile Include="Interpreter\Library\StringModule.cs" />
-    <Compile Include="Interpreter\Library\TableModule.cs" />
+    <Compile Include="Interpreter\Library\Classes\StringModule.cs" />
+    <Compile Include="Interpreter\Library\Classes\TableModule.cs" />
+    <Compile Include="Interpreter\Expressions\Expression_Break.cs" />
+    <Compile Include="Interpreter\Expressions\Expression_Continue.cs" />
+    <Compile Include="Interpreter\SolMetaKey.cs" />
+    <Compile Include="Interpreter\MixinId.cs" />
+    <Compile Include="Interpreter\SolChunkWrapper.cs" />
+    <Compile Include="Interpreter\SolParameterInfo.cs" />
+    <Compile Include="Interpreter\SolClassBuilder.cs" />
+    <Compile Include="Interpreter\SolClassDefinition.cs" />
+    <Compile Include="Interpreter\SolFieldBuilder.cs" />
+    <Compile Include="Interpreter\SolFieldDefinition.cs" />
+    <Compile Include="Interpreter\SolFunctionBuilder.cs" />
+    <Compile Include="Interpreter\SolFunctionDefinition.cs" />
+    <Compile Include="Interpreter\SolGlobalsBuilder.cs" />
+    <Compile Include="Interpreter\SolMemberBuilder.cs" />
+    <Compile Include="Interpreter\SolSourceLocation.cs" />
+    <Compile Include="Interpreter\SolStackFrame.cs" />
+    <Compile Include="Interpreter\Statements\Statement_CallGlobalFunctionFromGlobalContext.cs" />
     <Compile Include="Interpreter\Statements\Statement_DeclareVar.cs" />
     <Compile Include="Interpreter\Statements\Statement_Do.cs" />
     <Compile Include="Interpreter\Statements\Statement_For.cs" />
     <Compile Include="Interpreter\Statements\Statement_Iterate.cs" />
     <Compile Include="Interpreter\Statements\Statement_New.cs" />
-    <Compile Include="Interpreter\Statements\Statement_Return.cs" />
     <Compile Include="Interpreter\Statements\Statement_While.cs" />
-    <Compile Include="Interpreter\Types\DynamicReference.cs" />
+    <Compile Include="Interpreter\SolTypeMode.cs" />
+    <Compile Include="Interpreter\Terminators.cs" />
+    <Compile Include="Interpreter\DynamicReference.cs" />
     <Compile Include="Interpreter\TypeRegistry.cs" />
-    <Compile Include="Interpreter\Types\Implementation\SolCSharpConstructorFunction.cs" />
+    <Compile Include="Interpreter\Types\DefinedSolFunction.cs" />
+    <Compile Include="Interpreter\Types\Implementation\SolClassFunction.cs" />
+    <Compile Include="Interpreter\Types\Implementation\SolNativeClassConstructorFunction.cs" />
+    <Compile Include="Interpreter\Types\Implementation\SolNativeGlobalFunction.cs" />
+    <Compile Include="Interpreter\Types\Implementation\SolScriptGlobalFunction.cs" />
+    <Compile Include="Interpreter\Types\Implementation\SolScriptLamdaFunction.cs" />
     <Compile Include="Interpreter\Types\Interfaces\IValueIndexable.cs" />
-    <Compile Include="Interpreter\Types\SolBoolean.cs" />
+    <Compile Include="Interpreter\Types\SolBool.cs" />
     <Compile Include="Interpreter\Types\SolTable.cs" />
     <Compile Include="Interpreter\SolParameter.cs" />
-    <Compile Include="Interpreter\Types\Implementation\SolCSharpFunction.cs" />
-    <Compile Include="Interpreter\Types\SolCustomType.cs" />
+    <Compile Include="Interpreter\Types\Implementation\SolNativeClassFunction.cs" />
+    <Compile Include="Interpreter\Types\SolClass.cs" />
     <Compile Include="Interpreter\Types\SolFunction.cs" />
     <Compile Include="Interpreter\Types\SolNil.cs" />
     <Compile Include="Interpreter\Types\SolNumber.cs" />
-    <Compile Include="Interpreter\Types\Implementation\SolScriptFunction.cs" />
+    <Compile Include="Interpreter\Types\Implementation\SolScriptClassFunction.cs" />
     <Compile Include="Interpreter\Types\SolString.cs" />
     <Compile Include="Interpreter\Types\SolValue.cs" />
     <Compile Include="Interpreter\Exceptions\SolScriptException.cs" />
-    <Compile Include="Interpreter\Exceptions\SolScriptInterpreterException.cs" />
-    <Compile Include="Interpreter\Exceptions\SolScriptMarshallingException.cs" />
+    <Compile Include="Interpreter\Exceptions\SolMarshallingException.cs" />
     <Compile Include="Interpreter\Expressions\Expression_Binary.cs" />
     <Compile Include="Interpreter\Expressions\Expression_CreateFunc.cs" />
     <Compile Include="Interpreter\Expressions\Expression_GetVariable.cs" />
@@ -110,17 +155,18 @@
     <Compile Include="Interpreter\Expressions\SolExpression.cs" />
     <Compile Include="Interpreter\Expressions\Expression_String.cs" />
     <Compile Include="Interpreter\Expressions\Expression_Nil.cs" />
-    <Compile Include="Interpreter\ICanTerminateParent.cs" />
+    <Compile Include="Interpreter\ITerminateable.cs" />
     <Compile Include="Interpreter\InternalHelper.cs" />
-    <Compile Include="Interpreter\Library\MathModule.cs" />
+    <Compile Include="Interpreter\Library\Classes\MathModule.cs" />
     <Compile Include="Interpreter\SolChunk.cs" />
     <Compile Include="Interpreter\Library\SolLibrary.cs" />
     <Compile Include="Interpreter\SolAssembly.cs" />
     <Compile Include="Interpreter\Statements\Statement_AssignVar.cs" />
     <Compile Include="Interpreter\Statements\StatementFactory.cs" />
     <Compile Include="Interpreter\Statements\Statement_Conditional.cs" />
+    <Compile Include="Interpreter\WeakTable.cs" />
     <Compile Include="Parser\Literals\SolScriptStringLiteral.cs" />
-    <Compile Include="Interpreter\Statements\Statement_CallFunction.cs" />
+    <Compile Include="Interpreter\Statements\Statement_CallInstanceFunction.cs" />
     <Compile Include="Interpreter\Statements\SolStatement.cs" />
     <Compile Include="Reader\SolAssemblyReader.cs" />
     <Compile Include="SolDebug.cs" />
@@ -131,7 +177,6 @@
     <Compile Include="Parser\SolScriptGrammar.cs" />
     <Compile Include="Parser\Terminals\SolScriptCommentTerminal.cs" />
     <Compile Include="Parser\Terminals\SolScriptLongStringTerminal.cs" />
-    <Compile Include="Interpreter\VarContext.cs" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

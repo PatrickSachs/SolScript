@@ -3,26 +3,44 @@ using JetBrains.Annotations;
 using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Types;
 
-namespace SolScript.Interpreter.Statements {
-    public class Statement_DeclareVar : SolStatement {
-        public Statement_DeclareVar(SourceLocation location) : base(location) {
+namespace SolScript.Interpreter.Statements
+{
+    public class Statement_DeclareVar : SolStatement
+    {
+        public Statement_DeclareVar([NotNull] SolAssembly assembly, SolSourceLocation location, string name, SolType type, [CanBeNull] SolExpression valueGetter)
+            : base(assembly, location)
+        {
+            //Local = local;
+            Name = name;
+            Type = type;
+            ValueGetter = valueGetter;
         }
 
-        public bool Local;
-        public string Name;
-        public SolType Type;
-        [CanBeNull]public SolExpression ValueGetter;
+        //public readonly bool Local;
+        public readonly string Name;
+        public readonly SolType Type;
+        [CanBeNull] public readonly SolExpression ValueGetter;
 
-        public override SolValue Execute(SolExecutionContext context)
+        #region Overrides
+
+        public override SolValue Execute(SolExecutionContext context, IVariables parentVariables)
         {
             context.CurrentLocation = Location;
-            SolValue value = ValueGetter?.Evaluate(context);
-            context.VariableContext.DeclareVariable(Name, value, Type, Local);
-            return value ?? SolNil.Instance;
+            parentVariables.Declare(Name, Type);
+            if (ValueGetter != null) {
+                SolValue value = ValueGetter.Evaluate(context, parentVariables);
+                parentVariables.Assign(Name, value);
+                return value;
+            }
+            return SolNil.Instance;
         }
 
-        protected override string ToString_Impl() {
-            return $"Statement_DeclareVar(Name={Name}, Local={Local}, Type={Type}, ValueGetter={ValueGetter})";
+        protected override string ToString_Impl()
+        {
+            string middle = ValueGetter != null ? " = " + ValueGetter : string.Empty;
+            return $"var {Name} : {Type}{middle}";
         }
+
+        #endregion
     }
 }

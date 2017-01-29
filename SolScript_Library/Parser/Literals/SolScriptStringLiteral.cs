@@ -12,7 +12,7 @@ namespace SolScript.Parser.Literals {
             /*int nlPos = source.Text.IndexOf('\n', source.PreviewPosition);
             if (source.Text[nlPos - 1] == '\\')
                 details.Flags += (short) StringOptions.AllowsLineBreak;*/
-
+                
             return base.ReadBody(source, details);
         }
 

@@ -12,3 +12,27 @@ C:\7BiT Studios\SolScript\SolScript_Library\bin\Debug\LINQPad.exe
 C:\7BiT Studios\SolScript\SolScript_Library\bin\Debug\Newtonsoft.Json.dll
 C:\7BiT Studios\SolScript\SolScript_Library\bin\Debug\Newtonsoft.Json.xml
 C:\7BiT Studios\SolScript\SolScript_Library\bin\Debug\Ionic.Zip.dll
+C:\Development\VS\SolScript\SolScript_Library\bin\Debug\SolScript_Library.dll
+C:\Development\VS\SolScript\SolScript_Library\bin\Debug\SolScript_Library.pdb
+C:\Development\VS\SolScript\SolScript_Library\bin\Debug\Ionic.Zip.dll
+C:\Development\VS\SolScript\SolScript_Library\bin\Debug\Irony.dll
+C:\Development\VS\SolScript\SolScript_Library\bin\Debug\JetBrains.Annotations.dll
+C:\Development\VS\SolScript\SolScript_Library\bin\Debug\LINQPad.exe
+C:\Development\VS\SolScript\SolScript_Library\bin\Debug\Newtonsoft.Json.dll
+C:\Development\VS\SolScript\SolScript_Library\bin\Debug\JetBrains.Annotations.xml
+C:\Development\VS\SolScript\SolScript_Library\bin\Debug\Newtonsoft.Json.xml
+C:\Development\VS\SolScript\SolScript_Library\obj\Debug\SolScript_Library.dll
+C:\Development\VS\SolScript\SolScript_Library\obj\Debug\SolScript_Library.pdb
+C:\Development\VS\SolScript\SolScript_Library\bin\Debug\Irony.Interpreter.dll
+C:\Development\VS\SolScript\SolScript_Library\obj\Debug\SolScript_Library.csprojResolveAssemblyReference.cache
+E:\Data\Development\SolScript\SolScript_Library\bin\Debug\SolScript_Library.dll
+E:\Data\Development\SolScript\SolScript_Library\bin\Debug\SolScript_Library.pdb
+E:\Data\Development\SolScript\SolScript_Library\bin\Debug\Ionic.Zip.dll
+E:\Data\Development\SolScript\SolScript_Library\bin\Debug\JetBrains.Annotations.dll
+E:\Data\Development\SolScript\SolScript_Library\bin\Debug\LINQPad.exe
+E:\Data\Development\SolScript\SolScript_Library\bin\Debug\Newtonsoft.Json.dll
+E:\Data\Development\SolScript\SolScript_Library\bin\Debug\JetBrains.Annotations.xml
+E:\Data\Development\SolScript\SolScript_Library\bin\Debug\Newtonsoft.Json.xml
+E:\Data\Development\SolScript\SolScript_Library\obj\Debug\SolScript_Library.dll
+E:\Data\Development\SolScript\SolScript_Library\obj\Debug\SolScript_Library.pdb
+E:\Data\Development\SolScript\SolScript_Library\obj\Debug\SolScript_Library.csprojResolveAssemblyReference.cache

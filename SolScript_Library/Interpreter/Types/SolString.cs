@@ -2,81 +2,110 @@
 using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
 
-namespace SolScript.Interpreter.Types {
-    public class SolString : SolValue {
-        public SolString(string value) {
+namespace SolScript.Interpreter.Types
+{
+    public class SolString : SolValue
+    {
+        public SolString(string value)
+        {
             Value = value;
         }
 
-        public const string STRING = "string";
+        public const string TYPE = "string";
 
         public static readonly SolString Empty = new SolString(string.Empty);
-
-        public static readonly SolType MarshalFromCSharpType = new SolType(STRING, true);
-
+        
         public readonly string Value;
 
-        public override string Type { get; protected set; } = STRING;
+        public override string Type => TYPE;
 
-        /// <summary> Tries to convert the local value into a value of a C# type. May
-        ///     return null. </summary>
+        #region Overrides
+
+        /// <summary>
+        ///     Tries to convert the local value into a value of a C# type. May
+        ///     return null.
+        /// </summary>
         /// <param name="type"> The target type </param>
         /// <returns> The object </returns>
-        /// <exception cref="SolScriptMarshallingException"> The value cannot be converted. </exception>
+        /// <exception cref="SolMarshallingException"> The value cannot be converted. </exception>
         [CanBeNull]
-        public override object ConvertTo(Type type) {
-            if (type == typeof (SolValue) || type == typeof (SolString)) {
+        public override object ConvertTo(Type type)
+        {
+            if (type == typeof(SolValue) || type == typeof(SolString)) {
                 return this;
             }
-            if (type == typeof (string)) {
+            if (type == typeof(string)) {
                 return Value;
             }
-            if (type == typeof (char)) {
+            if (type == typeof(char)) {
                 if (Value.Length != 1) {
-                    throw new SolScriptMarshallingException("string", typeof (char),
+                    throw new SolMarshallingException("string", typeof(char),
                         "The string has the wrong size! Length: " + Value.Length + ", Required: 1");
                 }
                 return Value[0];
             }
-            throw new SolScriptMarshallingException("string", type);
+            throw new SolMarshallingException("string", type);
         }
 
-        protected override string ToString_Impl() {
+        protected override string ToString_Impl([CanBeNull] SolExecutionContext context)
+        {
             return Value;
         }
 
-        protected override int GetHashCode_Impl() {
+        public override int GetHashCode()
+        {
             unchecked {
                 return 3 + Value.GetHashCode();
             }
         }
 
-        public override bool IsEqual(SolValue other) {
-            if (other.Type != STRING) {
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(obj, this)) {
+                return true;
+            }
+            if (ReferenceEquals(obj, null)) {
+                return false;
+            }
+            SolString otherSolString = obj as SolString;
+            if (otherSolString == null) {
+                return false;
+            }
+            return Value.Equals(otherSolString.Value);
+        }
+
+        public override bool IsEqual(SolExecutionContext context, SolValue other)
+        {
+            if (other.Type != TYPE) {
                 return false;
             }
             SolString otherStr = (SolString) other;
             return Value == otherStr.Value;
         }
 
-        public override bool SmallerThan(SolValue other) {
-            if (other.Type != STRING) {
-                return Bool_HelperThrowNotSupported("compare(smaller)", STRING, other.Type);
+        public override bool SmallerThan(SolExecutionContext context, SolValue other)
+        {
+            if (other.Type != TYPE) {
+                return Bool_HelperThrowNotSupported(context, "compare(smaller)", TYPE, other.Type);
             }
             SolString otherStr = (SolString) other;
             return Value.Length < otherStr.Value.Length;
         }
 
-        public override bool GreaterThan(SolValue other) {
-            if (other.Type != STRING) {
-                return Bool_HelperThrowNotSupported("compare(greater)", STRING, other.Type);
+        public override bool GreaterThan(SolExecutionContext context, SolValue other)
+        {
+            if (other.Type != TYPE) {
+                return Bool_HelperThrowNotSupported(context, "compare(greater)", TYPE, other.Type);
             }
             SolString otherStr = (SolString) other;
             return Value.Length > otherStr.Value.Length;
         }
 
-        public override SolValue GetN() {
+        public override SolNumber GetN(SolExecutionContext context)
+        {
             return new SolNumber(Value.Length);
         }
+
+        #endregion
     }
 }

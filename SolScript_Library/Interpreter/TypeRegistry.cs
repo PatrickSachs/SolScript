@@ -1,154 +1,386 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using JetBrains.Annotations;
-using SevenBiT.Inspector;
 using SolScript.Interpreter.Exceptions;
-using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Types;
-using SolScript.Interpreter.Types.Implementation;
 
-namespace SolScript.Interpreter {
-    /// <summary> A low-level type definition for SolScript. Refer to SolFunction and
-    ///     derived classes if you want to create functions at runtime. </summary>
-    public class TypeDef {
-        public enum TypeMode {
-             Default,Singleton//,Global
-        }
+namespace SolScript.Interpreter
+{
+    public class TypeRegistry
+    {
+        #region State enum
 
-        public AnnotDef[] Annotations;
-
-        /// <summary> If the type is made from a csharp type this value is set. It is used
-        ///     to create a backing object instance for every script instance of the given
-        ///     type. </summary>
-        [CanBeNull] public Type ClrType;
-
-        /// <summary> An array of the fields in this class. </summary>
-        public FieldDef[] Fields;
-
-        /// <summary> An array of the functions in this class. </summary>
-        public FuncDef[] Functions;
-
-        /// <summary> All mixed in classes. Mixed in classes will copy their members into
-        ///     this class. </summary>
-        public string[] Mixins;
-
-        /// <summary> The name of the class. Used for the singleton and for creating the
-        ///     class. </summary>
-        public string Name;
-
-        /// <summary> Singleton types will create an instance named after their class name. </summary>
-        public TypeMode Mode;
-
-        #region Nested type: AnnotDef
-
-        public class AnnotDef {
-            public SolExpression[] Arguments;
-            public string Name;
+        public enum State
+        {
+            Registry = 0,
+            GenerationStarted = 2,
+            GeneratedClassHulls = 3,
+            GeneratedClassBodies = 4,
+            GeneratedGlobals = 5
         }
 
         #endregion
 
-        #region Nested type: FieldDef
-
-        public class FieldDef {
-            public AnnotDef[] Annotations;
-            public SolExpression Creator1;
-            public InspectorField Creator2;
-            public bool Local;
-            public string Name;
-            public SolType Type;
+        public TypeRegistry(SolAssembly linkedAssembly)
+        {
+            LinkedAssembly = linkedAssembly;
+            m_GlobalsBuilder = new SolGlobalsBuilder();
         }
 
-        #endregion
+        public readonly SolAssembly LinkedAssembly;
+        private readonly Dictionary<string, SolClassBuilder> m_ClassBuilders = new Dictionary<string, SolClassBuilder>();
+        private readonly Dictionary<string, SolClassDefinition> m_ClassDefinitions = new Dictionary<string, SolClassDefinition>();
+        private readonly Dictionary<string, SolFieldDefinition> m_GlobalFields = new Dictionary<string, SolFieldDefinition>();
+        private readonly Dictionary<string, SolFunctionDefinition> m_GlobalFunctions = new Dictionary<string, SolFunctionDefinition>();
 
-        #region Nested type: FuncDef
+        private readonly Dictionary<Type, SolClassDefinition> m_NativeClasses = new Dictionary<Type, SolClassDefinition>();
+        private SolGlobalsBuilder m_GlobalsBuilder;
 
-        public class FuncDef {
-            public AnnotDef[] Annotations;
+        public IReadOnlyCollection<KeyValuePair<string, SolFieldDefinition>> GlobalFieldPairs => m_GlobalFields;
+        public IReadOnlyCollection<KeyValuePair<string, SolFunctionDefinition>> GlobalFunctionPairs => m_GlobalFunctions;
 
-            /// <summary> The creator for script functions </summary>
-            [CanBeNull] public SolExpression Creator1;
+        public State CurrentState { get; private set; }
 
-            /// <summary> The creator for csharp functions. </summary>
-            [CanBeNull] public MethodInfo Creator2;
-
-            public bool Local;
-            public string Name;
-        }
-
-        #endregion
-    }
-
-    public class TypeRegistry {
-        public readonly Dictionary<string, TypeDef> Types = new Dictionary<string, TypeDef>();
-
-        /// <summary> Inserts all members of a given type defition into a given variable
-        ///     context. This is used to create mixins. </summary>
-        /// <param name="type"> The type to mixin </param>
-        /// <param name="target"> The variable contex to mix into </param>
-        /// <param name="context"> The execution context used to evaluate potential
-        ///     expressions </param>
-        /// <param name="newName"> The name of the __new function (ctor). Sometimes this
-        ///     function might have to be renamed(e.g. in order to still be able to access
-        ///     the ctor of mixins in a parent class) </param>
-        public void InsertMembers(TypeDef type, VarContext target, SolExecutionContext context, string newName, SolCustomType typeInstance, int mixinId) {
-            DynamicReference mixinRef = new DynamicReference.CustomTypeMixinClr(typeInstance, mixinId);
-            foreach (TypeDef.FieldDef field in type.Fields) {
-                if (field.Creator1 != null)
-                {
-                    target.DeclareVariable(field.Name, field.Creator1.Evaluate(context), field.Type, field.Local);
-                } else {
-                    target.DeclareVariable(field.Name, field.Creator2, mixinRef, field.Type, field.Local);
-                }
+        /// <summary>
+        ///     The builder used to create the global fields and functions.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">The Type Registry is not in <see cref="State.Registry" /> state.</exception>
+        /// <seealso cref="CurrentState" />
+        public SolGlobalsBuilder GlobalsBuilder {
+            get {
+                // <bubble>InvalidOperationException</bubble>
+                AssetStateExact(State.Registry, "Can only access the globals builder during registry state.");
+                return m_GlobalsBuilder;
             }
-            foreach (TypeDef.FuncDef function in type.Functions) {
-                SolExpression creator1 = function.Creator1;
-                SolValue functionInstance;
-                if (creator1 != null) {
-                    functionInstance = creator1.Evaluate(context);
-                } else {
-                    functionInstance = SolCSharpFunction.CreateFrom(function.Creator2.NotNull(), mixinRef);
-                }
-                target.SetValue(function.Name == "__new" ? newName : function.Name, functionInstance,
-                    new SolType("function", false), function.Local);
-            }
-            if (type.ClrType != null) {
-                ConstructorInfo constructor = type.ClrType.GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static |
-                                             BindingFlags.Instance).FirstOrDefault();
-                if (constructor != null) {
-                    SolCSharpConstructorFunction ctorFunc = new SolCSharpConstructorFunction(constructor, typeInstance, mixinId);
-                    target.SetValue(newName, ctorFunc, new SolType("function", false), true);
-                }
+            set {
+                // <bubble>InvalidOperationException</bubble>
+                AssetStateExact(State.Registry, "Can only access the globals builder during registry state.");
+                m_GlobalsBuilder = value;
             }
         }
 
-        public SolCustomType CreateInstance(SolAssembly assembly, string name, SolValue[] args) {
-            TypeDef typeDef;
-            if (!Types.TryGetValue(name, out typeDef)) {
-                throw new SolScriptInterpreterException("Tried to create an instance of type " + name +
-                                                        ", but no type with this name exists.");
+        /// <summary>
+        ///     All class definitions.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">
+        ///     Class definitions have not been <see cref="State.GeneratedClassHulls" /> yet.
+        /// </exception>
+        /// <seealso cref="HasReachedState" />
+        public IReadOnlyCollection<SolClassDefinition> ClassDefinitions {
+            get {
+                // <bubble>InvalidOperationException</bubble>
+                AssetStateExactAndHigher(State.GeneratedClassHulls, "Cannot receive class definitions if they aren't generated yet.");
+                return m_ClassDefinitions.Values;
             }
-            SolCustomType customType = new SolCustomType(typeDef.Name) {
-                Context = new SolExecutionContext(assembly),
-                ClrObjects = new object[1 + typeDef.Mixins.Length]
-            };
-            VarContext variables = customType.Context.VariableContext;
-            variables.ParentContext = assembly.RootContext.VariableContext;
-            for (int i = 0; i < typeDef.Mixins.Length; i++) {
-                string mixin = typeDef.Mixins[i];
-                TypeDef mixinDef;
-                if (!Types.TryGetValue(mixin, out mixinDef)) {
-                    throw new SolScriptInterpreterException("The mixin " + mixin + " for class " + name +
-                                                            " does not exist.");
+        }
+
+        /// <summary>
+        ///     Tries to get a global function with the given name.
+        /// </summary>
+        /// <param name="name">The name of the function to find.</param>
+        /// <param name="definition">Outputs the definition. Only valid if the method returned true.</param>
+        /// <returns>true if the function could be found, false otherwise.</returns>
+        /// <exception cref="InvalidOperationException">
+        ///     Class definitions have not been <see cref="State.GeneratedClassBodies" /> yet.
+        /// </exception>
+        /// <seealso cref="HasReachedState" />
+        [ContractAnnotation("definition:null => false")]
+        public bool TryGetGlobalFunction(string name, out SolFunctionDefinition definition)
+        {
+            // <bubble>InvalidOperationException</bubble>
+            AssetStateExactAndHigher(State.GeneratedGlobals, "Cannot receive global function definitions if they aren't generated yet.");
+            return m_GlobalFunctions.TryGetValue(name, out definition);
+        }
+
+        /// <summary>
+        ///     Tries to get a global field with the given name.
+        /// </summary>
+        /// <param name="name">The name of the field to find.</param>
+        /// <param name="definition">Outputs the definition. Only valid if the method returned true.</param>
+        /// <returns>true if the field could be found, false otherwise.</returns>
+        /// <exception cref="InvalidOperationException">
+        ///     Class definitions have not been <see cref="State.GeneratedClassBodies" /> yet.
+        /// </exception>
+        /// <seealso cref="HasReachedState" />
+        [ContractAnnotation("definition:null => false")]
+        public bool TryGetGlobalField(string name, out SolFieldDefinition definition)
+        {
+            // <bubble>InvalidOperationException</bubble>
+            AssetStateExactAndHigher(State.GeneratedGlobals, "Cannot receive global function definitions if they aren't generated yet.");
+            return m_GlobalFields.TryGetValue(name, out definition);
+        }
+
+        /// <summary>
+        ///     Checks if the Type Registry is in the given state or a higher state.
+        /// </summary>
+        /// <param name="state">The state.</param>
+        /// <returns>true if it is in the given state or a higher state.</returns>
+        public bool HasReachedState(State state)
+        {
+            return (int) CurrentState >= (int) state;
+        }
+
+        /// <summary>
+        ///     Checks if the Type Registry has not yet reached the given state.
+        /// </summary>
+        /// <param name="state">The state.</param>
+        /// <returns>true if it is in a lower state than the given one.</returns>
+        public bool HasNotReachedState(State state)
+        {
+            return (int) CurrentState < (int) state;
+        }
+
+        /// <summary>
+        ///     Tries to get the class definition for the given native type.
+        /// </summary>
+        /// <param name="nativeType">The native type.</param>
+        /// <param name="definition">This out value contains the found class, or null.</param>
+        /// <returns>true if a class for the native type could be found, false otherwise.</returns>
+        /// <exception cref="InvalidOperationException">
+        ///     Class definitions have not been <see cref="State.GeneratedClassHulls" /> yet.
+        /// </exception>
+        /// <seealso cref="HasReachedState" />
+        [ContractAnnotation("definition:null => false")]
+        public bool TryGetClass(Type nativeType, [CanBeNull] out SolClassDefinition definition)
+        {
+            // <bubble>InvalidOperationException</bubble>
+            AssetStateExactAndHigher(State.GeneratedClassHulls, "Cannot receive class definitions if they aren't generated yet.");
+            return m_NativeClasses.TryGetValue(nativeType, out definition);
+        }
+
+        /// <summary>
+        ///     Tries to get the class definition of the given name.
+        /// </summary>
+        /// <param name="className">The class name.</param>
+        /// <param name="definition">This out value contains the found class, or null.</param>
+        /// <returns>true if a class for the native type could be found, false otherwise.</returns>
+        /// <exception cref="InvalidOperationException">
+        ///     Class definitions have not been <see cref="State.GeneratedClassHulls" /> yet.
+        /// </exception>
+        /// <seealso cref="HasReachedState" />
+        [ContractAnnotation("definition:null => false")]
+        public bool TryGetClass(string className, [CanBeNull] out SolClassDefinition definition)
+        {
+            // <bubble>InvalidOperationException</bubble>
+            AssetStateExactAndHigher(State.GeneratedClassHulls, "Cannot receive class definitions if they aren't generated yet.");
+            return m_ClassDefinitions.TryGetValue(className, out definition);
+        }
+
+        internal void AssetStateExactAndHigher(State state, string message = "Invalid State!")
+        {
+            if (!HasReachedState(state)) {
+                throw new InvalidOperationException($"{message} - In State: {CurrentState}({(int) CurrentState}); Required State: {state}({(int) state}) or higher.");
+            }
+        }
+
+        internal void AssetStateExactAndLower(State state, string message = "Invalid State!")
+        {
+            if (!HasNotReachedState(state)) {
+                throw new InvalidOperationException($"{message} - In State: {CurrentState}({(int) CurrentState}); Required State: {state}({(int) state}) or lower.");
+            }
+        }
+
+        internal void AssetStateExact(State state, string message = "Invalid State!")
+        {
+            if (CurrentState != state) {
+                throw new InvalidOperationException($"{message} - In State: {CurrentState}({(int) CurrentState}); Required State: {state}({(int) state}) exactly.");
+            }
+        }
+
+        /// <summary>
+        ///     Registers a new class builder in the type registry.
+        /// </summary>
+        /// <param name="builder">The class builder.</param>
+        /// <exception cref="InvalidOperationException">The Type Registry is not in <see cref="State.Registry" /> state.</exception>
+        /// <exception cref="SolTypeRegistryException">
+        ///     Another class with the same <see cref="SolClassBuilder.Name" /> already
+        ///     exists.
+        /// </exception>
+        /// <seealso cref="CurrentState" />
+        public void RegisterClass(SolClassBuilder builder)
+        {
+            // <bubble>InvalidOperationException</bubble>
+            AssetStateExact(State.Registry, "Can only register classes during registry state. New classes cannot be registered once the definitions have been generated.");
+            try {
+                m_ClassBuilders.Add(builder.Name, builder);
+            } catch (ArgumentException ex) {
+                throw new SolTypeRegistryException("Another class with the name \"" + builder.Name + "\" already exists.", ex);
+            }
+        }
+
+        /// <summary>
+        ///     Registers multiple new class builders in the type registry.
+        /// </summary>
+        /// <param name="builders">The class builders.</param>
+        /// <exception cref="InvalidOperationException">The Type Registry is not in <see cref="State.Registry" /> state.</exception>
+        /// <seealso cref="CurrentState" />
+        public void RegisterClasses(IEnumerable<SolClassBuilder> builders)
+        {
+            foreach (SolClassBuilder builder in builders) {
+                // <bubble>InvalidOperationException</bubble>
+                RegisterClass(builder);
+            }
+        }
+
+        /// <summary>
+        ///     Creates the definitions(classes, global functions + fields) for this type registry. This will advance the state to
+        ///     <see cref="State.GeneratedClassBodies" />.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">The Type Registry is not in the <see cref="State.Registry" /> state.</exception>
+        /// <exception cref="SolTypeRegistryException">An error generating the class definitions occured.</exception>
+        /// <seealso cref="CurrentState" />
+        internal void GenerateDefinitions()
+        {
+            // <bubble>InvalidOperationException</bubble>
+            AssetStateExact(State.Registry, "Generating class definitions will advance the state to GeneratedClassBodies, and thus can only be called in Registry state.");
+            CurrentState = State.GenerationStarted;
+            foreach (SolClassBuilder builder in m_ClassBuilders.Values) {
+                SolClassDefinition def = new SolClassDefinition(LinkedAssembly, builder.Name, builder.TypeMode);
+                if (builder.NativeType != null) {
+                    def.NativeType = builder.NativeType;
+                    m_NativeClasses.Add(builder.NativeType, def);
                 }
-                InsertMembers(mixinDef, variables, customType.Context, "__new_" + mixin, customType, i+1);
+                m_ClassDefinitions.Add(builder.Name, def);
             }
-            InsertMembers(typeDef, variables, customType.Context, "__new", customType, 0);
-            customType.RebuildMetaFunctions();
-            customType.CallCtor(args);
-            return customType;
+            CurrentState = State.GeneratedClassHulls;
+            foreach (SolClassBuilder builder in m_ClassBuilders.Values) {
+                SolClassDefinition def = m_ClassDefinitions[builder.Name];
+                if (builder.BaseClass != null) {
+                    SolClassDefinition baseDef = m_ClassDefinitions[builder.BaseClass];
+                    if (!baseDef.CanBeInherited()) {
+                        throw new SolTypeRegistryException("Class \"" + def.Type + "\" tried to inherit from class \"" + baseDef.Type + "\", which does not allow inheritance.");
+                    }
+                    def.BaseClass = baseDef;
+                }
+                foreach (SolFieldBuilder fieldBuilder in builder.Fields) {
+                    SolFieldDefinition fieldDefinition = new SolFieldDefinition(def) {
+                        Type = fieldBuilder.Type,
+                        Modifier = fieldBuilder.AccessModifier,
+                        FieldInitializer = fieldBuilder.ScriptField,
+                        NativeBackingField = fieldBuilder.NativeField
+                    };
+                    def.SetField(fieldBuilder.Name, fieldDefinition);
+                }
+                foreach (SolFunctionBuilder functionBuilder in builder.Functions) {
+                    SolFunctionDefinition functionDefinition = new SolFunctionDefinition(LinkedAssembly, def, functionBuilder);
+                    def.SetFunction(functionDefinition.Name, functionDefinition);
+                }
+                SolAnnotationDefinition[] annotations = new SolAnnotationDefinition[builder.Annotations.Count];
+                int i = 0;
+                foreach (SolAnnotationData builderAnnotation in builder.Annotations) {
+                    SolClassDefinition annotationClass;
+                    if (!TryGetClass(builderAnnotation.Name, out annotationClass)) {
+                        throw new SolTypeRegistryException("Could not find class \"" + builderAnnotation.Name + "\" which was required for an annotation on class \"" + def.Type + "\".");
+                    }
+                    if (annotationClass.TypeMode != SolTypeMode.Annotation) {
+                        throw new SolTypeRegistryException("The class \"" + builderAnnotation.Name + "\" which was used as an annotation on class \"" + def.Type + "\" is no annotation.");
+                    }
+                    annotations[i] = new SolAnnotationDefinition(annotationClass, builderAnnotation.Arguments);
+                    i++;
+                }
+                def.SetAnnotations(annotations);
+            }
+            CurrentState = State.GeneratedClassBodies;
+            foreach (SolFunctionBuilder globalFunctionBuilder in m_GlobalsBuilder.Functions) {
+                SolFunctionDefinition functionDefinition = new SolFunctionDefinition(LinkedAssembly, globalFunctionBuilder);
+                m_GlobalFunctions.Add(globalFunctionBuilder.Name, functionDefinition);
+            }
+            foreach (SolFieldBuilder globalFieldBuilder in m_GlobalsBuilder.Fields) {
+                SolFieldDefinition fieldDefinition = new SolFieldDefinition {
+                    Type = globalFieldBuilder.Type,
+                    Modifier = globalFieldBuilder.AccessModifier,
+                    FieldInitializer = globalFieldBuilder.ScriptField,
+                    NativeBackingField = globalFieldBuilder.NativeField
+                };
+                m_GlobalFields.Add(globalFieldBuilder.Name, fieldDefinition);
+            }
+            CurrentState = State.GeneratedGlobals;
+        }
+
+        /// <exception cref="InvalidOperationException">State is lower than GeneratedClassBodies</exception>
+        private SolClass PrepareInstance_Impl(SolClassDefinition definition)
+        {
+            // <bubble>InvalidOperationException</bubble>
+            AssetStateExactAndHigher(State.GeneratedClassBodies, "Class instances can only be created once the class definitions have been generated.");
+            SolClass instance = new SolClass(definition);
+            {
+                // Build inheritance tree and declare fields
+                SolClassDefinition activeDefinition = definition;
+                SolClass.Inheritance activeInheritance = null;
+                while (activeDefinition != null) {
+                    if (activeInheritance == null) {
+                        activeInheritance = instance.InheritanceChain;
+                    } else {
+                        SolClass.Inheritance newInheritance = new SolClass.Inheritance(instance, activeDefinition, null);
+                        activeInheritance.BaseClass = newInheritance;
+                        activeInheritance = newInheritance;
+                    }
+                    foreach (KeyValuePair<string, SolFieldDefinition> fieldPair in activeDefinition.FieldPairs) {
+                        switch (fieldPair.Value.Modifier) {
+                            case AccessModifier.None:
+                                instance.GlobalVariables.Declare(fieldPair.Key, fieldPair.Value.Type);
+                                break;
+                            case AccessModifier.Local:
+                                activeInheritance.Variables.Declare(fieldPair.Key, fieldPair.Value.Type);
+                                break;
+                            case AccessModifier.Internal:
+                                instance.InternalVariables.Declare(fieldPair.Key, fieldPair.Value.Type);
+                                break;
+                        }
+                    }
+                    activeDefinition = activeDefinition.BaseClass;
+                }
+            }
+            return instance;
+        }
+
+        /// <summary>
+        ///     Prepares a new class instance for usage inside SolScript.
+        /// </summary>
+        /// <param name="name">The name of the class to create.</param>
+        /// <param name="enforce">
+        ///     Enforce creation of the class. Passing true will allow you to create instances for e.g.
+        ///     annotations or abstract classes.
+        /// </param>
+        /// <returns>A class initializer which gives you some further options on how the class will be created.</returns>
+        /// <exception cref="InvalidOperationException">
+        ///     The class definitions have not been <see cref="State.GeneratedClassBodies" />
+        ///     yet.
+        /// </exception>
+        /// <exception cref="SolTypeRegistryException">An error occured while preparing the class initializer.</exception>
+        public SolClass.Initializer PrepareInstance(string name, bool enforce = false)
+        {
+            AssetStateExactAndHigher(State.GeneratedClassBodies, "Cannot create class instances without having generated the class definitions.");
+            SolClassDefinition definition;
+            if (!m_ClassDefinitions.TryGetValue(name, out definition)) {
+                throw new SolTypeRegistryException($"The class \"{name}\" does not exist.");
+            }
+            // <bubble>SolTypeRegistryException</bubble>
+            // <bubble>InvalidOperationException</bubble>
+            return PrepareInstance(definition, enforce);
+        }
+
+        /// <summary>
+        ///     Prepares a new class instance for usage inside SolScript.
+        /// </summary>
+        /// <param name="definition">The class definition you wish to create class for.</param>
+        /// <param name="enforce">
+        ///     Enforce creation of the class. Passing true will allow you to create instances for e.g.
+        ///     annotations or abstract classes.
+        /// </param>
+        /// <returns>A class initializer which gives you some further options on how the class will be created.</returns>
+        /// <exception cref="SolTypeRegistryException">An error occured while preparing the class initializer.</exception>
+        public SolClass.Initializer PrepareInstance(SolClassDefinition definition, bool enforce = false)
+        {
+            if (definition.Assembly != LinkedAssembly) {
+                throw new SolTypeRegistryException($"Cannot create class \"{definition.Type}\"(Assembly: \"{definition.Assembly.Name}\") in the Type Registry for Assembly \"{LinkedAssembly.Name}\".");
+            }
+            if (!enforce && !definition.CanBeCreated()) {
+                throw new SolTypeRegistryException($"The class \"{definition.Type}\" cannot be instantiated.");
+            }
+            // <bubble>InvalidOperationException</bubble>
+            SolClass instance = PrepareInstance_Impl(definition);
+            return new SolClass.Initializer(instance);
         }
     }
 }

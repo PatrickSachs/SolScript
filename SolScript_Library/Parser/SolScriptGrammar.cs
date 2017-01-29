@@ -9,7 +9,7 @@ namespace SolScript.Parser {
     [Language("SolScript", "0.1", "A truly stellar programming language.")]
     public class SolScriptGrammar : Grammar {
         public SolScriptGrammar() :
-            base(false) {
+            base(true) {
             #region Terminals
 
             // =======================================
@@ -44,6 +44,9 @@ namespace SolScript.Parser {
             KeyTerm MOD = Operator("%");
             KeyTerm MULT = Operator("*");
             KeyTerm EXP = Operator("^");
+            KeyTerm NIL_COAL = Operator("??");
+            KeyTerm UPLUSPLUS = Operator("++");
+            KeyTerm UMINUSMINUS = Operator("--");
             KeyTerm CMP_EQ = Operator("==");
             KeyTerm CMP_NEQ = Operator("!=");
             KeyTerm CMP_ST = Operator("<");
@@ -60,15 +63,23 @@ namespace SolScript.Parser {
             KeyTerm IN = Keyword("in");
             KeyTerm FUNCTION = Keyword("function");
             KeyTerm RETURN = Keyword("return");
-            //KeyTerm BREAK = Keyword("break");
+            KeyTerm BREAK = Keyword("break");
+            KeyTerm CONTINUE = Keyword("continue");
             KeyTerm WHILE = Keyword("while");
             KeyTerm NOT = Keyword("not");
             KeyTerm AND = Keyword("and");
             KeyTerm OR = Keyword("or");
             KeyTerm LOCAL = Keyword("local");
+            KeyTerm VAR = Keyword("var");
+            KeyTerm INTERNAL = Keyword("internal");
+            KeyTerm EXTENDS = Keyword("extends");
             KeyTerm DO = Keyword("do");
             KeyTerm END = Keyword("end");
             KeyTerm ELLIPSIS = Keyword("...");
+            KeyTerm ANNOTATION = Keyword("annotation");
+            KeyTerm SINGLETON = Keyword("singleton");
+            KeyTerm ABSTRACT = Keyword("abstract");
+            KeyTerm SEALED = Keyword("sealed");
             // =======================================
             // === KEYWORDS
             ConstantTerminal NIL = new ConstantTerminal("nil");
@@ -82,6 +93,13 @@ namespace SolScript.Parser {
             // =======================================
             // === MISC
             NonTerminal ChunkEnd = new NonTerminal("ChunkEnd");
+            NonTerminal ClassDefinition = new NonTerminal("ClassDefinition");
+            NonTerminal ClassDefinition_BodyMember_trans = new NonTerminal("ClassDefinition_BodyMember_trans");
+            NonTerminal FunctionWithAccess = new NonTerminal("FunctionWithAccess");
+            NonTerminal FieldWithAccess = new NonTerminal("FieldWithAccess");
+            NonTerminal ClassDefinition_BodyMemberList = new NonTerminal("ClassDefinition_BodyMemberList");
+            NonTerminal ClassDefinition_Extends_opt = new NonTerminal("ClassDefinition_Extends_opt");
+            NonTerminal ClassDefinition_Body = new NonTerminal("ClassDefinition_Body");
             // Parameters
             NonTerminal ParameterList = new NonTerminal("ParameterList");
             NonTerminal ExplicitParameterList = new NonTerminal("ExplicitParameterList");
@@ -101,10 +119,7 @@ namespace SolScript.Parser {
             NonTerminal Statement = new NonTerminal("Statement");
             NonTerminal StatementList = new NonTerminal("StatementList");
             NonTerminal LastStatement = new NonTerminal("LastStatement");
-            NonTerminal StatementWithTerminator_opt = new NonTerminal("$StatementWithTerminator_opt",
-                Statement | Statement + ";");
-            NonTerminal LastStatementWithTerminator_opt_trans = new NonTerminal(
-                "$LastStatementWithTerminator_opt_trans", LastStatement | LastStatement + ";");
+            NonTerminal Statement_CallFunction = new NonTerminal("Statement_CallFunction");
             // Functions
             NonTerminal Statement_DeclareFunc = new NonTerminal("Statement_DeclareFunc");
             NonTerminal Statement_DeclareFunc_Local = new NonTerminal("Statement_DeclareFunc_Local");
@@ -112,8 +127,6 @@ namespace SolScript.Parser {
             // Variables / Objects
             NonTerminal Statement_AssignVar = new NonTerminal("Statement_AssignVar");
             NonTerminal Statement_DeclareVar = new NonTerminal("Statement_DeclareVar");
-            NonTerminal Statement_DeclareVar_Local = new NonTerminal("Statement_DeclareVar_Local");
-            NonTerminal Statement_DeclareVar_Global = new NonTerminal("Statement_DeclareVar_Global");
             NonTerminal Statement_New = new NonTerminal("Statement_New");
             // Conditions / Iterations / Loops
             NonTerminal Statement_Conditional = new NonTerminal("Statement_Conditional");
@@ -141,8 +154,7 @@ namespace SolScript.Parser {
             NonTerminal VariableList = new NonTerminal("VariableList");
             NonTerminal NameList = new NonTerminal("name list");
             NonTerminal ExpressionList = new NonTerminal("ExpressionList");
-            NonTerminal Statement_CallFunction = new NonTerminal("Statement_CallFunction");
-            NonTerminal Expression_DeclareFunc = new NonTerminal("Expression_CreateFunc");
+            NonTerminal Expression_CreateFunc = new NonTerminal("Expression_CreateFunc");
             NonTerminal FunctionBody = new NonTerminal("FunctionBody");
             NonTerminal Expression_TableConstructor = new NonTerminal("Expression_TableConstructor");
             NonTerminal Field = new NonTerminal("Field");
@@ -153,110 +165,91 @@ namespace SolScript.Parser {
             NonTerminal IndexedVariable = new NonTerminal("IndexedVariable");
             NonTerminal Variable = new NonTerminal("Variable");
             NonTerminal Assignment_opt = new NonTerminal("Assignment_opt");
-            NonTerminal ClassDefinition = new NonTerminal("ClassDefinition");
-            NonTerminal ClassDefinitionList = new NonTerminal("ClassDefinitionList");
-            NonTerminal ClassDefinition_BodyMember = new NonTerminal("ClassDefinition_BodyMember");
-            NonTerminal ClassDefinition_BodyMember_Function = new NonTerminal("ClassDefinition_BodyMember_Function");
-            NonTerminal ClassDefinition_BodyMember_Function_Local =
-                new NonTerminal("ClassDefinition_BodyMember_Function_Local");
-            NonTerminal ClassDefinition_BodyMember_Function_Global =
-                new NonTerminal("ClassDefinition_BodyMember_Function_Global");
-            NonTerminal ClassDefinition_BodyMember_Variable = new NonTerminal("ClassDefinition_BodyMember_Variable");
-            NonTerminal ClassDefinition_BodyMember_Variable_Local =
-                new NonTerminal("ClassDefinition_BodyMember_Variable_Local");
-            NonTerminal ClassDefinition_BodyMember_Variable_Global =
-                new NonTerminal("ClassDefinition_BodyMember_Variable_Global");
-            NonTerminal ClassDefinition_BodyMemberList = new NonTerminal("ClassDefinition_BodyMemberList");
-            NonTerminal ClassDefinition_Mixins_opt = new NonTerminal("ClassDefinition_Mixins_opt");
-            NonTerminal ClassDefinition_Body = new NonTerminal("ClassDefinition_Body");
             NonTerminal IdentifierPlusList = new NonTerminal("IdentifierPlusList");
-            NonTerminal Annotation_opt = new NonTerminal("Annotation_opt");
+            // Misc
+            NonTerminal ClassModifier_opt = new NonTerminal("ClassModifier_opt");
+            NonTerminal AccessModifier_opt = new NonTerminal("AccessModifier_opt");
             NonTerminal Annotation = new NonTerminal("Annotation");
+            NonTerminal Annotation_opt = new NonTerminal("Annotation_opt");
             NonTerminal AnnotationList = new NonTerminal("AnnotationList");
+            NonTerminal RootElement_trans = new NonTerminal("RootElement_trans");
+            Root = new NonTerminal("ROOT");
 
             #endregion
 
             #region Grammar Rules
-
-            Root =
-                ClassDefinitionList;
+            RootElement_trans.Rule = FieldWithAccess
+                | FunctionWithAccess
+                | ClassDefinition
+                ;
+            Root.Rule = MakeStarRule(Root, RootElement_trans)
+                ;
+            AccessModifier_opt.Rule =
+                Empty
+                | INTERNAL
+                | LOCAL
+                ;
+            ClassModifier_opt.Rule = 
+                Empty 
+                | ANNOTATION
+                | SINGLETON
+                | ABSTRACT
+                | SEALED
+                ;
             IdentifierPlusList.Rule =
                 MakePlusRule(IdentifierPlusList, ToTerm(","), _identifier)
                 ;
-            ClassDefinitionList.Rule =
-                MakeStarRule(ClassDefinitionList, ClassDefinition)
-                ;
             ClassDefinition.Rule =
-                AnnotationList + ToTerm("class") + _identifier + ClassDefinition_Mixins_opt + ClassDefinition_Body
+                AnnotationList + ClassModifier_opt + ToTerm("class") + _identifier + ClassDefinition_Extends_opt + ClassDefinition_Body
                 ;
-            ClassDefinition_Mixins_opt.Rule =
-                ToTerm("mixin") + IdentifierPlusList
+            ClassDefinition_Extends_opt.Rule =
+                EXTENDS + _identifier
                 | Empty
                 ;
             ClassDefinition_Body.Rule =
                 ClassDefinition_BodyMemberList + END
                 ;
             ClassDefinition_BodyMemberList.Rule =
-                MakeStarRule(ClassDefinition_BodyMemberList, ClassDefinition_BodyMember)
+                MakeStarRule(ClassDefinition_BodyMemberList, ClassDefinition_BodyMember_trans)
                 ;
-            ClassDefinition_BodyMember.Rule =
-                ClassDefinition_BodyMember_Variable
-                | ClassDefinition_BodyMember_Function
+            ClassDefinition_BodyMember_trans.Rule =
+                FieldWithAccess
+                | FunctionWithAccess
                 ;
-            ClassDefinition_BodyMember_Variable.Rule =
-                ClassDefinition_BodyMember_Variable_Global
-                | ClassDefinition_BodyMember_Variable_Local
-                ;
-            ClassDefinition_BodyMember_Variable_Global.Rule =
-                _identifier + TypeRef + Assignment_opt
-                ;
-            ClassDefinition_BodyMember_Variable_Local.Rule =
-                LOCAL + _identifier + TypeRef + Assignment_opt
+            FieldWithAccess.Rule =
+                AnnotationList + AccessModifier_opt + _identifier + TypeRef_opt + Assignment_opt
                 ;
             Assignment_opt.Rule =
                 EQ + Expression
                 | Empty
                 ;
-            ClassDefinition_BodyMember_Function.Rule =
-                ClassDefinition_BodyMember_Function_Global
-                | ClassDefinition_BodyMember_Function_Local
-                ;
-            ClassDefinition_BodyMember_Function_Global.Rule =
-                FUNCTION + _identifier + FunctionParameters + TypeRef_opt + FunctionBody
-                ;
-            ClassDefinition_BodyMember_Function_Local.Rule =
-                LOCAL + FUNCTION + _identifier + FunctionParameters + TypeRef_opt + FunctionBody
+            FunctionWithAccess.Rule =
+                AnnotationList + AccessModifier_opt + FUNCTION + _identifier + FunctionParameters + TypeRef_opt + FunctionBody
                 ;
             AnnotationList.Rule =
                 MakeStarRule(AnnotationList, Annotation)
                 ;
             Annotation.Rule =
-                ToTerm("@") + _identifier + Arguments_trans;
+                ToTerm("@") + _identifier + Arguments_trans
+                | ToTerm("@") + _identifier
+                ;
             Annotation_opt.Rule =
                 Empty
                 | Annotation
                 ;
             StatementList.Rule =
-                MakeStarRule(StatementList, StatementWithTerminator_opt)
+                MakeStarRule(StatementList, Statement)
                 ;
             ChunkEnd.Rule =
                 Empty
-                | LastStatementWithTerminator_opt_trans
+                | LastStatement
                 ;
             Chunk.Rule =
                 StatementList + ChunkEnd
                 ;
             Statement_DeclareVar.Rule =
-                Statement_DeclareVar_Local
-                | Statement_DeclareVar_Global
-                ;
-            Statement_DeclareVar_Local.Rule =
-                LOCAL + _identifier + TypeRef_opt + EQ + Expression
-                | LOCAL + _identifier + TypeRef_opt
-                ;
-            Statement_DeclareVar_Global.Rule =
-                _identifier + TypeRef_opt + EQ + Expression
-                | _identifier + TypeRef_opt
+                VAR + _identifier + TypeRef_opt + EQ + Expression
+                | VAR + _identifier + TypeRef_opt
                 ;
             Statement_AssignVar.Rule =
                 Variable + EQ + Expression
@@ -270,8 +263,8 @@ namespace SolScript.Parser {
             Statement_DeclareFunc_Local.Rule =
                 LOCAL + FUNCTION + Variable + FunctionParameters + TypeRef_opt + FunctionBody
                 ;
-            Expression_DeclareFunc.Rule =
-                FUNCTION + FunctionParameters + FunctionBody
+            Expression_CreateFunc.Rule =
+                FUNCTION + FunctionParameters+ TypeRef_opt  + FunctionBody
                 ;
             FunctionParameters.Rule =
                 "(" + ParameterList + ")" | "(" + ")"
@@ -307,6 +300,7 @@ namespace SolScript.Parser {
             Statement.Rule =
                 Statement_AssignVar
                 | Statement_DeclareVar
+                //| Statement_CallFunctionCompilerResolveRef
                 | Statement_CallFunction
                 | Statement_Conditional
                 | Statement_For
@@ -319,7 +313,8 @@ namespace SolScript.Parser {
             LastStatement.Rule =
                 RETURN + Expression
                 | RETURN 
-                /*| BREAK*/;
+                | BREAK
+                | CONTINUE;
             Function_Name.Rule =
                 MakePlusRule(Function_Name, DOT, _identifier)
                 ;
@@ -333,7 +328,8 @@ namespace SolScript.Parser {
                 MakeStarRule(ExpressionList, ToTerm(","), Expression)
                 ;
             Expression_Statement.Rule =
-                Statement_CallFunction
+                /*Statement_CallFunctionCompilerResolveRef
+                |*/ Statement_CallFunction
                 | Statement_Conditional
                 | Statement_New
                 | Statement_AssignVar
@@ -345,11 +341,13 @@ namespace SolScript.Parser {
                 | _string
                 | _long_string
                 | ELLIPSIS
-                | Expression_DeclareFunc
+                | Expression_GetVariable
+                /*|
+                Statement_CallFunctionCompilerResolveRef*/
+                | Expression_CreateFunc
                 | Expression_Statement
                 | Expression_Parenthetical
                 | Expression_TableConstructor
-                | Expression_GetVariable
                 | NIL
                 | FALSE
                 | TRUE
@@ -376,7 +374,12 @@ namespace SolScript.Parser {
                 ;
             Statement_CallFunction.Rule =
                 Expression + Arguments_trans
+                | Expression + "()"
                 ;
+            /*Statement_CallFunctionCompilerResolveRef.Rule =
+                _identifier + Arguments_trans
+                | _identifier + "()" // required since the parser otherwise cant handle empty arguments
+                ;*/
             Arguments_trans.Rule =
                 "(" + ExpressionList + ")"
                 ;
@@ -455,21 +458,24 @@ namespace SolScript.Parser {
                 | CMP_ST_EQ
                 | AND
                 | OR
+                | NIL_COAL
                 ;
             Expression_Unary_Operand_trans.Rule =
-                UPLUS
+                UPLUSPLUS 
+                | UMINUSMINUS 
+                | UPLUS
                 | UMINUS 
                 | NOT 
                 | "!" 
                 | GETN
                 ;
             MarkTransient(
-                StatementWithTerminator_opt,
+                ClassDefinition_BodyMember_trans,
+                RootElement_trans,
                 Expression_Binary_Operand_trans,
                 Expression_Unary_Operand_trans,
                 AppendOptionalArg_opt_trans,
-                Arguments_trans,
-                LastStatementWithTerminator_opt_trans);
+                Arguments_trans);
 
             #endregion
 
@@ -489,11 +495,13 @@ namespace SolScript.Parser {
             RegisterOperators(2, Associativity.Left, AND);
             RegisterOperators(3, Associativity.Left, CMP_GT, CMP_GT_EQ, CMP_ST, CMP_ST_EQ, CMP_EQ, CMP_NEQ);
             RegisterOperators(4, Associativity.Left, CONCAT);
-            RegisterOperators(5, Associativity.Left, MINUS, PLUS);
-            RegisterOperators(6, Associativity.Left, MULT, FDIV, MOD);
-            RegisterOperators(7, Associativity.Left, NOT, UMINUS, UPLUS);
-            RegisterOperators(8, Associativity.Right, EXP);
-            RegisterOperators(9, Associativity.Left, DOT);
+            RegisterOperators(5, Associativity.Left, NIL_COAL);
+            RegisterOperators(6, Associativity.Left, MINUS, PLUS);
+            RegisterOperators(7, Associativity.Left, MULT, FDIV, MOD);
+            RegisterOperators(8, Associativity.Left, NOT, UMINUS, UPLUS);
+            RegisterOperators(9, Associativity.Right, UPLUSPLUS, UMINUSMINUS, EXP, GETN);
+            RegisterOperators(9, Associativity.Left, UPLUSPLUS, UMINUSMINUS);
+            RegisterOperators(10, Associativity.Left, DOT);
 
             #endregion
 
@@ -531,8 +539,8 @@ namespace SolScript.Parser {
         protected static StringLiteral CreateSolString(string name) {
             //return new SolScriptStringLiteral(name);
             var strLit = new StringLiteral(name);
-            strLit.AddStartEnd("'", "'", StringOptions.AllowsDoubledQuote);
-            strLit.AddStartEnd("\"", "\"", StringOptions.None);
+            strLit.AddStartEnd("'", "'", StringOptions.AllowsDoubledQuote | StringOptions.NoEscapes);
+            strLit.AddStartEnd("\"", "\"", StringOptions.NoEscapes);
             return strLit;
         }
     }

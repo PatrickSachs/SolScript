@@ -3,17 +3,37 @@ using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter.Expressions {
     public class Expression_Binary : SolExpression {
+        public Expression_Binary(SolAssembly assembly, SolSourceLocation location) : base(assembly, location) {
+        }
+
         public SolExpression Left;
         public OperationRef Operation;
         public SolExpression Right;
 
-        public override SolValue Evaluate(SolExecutionContext context) {
+        #region Overrides
+
+        public override SolValue Evaluate(SolExecutionContext context, IVariables parentVariables) {
             context.CurrentLocation = Location;
-            return Operation.Perform(Left.Evaluate(context), Right.Evaluate(context), context);
+            return Operation.Perform(Left.Evaluate(context, parentVariables), Right.Evaluate(context, parentVariables), context);
         }
 
         protected override string ToString_Impl() {
-            return $"Expression_Binary(Left={Left}, Right={Right}, Operation={Operation.GetType().Name})";
+            return $"{Left} {Operation.Name} {Right}";
+        }
+
+        #endregion
+
+        public class NilCoalescing : OperationRef
+        {
+            private NilCoalescing()
+            {
+            }
+
+            public static readonly NilCoalescing Instance = new NilCoalescing();
+            public override string Name => "??";
+            public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context) {
+                return left.IsEqual(context, SolNil.Instance) ? right : left;
+            }
         }
 
         #region Nested type: Addition
@@ -24,9 +44,15 @@ namespace SolScript.Interpreter.Expressions {
 
             public static readonly Addition Instance = new Addition();
 
+            public override string Name => "+";
+
+            #region Overrides
+
             public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context) {
-                return left.Add(right);
+                return left.Add(context, right);
             }
+
+            #endregion
         }
 
         #endregion
@@ -38,10 +64,15 @@ namespace SolScript.Interpreter.Expressions {
             }
 
             public static readonly And Instance = new And();
+            public override string Name => "&&";
+
+            #region Overrides
 
             public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context) {
-                return left.And(right);
+                return left.And(context, right);
             }
+
+            #endregion
         }
 
         #endregion
@@ -53,10 +84,15 @@ namespace SolScript.Interpreter.Expressions {
             }
 
             public static readonly CompareEqual Instance = new CompareEqual();
+            public override string Name => "==";
+
+            #region Overrides
 
             public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context) {
-                return SolBoolean.ValueOf(left.IsEqual(right));
+                return SolBool.ValueOf(left.IsEqual(context, right));
             }
+
+            #endregion
         }
 
         #endregion
@@ -68,10 +104,15 @@ namespace SolScript.Interpreter.Expressions {
             }
 
             public static readonly CompareGreater Instance = new CompareGreater();
+            public override string Name => ">";
+
+            #region Overrides
 
             public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context) {
-                return SolBoolean.ValueOf(left.GreaterThan(right));
+                return SolBool.ValueOf(left.GreaterThan(context, right));
             }
+
+            #endregion
         }
 
         #endregion
@@ -84,9 +125,15 @@ namespace SolScript.Interpreter.Expressions {
 
             public static readonly CompareGreaterOrEqual Instance = new CompareGreaterOrEqual();
 
+            public override string Name => ">=";
+
+            #region Overrides
+
             public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context) {
-                return SolBoolean.ValueOf(left.GreaterThanOrEqual(right));
+                return SolBool.ValueOf(left.GreaterThanOrEqual(context, right));
             }
+
+            #endregion
         }
 
         #endregion
@@ -98,10 +145,15 @@ namespace SolScript.Interpreter.Expressions {
             }
 
             public static readonly CompareNotEqual Instance = new CompareNotEqual();
+            public override string Name => "!=";
+
+            #region Overrides
 
             public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context) {
-                return SolBoolean.ValueOf(left.NotEqual(right));
+                return SolBool.ValueOf(left.NotEqual(context, right));
             }
+
+            #endregion
         }
 
         #endregion
@@ -114,9 +166,15 @@ namespace SolScript.Interpreter.Expressions {
 
             public static readonly CompareSmaller Instance = new CompareSmaller();
 
+            public override string Name => "<";
+
+            #region Overrides
+
             public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context) {
-                return SolBoolean.ValueOf(left.SmallerThan(right));
+                return SolBool.ValueOf(left.SmallerThan(context, right));
             }
+
+            #endregion
         }
 
         #endregion
@@ -129,9 +187,15 @@ namespace SolScript.Interpreter.Expressions {
 
             public static readonly CompareSmallerOrEqual Instance = new CompareSmallerOrEqual();
 
+            public override string Name => "<=";
+
+            #region Overrides
+
             public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context) {
-                return SolBoolean.ValueOf(left.SmallerThanOrEqual(right));
+                return SolBool.ValueOf(left.SmallerThanOrEqual(context, right));
             }
+
+            #endregion
         }
 
         #endregion
@@ -144,10 +208,15 @@ namespace SolScript.Interpreter.Expressions {
             }
 
             public static readonly Concatenation Instance = new Concatenation();
+            public override string Name => "..";
+
+            #region Overrides
 
             public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context) {
-                return left.Concatenate(right);
+                return left.Concatenate(context, right);
             }
+
+            #endregion
         }
 
         #endregion
@@ -159,10 +228,15 @@ namespace SolScript.Interpreter.Expressions {
             }
 
             public static readonly Division Instance = new Division();
+            public override string Name => "/";
+
+            #region Overrides
 
             public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context) {
-                return left.Divide(right);
+                return left.Divide(context, right);
             }
+
+            #endregion
         }
 
         #endregion
@@ -176,9 +250,15 @@ namespace SolScript.Interpreter.Expressions {
 
             public static readonly Exponentiation Instance = new Exponentiation();
 
+            public override string Name => "^";
+
+            #region Overrides
+
             public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context) {
-                return left.Exponentiate(right);
+                return left.Exponentiate(context, right);
             }
+
+            #endregion
         }
 
         #endregion
@@ -190,10 +270,15 @@ namespace SolScript.Interpreter.Expressions {
             }
 
             public static readonly Modulus Instance = new Modulus();
+            public override string Name => "%";
+
+            #region Overrides
 
             public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context) {
-                return left.Modulu(right);
+                return left.Modulo(context, right);
             }
+
+            #endregion
         }
 
         #endregion
@@ -206,9 +291,15 @@ namespace SolScript.Interpreter.Expressions {
 
             public static readonly Multiplication Instance = new Multiplication();
 
+            public override string Name => "*";
+
+            #region Overrides
+
             public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context) {
-                return left.Multiply(right);
+                return left.Multiply(context, right);
             }
+
+            #endregion
         }
 
         #endregion
@@ -216,6 +307,7 @@ namespace SolScript.Interpreter.Expressions {
         #region Nested type: OperationRef
 
         public abstract class OperationRef {
+            public abstract string Name { get; }
             public abstract SolValue Perform(SolValue left, SolValue right, SolExecutionContext context);
         }
 
@@ -228,10 +320,15 @@ namespace SolScript.Interpreter.Expressions {
             }
 
             public static readonly Or Instance = new Or();
+            public override string Name => "||";
+
+            #region Overrides
 
             public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context) {
-                return left.Or(right);
+                return left.Or(context, right);
             }
+
+            #endregion
         }
 
         #endregion
@@ -243,15 +340,17 @@ namespace SolScript.Interpreter.Expressions {
             }
 
             public static readonly Substraction Instance = new Substraction();
+            public override string Name => "-";
+
+            #region Overrides
 
             public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context) {
-                return left.Subtract(right);
+                return left.Subtract(context, right);
             }
+
+            #endregion
         }
 
         #endregion
-
-        public Expression_Binary(SourceLocation location) : base(location) {
-        }
     }
 }

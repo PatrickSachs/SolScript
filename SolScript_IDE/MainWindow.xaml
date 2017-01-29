@@ -1,0 +1,32 @@
+﻿<Window
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:SolScript_IDE"
+        xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit" xmlns:xcad="http://schemas.xceed.com/wpf/xaml/avalondock"
+    xmlns:system="clr-namespace:System;assembly=mscorlib"
+    x:Class="SolScript_IDE.MainWindow"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="400" Width="900">
+    <xcad:DockingManager>
+        <xcad:LayoutRoot>
+            <xcad:LayoutPanel Orientation="Horizontal">
+                <xcad:LayoutAnchorablePane DockWidth="200">
+                    <xcad:LayoutAnchorable ContentId="properties" Title="Properties" CanHide="False" CanClose="False"
+                                            AutoHideWidth="240">
+                        <xctk:PropertyGrid NameColumnWidth="110"
+                        SelectedObject="{Binding ElementName=_layoutRoot, Path=LastFocusedDocument.Content}"/>
+                    </xcad:LayoutAnchorable>
+                </xcad:LayoutAnchorablePane>
+                <xcad:LayoutAnchorablePane DockWidth="250">
+                    <xcad:LayoutAnchorable ContentId="properties" Title="Properties" CanHide="False" CanClose="False"
+                                            AutoHideWidth="240">
+                        <xctk:PropertyGrid NameColumnWidth="110"
+                        SelectedObject="{Binding ElementName=_layoutRoot, Path=LastFocusedDocument.Content}"/>
+                    </xcad:LayoutAnchorable>
+                </xcad:LayoutAnchorablePane>
+            </xcad:LayoutPanel>
+        </xcad:LayoutRoot>
+    </xcad:DockingManager>
+</Window>

@@ -3,7 +3,9 @@ using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
 
 namespace SolScript.Interpreter.Types {
-    public class SolNil : SolValue {
+    public class SolNil : SolValue
+    {
+        public const string TYPE = "nil";
         private SolNil() {
         }
 
@@ -12,13 +14,13 @@ namespace SolScript.Interpreter.Types {
         // TODO: Nil as type constraint?
         public static readonly SolType MarshalFromCSharpType = new SolType("nil", true);
 
-        public override string Type { get; protected set; } = NIL_TYPE;
+        public override string Type => TYPE;
 
         /// <summary> Tries to convert the local value into a value of a C# type. May
         ///     return null. </summary>
         /// <param name="type"> The target type </param>
         /// <returns> The object </returns>
-        /// <exception cref="SolScriptMarshallingException"> The value cannot be converted. </exception>
+        /// <exception cref="SolMarshallingException"> The value cannot be converted. </exception>
         [CanBeNull]
         public override object ConvertTo(Type type) {
             if (type == typeof (SolValue) || type == typeof (SolNil)) {
@@ -42,31 +44,36 @@ namespace SolScript.Interpreter.Types {
             if (type == typeof (double)) {
                 return 0d;
             }
-            throw new SolScriptMarshallingException("nil", type);
+            throw new SolMarshallingException("nil", type);
         }
 
-        protected override string ToString_Impl() {
+        protected override string ToString_Impl([CanBeNull]SolExecutionContext context) {
             return "nil";
         }
 
-        public override bool IsEqual(SolValue other) {
-            return other.Type == NIL_TYPE;
+        public override bool IsEqual(SolExecutionContext context, SolValue other) {
+            return other.Type == TYPE;
         }
 
-        public override bool NotEqual(SolValue other) {
-            return other.Type != NIL_TYPE;
+        public override bool NotEqual(SolExecutionContext context, SolValue other) {
+            return other.Type != TYPE;
         }
 
-        protected override int GetHashCode_Impl() {
+        public override int GetHashCode() {
             return 0;
         }
         
-        public override bool IsTrue() {
+        public override bool IsTrue(SolExecutionContext context) {
             return false;
         }
         
-        public override bool IsFalse() {
+        public override bool IsFalse(SolExecutionContext context) {
             return true;
+        }
+
+        public override bool Equals(object other)
+        {
+            return other == this;
         }
     }
 }
