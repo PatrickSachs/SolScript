@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Irony.Parsing;
+using SolScript.Interpreter.Builders;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Types;
@@ -29,7 +30,7 @@ namespace SolScript.Interpreter.Statements
                     case "FunctionWithAccess": {
                         SolFunctionBuilder functionBuilder = GetFunctionWithAccess(rootedNode,
                             delegate(SolFunctionBuilder builder, SolChunk chunk, SolType returnType, SolParameter[] parameters, bool allowOptParameters) {
-                                builder.Chunk(chunk).Return(returnType).SetParameters(parameters).OptionalParameters(allowOptParameters);
+                                builder.Chunk(chunk).ScriptReturns(returnType).SetParameters(parameters).OptionalParameters(allowOptParameters);
                             });
                         globals.AddFunction(functionBuilder);
                         break;
@@ -113,7 +114,7 @@ namespace SolScript.Interpreter.Statements
             }
 
             string className = node.ChildNodes[3].Token.Text;
-            SolClassBuilder classBuilder = new SolClassBuilder(className, typeMode);
+            SolClassBuilder classBuilder = new SolClassBuilder(className, typeMode).AtLocation(new SolSourceLocation(ActiveFile, node.Span.Location));
             m_MetaStack.Push(new MetaItem {ActiveClass = classBuilder});
             // ===================================================================
             // == Annotations
@@ -124,11 +125,7 @@ namespace SolScript.Interpreter.Statements
             //   - _identifier
             //   - Arguments_trans
             ParseTreeNode annotationsListNode = node.ChildNodes[0];
-            foreach (ParseTreeNode annotationNode in annotationsListNode.ChildNodes) {
-                string name = annotationNode.ChildNodes[1].Token.Text;
-                SolExpression[] expressions = annotationNode.ChildNodes.Count == 3 ? GetExpressions(annotationNode.ChildNodes[2]) : Array.Empty<SolExpression>();
-                classBuilder.AddAnnotation(new SolAnnotationData(name, expressions));
-            }
+            InsertAnnotations(annotationsListNode, classBuilder);
             // Push class builder to meta, so that instance functions can determine that they are instance functions.
             // ===================================================================
             // ClassDefinition_Mixins_opt
@@ -159,12 +156,13 @@ namespace SolScript.Interpreter.Statements
                             delegate(SolFunctionBuilder builder, SolChunk chunk, SolType returnType, SolParameter[] parameters, bool allowOptParameters) {
                                 builder.Chunk(chunk).SetParameters(parameters).OptionalParameters(allowOptParameters);
                                 if (builder.Name != "__new") {
-                                    builder.Return(returnType);
+                                    builder.ScriptReturns(returnType);
                                 } else {
-                                    if (!returnType.CanBeNil || (returnType.Type != "any" && returnType.Type != "nil")) {
-                                        throw new SolInterpreterException(builder.Location, "The constructor on class \"" + builder.Name + "\" specified \""+returnType+"\" as return type. A constrcutor function must not specify a return type.");
+                                    if (!returnType.CanBeNil || returnType.Type != "any" && returnType.Type != "nil") {
+                                        throw new SolInterpreterException(builder.Location,
+                                            "The constructor on class \"" + builder.Name + "\" specified \"" + returnType + "\" as return type. A constrcutor function must not specify a return type.");
                                     }
-                                    builder.Return(new SolType(SolNil.TYPE, true));
+                                    builder.ScriptReturns(new SolType(SolNil.TYPE, true));
                                 }
                             });
                         classBuilder.AddFunction(functionBuilder);
@@ -283,14 +281,22 @@ namespace SolScript.Interpreter.Statements
                 parameters = explicitNode == null ? new SolParameter[0] : GetExplicitParameters(explicitNode);
             }
             SolFunctionBuilder functionBuilder = new SolFunctionBuilder(funcName).SetAccessModifier(accessModifier);
-            foreach (ParseTreeNode annotationNode in annotationsListNode.ChildNodes) {
-                string name = annotationNode.ChildNodes[0].Token.Text;
-                SolExpression[] expressions = GetExpressions(annotationNode.ChildNodes[1]);
-                functionBuilder.AddAnnotation(new SolAnnotationData(name, expressions));
-            }
+            InsertAnnotations(annotationsListNode, functionBuilder);
             functionBuilder.AtLocation(new SolSourceLocation(ActiveFile, node.Span.Location));
             generator(functionBuilder, chunk, funcType, parameters, allowOptional);
             return functionBuilder;
+        }
+
+        private void InsertAnnotations(ParseTreeNode node, IAnnotateableBuilder builder)
+        {
+            if (node.Term.Name != "AnnotationList") {
+                throw new SolInterpreterException(new SolSourceLocation(ActiveFile, node.Span.Location), "Invalid annotation list: " + node.Term.Name);
+            }
+            foreach (ParseTreeNode annotationNode in node.ChildNodes) {
+                string name = annotationNode.ChildNodes[1].Token.Text;
+                SolExpression[] expressions = annotationNode.ChildNodes.Count == 3 ? GetExpressions(annotationNode.ChildNodes[2]) : Array.Empty<SolExpression>();
+                builder.AddAnnotation(new SolAnnotationData(new SolSourceLocation(ActiveFile, node.Span.Location), name, expressions));
+            }
         }
 
         public SolFieldBuilder GetFieldWithAccess(ParseTreeNode node)
@@ -302,15 +308,12 @@ namespace SolScript.Interpreter.Statements
             // Assignment_opt;
             ParseTreeNode annotationsListNode = node.ChildNodes[0];
             AccessModifier accessModifier = GetAccessModifier(node.ChildNodes[1]);
-            string fieldName = node.ChildNodes[2].Token.Text;
+            ParseTreeNode identifierNode = node.ChildNodes[2];
+            string fieldName = identifierNode.Token.Text;
             SolType fieldType = GetTypeRef(node.ChildNodes[3]);
             ParseTreeNode assignmentOpt = node.ChildNodes[4];
-            SolFieldBuilder fieldBuilder = new SolFieldBuilder(fieldName, fieldType).SetAccessModifier(accessModifier);
-            foreach (ParseTreeNode annotationNode in annotationsListNode.ChildNodes) {
-                string name = annotationNode.ChildNodes[0].Token.Text;
-                SolExpression[] expressions = GetExpressions(annotationNode.ChildNodes[1]);
-                fieldBuilder.AddAnnotation(new SolAnnotationData(name, expressions));
-            }
+            SolFieldBuilder fieldBuilder = new SolFieldBuilder(fieldName, fieldType).SetAccessModifier(accessModifier).AtLocation(new SolSourceLocation(ActiveFile, identifierNode.Span.Location));
+            InsertAnnotations(annotationsListNode, fieldBuilder);
             if (assignmentOpt.ChildNodes.Count != 0) {
                 fieldBuilder.MakeScriptField(GetExpression(assignmentOpt.ChildNodes[0]));
             }

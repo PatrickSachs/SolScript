@@ -54,7 +54,7 @@ namespace SolScript.Interpreter.Types
             try {
                 ParameterInfo.VerifyArguments(Assembly, args);
             } catch (SolVariableException ex) {
-                throw new SolRuntimeException(context, ex.Message);
+                throw new SolRuntimeException(context, ex.Message, ex);
             }
             SolValue returnValue = Call_Impl(context, args);
             context.PopStackFrame();
@@ -64,6 +64,7 @@ namespace SolScript.Interpreter.Types
             return returnValue;
         }
 
+        /// <inheritdoc cref="Call"/>
         protected abstract SolValue Call_Impl([NotNull] SolExecutionContext context, [ItemNotNull] params SolValue[] args);
 
         /// <summary>
@@ -86,20 +87,16 @@ namespace SolScript.Interpreter.Types
         {
             for (int i = 0; i < ParameterInfo.Count; i++) {
                 SolParameter parameter = ParameterInfo[i];
-                // <bubble>SolVariableException</bubble>
                 variables.Declare(parameter.Name, parameter.Type);
-                // <bubble>SolVariableException</bubble>
                 variables.Assign(parameter.Name, arguments.Length > i ? arguments[i] : SolNil.Instance);
             }
             // Additional arguments
             if (ParameterInfo.AllowOptional) {
-                // <bubble>SolVariableException</bubble>
                 variables.Declare("args", new SolType("table", false));
                 SolTable argsTable = new SolTable();
                 for (int i = ParameterInfo.Count; i < arguments.Length; i++) {
                     argsTable.Append(arguments[i]);
                 }
-                // <bubble>SolVariableException</bubble>
                 variables.Assign("args", argsTable);
             }
         }

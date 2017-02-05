@@ -94,29 +94,27 @@ namespace SolScript
                     SolAssembly script = SolAssembly.FromDirectory(dirRaw);
                     script.IncludeLibrary(SolLibrary.StandardLibrary).Create();
                     try {
-                        script.TypeRegistry.PrepareInstance("Main", true)
-                            .Create(new SolExecutionContext(script, "Main Context (interpreted)"), new SolString("Hello from the command line :)"), new SolNumber(42));
-                    } 
-                    catch (SolRuntimeException ex) {
-                            Console.ForegroundColor = ConsoleColor.Yellow;
-                            Console.WriteLine("   A runtime error occured!");
-                            Console.WriteLine(" ================================================");
-                            Console.ForegroundColor = ConsoleColor.White;
-                            Console.WriteLine(ex.Message);
-                            Console.ForegroundColor = ConsoleColor.Yellow;
-                            Console.WriteLine(" ================================================");
-                            Console.ForegroundColor = ConsoleColor.White;
-                        }
-                        //try {
-                        //Console.WriteLine("Main Class: "+script.Run());
-                        /*} catch (SolScriptInterpreterException exception) {
-                            Console.WriteLine("An exception occured: " + exception.Message);
-                            throw;
-                        }*/
-                        Console.ForegroundColor = ConsoleColor.Green;
-                        Console.WriteLine("\n === Script execution finished ... Press any key to return to the main menu.");
+                        script.TypeRegistry.CreateInstance("Main", ClassCreationOptions.Default, new SolString("Hello from the command line :)"), new SolNumber(42));
+                    } catch (SolRuntimeException ex) {
+                        Console.ForegroundColor = ConsoleColor.Yellow;
+                        Console.WriteLine("   A runtime error occured!");
+                        Console.WriteLine(" ================================================");
                         Console.ForegroundColor = ConsoleColor.White;
-                        Console.ReadKey(true);
+                        Console.WriteLine(ex.Message);
+                        Console.ForegroundColor = ConsoleColor.Yellow;
+                        Console.WriteLine(" ================================================");
+                        Console.ForegroundColor = ConsoleColor.White;
+                    }
+                    //try {
+                    //Console.WriteLine("Main Class: "+script.Run());
+                    /*} catch (SolScriptInterpreterException exception) {
+                        Console.WriteLine("An exception occured: " + exception.Message);
+                        throw;
+                    }*/
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine("\n === Script execution finished ... Press any key to return to the main menu.");
+                    Console.ForegroundColor = ConsoleColor.White;
+                    Console.ReadKey(true);
                     goto Hello;
                 }
                 case 4: {
@@ -128,10 +126,8 @@ namespace SolScript
                         Console.WriteLine("This file does not exist. :( Please try again. (Make sure to NOT specify the file ending, as the file ending must be .sol_a1)");
                         goto ChooseFile;
                     }
-                    SolAssembly script = SolAssembly.FromFile(fileRaw);
-                    script.IncludeLibrary(SolLibrary.StandardLibrary).Create();
-                    script.TypeRegistry.PrepareInstance("Main", true)
-                        .Create(new SolExecutionContext(script, "Main Conext (compiled)"), new SolString("Hello from the command line :)"), new SolNumber(42));
+                    SolAssembly script = SolAssembly.FromFile(fileRaw).IncludeLibrary(SolLibrary.StandardLibrary).Create();
+                    script.TypeRegistry.CreateInstance("Main", ClassCreationOptions.Default, new SolString("Hello from the command line :)"), new SolNumber(42));
                     Console.WriteLine("\n === Script execution finished ... Press any key to return to the main menu.");
                     Console.ReadKey(true);
                     goto Hello;

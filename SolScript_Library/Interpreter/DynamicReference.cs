@@ -40,9 +40,38 @@ namespace SolScript.Interpreter {
         ///     assignment. </param>
         public abstract void SetReference([CanBeNull] object value, out SetState refState);
 
-        #region Nested type: CustomTypeMixinClr
+        internal class InheritanceNative : DynamicReference
+        {
+            private readonly SolClass.Inheritance m_Inheritance;
 
-        public sealed class CustomTypeMixinClr : DynamicReference {
+            public InheritanceNative(SolClass.Inheritance inheritance)
+            {
+                m_Inheritance = inheritance;
+            }
+
+            /// <inheritdoc />
+            public override object GetReference(out GetState refState)
+            {
+                object obj = m_Inheritance.NativeObject;
+                refState = obj != null ? GetState.Retrieved : GetState.NotRetrieved;
+                return obj;
+            }
+
+            /// <inheritdoc />
+            public override void SetReference(object value, out SetState refState)
+            {
+                if (m_Inheritance.NativeObject != null) {
+                    refState = SetState.NotAssigned;
+                } else {
+                    m_Inheritance.NativeObject = value;
+                    refState = SetState.Assigned;                 
+                }
+            }
+        }
+
+        /*#region Nested type: CustomTypeMixinClr
+
+       public sealed class CustomTypeMixinClr : DynamicReference {
             public CustomTypeMixinClr(SolClass type, MixinId mixinId) {
                 Type = type;
                 MixinId = mixinId;
@@ -55,27 +84,13 @@ namespace SolScript.Interpreter {
 
             [CanBeNull]
             public override object GetReference(out GetState refState) {
-                // todo: dyn ref or find a way to remove them
-                throw new NotImplementedException();
-                /*if (Type.NativeObjects.Length > MixinId) {
-                    refState = GetState.Retrieved;
-                    return Type.NativeObjects[MixinId];
-                }
-                refState = GetState.NotRetrieved;
-                return null;*/
+
             }
 
             /// <summary> Sets the value associated with this reference. </summary>
             public override void SetReference([CanBeNull] object value, out SetState refState)
             {
-                // todo: dyn ref or find a way to remove them
-                throw new NotImplementedException();
-                /*if (Type.NativeObjects.Length > MixinId) {
-                    refState = SetState.Assigned;
-                    Type.NativeObjects[MixinId] = value;
-                } else {
-                    refState = SetState.NotAssigned;
-                }*/
+
             }
 
             public override string ToString() {
@@ -85,7 +100,7 @@ namespace SolScript.Interpreter {
             #endregion
         }
 
-        #endregion
+        #endregion*/
 
         #region Nested type: NullReference
 

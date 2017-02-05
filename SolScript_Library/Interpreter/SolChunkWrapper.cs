@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Reflection;
+using Vexe.Runtime.Extensions;
 
 namespace SolScript.Interpreter
 {
@@ -113,20 +114,27 @@ namespace SolScript.Interpreter
         }
 
         /// <summary>
-        ///     Obtains a reference to the <see cref="MethodInfo" /> wrapper in this wrapper.
+        ///     Obtains a reference to the <see cref="MethodCaller{TTarget,TReturn}" /> wrapper in this wrapper.
         /// </summary>
         /// <returns>The native method.</returns>
         /// <exception cref="InvalidOperationException">The <see cref="ChunkType" /> is not <see cref="Type.NativeMethod" />.</exception>
+        // public MethodCaller<object, object> GetNativeMethod()
         public MethodInfo GetNativeMethod()
         {
             if (ChunkType != Type.NativeMethod) {
                 throw new InvalidOperationException("Tried to obtain native method - The registered chunk is of type " + ChunkType + ".");
             }
+            /*// todo: generate the MethodCaller right away.
+            MethodCaller<object, object> caller = m_Chunk as MethodCaller<object, object>;
+            if (caller == null) {
+                m_Chunk = caller = ((MethodInfo) m_Chunk).DelegateForCall();
+            }
+            return caller;*/
             return (MethodInfo) m_Chunk;
         }
 
         /// <summary>
-        ///     Obtains a reference to the <see cref="ConstructorInfo" /> wrapper in this wrapper.
+        ///     Obtains a reference to the <see cref="CtorInvoker{T}" /> wrapper in this wrapper.
         /// </summary>
         /// <returns>The native constructor.</returns>
         /// <exception cref="InvalidOperationException">The <see cref="ChunkType" /> is not <see cref="Type.NativeConstructor" />.</exception>
@@ -135,6 +143,13 @@ namespace SolScript.Interpreter
             if (ChunkType != Type.NativeConstructor) {
                 throw new InvalidOperationException("Tried to obtain native constructor - The registered chunk is of type " + ChunkType + ".");
             }
+            /*// todo: generate the CtorInvoker right away.
+            CtorInvoker<object> caller = m_Chunk as CtorInvoker<object>;
+            if (caller == null) {
+                var ctor = ((ConstructorInfo) m_Chunk);
+                m_Chunk = caller = ctor.DeclaringType.DelegateForCtor(ctor.GetParameters().Select(p => p.ParameterType).ToArray());
+            }
+            return caller;*/
             return (ConstructorInfo) m_Chunk;
         }
 

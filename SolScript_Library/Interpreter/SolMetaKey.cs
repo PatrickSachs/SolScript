@@ -22,7 +22,7 @@ namespace SolScript.Interpreter
         }
 
         public static readonly SolMetaKey<SolNil> Constructor = new SolMetaKey<SolNil>("__new", true);
-        public static readonly SolMetaKey<SolString> AsString = new SolMetaKey<SolString>("__to_string", false);
+        public static readonly SolMetaKey<SolString> Stringify = new SolMetaKey<SolString>("__to_string", false);
         public static readonly SolMetaKey<SolNumber> GetN = new SolMetaKey<SolNumber>("__get_n", false);
         public static readonly SolMetaKey<SolBool> IsEqual = new SolMetaKey<SolBool>("__is_equal", false);
         public static readonly SolMetaKey<SolTable> Iterate = new SolMetaKey<SolTable>("__iterate", false);

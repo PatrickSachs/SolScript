@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Reflection;
-using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
-using SolScript.Interpreter.Library;
 
 namespace SolScript.Interpreter.Types.Implementation
 {
@@ -20,13 +18,7 @@ namespace SolScript.Interpreter.Types.Implementation
 
         #region Overrides
 
-        /// <summary>
-        ///     Tries to convert the local value into a value of a C# type. May
-        ///     return null.
-        /// </summary>
-        /// <param name="type"> The target type </param>
-        /// <returns> The object </returns>
-        /// <exception cref="SolMarshallingException"> The value cannot be converted. </exception>
+        /// <inheritdoc />
         public override object ConvertTo(Type type)
         {
             throw new NotImplementedException();
@@ -44,23 +36,24 @@ namespace SolScript.Interpreter.Types.Implementation
             }
         }
 
+        /// <inheritdoc />
+        /// <exception cref="SolRuntimeException">A runtime error occured.</exception>
+        /// <exception cref="InvalidOperationException">A critical internal error occured. Excecution may have to be halted.</exception>
         protected override SolValue Call_Impl(SolExecutionContext context, params SolValue[] args)
         {
-            object[] values = ParameterInfo.Marshal(context, args);
+            object[] values;
+            try {
+                values = ParameterInfo.Marshal(context, args);
+            } catch (SolMarshallingException ex) {
+                throw new SolRuntimeException(context, "Could to marshal the function parameters to native objects: " + ex.Message, ex);
+            }
             MethodInfo nativeMethod = Definition.Chunk.GetNativeMethod();
             object nativeObject;
             DynamicReference.GetState getState;
             object nativeInstance = m_Instance.GetReference(out getState);
             switch (getState) {
                 case DynamicReference.GetState.Retrieved:
-                    try {
-                        nativeObject = nativeMethod.Invoke(nativeInstance, values);
-                    } catch (TargetInvocationException ex) {
-                        if (ex.InnerException is SolRuntimeException) {
-                            throw ex.InnerException;
-                        }
-                        throw new SolRuntimeException(context, "A native exception occured while calling this global function.", ex.InnerException);
-                    }
+                    nativeObject = InternalHelper.SandboxInvokeMethod(context, nativeMethod, nativeInstance, values);
                     break;
                 case DynamicReference.GetState.NotRetrieved:
                     throw new InvalidOperationException($"The internal reference of the native method {nativeMethod.Name}({nativeMethod.DeclaringType?.FullName ?? "?"}) could not be resolved.");

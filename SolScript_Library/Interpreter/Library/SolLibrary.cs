@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using JetBrains.Annotations;
 using SevenBiT.Inspector;
+using SolScript.Interpreter.Builders;
 
 namespace SolScript.Interpreter.Library
 {
@@ -14,23 +15,21 @@ namespace SolScript.Interpreter.Library
             Name = libraryName;
             m_Assemblies = sourceAssemblies;
             FallbackMethodPostProcessor = NativeMethodPostProcessor.GetDefault();
+            RegisterMethodPostProcessor(nameof(GetHashCode), NativeMethodPostProcessor.GetFailer());
+            RegisterMethodPostProcessor(nameof(GetType), NativeMethodPostProcessor.GetFailer());
+            // The built-in equals comparison if faster than marshalling the type to C# and performing a potentially costly operation.
+            // todo: do regardless if the method has been overwritten.
+            RegisterMethodPostProcessor(nameof(Equals), NativeMethodPostProcessor.GetFailer());
+            RegisterMethodPostProcessor(nameof(ToString), NativeMethodPostProcessor.GetRenamerAndAccessorAndReturn(SolMetaKey.Stringify.Name, AccessModifier.Internal, SolMetaKey.Stringify.Type));
+            FallbackFieldPostProcessor = NativeFieldPostProcessor.GetDefault();
         }
 
         internal const string STD_NAME = "std";
-
-        private static readonly Dictionary<string, string> s_ClrMethodNameInfo = new Dictionary<string, string> {
-            ["GetHashCode"] = null,
-            ["GetType"] = null,
-            ["ToString"] = "__to_string",
-            // The built-in equals comparison if faster than marshalling the type to C# and performing a potentially costly operation.
-            // todo: do regardless if the method has been overwritten.
-            ["Equals"] = null
-        };
-
-        private static readonly Dictionary<string, string> s_ClrFieldNameInfo = new Dictionary<string, string>();
         private readonly Assembly[] m_Assemblies;
         private readonly Dictionary<SolAssembly, AssemblyClassInfo> m_AssemblyClasses = new Dictionary<SolAssembly, AssemblyClassInfo>();
-        private readonly Dictionary<string, NativeMethodPostProcessor> m_PostProcessors = new Dictionary<string, NativeMethodPostProcessor>();
+        private readonly Dictionary<string, NativeFieldPostProcessor> m_FieldPostProcessors = new Dictionary<string, NativeFieldPostProcessor>();
+        private readonly Dictionary<string, NativeMethodPostProcessor> m_MethodPostProcessors = new Dictionary<string, NativeMethodPostProcessor>();
+        private NativeFieldPostProcessor m_FallbackFieldPostProcessor;
         private NativeMethodPostProcessor m_FallbackMethodPostProcessor;
 
         public string Name { get; }
@@ -54,6 +53,23 @@ namespace SolScript.Interpreter.Library
         }
 
         /// <summary>
+        ///     This fallback processor will be used in case there is no explicitly defined post processor the a field.
+        /// </summary>
+        /// <exception cref="ArgumentNullException" accessor="set">
+        ///     Cannot set the fallback field processor to null.
+        ///     <paramref name="value" />
+        /// </exception>
+        public NativeFieldPostProcessor FallbackFieldPostProcessor {
+            get { return m_FallbackFieldPostProcessor; }
+            set {
+                if (value == null) {
+                    throw new ArgumentNullException(nameof(value), "Cannot set the fallback field processor to null.");
+                }
+                m_FallbackFieldPostProcessor = value;
+            }
+        }
+
+        /// <summary>
         ///     Gets the registered post processor for the given method name. If no expcilty defined post processor for this name
         ///     could be found, the <see cref="FallbackMethodPostProcessor" /> will be returned instead.
         /// </summary>
@@ -62,10 +78,25 @@ namespace SolScript.Interpreter.Library
         private NativeMethodPostProcessor GetMethodPostProcessor(string name)
         {
             NativeMethodPostProcessor postProcessor;
-            if (m_PostProcessors.TryGetValue(name, out postProcessor)) {
+            if (m_MethodPostProcessors.TryGetValue(name, out postProcessor)) {
                 return postProcessor;
             }
             return FallbackMethodPostProcessor;
+        }
+
+        /// <summary>
+        ///     Gets the registered post processor for the given field name. If no expcilty defined post processor for this name
+        ///     could be found, the <see cref="FallbackFieldPostProcessor" /> will be returned instead.
+        /// </summary>
+        /// <param name="name">The field name to look up for.</param>
+        /// <returns>The post processor.</returns>
+        private NativeFieldPostProcessor GetFieldPostProcessor(string name)
+        {
+            NativeFieldPostProcessor postProcessor;
+            if (m_FieldPostProcessors.TryGetValue(name, out postProcessor)) {
+                return postProcessor;
+            }
+            return FallbackFieldPostProcessor;
         }
 
         /// <summary>
@@ -78,11 +109,19 @@ namespace SolScript.Interpreter.Library
         ///     processing.
         /// </param>
         /// <param name="postProcessor">The actual post processor.</param>
+        /// <param name="overrideExisting">If this is true already existing post processors with the same name will be overridden.</param>
         /// <exception cref="ArgumentNullException"><paramref name="postProcessor" /> is null.</exception>
-        /// <exception cref="ArgumentException">Another processor with the same name has already been registered.</exception>
-        public void RegisterMethodPostProcessor(string methodName, NativeMethodPostProcessor postProcessor)
+        /// <exception cref="ArgumentException">
+        ///     Another processor with the same name has already been registered(Only if
+        ///     <paramref name="overrideExisting" /> is false).
+        /// </exception>
+        public void RegisterMethodPostProcessor(string methodName, NativeMethodPostProcessor postProcessor, bool overrideExisting = false)
         {
-            m_PostProcessors.Add(methodName, postProcessor);
+            if (overrideExisting) {
+                m_MethodPostProcessors[methodName] = postProcessor;
+            } else {
+                m_MethodPostProcessors.Add(methodName, postProcessor);
+            }
         }
 
         /// <summary>
@@ -213,11 +252,85 @@ namespace SolScript.Interpreter.Library
 
         #endregion
 
+        #region Nested type: NativeFieldPostProcessor
+
+        /// <summary>
+        ///     A <see cref="NativeFieldPostProcessor" /> is used to modify certain aspects of a native field(or potentially a
+        ///     property) during creation.
+        /// </summary>
+        public abstract class NativeFieldPostProcessor
+        {
+            /// <summary>
+            ///     Returns a default implementation of the <see cref="NativeFieldPostProcessor" />, returning all values according to
+            ///     the speicifed default values.
+            /// </summary>
+            /// <returns>The post processor instance.</returns>
+            public static NativeFieldPostProcessor GetDefault()
+            {
+                return Default.Instance;
+            }
+
+            // todo: provide a way for the implementation to specify which aspects should even be touched by the post processor. 
+            // This may not be needed now, but could be important as the post processor scales.
+            /// <summary>
+            ///     By default an explicit <see cref="SolLibraryNameAttribute" /> overrides the result of the <see cref="GetName" />
+            ///     method, and so on. If this value is true however, the explict arguments are ignored and the results of the method
+            ///     calls of this post processor take precedence.
+            /// </summary>
+            /// <param name="field">The field referene.</param>
+            /// <returns>If the attributes on this field should be overridden.</returns>
+            public virtual bool OverridesExplicitAttributes(InspectorField field) => false;
+
+            /// <summary>
+            ///     If this returns true no field for this method can be created. By default all fields can be created.
+            /// </summary>
+            public virtual bool DoesFailCreation(InspectorField method) => false;
+
+            /// <summary>
+            ///     Gets the remapped function name. The default is <see cref="InspectorField.Name" />.
+            /// </summary>
+            /// <param name="field">The field referene.</param>
+            /// <returns>The new field name to use in SolScript.</returns>
+            public virtual string GetName(InspectorField field) => field.Name;
+
+            /// <summary>
+            ///     Gets the remapped field type. The default is either marshalled from the actual native field type or inferred from
+            ///     one of its attributes(but they will be determined at a later stage; once the definitions are being generated).
+            /// </summary>
+            /// <param name="field">The field referene.</param>
+            /// <returns>The remapped field type, or null if you do not wish to remap.</returns>
+            /// <remarks>
+            ///     Very important: If you do not wish to remap the field type you must return null and NOT the default SolType
+            ///     value.
+            /// </remarks>
+            public virtual SolType? GetFieldType(InspectorField field) => null;
+
+            /// <summary>
+            ///     Gets the remapped field <see cref="AccessModifier" />. Default is <see cref="AccessModifier.None" />.
+            /// </summary>
+            /// <param name="field">The field referene.</param>
+            /// <returns>The new field <see cref="AccessModifier" /> to use in SolScript.</returns>
+            public virtual AccessModifier GetAccessModifier(InspectorField field) => AccessModifier.None;
+
+            #region Nested type: Default
+
+            private sealed class Default : NativeFieldPostProcessor
+            {
+                private Default() {}
+                public static readonly Default Instance = new Default();
+            }
+
+            #endregion
+        }
+
+        #endregion
+
         #region Nested type: NativeMethodPostProcessor
 
         /// <summary>
         ///     A <see cref="NativeMethodPostProcessor" /> is used to modify certain aspects of a native function during creation.
-        ///     This allows to remap the name of the method(e.g this is internally used to remap ToString() to __to_string()).
+        ///     This for example allows to remap the name of the method(e.g this is internally used to remap ToString() to
+        ///     __to_string()).
         /// </summary>
         public abstract class NativeMethodPostProcessor
         {
@@ -231,7 +344,53 @@ namespace SolScript.Interpreter.Library
                 return Default.Instance;
             }
 
-            // todo: provide a way for the implementation to specific which aspects should even be touched by the post processor. 
+            /// <summary>
+            ///     Returns a default implementation of the <see cref="NativeMethodPostProcessor" /> that always fails the creation of
+            ///     the function. This is useful if you want to hide a function entirely.
+            /// </summary>
+            /// <returns>The post processor instance.</returns>
+            public static NativeMethodPostProcessor GetFailer()
+            {
+                return Fail.Instance;
+            }
+
+            /// <summary>
+            ///     Returns a <see cref="NativeMethodPostProcessor" /> that generates all default values aside from the name which is
+            ///     the fixed value.
+            /// </summary>
+            /// <param name="name">The name.</param>
+            /// <returns>The post processor instance.</returns>
+            public static NativeMethodPostProcessor GetRenamer(string name)
+            {
+                return new Rename(name);
+            }
+
+            /// <summary>
+            ///     Returns a <see cref="NativeMethodPostProcessor" /> that generates all default values aside from the name &
+            ///     <see cref="AccessModifier" /> which are fixed values.
+            /// </summary>
+            /// <param name="name">The name.</param>
+            /// <param name="access">The access modifiers.</param>
+            /// <returns>The post processor instance.</returns>
+            public static NativeMethodPostProcessor GetRenamerAndAccessor(string name, AccessModifier access)
+            {
+                return new RenameAccess(name, access);
+            }
+
+            /// <summary>
+            ///     Returns a <see cref="NativeMethodPostProcessor" /> that generates all default values aside from the name,
+            ///     <see cref="AccessModifier" /> & return type which are fixed values.
+            /// </summary>
+            /// <param name="name">The name.</param>
+            /// <param name="access">The access modifiers.</param>
+            /// <param name="returnType">The return type.</param>
+            /// <returns>The post processor instance.</returns>
+            public static NativeMethodPostProcessor GetRenamerAndAccessorAndReturn(string name, AccessModifier access, SolType returnType)
+            {
+                return new RenameAccessReturn(name, access, returnType);
+            }
+
+            // todo: provide a way for the implementation to specify which aspects should even be touched by the post processor. 
             // This may not be needed now, but could be important as the post processor scales.
             /// <summary>
             ///     By default an explicit <see cref="SolLibraryNameAttribute" /> overrides the result of the <see cref="GetName" />
@@ -255,6 +414,18 @@ namespace SolScript.Interpreter.Library
             public virtual string GetName(MethodInfo method) => method.Name;
 
             /// <summary>
+            ///     Gets the remapped return type. The default is either marshalled from the actual native return type or inferred from
+            ///     one of its attributes(but they will be determined at a later stage; once the definitions are being generated).
+            /// </summary>
+            /// <param name="method">The method referene.</param>
+            /// <returns>The remapped return type, or null if you do not wish to remap.</returns>
+            /// <remarks>
+            ///     Very important: If you do not wish to remap the return type you must return null and NOT the default SolType
+            ///     value.
+            /// </remarks>
+            public virtual SolType? GetReturn(MethodInfo method) => null;
+
+            /// <summary>
             ///     Gets the remapped function <see cref="AccessModifier" />. Default is <see cref="AccessModifier.None" />.
             /// </summary>
             /// <param name="method">The method referene.</param>
@@ -263,10 +434,89 @@ namespace SolScript.Interpreter.Library
 
             #region Nested type: Default
 
-            internal sealed class Default : NativeMethodPostProcessor
+            private sealed class Default : NativeMethodPostProcessor
             {
                 private Default() {}
                 public static readonly Default Instance = new Default();
+            }
+
+            #endregion
+
+            #region Nested type: Fail
+
+            private sealed class Fail : NativeMethodPostProcessor
+            {
+                private Fail() {}
+                public static readonly Fail Instance = new Fail();
+
+                #region Overrides
+
+                /// <inheritdoc />
+                public override bool DoesFailCreation(MethodInfo method) => true;
+
+                #endregion
+            }
+
+            #endregion
+
+            #region Nested type: Rename
+
+            private class Rename : NativeMethodPostProcessor
+            {
+                public Rename(string name)
+                {
+                    m_Name = name;
+                }
+
+                private readonly string m_Name;
+
+                #region Overrides
+
+                public override string GetName(MethodInfo method) => m_Name;
+
+                #endregion
+            }
+
+            #endregion
+
+            #region Nested type: RenameAccess
+
+            private class RenameAccess : Rename
+            {
+                public RenameAccess(string name, AccessModifier access) : base(name)
+                {
+                    m_Access = access;
+                }
+
+                private readonly AccessModifier m_Access;
+
+                #region Overrides
+
+                public override AccessModifier GetAccessModifier(MethodInfo method) => m_Access;
+
+                #endregion
+            }
+
+            #endregion
+
+            #region Nested type: RenameAccessReturn
+
+            private sealed class RenameAccessReturn : RenameAccess
+            {
+                /// <inheritdoc />
+                public RenameAccessReturn(string name, AccessModifier access, SolType returnType) : base(name, access)
+                {
+                    m_ReturnType = returnType;
+                }
+
+                private readonly SolType m_ReturnType;
+
+                #region Overrides
+
+                /// <inheritdoc />
+                public override SolType? GetReturn(MethodInfo method) => m_ReturnType;
+
+                #endregion
             }
 
             #endregion
@@ -274,6 +524,7 @@ namespace SolScript.Interpreter.Library
 
         #endregion
 
+        // todo: ctor post processor
         /// <summary>
         ///     Builds the actual contents of the classes. This operation requires
         ///     you to have built the class hulls beforehand.
@@ -336,28 +587,36 @@ namespace SolScript.Interpreter.Library
         [ContractAnnotation("solField:null => false")]
         private bool TryBuildField(SolAssembly forAssembly, InspectorField field, [CanBeNull] out SolFieldBuilder solField)
         {
+            // todo: investigate if invisibility should truly take precendence over the post processor enforcing creation control over attributes. ("OverrideExplicitAttributes")
             SolLibraryVisibilityAttribute visibility = field.GetAttributes<SolLibraryVisibilityAttribute>(true).FirstOrDefault(a => a.LibraryName == Name);
             bool visible = visibility?.Visible ?? field.IsPublic;
             if (!visible) {
                 solField = null;
                 return false;
             }
-            string name = field.GetAttribute<SolLibraryNameAttribute>(true)?.Name;
-            if (name == null && !s_ClrFieldNameInfo.TryGetValue(field.Name, out name)) {
-                // todo: adjust naming conventions.
-                name = field.Name;
-            } else if (name == null) {
-                // The name can still be null if the value in name info is null. Null values in
-                // name info means that the function should be ignored.
+            string name;
+            AccessModifier access;
+            SolType? remappedType;
+            NativeFieldPostProcessor postProcessor = GetFieldPostProcessor(field.Name);
+            if (postProcessor.DoesFailCreation(field)) {
                 solField = null;
                 return false;
             }
-            // todo: annotations
-            // todo: investigate if native fields may skip the data type declaration. 
-            AccessModifier accessModifier = field.GetAttribute<SolLibraryAccessModifierAttribute>(true)?.AccessModifier ?? AccessModifier.None;
-            // (can be inferred from inspector field later on?) this would allow us to remove the assembly
-            // parameter requirement from this method(an thus the other trybuild methods).
-            solField = new SolFieldBuilder(name, SolMarshal.GetSolType(forAssembly, field.DataType)).MakeNativeField(field).SetAccessModifier(accessModifier);
+            if (postProcessor.OverridesExplicitAttributes(field)) {
+                name = postProcessor.GetName(field);
+                access = postProcessor.GetAccessModifier(field);
+                remappedType = postProcessor.GetFieldType(field);
+            } else {
+                // todo: auto create sol style naming if desired
+                name = field.GetAttribute<SolLibraryNameAttribute>(true)?.Name ?? postProcessor.GetName(field);
+                access = field.GetAttribute<SolLibraryAccessModifierAttribute>(true)?.AccessModifier ?? postProcessor.GetAccessModifier(field);
+                remappedType = field.GetAttribute<SolContractAttribute>(true)?.GetSolType() ?? postProcessor.GetFieldType(field);
+            }
+            solField = new SolFieldBuilder(name, SolMarshal.GetSolType(forAssembly, field.DataType)).MakeNativeField(field).SetAccessModifier(access);
+            if (remappedType.HasValue) {
+                solField.FieldNativeType(remappedType.Value);
+            }
+            // todo: annotations for native fields
             return true;
         }
 
@@ -371,6 +630,7 @@ namespace SolScript.Interpreter.Library
         [ContractAnnotation("solMethod:null => false")]
         private bool TryBuildMethod(SolAssembly forAssembly, MethodInfo method, [CanBeNull] out SolFunctionBuilder solMethod)
         {
+            // todo: investigate if invisibility should truly take precendence over the post processor enforcing creation control over attributes. ("OverrideExplicitAttributes")
             SolLibraryVisibilityAttribute visibility = method.GetCustomAttributes<SolLibraryVisibilityAttribute>().FirstOrDefault(a => a.LibraryName == Name);
             bool visible = visibility?.Visible ?? method.IsPublic;
             if (!visible) {
@@ -379,8 +639,8 @@ namespace SolScript.Interpreter.Library
             }
             string name;
             AccessModifier access;
+            SolType? remappedReturn;
             NativeMethodPostProcessor postProcessor = GetMethodPostProcessor(method.Name);
-            SolLibraryNameAttribute nameAttribute = method.GetCustomAttribute<SolLibraryNameAttribute>();
             if (postProcessor.DoesFailCreation(method)) {
                 solMethod = null;
                 return false;
@@ -388,19 +648,24 @@ namespace SolScript.Interpreter.Library
             if (postProcessor.OverridesExplicitAttributes(method)) {
                 name = postProcessor.GetName(method);
                 access = postProcessor.GetAccessModifier(method);
+                remappedReturn = postProcessor.GetReturn(method);
             } else {
-                SolLibraryAccessModifierAttribute accessAttribute = method.GetCustomAttribute<SolLibraryAccessModifierAttribute>();
-                name = nameAttribute?.Name ?? postProcessor.GetName(method); 
-                access = accessAttribute?.AccessModifier ?? postProcessor.GetAccessModifier(method); 
+                name = method.GetCustomAttribute<SolLibraryNameAttribute>()?.Name ?? postProcessor.GetName(method);
+                access = method.GetCustomAttribute<SolLibraryAccessModifierAttribute>()?.AccessModifier ?? postProcessor.GetAccessModifier(method);
+                remappedReturn = method.GetCustomAttribute<SolContractAttribute>()?.GetSolType() ?? postProcessor.GetReturn(method);
             }
             // todo: annotations for native functions. if it has a native attribute that is an annotation add it here.
             solMethod = new SolFunctionBuilder(name).MakeNativeFunction(method).SetAccessModifier(access);
+            if (remappedReturn.HasValue) {
+                solMethod.NativeReturns(remappedReturn.Value);
+            }
             return true;
         }
 
         [ContractAnnotation("solConstructor:null => false")]
         private bool TryBuildConstructor(SolAssembly forAssembly, ConstructorInfo constructor, [CanBeNull] out SolFunctionBuilder solConstructor)
         {
+            // todo: flesh out ctors as well as functions
             // todo: annotations                    
             SolLibraryVisibilityAttribute visibility = constructor.GetCustomAttributes<SolLibraryVisibilityAttribute>().FirstOrDefault(a => a.LibraryName == Name);
             bool visible = visibility?.Visible ?? constructor.IsPublic;

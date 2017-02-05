@@ -1,4 +1,6 @@
 ﻿using JetBrains.Annotations;
+using SolScript.Interpreter.Builders;
+using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter
@@ -7,9 +9,8 @@ namespace SolScript.Interpreter
     ///     The function definition class is used by the Type Registry to save metadata about a function and to allow for a
     ///     two-step creation of functions.<br />
     ///     A function definion may or may not be for a class or global function.<br />
-    ///     todo: investigate if builders + definitions can't be merged ...
     /// </summary>
-    public class SolFunctionDefinition : ISourceLocateable
+    public sealed class SolFunctionDefinition : ISourceLocateable
     {
         /// <summary>
         ///     Creates a new function definition for a function declared in a class.
@@ -17,6 +18,7 @@ namespace SolScript.Interpreter
         /// <param name="assembly">The assembly to use for type lookups and register the definition to.</param>
         /// <param name="definedIn">The class the function belongs to.</param>
         /// <param name="builder">The function builder.</param>
+        /// <exception cref="SolMarshallingException">No matching SolType for the return type of the native builder.</exception>
         public SolFunctionDefinition(SolAssembly assembly, SolClassDefinition definedIn, SolFunctionBuilder builder) : this(assembly, builder)
         {
             DefinedIn = definedIn;
@@ -27,6 +29,7 @@ namespace SolScript.Interpreter
         /// </summary>
         /// <param name="assembly">The assembly to use for type lookups and register the definition to.</param>
         /// <param name="builder">The function builder.</param>
+        /// <exception cref="SolMarshallingException">No matching SolType for the return type of the native builder.</exception>
         public SolFunctionDefinition(SolAssembly assembly, SolFunctionBuilder builder)
         {
             Name = builder.Name;
@@ -36,8 +39,19 @@ namespace SolScript.Interpreter
             if (builder.IsNative) {
                 if (builder.NativeMethod != null) {
                     // Native Method
-                    // todo: determine return type in library.
-                    InternalHelper.GetMemberInfo(assembly, builder.NativeMethod, out ReturnType);
+                    if (builder.NativeReturnTypeHasBeenResolved) {
+                        // If the native type has already been resolved, just set it.
+                        // Note: I am fully aware that the type should only need to be resolved once and caching
+                        // it is thus theoretically useless. However, there are some ways to "fake-resolve" the
+                        // return type earlier(e.g. ToString() would resolve to string?, but a fake-resolver changes
+                        // this to string! in order to be compatible with SolScripts __to_string() meta-method).
+                        ReturnType = builder.ReturnType;
+                    } else {
+                        // The return type cannot be fully determined in the library since other libraries may
+                        // be required in order for the return type to be resolved.
+                        InternalHelper.GetMemberReturnType(assembly, builder.NativeMethod, out ReturnType);
+                        builder.NativeReturns(ReturnType);
+                    }
                     Chunk = new SolChunkWrapper(builder.NativeMethod);
                     ParameterInfo = InternalHelper.GetParameterInfo(assembly, builder.NativeMethod.GetParameters());
                     
@@ -49,7 +63,7 @@ namespace SolScript.Interpreter
                 }
             } else {
                 // Script Chunk
-                ReturnType = builder.ScriptReturn;
+                ReturnType = builder.ReturnType;
                 ParameterInfo = new SolParameterInfo(builder.ScriptParameters, builder.ScriptAllowOptionalParameters);
                 Chunk = new SolChunkWrapper(builder.ScriptChunk);
             }
@@ -90,7 +104,7 @@ namespace SolScript.Interpreter
         /// <summary>
         ///     Information about parameters of the function.
         /// </summary>
-        public SolParameterInfo ParameterInfo;
+        public readonly SolParameterInfo ParameterInfo;
 
         #region ISourceLocateable Members
 

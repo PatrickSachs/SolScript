@@ -8,7 +8,10 @@ using Ionic.Zip;
 using Irony;
 using Irony.Parsing;
 using JetBrains.Annotations;
+using SevenBiT.Inspector;
+using SolScript.Interpreter.Builders;
 using SolScript.Interpreter.Exceptions;
+using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Library;
 using SolScript.Interpreter.Statements;
 using SolScript.Interpreter.Types;
@@ -182,24 +185,15 @@ namespace SolScript.Interpreter
             InternalVariables = new GlobalInternalVariables(this);
             LocalVariables= new GlobalLocalVariables(this);
             // Build language functions/values
-            SolType fType = new SolType(SolFunction.TYPE, false);
-            DynamicReference fRef = DynamicReference.NullReference.Instance;
             RegisterGlobal("nil", SolNil.Instance, new SolType(SolNil.TYPE, true));
             RegisterGlobal("false", SolBool.False, new SolType(SolBool.TYPE, true));
             RegisterGlobal("true", SolBool.True, new SolType(SolBool.TYPE, true));
-            /*RegisterGlobal("error", SolNativeGlobalFunction.CreateFrom(this, SolAssemblyGlobals.error_Method, fRef), fType);
-            RegisterGlobal("print", SolNativeGlobalFunction.CreateFrom(this, SolAssemblyGlobals.print_Method, fRef), fType);
-            RegisterGlobal("type", SolNativeGlobalFunction.CreateFrom(this, SolAssemblyGlobals.type_Method, fRef), fType);
-            RegisterGlobal("to_string", SolNativeGlobalFunction.CreateFrom(this, SolAssemblyGlobals.to_string_Method, fRef), fType);
-            RegisterGlobal("assert", SolNativeGlobalFunction.CreateFrom(this, SolAssemblyGlobals.assert_Method, fRef), fType);
-            RegisterGlobal("default", SolNativeGlobalFunction.CreateFrom(this, SolAssemblyGlobals.default_Method, fRef), fType);*/
             // todo: investigate either merging type registry and library or making it clearer, the separation seems a bit arbitrary.
             // Build class hulls, required in order to be able to have access too all types when building the bodies.
             foreach (SolLibrary library in m_Libraries) {
                 SolDebug.WriteLine("Building class hulls of library " + library.Name);
                 IReadOnlyCollection<SolClassBuilder> classHulls = library.BuildClassHulls(this);
                 TypeRegistry.RegisterClasses(classHulls);
-                //TypeRegistry.GlobalsBuilder = globalsBuilder;
             }
             // Build class bodies
             foreach (SolLibrary library in m_Libraries) {
@@ -225,23 +219,32 @@ namespace SolScript.Interpreter
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
-                if (fieldDefinition.FieldInitializer != null) {
-                    declareInVariables.Declare(fieldPair.Key, fieldDefinition.Type);
-                    declareInVariables.Assign(fieldPair.Key, fieldDefinition.FieldInitializer.Evaluate(context, LocalVariables));
-                } else {
-                    // todo: dynamic reference for global fields?!
-                    declareInVariables.DeclareNative(fieldPair.Key, fieldDefinition.Type, fieldDefinition.NativeBackingField, null);
+                switch (fieldDefinition.Initializer.FieldType) {
+                    case SolFieldInitializerWrapper.Type.ScriptField:
+                        SolExpression scriptInitializer = fieldDefinition.Initializer.GetScriptField();
+                        declareInVariables.Declare(fieldPair.Key, fieldDefinition.Type);
+                        declareInVariables.Assign(fieldPair.Key, scriptInitializer.Evaluate(context, LocalVariables));
+                        break;
+                    case SolFieldInitializerWrapper.Type.NativeField:
+                        InspectorField nativeField = fieldDefinition.Initializer.GetNativeField();
+                        // todo: dynamic reference for global fields?!
+                        declareInVariables.DeclareNative(fieldPair.Key, fieldDefinition.Type, nativeField, null);
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
                 }
             }
             // Create singleton instances
             foreach (SolClassDefinition classDef in TypeRegistry.ClassDefinitions.Where(c => c.TypeMode == SolTypeMode.Singleton)) {
                 SolDebug.WriteLine("Singleton: " + classDef.Type);
-                SolClass instance = TypeRegistry.PrepareInstance(classDef, true).Create(context);
+                SolClass instance = TypeRegistry.CreateInstance(classDef, SingletonClassCreationOptions);
                 GlobalVariables.Declare(instance.Type, new SolType(classDef.Type, false));
                 GlobalVariables.Assign(instance.Type, instance);
             }
             return this;
         }
+
+        private static readonly ClassCreationOptions SingletonClassCreationOptions = new ClassCreationOptions.Customizable().SetEnforceCreation(true);
     }
 
     [SolGlobal(SolLibrary.STD_NAME)]

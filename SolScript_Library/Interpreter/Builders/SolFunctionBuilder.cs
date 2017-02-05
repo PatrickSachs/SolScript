@@ -2,21 +2,9 @@
 using System.Reflection;
 using SolScript.Interpreter.Expressions;
 
-namespace SolScript.Interpreter
+namespace SolScript.Interpreter.Builders
 {
-    public sealed class SolAnnotationData
-    {
-        public SolAnnotationData(string name, params SolExpression[] arguments)
-        {
-            Name = name;
-            Arguments = arguments;
-        }
-
-        public readonly SolExpression[] Arguments;
-        public readonly string Name;
-    }
-
-    public sealed class SolFunctionBuilder
+    public sealed class SolFunctionBuilder : SolBuilderBase, IAnnotateableBuilder
     {
         public SolFunctionBuilder(string name)
         {
@@ -24,10 +12,7 @@ namespace SolScript.Interpreter
         }
 
         private readonly List<SolAnnotationData> m_Annotations = new List<SolAnnotationData>();
-
         private readonly List<SolParameter> m_Parameters = new List<SolParameter>();
-
-        public IReadOnlyCollection<SolAnnotationData> Annotations => m_Annotations;
 
         public string Name { get; set; }
         public AccessModifier AccessModifier { get; set; }
@@ -38,13 +23,37 @@ namespace SolScript.Interpreter
         public SolChunk ScriptChunk { get; private set; }
         public SolParameter[] ScriptParameters => m_Parameters.ToArray();
         public bool ScriptAllowOptionalParameters { get; private set; }
-        public SolType ScriptReturn { get; private set; }
+        public SolType ReturnType { get; private set; }
         public ConstructorInfo NativeConstructor { get; private set; }
+        public bool NativeReturnTypeHasBeenResolved { get; private set; }
 
-        public void AddAnnotation(SolAnnotationData annotation)
+        #region IAnnotateableBuilder Members
+
+        /// <inheritdoc />
+        public IReadOnlyList<SolAnnotationData> Annotations => m_Annotations;
+
+        /// <inheritdoc />
+        public IAnnotateableBuilder AddAnnotation(SolAnnotationData annotation)
         {
             m_Annotations.Add(annotation);
+            return this;
         }
+
+        /// <inheritdoc />
+        public IAnnotateableBuilder ClearAnnotations()
+        {
+            m_Annotations.Clear();
+            return this;
+        }
+
+        /// <inheritdoc />
+        public IAnnotateableBuilder AddAnnotations(params SolAnnotationData[] annotations)
+        {
+            m_Annotations.AddRange(annotations);
+            return this;
+        }
+
+        #endregion
 
         public SolFunctionBuilder SetAccessModifier(AccessModifier modifier)
         {
@@ -65,9 +74,11 @@ namespace SolScript.Interpreter
             NativeConstructor = null;
             ScriptChunk = null;
             m_Parameters.Clear();
-            ScriptReturn = default(SolType);
             ScriptAllowOptionalParameters = false;
             Location = SolSourceLocation.Native();
+            if (!NativeReturnTypeHasBeenResolved) {
+                ReturnType = default(SolType);
+            }
             return this;
         }
 
@@ -78,15 +89,23 @@ namespace SolScript.Interpreter
             NativeConstructor = constructor;
             ScriptChunk = null;
             m_Parameters.Clear();
-            ScriptReturn = default(SolType);
             ScriptAllowOptionalParameters = false;
             Location = SolSourceLocation.Native();
+            if (!NativeReturnTypeHasBeenResolved) {
+                ReturnType = default(SolType);
+            }
             return this;
         }
 
-        public SolFunctionBuilder Return(SolType type)
+        public SolFunctionBuilder NativeReturns(SolType type)
         {
-            ScriptReturn = type;
+            NativeReturnTypeHasBeenResolved = true;
+            return ScriptReturns(type);
+        }
+
+        public SolFunctionBuilder ScriptReturns(SolType type)
+        {
+            ReturnType = type;
             return this;
         }
 
@@ -130,5 +149,23 @@ namespace SolScript.Interpreter
         {
             return SetParameters((IEnumerable<SolParameter>) parameters);
         }
+    }
+}
+
+namespace SolScript.Interpreter
+{
+    public sealed class SolAnnotationData
+    {
+        public SolAnnotationData(SolSourceLocation location, string name, params SolExpression[] arguments)
+        {
+            Name = name;
+            Location = location;
+            Arguments = arguments;
+        }
+
+        public readonly SolExpression[] Arguments;
+
+        public readonly SolSourceLocation Location;
+        public readonly string Name;
     }
 }

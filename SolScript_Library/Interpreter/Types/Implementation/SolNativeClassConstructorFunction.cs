@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Reflection;
 using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
 
@@ -16,8 +15,6 @@ namespace SolScript.Interpreter.Types.Implementation
     {
         public SolNativeClassConstructorFunction([NotNull] SolClass instance, [NotNull] SolFunctionDefinition definition) : base(instance, definition) {}
 
-        //public new SolParameterInfo.Native ParameterInfo => (SolParameterInfo.Native) base.ParameterInfo;
-
         #region Overrides
 
         public override object ConvertTo(Type type)
@@ -27,7 +24,7 @@ namespace SolScript.Interpreter.Types.Implementation
 
         protected override string ToString_Impl(SolExecutionContext context)
         {
-            return "function#" + Id + "<class#" + Definition.DefinedIn.Type + ">";
+            return "function#" + Id + "<class#" + Definition.DefinedIn.NotNull().Type + ">";
         }
 
         public override int GetHashCode()
@@ -37,6 +34,9 @@ namespace SolScript.Interpreter.Types.Implementation
             }
         }
 
+        /// <inheritdoc />
+        /// <exception cref="SolRuntimeException">A runtime error occured while calling the function.</exception>
+        /// <exception cref="InvalidOperationException">A critical internal error occured. Excecution may have to be halted.</exception>
         protected override SolValue Call_Impl(SolExecutionContext context, params SolValue[] args)
         {
             SolClass.Inheritance inheritance = Instance.FindInheritance(Definition.DefinedIn);
@@ -46,23 +46,14 @@ namespace SolScript.Interpreter.Types.Implementation
             if (Instance.IsInitialized) {
                 throw new SolRuntimeException(context, "Cannot call constructor of an initialized \"" + Instance.Type + "\" class instance.");
             }
-            object[] nativeObjects;
-            if (ParameterInfo.AllowOptional) {
-                nativeObjects = new object[ParameterInfo.Count + 1];
-                SolMarshal.MarshalFromSol(Assembly, args, ParameterInfo.NativeTypes, nativeObjects, 1);
-                nativeObjects[0] = context;
-            } else {
-                nativeObjects = SolMarshal.MarshalFromSol(Assembly, args, ParameterInfo.NativeTypes);
-            }
+            object[] values;
             try {
-                inheritance.NativeObject = Definition.Chunk.GetNativeConstructor().Invoke(nativeObjects);
-            } catch (TargetInvocationException ex) {
-                if (ex.InnerException is SolRuntimeException) {
-                    throw ex.InnerException;
-                }
-                throw new SolRuntimeException(context, "A native exception occured while calling this constructor function.", ex.InnerException);
+                values = ParameterInfo.Marshal(context, args);
+            } catch (SolMarshallingException ex) {
+                throw new SolRuntimeException(context, "Could to marshal the function parameters to native objects: " + ex.Message, ex);
             }
-            return Instance;
+            inheritance.NativeObject = InternalHelper.SandboxInvokeMethod(context, Definition.Chunk.GetNativeConstructor(), null, values);
+            return SolNil.Instance;
         }
 
         #endregion

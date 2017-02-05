@@ -7,9 +7,9 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using Irony.Parsing;
 using JetBrains.Annotations;
+using SevenBiT.Inspector;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Library;
-using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter
 {
@@ -227,16 +227,62 @@ namespace SolScript.Interpreter
         }
 
         /// <summary>
+        ///     Invokes the given <see cref="MethodBase" /> in a sandbox. This means that all exceptions will be catched and neatly
+        ///     wrapped in SolScript compatible exceptions.
+        /// </summary>
+        /// <param name="context">The exceution context. Required to generate the stack trace.</param>
+        /// <param name="method">The method to call.</param>
+        /// <param name="target">The object to call the method on.</param>
+        /// <param name="arguments">The method arguments.</param>
+        /// <returns>The return value of the method call.</returns>
+        /// <exception cref="SolRuntimeException">A runtime error occured.</exception>
+        /// <exception cref="InvalidOperationException">A critical internal error occured. Excecution may have to be halted.</exception>
+        [CanBeNull]
+        internal static object SandboxInvokeMethod(SolExecutionContext context, MethodBase method, [CanBeNull] object target, object[] arguments)
+        {
+            object nativeObject;
+            try {
+                ConstructorInfo ctorInfo = method as ConstructorInfo;
+                if (ctorInfo != null) {
+                    if (target != null) {
+                        throw new InvalidOperationException("Invalid native object to call native method \"" + method.Name + "\" on: Constrcutors cannot be called on an object.");
+                    }
+                    nativeObject = ctorInfo.Invoke(arguments);
+                } else {
+                    nativeObject = method.Invoke(target, arguments);
+                }
+            } catch (Exception ex) {
+                if (ex is TargetInvocationException) {
+                    if (ex.InnerException is SolRuntimeException) {
+                        // If the method threw a proper runtime exception we'll just let it bubble through.
+                        throw (SolRuntimeException) ex.InnerException;
+                    }
+                    // Throwing with inner exception since we want to have the error message that created the 
+                    // TargetInvocationException and not the target invocation exception itself.
+                    throw new SolRuntimeException(context, "A native exception occured while calling this instance function.", ex.InnerException);
+                }
+                if (ex is TargetException) {
+                    throw new InvalidOperationException("Invalid native object to call native method \"" + method.Name + "\" on: " + ex.Message, ex);
+                }
+                if (ex is TargetParameterCountException) {
+                    throw new InvalidOperationException("Invalid native parameter count to call native method \"" + method.Name + "\" with: " + ex.Message, ex);
+                }
+                if (ex is MethodAccessException) {
+                    throw new InvalidOperationException("Cannot access native method \"" + method.Name + "\": " + ex.Message, ex);
+                }
+                throw new InvalidOperationException("An unspecified internal error occured while calling native method \"" + method.Name + "\": " + ex.Message, ex);
+            }
+            return nativeObject;
+        }
+
+        /// <summary>
         ///     Gets the type of a member info. This method respects the the contracts of said member info.
         /// </summary>
         /// <param name="assembly">The assembly to use for type lookups.</param>
         /// <param name="member">The name to exctract the info out of.</param>
         /// <param name="type">The type of this member info. This takes the <see cref="SolContractAttribute" /> into consideration.</param>
-        /// <param name="name">
-        ///     The name of the member info. This takes some predefind name lookups aswell as the
-        ///     <see cref="SolLibraryNameAttribute" /> into consideration.
-        /// </param>
-        internal static void GetMemberInfo(SolAssembly assembly, MethodInfo member, out SolType type)
+        /// <exception cref="SolMarshallingException">No matching SolType for the return type.</exception>
+        internal static void GetMemberReturnType(SolAssembly assembly, MethodInfo member, out SolType type)
         {
             SolContractAttribute contract = member.GetCustomAttribute<SolContractAttribute>();
             if (contract != null) {
@@ -244,19 +290,34 @@ namespace SolScript.Interpreter
             } else {
                 type = SolMarshal.GetSolType(assembly, member.ReturnType);
             }
-            //name = GetMemberInfoName(member);
         }
 
-        /// <inheritdoc cref="GetMemberInfo(SolAssembly,MethodInfo,out SolType,out string)" />
-        internal static void GetMemberInfo(SolAssembly assembly, ConstructorInfo member, out SolType type/*, out string name*/)
+        /// <inheritdoc cref="GetMemberReturnType(SolScript.Interpreter.SolAssembly,System.Reflection.MethodInfo,out SolScript.Interpreter.SolType)" />
+        /// <exception cref="SolMarshallingException">No matching SolType for the return type.</exception>
+        internal static void GetMemberReturnType(SolAssembly assembly, ConstructorInfo member, out SolType type)
         {
             SolContractAttribute contract = member.GetCustomAttribute<SolContractAttribute>();
-            if (contract != null) {
+            if (contract != null)
+            {
                 type = contract.GetSolType();
-            } else {
+            }
+            else
+            {
                 type = SolMarshal.GetSolType(assembly, member.DeclaringType);
             }
-            //name = GetMemberInfoName(member);
+        } /// <inheritdoc cref="GetMemberReturnType(SolScript.Interpreter.SolAssembly,System.Reflection.MethodInfo,out SolScript.Interpreter.SolType)" />
+          /// <exception cref="SolMarshallingException">No matching SolType for the return type.</exception>
+        internal static void GetMemberReturnType(SolAssembly assembly, InspectorField member, out SolType type)
+        {
+            SolContractAttribute contract = member.GetAttribute<SolContractAttribute>(true);
+            if (contract != null)
+            {
+                type = contract.GetSolType();
+            }
+            else
+            {
+                type = SolMarshal.GetSolType(assembly, member.DeclaringType);
+            }
         }
 
         /*private static string GetMemberInfoName(MemberInfo member)

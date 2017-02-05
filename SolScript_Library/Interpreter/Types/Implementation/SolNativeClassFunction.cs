@@ -32,24 +32,26 @@ namespace SolScript.Interpreter.Types.Implementation
             }
         }
 
+        /// <inheritdoc />
         /// <exception cref="SolRuntimeException">A runtime error occured.</exception>
+        /// <exception cref="InvalidOperationException">A critical internal error occured.</exception>
         protected override SolValue Call_Impl(SolExecutionContext context, params SolValue[] args)
         {
             SolClass.Inheritance inheritance = Instance.FindInheritance(Definition.DefinedIn);
             if (inheritance == null) {
                 throw new InvalidOperationException($"Internal error: Failed to find inheritance on class instance \"{Instance.Type}\".");
             }
-            object[] values = ParameterInfo.Marshal(context, args);
-            MethodInfo nativeMethod = Definition.Chunk.GetNativeMethod();
-            object nativeObject;
-            try {
-                nativeObject = nativeMethod.Invoke(inheritance.NativeObject, values);
-            } catch (TargetInvocationException ex) {
-                if (ex.InnerException is SolRuntimeException) {
-                    throw (SolRuntimeException)ex.InnerException;
-                }
-                throw new SolRuntimeException(context, "A native exception occured while calling this instance function.", ex.InnerException);
+            object[] values;
+            try
+            {
+                values = ParameterInfo.Marshal(context, args);
             }
+            catch (SolMarshallingException ex)
+            {
+                throw new SolRuntimeException(context, "Could to marshal the function parameters to native objects: " + ex.Message, ex);
+            }
+            MethodInfo nativeMethod = Definition.Chunk.GetNativeMethod();
+            object nativeObject = InternalHelper.SandboxInvokeMethod(context, nativeMethod, inheritance.NativeObject, values);
             SolValue returnValue = SolMarshal.MarshalFromCSharp(Assembly, nativeMethod.ReturnType, nativeObject);
             return returnValue;
         }

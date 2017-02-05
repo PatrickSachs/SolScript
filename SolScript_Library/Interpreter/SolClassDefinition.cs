@@ -7,35 +7,22 @@ using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter
 {
-    public class SolAnnotationDefinition
-    {
-        public SolAnnotationDefinition(SolClassDefinition definition, SolExpression[] arguments)
-        {
-            Definition = definition;
-            Arguments = arguments;
-        }
-
-        public readonly SolExpression[] Arguments;
-        public readonly SolClassDefinition Definition;
-    }
-
-    public class SolClassDefinition
+    public sealed class SolClassDefinition : SolDefinitionBase
     {
         // todo: type registry state assertions in this class
-        internal SolClassDefinition(SolAssembly assembly, string type, SolTypeMode typeMode)
+        internal SolClassDefinition(SolAssembly assembly, SolSourceLocation location, string type, SolTypeMode typeMode) : base(assembly)
         {
-            Assembly = assembly;
             Type = type;
             TypeMode = typeMode;
         }
 
-        public readonly SolAssembly Assembly;
         private readonly Dictionary<string, SolFieldDefinition> m_Fields = new Dictionary<string, SolFieldDefinition>();
         private readonly Dictionary<string, SolFunctionDefinition> m_Functions = new Dictionary<string, SolFunctionDefinition>();
         public readonly string Type;
         public readonly SolTypeMode TypeMode;
         public SolClassDefinition BaseClass;
 
+        // Lazily generated
         private Dictionary<SolMetaKey, MetaFunctionLink> l_MetaFunctions;
 
         private SolAnnotationDefinition[] m_Annotations;
@@ -52,6 +39,8 @@ namespace SolScript.Interpreter
         public IReadOnlyCollection<KeyValuePair<string, SolFunctionDefinition>> FunctionPairs => m_Functions;
         public IReadOnlyCollection<string> FieldNames => m_Fields.Keys;
         public IReadOnlyCollection<string> FunctionNames => m_Functions.Keys;
+
+        public override SolSourceLocation Location { get; }
 
         #region Overrides
 
@@ -71,12 +60,12 @@ namespace SolScript.Interpreter
         /// <exception cref="SolVariableException">
         ///     The meta function could be found but was in an invalid state(e.g. wrong type, accessor...).
         /// </exception>
-        internal void BuildMetaFunctions()
+        private void BuildMetaFunctions()
         {
             Assembly.TypeRegistry.AssetStateExactAndHigher(TypeRegistry.State.GeneratedClassHulls, "Class meta functions can only be built once the generation of class bodies hsa completed.");
             l_MetaFunctions = new Dictionary<SolMetaKey, MetaFunctionLink>();
             FindMetaFunction(SolMetaKey.Constructor);
-            FindMetaFunction(SolMetaKey.AsString);
+            FindMetaFunction(SolMetaKey.Stringify);
             FindMetaFunction(SolMetaKey.GetN);
             FindMetaFunction(SolMetaKey.IsEqual);
             FindMetaFunction(SolMetaKey.Iterate);
@@ -99,7 +88,9 @@ namespace SolScript.Interpreter
         /// <exception cref="SolVariableException">
         ///     The meta function could be found but was in an invalid state(e.g. wrong type, accessor...).
         /// </exception>
-        public bool TryGetMetaFunction(SolMetaKey meta, out MetaFunctionLink link)
+        /// <exception cref="ArgumentNullException"><paramref name="meta" /> is null.</exception>
+        [ContractAnnotation("link:null => false")]
+        public bool TryGetMetaFunction([NotNull] SolMetaKey meta, [CanBeNull] out MetaFunctionLink link)
         {
             if (!DidBuildMetaFunctions) {
                 BuildMetaFunctions();
@@ -350,12 +341,12 @@ namespace SolScript.Interpreter
             return false;
         }
 
-        [CanBeNull]
+        /*[CanBeNull]
         public SolExpression GetFieldInitializer(string name)
         {
             Assembly.TypeRegistry.AssetStateExactAndHigher(TypeRegistry.State.GeneratedClassBodies, "Class bodies need to be generated before class fields can be used.");
             return m_Fields[name].FieldInitializer;
-        }
+        }*/
 
         internal void SetField(string name, SolFieldDefinition field)
         {

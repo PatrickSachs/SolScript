@@ -11,7 +11,7 @@ namespace SolScript.Interpreter
     ///     The <see cref="SolParameterInfo" /> is used to easliy access information about the parameters of a function. It
     ///     wraps the actual parameters aswell as information about parameters modifiers.
     /// </summary>
-    public class SolParameterInfo : IEnumerable<SolParameter>
+    public class SolParameterInfo : IReadOnlyList<SolParameter>
     {
         /// <summary>
         ///     Creates a new <see cref="SolParameterInfo" /> object from the given parameters-.
@@ -27,14 +27,11 @@ namespace SolScript.Interpreter
         private readonly SolParameter[] m_Parameters;
 
         /// <summary>
-        ///     A clone of the parameters array.
-        /// </summary>
-        public SolParameter[] Parameters => (SolParameter[]) m_Parameters.Clone();
-
-        /// <summary>
         ///     Are optinal additional("args") arguments allowed?
         /// </summary>
         public bool AllowOptional { get; }
+
+        #region IReadOnlyList<SolParameter> Members
 
         /// <summary>
         ///     How many parameters are registered in this parameter info(excluding the possibly infinite optional ones)?
@@ -56,8 +53,6 @@ namespace SolScript.Interpreter
                 return m_Parameters[index];
             }
         }
-
-        #region IEnumerable<SolParameter> Members
 
         IEnumerator IEnumerable.GetEnumerator()
         {
@@ -99,6 +94,12 @@ namespace SolScript.Interpreter
         #endregion
 
         /// <summary>
+        ///     Creates an array from this parameter info class.
+        /// </summary>
+        /// <remarks>A clone of the parameters array.</remarks>
+        public SolParameter[] ToArray() => (SolParameter[]) m_Parameters.Clone();
+
+        /// <summary>
         ///     Verifies if the passed arguments are fitting for the parameters defined in this parameter info.
         /// </summary>
         /// <param name="assembly">The assembly to use for type lookups and checks.</param>
@@ -114,14 +115,15 @@ namespace SolScript.Interpreter
                 if (i < arguments.Length) {
                     // The parameter has still been passed.
                     SolValue arg = arguments[i];
-                    if (!this[i].Type.IsCompatible(assembly, arg.Type)) {
-                        throw new SolVariableException($"Parameter \"{this[i].Name}\" expected a value of type \"{this[i].Type}\", but recceived a value of the incompatible type \"{arg.Type}\".");
+                    if (!m_Parameters[i].Type.IsCompatible(assembly, arg.Type)) {
+                        throw new SolVariableException(
+                            $"Parameter \"{m_Parameters[i].Name}\" expected a value of type \"{m_Parameters[i].Type}\", but recceived a value of the incompatible type \"{arg.Type}\".");
                     }
                 } else {
                     // The parameter has no longer been passed and will thus be treated as nil.
-                    if (!this[i].Type.CanBeNil) {
+                    if (!m_Parameters[i].Type.CanBeNil) {
                         throw new SolVariableException(
-                            $"Parameter \"{this[i].Name}\" expected a value of type \"{this[i].Type}\", but did not recceive a value at all. No implicit nil value can be passed since the parameter does not accept nil values.");
+                            $"Parameter \"{m_Parameters[i].Name}\" expected a value of type \"{m_Parameters[i].Type}\", but did not recceive a value at all. No implicit nil value can be passed since the parameter does not accept nil values.");
                     }
                 }
             }
@@ -157,24 +159,6 @@ namespace SolScript.Interpreter
         /// </summary>
         public class Native : SolParameterInfo
         {
-            public object[] Marshal(SolExecutionContext context, SolValue[] arguments)
-            {
-                object[] array;
-                int offsetStart = SendContext ? 1 : 0;
-                int offsetEnd = AllowOptional ? 1 : 0;
-                array = new object[Count + offsetStart + offsetEnd];
-                SolMarshal.MarshalFromSol(context.Assembly, 0, Count, arguments, m_NativeTypes, array, offsetStart);
-                if (SendContext) {
-                    array[0] = context;
-                }
-                if (AllowOptional) {
-                    Array optionalArray = Array.CreateInstance(OptionalType, arguments.Length - Count);
-                    array[array.Length - 1] = optionalArray;
-                    SolMarshal.MarshalFromSol(context.Assembly, Count, optionalArray.Length, arguments, InternalHelper.ArrayFilledWith(OptionalType, optionalArray.Length), (object[])optionalArray, 0);
-                }
-                return array;
-            }
-
             /// <summary>
             ///     Creates a new instance of the native parameter info class.
             /// </summary>
@@ -192,6 +176,7 @@ namespace SolScript.Interpreter
             ///     If <paramref name="sendContext" /> is true the current execution conext will be passed as the first argument
             ///     to the native function.
             /// </remarks>
+            /// <exception cref="ArgumentException">Array length mismatches.</exception>
             public Native(SolParameter[] parameters, Type[] nativeTypes, bool allowOptional, bool sendContext) : base(parameters, allowOptional)
             {
                 SendContext = sendContext;
@@ -230,6 +215,30 @@ namespace SolScript.Interpreter
             ///     A clone of the native type array.
             /// </summary>
             public Type[] NativeTypes => (Type[]) m_NativeTypes.Clone();
+
+            /// <summary>
+            ///     Marshals the given arguments to their native counterparts.
+            /// </summary>
+            /// <param name="context">The context to marshal in and to possibly pass as a context argument.</param>
+            /// <param name="arguments">The actual arguments.</param>
+            /// <returns>The native objects.</returns>
+            /// <exception cref="SolMarshallingException">Failed to marshal a value.</exception>
+            public object[] Marshal(SolExecutionContext context, SolValue[] arguments)
+            {
+                int offsetStart = SendContext ? 1 : 0;
+                int offsetEnd = AllowOptional ? 1 : 0;
+                var array = new object[Count + offsetStart + offsetEnd];
+                SolMarshal.MarshalFromSol(context.Assembly, 0, Count, arguments, m_NativeTypes, array, offsetStart);
+                if (SendContext) {
+                    array[0] = context;
+                }
+                if (AllowOptional) {
+                    Array optionalArray = Array.CreateInstance(OptionalType, arguments.Length - Count);
+                    array[array.Length - 1] = optionalArray;
+                    SolMarshal.MarshalFromSol(context.Assembly, Count, optionalArray.Length, arguments, InternalHelper.ArrayFilledWith(OptionalType, optionalArray.Length), (object[]) optionalArray, 0);
+                }
+                return array;
+            }
 
             /// <summary>
             ///     Gets the native type for the given index. Follows the same rules as indexing this class directy and the result of

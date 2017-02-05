@@ -22,9 +22,9 @@ namespace SolScript.Interpreter.Types
         internal readonly Inheritance InheritanceChain;
         public readonly ClassInternalVariables InternalVariables;
 
-        private SolClass[] m_Annotations;
+        internal SolClass[] AnnotationsArray;
 
-        public IReadOnlyList<SolClass> Annotations => m_Annotations;
+        public IReadOnlyList<SolClass> Annotations => AnnotationsArray;
 
         public SolAssembly Assembly => InheritanceChain.Definition.Assembly;
         public SolTypeMode TypeMode => InheritanceChain.Definition.TypeMode;
@@ -96,8 +96,8 @@ namespace SolScript.Interpreter.Types
         protected override string ToString_Impl(SolExecutionContext context)
         {
             SolClassDefinition.MetaFunctionLink link;
-            if (context != null && TryGetMetaFunction(SolMetaKey.AsString, out link)) {
-                return SolMetaKey.AsString.Cast(link.GetFunction(this).Call(context)).NotNull().Value;
+            if (context != null && TryGetMetaFunction(SolMetaKey.Stringify, out link)) {
+                return SolMetaKey.Stringify.Cast(link.GetFunction(this).Call(context)).NotNull().Value;
             }
             return "class#" + Id + "<" + Type + ">";
         }
@@ -358,7 +358,7 @@ namespace SolScript.Interpreter.Types
             }
             // ===========================================
             // __a_pre_new
-            foreach (SolClass annotation in m_Annotations) {
+            foreach (SolClass annotation in AnnotationsArray) {
                 SolValue[] rawArgs = args;
                 SolClassDefinition.MetaFunctionLink preLink;
                 if (annotation.TryGetMetaFunction(SolMetaKey.AnnotationPreConstructor, out preLink)) {
@@ -380,10 +380,9 @@ namespace SolScript.Interpreter.Types
                 callingContext.PopStackFrame();
                 ctorFunction.Call(callingContext, args);
             }
-            IsInitialized = true;
             // ===========================================
             // __a_post_new
-            foreach (SolClass annotation in m_Annotations) {
+            foreach (SolClass annotation in AnnotationsArray) {
                 SolClassDefinition.MetaFunctionLink postLink;
                 if (annotation.TryGetMetaFunction(SolMetaKey.AnnotationPostConstructor, out postLink)) {
                     postLink.GetFunction(annotation).Call(callingContext, new SolTable(args));
@@ -421,7 +420,7 @@ namespace SolScript.Interpreter.Types
 
         #endregion
 
-        #region Nested type: Initializer
+        /*#region Nested type: Initializer
 
         /// <summary> The initializer class is used to initialize SolClasses. </summary>
         public sealed class Initializer
@@ -473,10 +472,12 @@ namespace SolScript.Interpreter.Types
                         }
                     }
                 }
-                m_ForClass.m_Annotations = annotations.ToArray();
+                m_ForClass.AnnotationsArray = annotations.ToArray();
                 m_ForClass.CallConstructor(context, args);
                 return m_ForClass;
             }
+
+
 
             /// <summary>
             ///     Warning: NO finds of this class have been assigned and the ctor will
@@ -490,11 +491,11 @@ namespace SolScript.Interpreter.Types
             [NotNull]
             public SolClass CreateWithoutInitialization()
             {
-                m_ForClass.m_Annotations = Array.Empty<SolClass>();
+                m_ForClass.AnnotationsArray = Array.Empty<SolClass>();
                 return m_ForClass;
             }
         }
 
-        #endregion
+        #endregion*/
     }
 }

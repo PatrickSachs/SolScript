@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Reflection;
 using JetBrains.Annotations;
 using NesterovskyBros.Utils;
 using SolScript.Interpreter.Exceptions;
@@ -11,6 +10,8 @@ namespace SolScript.Interpreter
     public static class SolMarshal
     {
         private static readonly Dictionary<SolAssembly, AssemblyCache> s_AssemblyCaches = new Dictionary<SolAssembly, AssemblyCache>();
+
+        private static readonly ClassCreationOptions NativeClassCreationOptions = new ClassCreationOptions.Customizable().SetEnforceCreation(true).SetCallConstructor(false);
 
         public static object[] MarshalFromSol(SolAssembly assembly, SolValue[] values, Type[] types)
         {
@@ -79,21 +80,37 @@ namespace SolScript.Interpreter
                 array[i + offset] = iValue;
             }
         }*/
+
+        /// <exception cref="SolMarshallingException">Failed to marshal a value.</exception>
         public static void MarshalFromSol(SolAssembly assembly, SolValue[] values, Type[] types, object[] array, int offset)
         {
             MarshalFromSol(assembly, 0, values.Length, values, types, array, offset);
         }
-        public static void MarshalFromSol(SolAssembly assembly, int valueStart, int valueCount, SolValue[] values, Type[] types, object[] array, int offset)
+
+        /// <summary>
+        ///     Marshals multiple values from their SolScript representation to their native counerparts.
+        /// </summary>
+        /// <param name="assembly">The assembly to use for type lookups.</param>
+        /// <param name="valueStart">The start index in the <paramref name="source" /> array.</param>
+        /// <param name="valueCount">How many values should be marshalled from the <paramref name="source" /> array?</param>
+        /// <param name="source">The source array to get the value to marshal from.</param>
+        /// <param name="types">The native types the values should be marshalled to.</param>
+        /// <param name="target">The target array to put the marshalled values in. Must be initialized and of sufficient size.</param>
+        /// <param name="offset">The offset in the <paramref name="target" /> array when inserting the marshalled values.</param>
+        /// <exception cref="SolMarshallingException">Failed to marshal a value.</exception>
+        /// <exception cref="ArgumentException">Array length mismatches.</exception>
+        public static void MarshalFromSol(SolAssembly assembly, int valueStart, int valueCount, SolValue[] source, Type[] types, object[] target, int offset)
         {
-            if (valueCount != types.Length || valueStart + valueCount > values.Length || valueCount < 0) {
-                throw new ArgumentException($"Marshalling requires a type for each value - Got {values.Length}(Overridden to {valueCount}, starting at {valueStart}) values and {types.Length} types.", nameof(values));
+            if (valueCount != types.Length || valueStart + valueCount > source.Length || valueCount < 0) {
+                throw new ArgumentException($"Marshalling requires a type for each value - Got {source.Length}(Overridden to {valueCount}, starting at {valueStart}) values and {types.Length} types.",
+                    nameof(source));
             }
-            if (array.Length - offset < valueCount) {
-                throw new ArgumentException($"Cannot marshall {types.Length} elements to an array with a length of {array.Length} with an offset of {offset}.");
+            if (target.Length - offset < valueCount) {
+                throw new ArgumentException($"Cannot marshall {types.Length} elements to an array with a length of {target.Length} with an offset of {offset}.");
             }
             for (int i = 0; i < types.Length; i++) {
                 Type type = types[i];
-                SolValue value = values[valueStart + i];
+                SolValue value = source[valueStart + i];
                 object nativeValue;
                 if (type.IsInstanceOfType(value)) {
                     // The value can be directly assigned to the desired type, no conversion needed.
@@ -118,10 +135,21 @@ namespace SolScript.Interpreter
                         nativeValue = value.ConvertTo(type);
                     }
                 }
-                array[i + offset] = nativeValue;
+                target[i + offset] = nativeValue;
             }
         }
 
+        /// <summary>
+        ///     Marshals the given native object to a <see cref="SolValue" /> useable in SolScript.
+        /// </summary>
+        /// <param name="assembly">The assembly to use for type lookups.</param>
+        /// <param name="type">
+        ///     The type of the native object. Typically a <see cref="object.GetType()" /> call should be good
+        ///     enough for this argument unless you expect <paramref name="value" /> to be null.
+        /// </param>
+        /// <param name="value">The value to marshal.</param>
+        /// <returns>The marshalled <see cref="SolValue" />.</returns>
+        /// <exception cref="SolMarshallingException">Failed to marshal the given value.</exception>
         public static SolValue MarshalFromCSharp(SolAssembly assembly, Type type, [CanBeNull] object value)
         {
             if (value == null) {
@@ -182,12 +210,16 @@ namespace SolScript.Interpreter
                 if (solClass == null) {
                     SolClassDefinition classDef;
                     if (!assembly.TypeRegistry.TryGetClass(type, out classDef)) {
-                        throw new InvalidOperationException("Cannot marshal type " + type + " to SolScript: The type is not marked as sol class!");
+                        throw new SolMarshallingException($"Cannot marshal native type \"{type}\" to SolScript: This type does not have a SolClass representing it.");
                     }
-                    SolClass.Initializer init = assembly.TypeRegistry.PrepareInstance(classDef);
-                    solClass = init.CreateWithoutInitialization();
+                    // todo: inestigate if this order will cause problems (annotations specifically)
+                    try {
+                        solClass = assembly.TypeRegistry.CreateInstance(classDef, NativeClassCreationOptions);
+                    } catch (SolTypeRegistryException ex) {
+                        throw new SolMarshallingException(
+                            $"Cannot marshal native type \"{type}\" to SolScript: A error occured while creating its representing class instance of type \"" + classDef.Type + "\".", ex);
+                    }
                     solClass.InheritanceChain.NativeObject = value;
-                    solClass.IsInitialized = true;
                     cache.StoreReference(value, solClass);
                 }
                 return solClass;

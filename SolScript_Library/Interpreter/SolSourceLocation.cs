@@ -22,12 +22,14 @@ namespace SolScript.Interpreter
         public static SolSourceLocation Empty([CanBeNull] string file = null)
         {
             return new SolSourceLocation(file ?? string.Empty, -1, -1, -1);
-        }/// <summary>
-         ///     Generates an empty Source Location for instances where the relevant location is in native code..
-         /// </summary>
-         /// <returns>
-         ///     A source location with Position, Line and Column set to -1. The file name is set to <see cref="NATIVE_FILE"/>.
-         /// </returns>
+        }
+
+        /// <summary>
+        ///     Generates an empty Source Location for instances where the relevant location is in native code..
+        /// </summary>
+        /// <returns>
+        ///     A source location with Position, Line and Column set to -1. The file name is set to <see cref="NATIVE_FILE" />.
+        /// </returns>
         public static SolSourceLocation Native()
         {
             return new SolSourceLocation(NATIVE_FILE, -1, -1, -1);
@@ -83,7 +85,7 @@ namespace SolScript.Interpreter
 
         public override string ToString()
         {
-            StringBuilder builder= new StringBuilder(File.Length + 5);
+            StringBuilder builder = new StringBuilder(File.Length + 5);
             builder.Append(File);
             if (Position >= 0) {
                 builder.Append(":");

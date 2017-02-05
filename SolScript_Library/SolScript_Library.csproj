@@ -11,6 +11,7 @@
     <AssemblyName>SolScript_Library</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -21,6 +22,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -29,6 +31,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Ionic.Zip">
@@ -64,8 +67,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Compiler\SolScriptCompiler.cs" />
+    <Compile Include="FastReflection.cs" />
     <Compile Include="Interpreter\AccessModifier.cs" />
+    <Compile Include="Interpreter\Builders\IAnnotateableBuilder.cs" />
+    <Compile Include="Interpreter\Builders\SolBuilderBase.cs" />
     <Compile Include="Interpreter\ChunkVariables.cs" />
+    <Compile Include="Interpreter\ClassCreationOptions.cs" />
     <Compile Include="Interpreter\ClassGlobalVariables.cs" />
     <Compile Include="Interpreter\ClassInheritanceVariables.cs" />
     <Compile Include="Interpreter\ClassInternalVariables.cs" />
@@ -84,7 +91,7 @@
     <Compile Include="Interpreter\GlobalVariables.cs" />
     <Compile Include="Interpreter\InspectorField.cs" />
     <Compile Include="Interpreter\ISourceLocateable.cs" />
-    <Compile Include="Interpreter\IStatementOrExpressionWrittenInClass.cs" />
+    <Compile Include="Interpreter\IWrittenInClass.cs" />
     <Compile Include="Interpreter\IVariables.cs" />
     <Compile Include="Interpreter\Library\Annotations\PreCtorTest.cs" />
     <Compile Include="Interpreter\Library\Annotations\ReadOnlyAnnotation.cs" />
@@ -102,18 +109,21 @@
     <Compile Include="Interpreter\Library\Classes\TableModule.cs" />
     <Compile Include="Interpreter\Expressions\Expression_Break.cs" />
     <Compile Include="Interpreter\Expressions\Expression_Continue.cs" />
+    <Compile Include="Interpreter\SolAnnotationDefinition.cs" />
+    <Compile Include="Interpreter\SolDefinitionBase.cs" />
+    <Compile Include="Interpreter\SolFieldInitializerWrapper.cs" />
     <Compile Include="Interpreter\SolMetaKey.cs" />
     <Compile Include="Interpreter\MixinId.cs" />
     <Compile Include="Interpreter\SolChunkWrapper.cs" />
     <Compile Include="Interpreter\SolParameterInfo.cs" />
-    <Compile Include="Interpreter\SolClassBuilder.cs" />
+    <Compile Include="Interpreter\Builders\SolClassBuilder.cs" />
     <Compile Include="Interpreter\SolClassDefinition.cs" />
-    <Compile Include="Interpreter\SolFieldBuilder.cs" />
+    <Compile Include="Interpreter\Builders\SolFieldBuilder.cs" />
     <Compile Include="Interpreter\SolFieldDefinition.cs" />
-    <Compile Include="Interpreter\SolFunctionBuilder.cs" />
+    <Compile Include="Interpreter\Builders\SolFunctionBuilder.cs" />
     <Compile Include="Interpreter\SolFunctionDefinition.cs" />
-    <Compile Include="Interpreter\SolGlobalsBuilder.cs" />
-    <Compile Include="Interpreter\SolMemberBuilder.cs" />
+    <Compile Include="Interpreter\Builders\SolGlobalsBuilder.cs" />
+    <Compile Include="Interpreter\Builders\SolConstructWithMembersBuilder.cs" />
     <Compile Include="Interpreter\SolSourceLocation.cs" />
     <Compile Include="Interpreter\SolStackFrame.cs" />
     <Compile Include="Interpreter\Statements\Statement_CallGlobalFunctionFromGlobalContext.cs" />

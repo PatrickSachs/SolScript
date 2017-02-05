@@ -5,7 +5,7 @@ using SolScript.Interpreter.Types.Interfaces;
 
 namespace SolScript.Interpreter.Expressions
 {
-    public class Expression_GetVariable : SolExpression, IStatementOrExpressionWrittenInClass
+    public class Expression_GetVariable : SolExpression, IWrittenInClass
     {
         public Expression_GetVariable(SolAssembly assembly, SolSourceLocation location, SourceRef source, string writtenInClass) : base(assembly, location)
         {
