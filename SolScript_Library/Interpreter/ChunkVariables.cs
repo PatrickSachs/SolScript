@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using JetBrains.Annotations;
-using SevenBiT.Inspector;
+using SolScript.Interpreter;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
 
@@ -20,16 +20,18 @@ namespace SolScript.Interpreter
 
         #region IVariables Members
 
-        [CanBeNull]
+        /// <inheritdoc />
+        /// <exception cref="ArgumentException" accessor="set">The <paramref name="value"/> assembly differs from the <see cref="Assembly"/> of this context or is a cycrlic referenece</exception>
         public IVariables Parent {
             get { return m_ParentContext; }
             set {
-                if (m_ParentContext == this) {
+                if (value == this) {
                     throw new ArgumentException(
                         "Tried to set the parent context of a var context to itself. Var context does not support cyclic references!",
                         nameof(value));
                 }
-                if (value != null && m_ParentContext != null && value.Assembly != m_ParentContext.Assembly) {
+                if (value != null && value.Assembly != Assembly) {
+                    // todo: really? why should we not be able to parent contexts from different assemblies?
                     throw new ArgumentException("Cannot parent variable context from different assemblies!", nameof(value));
                 }
                 m_ParentContext = value;
@@ -39,7 +41,9 @@ namespace SolScript.Interpreter
         /// <summary> The assembly this variable lookup belongs to. </summary>
         public SolAssembly Assembly { get; }
 
-        public SolValue Get([NotNull] string name)
+        /// <inheritdoc />
+        /// <exception cref="SolVariableException">Failed to get the variable.</exception>
+        public SolValue Get(string name)
         {
             ValueInfo valueInfo;
             if (m_Variables.TryGetValue(name, out valueInfo)) {
@@ -94,6 +98,8 @@ namespace SolScript.Interpreter
             return VariableGet.FailedNotDeclared;
         }
 
+        /// <inheritdoc />
+        /// <exception cref="SolVariableException">Another variable with the same name is already declared.</exception>
         public void Declare(string name, SolType type)
         {
             if (m_Variables.ContainsKey(name)) {
@@ -102,7 +108,9 @@ namespace SolScript.Interpreter
             m_Variables[name] = new ValueInfo(name, null, type);
         }
 
-        public void DeclareNative(string name, SolType type, InspectorField field, DynamicReference fieldReference)
+        /// <inheritdoc />
+        /// <exception cref="SolVariableException">Another variable with the same name is already declared.</exception>
+        public void DeclareNative(string name, SolType type, FieldOrPropertyInfo field, DynamicReference fieldReference)
         {
             if (m_Variables.ContainsKey(name)) {
                 throw new SolVariableException("Tried to declare variable \"" + name + "\", but it already existed.");
@@ -241,7 +249,7 @@ namespace SolScript.Interpreter
                 AssignedType = assignedType;
             }
 
-            public ValueInfo(string name, [NotNull] InspectorField field, [NotNull] DynamicReference fieldReference, SolType assignedType)
+            public ValueInfo(string name, [NotNull] FieldOrPropertyInfo field, [NotNull] DynamicReference fieldReference, SolType assignedType)
             {
                 Name = name;
                 Field = field;
@@ -249,7 +257,7 @@ namespace SolScript.Interpreter
                 AssignedType = assignedType;
             }
 
-            [CanBeNull] private readonly InspectorField Field;
+            [CanBeNull] private readonly FieldOrPropertyInfo Field;
             private readonly DynamicReference FieldReference;
 
             public readonly string Name;

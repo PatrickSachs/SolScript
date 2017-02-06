@@ -1,5 +1,5 @@
 ﻿using System.Collections.Generic;
-using SevenBiT.Inspector;
+using SolScript.Interpreter;
 using SolScript.Interpreter.Expressions;
 
 namespace SolScript.Interpreter.Builders
@@ -17,7 +17,7 @@ namespace SolScript.Interpreter.Builders
         public string Name { get; set; }
         public SolType Type { get; set; }
         public bool IsNativeField { get; private set; }
-        public InspectorField NativeField { get; private set; }
+        public FieldOrPropertyInfo NativeField { get; private set; }
         public SolExpression ScriptField { get; private set; }
         public AccessModifier AccessModifier { get; set; }
         public bool NativeReturnTypeHasBeenResolved { get; private set; }
@@ -84,7 +84,7 @@ namespace SolScript.Interpreter.Builders
         ///     proplery supports native fields of this type!
         /// </summary>
         /// <param name="field"> The native field. </param>
-        public SolFieldBuilder MakeNativeField(InspectorField field)
+        public SolFieldBuilder MakeNativeField(FieldOrPropertyInfo field)
         {
             IsNativeField = true;
             NativeField = field;

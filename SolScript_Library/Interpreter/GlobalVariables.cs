@@ -1,5 +1,5 @@
 using System;
-using SevenBiT.Inspector;
+using SolScript.Interpreter;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
 using SolScript.Interpreter.Types.Implementation;
@@ -80,7 +80,6 @@ namespace SolScript.Interpreter
                         value = new SolScriptGlobalFunction(functionDefinition);
                         break;
                     case SolChunkWrapper.Type.NativeMethod:
-                        // todo: native global ref get dyn ref
                         value = new SolNativeGlobalFunction(functionDefinition, DynamicReference.NullReference.Instance);
                         break;
                     case SolChunkWrapper.Type.NativeConstructor:
@@ -124,7 +123,7 @@ namespace SolScript.Interpreter
         /// </param>
         /// <param name="field"> The native field handle.(todo: change this to sth else) </param>
         /// <param name="fieldReference"> The reference to the native object handle. </param>
-        public void DeclareNative(string name, SolType type, InspectorField field, DynamicReference fieldReference)
+        public void DeclareNative(string name, SolType type, FieldOrPropertyInfo field, DynamicReference fieldReference)
         {
             Members.DeclareNative(name, type, field, fieldReference);
         }

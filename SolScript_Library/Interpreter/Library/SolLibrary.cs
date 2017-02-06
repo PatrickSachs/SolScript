@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using JetBrains.Annotations;
-using SevenBiT.Inspector;
+using SolScript.Interpreter;
 using SolScript.Interpreter.Builders;
 
 namespace SolScript.Interpreter.Library
@@ -279,19 +279,19 @@ namespace SolScript.Interpreter.Library
             /// </summary>
             /// <param name="field">The field referene.</param>
             /// <returns>If the attributes on this field should be overridden.</returns>
-            public virtual bool OverridesExplicitAttributes(InspectorField field) => false;
+            public virtual bool OverridesExplicitAttributes(FieldOrPropertyInfo field) => false;
 
             /// <summary>
             ///     If this returns true no field for this method can be created. By default all fields can be created.
             /// </summary>
-            public virtual bool DoesFailCreation(InspectorField method) => false;
+            public virtual bool DoesFailCreation(FieldOrPropertyInfo method) => false;
 
             /// <summary>
-            ///     Gets the remapped function name. The default is <see cref="InspectorField.Name" />.
+            ///     Gets the remapped function name. The default is <see cref="FieldOrPropertyInfo.Name" />.
             /// </summary>
             /// <param name="field">The field referene.</param>
             /// <returns>The new field name to use in SolScript.</returns>
-            public virtual string GetName(InspectorField field) => field.Name;
+            public virtual string GetName(FieldOrPropertyInfo field) => field.Name;
 
             /// <summary>
             ///     Gets the remapped field type. The default is either marshalled from the actual native field type or inferred from
@@ -303,14 +303,14 @@ namespace SolScript.Interpreter.Library
             ///     Very important: If you do not wish to remap the field type you must return null and NOT the default SolType
             ///     value.
             /// </remarks>
-            public virtual SolType? GetFieldType(InspectorField field) => null;
+            public virtual SolType? GetFieldType(FieldOrPropertyInfo field) => null;
 
             /// <summary>
             ///     Gets the remapped field <see cref="AccessModifier" />. Default is <see cref="AccessModifier.None" />.
             /// </summary>
             /// <param name="field">The field referene.</param>
             /// <returns>The new field <see cref="AccessModifier" /> to use in SolScript.</returns>
-            public virtual AccessModifier GetAccessModifier(InspectorField field) => AccessModifier.None;
+            public virtual AccessModifier GetAccessModifier(FieldOrPropertyInfo field) => AccessModifier.None;
 
             #region Nested type: Default
 
@@ -567,7 +567,7 @@ namespace SolScript.Interpreter.Library
                         builder.AddFunction(solMethod);
                     }
                 }
-                foreach (InspectorField field in InspectorField.GetInspectorFields(builder.NativeType)) {
+                foreach (FieldOrPropertyInfo field in FieldOrPropertyInfo.Get(builder.NativeType)) {
                     SolFieldBuilder solField;
                     if (TryBuildField(forAssembly, field, out solField)) {
                         builder.AddField(solField);
@@ -585,10 +585,10 @@ namespace SolScript.Interpreter.Library
         }
 
         [ContractAnnotation("solField:null => false")]
-        private bool TryBuildField(SolAssembly forAssembly, InspectorField field, [CanBeNull] out SolFieldBuilder solField)
+        private bool TryBuildField(SolAssembly forAssembly, FieldOrPropertyInfo field, [CanBeNull] out SolFieldBuilder solField)
         {
             // todo: investigate if invisibility should truly take precendence over the post processor enforcing creation control over attributes. ("OverrideExplicitAttributes")
-            SolLibraryVisibilityAttribute visibility = field.GetAttributes<SolLibraryVisibilityAttribute>(true).FirstOrDefault(a => a.LibraryName == Name);
+            SolLibraryVisibilityAttribute visibility = field.GetCustomAttributes<SolLibraryVisibilityAttribute>(true).FirstOrDefault(a => a.LibraryName == Name);
             bool visible = visibility?.Visible ?? field.IsPublic;
             if (!visible) {
                 solField = null;
@@ -608,9 +608,9 @@ namespace SolScript.Interpreter.Library
                 remappedType = postProcessor.GetFieldType(field);
             } else {
                 // todo: auto create sol style naming if desired
-                name = field.GetAttribute<SolLibraryNameAttribute>(true)?.Name ?? postProcessor.GetName(field);
-                access = field.GetAttribute<SolLibraryAccessModifierAttribute>(true)?.AccessModifier ?? postProcessor.GetAccessModifier(field);
-                remappedType = field.GetAttribute<SolContractAttribute>(true)?.GetSolType() ?? postProcessor.GetFieldType(field);
+                name = field.GetCustomAttribute<SolLibraryNameAttribute>(true)?.Name ?? postProcessor.GetName(field);
+                access = field.GetCustomAttribute<SolLibraryAccessModifierAttribute>(true)?.AccessModifier ?? postProcessor.GetAccessModifier(field);
+                remappedType = field.GetCustomAttribute<SolContractAttribute>(true)?.GetSolType() ?? postProcessor.GetFieldType(field);
             }
             solField = new SolFieldBuilder(name, SolMarshal.GetSolType(forAssembly, field.DataType)).MakeNativeField(field).SetAccessModifier(access);
             if (remappedType.HasValue) {

@@ -1,5 +1,5 @@
 ﻿using JetBrains.Annotations;
-using SevenBiT.Inspector;
+using SolScript.Interpreter;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
 
@@ -63,7 +63,7 @@ namespace SolScript.Interpreter
         /// <exception cref="SolVariableException">
         ///     A variable with this name has already been declared.
         /// </exception>
-        void DeclareNative([NotNull] string name, SolType type, [NotNull] InspectorField field, [NotNull] DynamicReference fieldReference);
+        void DeclareNative([NotNull] string name, SolType type, [NotNull] FieldOrPropertyInfo field, [NotNull] DynamicReference fieldReference);
 
         /// <summary> Assigns annotations to a given variable. </summary>
         /// <param name="name"> The name of the variable. </param>

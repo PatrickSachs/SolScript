@@ -8,7 +8,7 @@ using Ionic.Zip;
 using Irony;
 using Irony.Parsing;
 using JetBrains.Annotations;
-using SevenBiT.Inspector;
+using SolScript.Interpreter;
 using SolScript.Interpreter.Builders;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Expressions;
@@ -226,9 +226,8 @@ namespace SolScript.Interpreter
                         declareInVariables.Assign(fieldPair.Key, scriptInitializer.Evaluate(context, LocalVariables));
                         break;
                     case SolFieldInitializerWrapper.Type.NativeField:
-                        InspectorField nativeField = fieldDefinition.Initializer.GetNativeField();
-                        // todo: dynamic reference for global fields?!
-                        declareInVariables.DeclareNative(fieldPair.Key, fieldDefinition.Type, nativeField, null);
+                        FieldOrPropertyInfo nativeField = fieldDefinition.Initializer.GetNativeField();
+                        declareInVariables.DeclareNative(fieldPair.Key, fieldDefinition.Type, nativeField, DynamicReference.NullReference.Instance);
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();

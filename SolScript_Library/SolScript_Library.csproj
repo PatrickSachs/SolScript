@@ -89,7 +89,7 @@
     <Compile Include="Interpreter\GlobalInternalVariables.cs" />
     <Compile Include="Interpreter\GlobalLocalVariables.cs" />
     <Compile Include="Interpreter\GlobalVariables.cs" />
-    <Compile Include="Interpreter\InspectorField.cs" />
+    <Compile Include="Interpreter\FieldOrPropertyInfo.cs" />
     <Compile Include="Interpreter\ISourceLocateable.cs" />
     <Compile Include="Interpreter\IWrittenInClass.cs" />
     <Compile Include="Interpreter\IVariables.cs" />

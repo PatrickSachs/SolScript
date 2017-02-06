@@ -410,7 +410,7 @@ namespace SolScript.Interpreter
                 activeDefinition = activeDefinition.BaseClass;
             }
             instance.AnnotationsArray = annotations.ToArray();
-            if (options.CallConstrcutor) {
+            if (options.CallConstructor) {
                 try {
                     instance.CallConstructor(creationContext, constructorArguments);
                 } catch (SolRuntimeException ex) {

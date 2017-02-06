@@ -1,12 +1,12 @@
 ﻿using System;
 using System.Reflection;
-using SevenBiT.Inspector;
+using SolScript.Interpreter;
 using SolScript.Interpreter.Expressions;
 
 namespace SolScript.Interpreter
 {
     /// <summary>
-    ///     Wraps either a <see cref="InspectorField" /> or a <see cref="SolExpression" />
+    ///     Wraps either a <see cref="FieldOrPropertyInfo" /> or a <see cref="SolExpression" />
     /// </summary>
     public sealed class SolFieldInitializerWrapper
     {
@@ -44,7 +44,7 @@ namespace SolScript.Interpreter
         ///     Creates a new wrapper for a native field.
         /// </summary>
         /// <param name="field">The native field itself.</param>
-        public SolFieldInitializerWrapper(InspectorField field)
+        public SolFieldInitializerWrapper(FieldOrPropertyInfo field)
         {
             // todo: wrapper inside a wrapper, possibly create field & property seperate?
             FieldType = Type.NativeField;
@@ -104,17 +104,17 @@ namespace SolScript.Interpreter
             return (SolExpression)m_Field;
         }
         /// <summary>
-        ///     Obtains a reference to the <see cref="InspectorField" /> in this wrapper.
+        ///     Obtains a reference to the <see cref="FieldOrPropertyInfo" /> in this wrapper.
         /// </summary>
         /// <returns>The native field wrapper.</returns>
         /// <exception cref="InvalidOperationException">The <see cref="FieldType" /> is not <see cref="Type.ScriptField" />.</exception>
-        public InspectorField GetNativeField()
+        public FieldOrPropertyInfo GetNativeField()
         {
             if (FieldType != Type.NativeField)
             {
                 throw new InvalidOperationException("Tried to obtain native field - The registered field is of type " + FieldType + ".");
             }
-            return (InspectorField)m_Field;
+            return (FieldOrPropertyInfo)m_Field;
         }
     }
 }

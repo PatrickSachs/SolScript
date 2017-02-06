@@ -7,7 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using Irony.Parsing;
 using JetBrains.Annotations;
-using SevenBiT.Inspector;
+using SolScript.Interpreter;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Library;
 
@@ -292,43 +292,33 @@ namespace SolScript.Interpreter
             }
         }
 
-        /// <inheritdoc cref="GetMemberReturnType(SolScript.Interpreter.SolAssembly,System.Reflection.MethodInfo,out SolScript.Interpreter.SolType)" />
+        /// <inheritdoc
+        ///     cref="GetMemberReturnType(SolScript.Interpreter.SolAssembly,System.Reflection.MethodInfo,out SolScript.Interpreter.SolType)" />
         /// <exception cref="SolMarshallingException">No matching SolType for the return type.</exception>
         internal static void GetMemberReturnType(SolAssembly assembly, ConstructorInfo member, out SolType type)
         {
             SolContractAttribute contract = member.GetCustomAttribute<SolContractAttribute>();
-            if (contract != null)
-            {
+            if (contract != null) {
                 type = contract.GetSolType();
-            }
-            else
-            {
-                type = SolMarshal.GetSolType(assembly, member.DeclaringType);
-            }
-        } /// <inheritdoc cref="GetMemberReturnType(SolScript.Interpreter.SolAssembly,System.Reflection.MethodInfo,out SolScript.Interpreter.SolType)" />
-          /// <exception cref="SolMarshallingException">No matching SolType for the return type.</exception>
-        internal static void GetMemberReturnType(SolAssembly assembly, InspectorField member, out SolType type)
-        {
-            SolContractAttribute contract = member.GetAttribute<SolContractAttribute>(true);
-            if (contract != null)
-            {
-                type = contract.GetSolType();
-            }
-            else
-            {
+            } else {
                 type = SolMarshal.GetSolType(assembly, member.DeclaringType);
             }
         }
 
-        /*private static string GetMemberInfoName(MemberInfo member)
+        /// <inheritdoc
+        ///     cref="GetMemberReturnType(SolScript.Interpreter.SolAssembly,System.Reflection.MethodInfo,out SolScript.Interpreter.SolType)" />
+        /// <exception cref="SolMarshallingException">No matching SolType for the return type.</exception>
+        internal static void GetMemberReturnType(SolAssembly assembly, FieldOrPropertyInfo member, out SolType type)
         {
-            SolLibraryNameAttribute nameAttribute = member.GetCustomAttribute<SolLibraryNameAttribute>();
-            if (nameAttribute != null) {
-                return nameAttribute.Name;
+            SolContractAttribute contract = member.GetCustomAttribute<SolContractAttribute>(true);
+            if (contract != null) {
+                type = contract.GetSolType();
+            } else {
+                type = SolMarshal.GetSolType(assembly, member.DeclaringType);
             }
-            return member.Name;
-        }*/
+        }
 
+        /// <exception cref="SolMarshallingException">No matching SolType for a parameter type.</exception>
         internal static SolParameterInfo.Native GetParameterInfo(SolAssembly assembly, ParameterInfo[] parameterInfo)
         {
             if (parameterInfo.Length == 0) {
@@ -356,7 +346,6 @@ namespace SolScript.Interpreter
                 ParameterInfo activeParameter = parameterInfo[i];
                 SolContractAttribute customContract = activeParameter.GetCustomAttribute<SolContractAttribute>();
                 SolLibraryNameAttribute customName = activeParameter.GetCustomAttribute<SolLibraryNameAttribute>();
-                // <bubble>SolMarshallingException</bubble>
                 solArray[i - offsetStart] = new SolParameter(
                     customName?.Name ?? activeParameter.Name,
                     customContract?.GetSolType() ?? SolMarshal.GetSolType(assembly, activeParameter.ParameterType)
@@ -369,16 +358,5 @@ namespace SolScript.Interpreter
             SolParameterInfo.Native infoClass = new SolParameterInfo.Native(solArray, typeArray, allowOptional != null, sendContext);
             return infoClass;
         }
-
-        /*/// <exception cref="SolVariableException">The cast failed.</exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static T Cast<T>(SolValue value, string errorMessage) where T : SolValue
-        {
-            T casted = value as T;
-            if (casted == null) {
-                throw new SolVariableException(errorMessage);
-            }
-            return casted;
-        }*/
     }
 }

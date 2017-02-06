@@ -1,6 +1,6 @@
 ﻿using System;
 using JetBrains.Annotations;
-using SevenBiT.Inspector;
+using SolScript.Interpreter;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
 using SolScript.Interpreter.Types.Implementation;
@@ -119,9 +119,9 @@ namespace SolScript.Interpreter
         ///     The type of the variable. Only values assignable to this
         ///     type can be assigned.
         /// </param>
-        /// <param name="field"> The native field handle.(todo: change this to sth else) </param>
+        /// <param name="field"> The native field handle. </param>
         /// <param name="fieldReference"> The reference to the native object handle. </param>
-        public void DeclareNative(string name, SolType type, InspectorField field, DynamicReference fieldReference)
+        public void DeclareNative(string name, SolType type, FieldOrPropertyInfo field, DynamicReference fieldReference)
         {
             Members.DeclareNative(name, type, field, fieldReference);
         }
