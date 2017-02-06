@@ -7,7 +7,6 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using Irony.Parsing;
 using JetBrains.Annotations;
-using SolScript.Interpreter;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Library;
 
@@ -15,7 +14,69 @@ namespace SolScript.Interpreter
 {
     internal static class InternalHelper
     {
-        private static readonly SolParameterInfo.Native EmptyNativeParameterInfo = new SolParameterInfo.Native(Array.Empty<SolParameter>(), Array.Empty<Type>(), false, false);
+        internal static readonly SolParameterInfo.Native EmptyNativeParameterInfo = new SolParameterInfo.Native(Array.Empty<SolParameter>(), Array.Empty<Type>(), false, false);
+
+        /// <summary>
+        ///     This method uniformly creates an exception for the result of a variable get exception. You may wish to check for
+        ///     <see cref="VariableState.Success" /> beforehand.
+        /// </summary>
+        /// <param name="name">The name of the variable.</param>
+        /// <param name="state">The state of the variable get operation.</param>
+        /// <param name="exception">A wrapped exception.</param>
+        /// <returns>The excpetion, ready to be thrown.</returns>
+        /// <remarks>This method does NOT THROW the exception, only create the exception object.</remarks>
+        internal static SolVariableException CreateVariableGetException(string name, VariableState state, Exception exception)
+        {
+            switch (state) {
+                case VariableState.Success:
+                    return new SolVariableException($"Cannot get the value of variable \"{name}\" - The operation was not expected to succeed.", exception);
+                case VariableState.FailedCouldNotResolveNativeReference:
+                    return new SolVariableException($"Cannot get the value of variable \"{name}\" - The underlying native object could not be resolved.", exception);
+                case VariableState.FailedNotAssigned:
+                    return new SolVariableException($"Cannot get the value of variable \"{name}\" - The variable has not been assigned.", exception);
+                case VariableState.FailedNotDeclared:
+                    return new SolVariableException($"Cannot get the value of variable \"{name}\" - The variable has not been declared.", exception);
+                case VariableState.FailedTypeMismatch:
+                    return new SolVariableException($"Cannot get the value of variable \"{name}\" - A type mismatch occured.", exception);
+                case VariableState.FailedNativeException:
+                    return new SolVariableException($"Cannot get the value of variable \"{name}\" - A native error occured.", exception);
+                case VariableState.FailedRuntimeError:
+                    return new SolVariableException($"Cannot get the value of variable \"{name}\" - A runtime error occured.", exception);
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(state), state, null);
+            }
+        }
+
+        /// <summary>
+        ///     This method uniformly creates an exception for the result of a variable set exception. You may wish to check for
+        ///     <see cref="VariableState.Success" /> beforehand.
+        /// </summary>
+        /// <param name="name">The name of the variable.</param>
+        /// <param name="state">The state of the variable set operation.</param>
+        /// <param name="exception">A wrapped exception.</param>
+        /// <returns>The excpetion, ready to be thrown.</returns>
+        /// <remarks>This method does NOT THROW the exception, only create the exception object.</remarks>
+        internal static SolVariableException CreateVariableSetException(string name, VariableState state, Exception exception)
+        {
+            switch (state) {
+                case VariableState.Success:
+                    return new SolVariableException($"Cannot set the value of variable \"{name}\" - The operation was not expected to succeed.", exception);
+                case VariableState.FailedCouldNotResolveNativeReference:
+                    return new SolVariableException($"Cannot set the value of variable \"{name}\" - The underlying native object could not be resolved.", exception);
+                case VariableState.FailedNotAssigned:
+                    return new SolVariableException($"Cannot set the value of variable \"{name}\" - The variable has not been assigned.", exception);
+                case VariableState.FailedNotDeclared:
+                    return new SolVariableException($"Cannot set the value of variable \"{name}\" - The variable has not been declared.", exception);
+                case VariableState.FailedTypeMismatch:
+                    return new SolVariableException($"Cannot set the value of variable \"{name}\" - A type mismatch occured.", exception);
+                case VariableState.FailedNativeException:
+                    return new SolVariableException($"Cannot set the value of variable \"{name}\" - A native error occured.", exception);
+                case VariableState.FailedRuntimeError:
+                    return new SolVariableException($"Cannot set the value of variable \"{name}\" - A runtime error occured.", exception);
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(state), state, null);
+            }
+        }
 
         [DebuggerStepThrough]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

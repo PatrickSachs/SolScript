@@ -19,7 +19,7 @@ namespace SolScript.Interpreter.Statements {
             context.CurrentLocation = Location;
             Terminators = Terminators.None;
             foreach (IfBranch branch in If) {
-                ChunkVariables branchVariables = new ChunkVariables(Assembly) {Parent = parentVariables};
+                Variables branchVariables = new Variables(Assembly) {Parent = parentVariables};
                 if (branch.Condition.Evaluate(context, parentVariables).IsTrue(context)) {
                     SolValue value = branch.Chunk.ExecuteInTarget(context, branchVariables);
                     Terminators = branch.Chunk.Terminators;
@@ -27,7 +27,7 @@ namespace SolScript.Interpreter.Statements {
                 }
             }
             if (Else != null) {
-                ChunkVariables branchVariables = new ChunkVariables(Assembly) {Parent = parentVariables};
+                Variables branchVariables = new Variables(Assembly) {Parent = parentVariables};
                 SolValue value = Else.ExecuteInTarget(context, branchVariables);
                 Terminators = Else.Terminators;
                 return value;

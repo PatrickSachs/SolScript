@@ -70,7 +70,7 @@ namespace SolScript.Interpreter {
 
         public SolValue ExecuteInNew(SolExecutionContext context) {
             Terminators = Terminators.None;
-            ChunkVariables variables = new ChunkVariables(Assembly);
+            Variables variables = new Variables(Assembly);
             foreach (SolStatement statement in Statements) {
                 statement.Execute(context, variables);
                 Terminators = statement.Terminators;

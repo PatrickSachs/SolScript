@@ -20,8 +20,8 @@ namespace SolScript.Interpreter.Statements {
             while (Condition.Evaluate(context, parentVariables).IsTrue(context)) {
                 // The chunk is running in a new variable context in order to discard the
                 // locals from the previous iteration.
-                ChunkVariables chunkVariables = new ChunkVariables(Assembly) {Parent = parentVariables};
-                SolValue returnValue = Chunk.ExecuteInTarget(context, chunkVariables);
+                Variables variables = new Variables(Assembly) {Parent = parentVariables};
+                SolValue returnValue = Chunk.ExecuteInTarget(context, variables);
                 Terminators terminators = Chunk.Terminators;
                 if (InternalHelper.DidReturn(terminators)) {
                     Terminators = Terminators.Return;

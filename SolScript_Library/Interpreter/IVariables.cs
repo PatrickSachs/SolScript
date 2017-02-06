@@ -5,13 +5,21 @@ using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter
 {
-    public enum VariableGet
+    #region VariableState enum
+
+    public enum VariableState
     {
         Success,
-        FailedNotDeclared,
+        FailedCouldNotResolveNativeReference,
         FailedNotAssigned,
-        FailedNativeError
+        FailedNotDeclared,
+        FailedTypeMismatch,
+        FailedNativeException,
+        FailedRuntimeError
     }
+
+    #endregion
+
 
     /// <summary> Interface all variable lookups must implement. </summary>
     public interface IVariables
@@ -36,7 +44,7 @@ namespace SolScript.Interpreter
         /// </summary>
         /// <param name="name"> The name of the variable. </param>
         /// <param name="value"> A pointer to where the variable should be saved. </param>
-        VariableGet TryGet([NotNull] string name, [CanBeNull] out SolValue value);
+        VariableState TryGet([NotNull] string name, [CanBeNull] out SolValue value);
 
         /// <summary>
         ///     Declares the value with the given name and type and also provides

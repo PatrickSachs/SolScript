@@ -14,7 +14,7 @@ namespace SolScript.Interpreter.Statements {
         public override Terminators Terminators => Chunk.Terminators;
 
         public override SolValue Execute(SolExecutionContext context, IVariables parentVariables) {
-            ChunkVariables isolatedVariables = new ChunkVariables(Assembly) {Parent = parentVariables};
+            Variables isolatedVariables = new Variables(Assembly) {Parent = parentVariables};
             return Chunk.ExecuteInTarget(context, isolatedVariables);
         }
 

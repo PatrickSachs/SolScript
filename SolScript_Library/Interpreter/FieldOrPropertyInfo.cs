@@ -33,7 +33,6 @@ namespace SolScript.Interpreter
             m_Member = property;
             m_Property = property;
             IsIndexed = property.GetIndexParameters().Length != 0;
-            // TODO: Check all methods
             MethodInfo method;
             try {
                 method = property.GetGetMethod(false)

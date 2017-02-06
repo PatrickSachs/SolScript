@@ -39,7 +39,7 @@ namespace SolScript.Interpreter.Types.Implementation
         protected override SolValue Call_Impl(SolExecutionContext context, params SolValue[] args)
         {
             // todo: internal access for global variables need to be figured out. (meaning, what does internal on globals even mean?)
-            ChunkVariables varContext = new ChunkVariables(Assembly) {
+            Variables varContext = new Variables(Assembly) {
                 Parent = Assembly.LocalVariables
             };
             try {

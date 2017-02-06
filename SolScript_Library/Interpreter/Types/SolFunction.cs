@@ -57,10 +57,10 @@ namespace SolScript.Interpreter.Types
                 throw new SolRuntimeException(context, ex.Message, ex);
             }
             SolValue returnValue = Call_Impl(context, args);
-            context.PopStackFrame();
             if (!ReturnType.IsCompatible(Assembly, returnValue.Type)) {
                 throw new SolRuntimeException(context, $"Expected a return value of type '\"{ReturnType}\", recceived a value of type \"{returnValue.Type}\".");
             }
+            context.PopStackFrame();
             return returnValue;
         }
 

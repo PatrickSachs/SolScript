@@ -38,7 +38,7 @@ namespace SolScript.Interpreter
         ///     The raw Stack Trace stack. Be very careful with this as corruption in this stack can lead to crashes in the
         ///     SolScript runtime as the stack trace is not constantly checked for integrity.
         /// </summary>
-        protected readonly Stack<SolStackFrame> StackTrace = new Stack<SolStackFrame>();
+        protected readonly LinkedList<SolStackFrame> StackTrace = new LinkedList<SolStackFrame>();
 
         /// <summary>
         ///     The current source location we are in. Try updating this whenever
@@ -61,16 +61,30 @@ namespace SolScript.Interpreter
         public SolExecutionContext ParentContext { get; set; }
 
         /// <summary>
-        ///     Creates a new stack frame calling the given function..
+        ///     Gets the amount of stack frames currently on the stack trace.
+        /// </summary>
+        public int StackFrameCount => StackTrace.Count;
+
+        /// <summary>
+        ///     Creates a new stack frame calling the given function.
         /// </summary>
         /// <param name="function">The function that has been called.</param>
         /// <remarks>
         ///     The location used for the stack frame location is <see cref="CurrentLocation" />. Make sure to update this
         ///     value beforehand/only afterwards.
         /// </remarks>
-        public virtual void PushStackFrame(SolFunction function)
+        public void PushStackFrame(SolFunction function)
         {
-            StackTrace.Push(new SolStackFrame(CurrentLocation, function));
+            PushStackFrame(new SolStackFrame(CurrentLocation, function));
+        }
+
+        /// <summary>
+        ///     Pushes a new alredy created stack frame onto the stack.
+        /// </summary>
+        /// <param name="frame">The stack frame.</param>
+        public virtual void PushStackFrame(SolStackFrame frame)
+        {
+            StackTrace.AddLast(frame);
         }
 
         /// <summary>
@@ -80,16 +94,38 @@ namespace SolScript.Interpreter
         /// <exception cref="InvalidOperationException">The stack trace is empty.</exception>
         public virtual SolStackFrame PopStackFrame()
         {
-            return StackTrace.Pop();
+            SolStackFrame last = StackTrace.Last.Value;
+            StackTrace.RemoveLast();
+            return last;
         }
 
         /// <summary>
-        ///     Gets the amount of stack frames currently on the stack trace.
+        ///     Tries to get the latest <see cref="SolStackFrame" /> on the stack trace.
         /// </summary>
-        /// <returns>An integer representing the amount of stack frames.</returns>
-        public int GetStackFrameCount()
+        /// <param name="frame">The stack frame. Only valid if the method retunred true.</param>
+        /// <param name="depth">How deep to peek? Zero is the last element, one is the element before the last, and so on.</param>
+        /// <returns>If the stack frame could be obatined. Can fail if the stack trace is empty.</returns>
+        /// <exception cref="ArgumentException">Cannot peek by a negative amount(<paramref name="depth" /> is smaller than 0).</exception>
+        public virtual bool PeekStackFrame(out SolStackFrame frame, int depth = 0)
         {
-            return StackTrace.Count;
+            if (depth < 0) {
+                throw new ArgumentException("Cannot peek by a negative amount.");
+            }
+            if (StackTrace.Count == 0) {
+                frame = default(SolStackFrame);
+                return false;
+            }
+            LinkedListNode<SolStackFrame> node = StackTrace.Last;
+            while (depth > 0) {
+                node = node.Previous;
+                if (node == null) {
+                    frame = default(SolStackFrame);
+                    return false;
+                }
+                depth--;
+            }
+            frame = node.Value;
+            return true;
         }
 
         protected StringBuilder GenerateStackTraceImpl()

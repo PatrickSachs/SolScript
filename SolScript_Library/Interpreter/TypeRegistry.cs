@@ -327,10 +327,13 @@ namespace SolScript.Interpreter
             SolExecutionContext creationContext = new SolExecutionContext(LinkedAssembly, definition.Type + "#" + instance.Id + " creation context");
             // Build inheritance tree and declare fields
             SolClassDefinition activeDefinition = definition;
-            SolClass.Inheritance activeInheritance = instance.InheritanceChain;
+            SolClass.Inheritance activeInheritance = null;
             var annotations = new List<SolClass>();
             while (activeDefinition != null) {
-                if (activeInheritance != instance.InheritanceChain) {
+                if (activeInheritance == null) {
+                    activeInheritance = instance.InheritanceChain;
+                }
+                else {
                     SolClass.Inheritance newInheritance = new SolClass.Inheritance(instance, activeDefinition, null);
                     activeInheritance.BaseClass = newInheritance;
                     activeInheritance = newInheritance;

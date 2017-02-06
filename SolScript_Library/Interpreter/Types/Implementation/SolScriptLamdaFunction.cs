@@ -39,7 +39,7 @@ namespace SolScript.Interpreter.Types.Implementation
 
         protected override SolValue Call_Impl(SolExecutionContext context, params SolValue[] args)
         {
-            ChunkVariables variables = new ChunkVariables(Assembly) {Parent = m_ParentVariables};
+            Variables variables = new Variables(Assembly) {Parent = m_ParentVariables};
             try {
                 InsertParameters(variables, args);
             } catch (SolVariableException ex) {

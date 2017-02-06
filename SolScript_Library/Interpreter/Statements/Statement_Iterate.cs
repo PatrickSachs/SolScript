@@ -19,13 +19,13 @@ namespace SolScript.Interpreter.Statements {
 
         public override SolValue Execute(SolExecutionContext context, IVariables parentVariables) {
             Terminators = Terminators.None;
-            ChunkVariables vars = new ChunkVariables(Assembly) {Parent = parentVariables};
+            Variables vars = new Variables(Assembly) {Parent = parentVariables};
             SolValue iterator = IteratorGetter.Evaluate(context, parentVariables);
             vars.Declare(IteratorName, new SolType("any", true));
             foreach (SolValue value in iterator.Iterate(context)) {
-                ChunkVariables chunkVariables = new ChunkVariables(Assembly) {Parent = vars };
+                Variables variables = new Variables(Assembly) {Parent = vars };
                 vars.Assign(IteratorName, value);
-                SolValue returnValue = Chunk.ExecuteInTarget(context, chunkVariables);
+                SolValue returnValue = Chunk.ExecuteInTarget(context, variables);
                 Terminators terminators = Chunk.Terminators;
                 if (InternalHelper.DidReturn(terminators)) {
                     Terminators = Terminators.Return;

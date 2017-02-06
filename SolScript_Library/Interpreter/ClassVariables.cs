@@ -1,6 +1,5 @@
 ﻿using System;
 using JetBrains.Annotations;
-using SolScript.Interpreter;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
 using SolScript.Interpreter.Types.Implementation;
@@ -11,10 +10,10 @@ namespace SolScript.Interpreter
     {
         protected ClassVariables(SolAssembly assembly)
         {
-            Members = new ChunkVariables(assembly);
+            Members = new Variables(assembly);
         }
 
-        protected readonly ChunkVariables Members;
+        protected readonly Variables Members;
 
         public abstract SolClassDefinition Definition { get; }
 
@@ -34,65 +33,36 @@ namespace SolScript.Interpreter
         public SolValue Get(string name)
         {
             SolValue value;
-            VariableGet result = TryGet(name, out value);
-            switch (result) {
-                case VariableGet.Success:
-                    return value.NotNull();
-                case VariableGet.FailedNotDeclared:
-                    throw new SolVariableException($"The variable \"{name}\" has not been declared.");
-                case VariableGet.FailedNotAssigned:
-                    throw new SolVariableException($"The variable \"{name}\" is declared, but not assigned.");
-                case VariableGet.FailedNativeError:
-                    throw new SolVariableException("A native error occured while trying to receive variable \"" + name + "\"!");
-                default:
-                    throw new ArgumentOutOfRangeException();
+            VariableState result = TryGet(name, out value);
+            if (result != VariableState.Success) {
+                throw InternalHelper.CreateVariableGetException(name, result, null);
             }
+            return value.NotNull();
         }
 
         /// <summary>
         ///     Tries to get the value assigned to the given name. The result is only
-        ///     valid if the method returned <see cref="VariableGet.Success" />.
+        ///     valid if the method returned <see cref="VariableState.Success" />.
         /// </summary>
         /// <param name="name"> The name of the variable. </param>
         /// <param name="value"> A pointer to where the variable should be saved. </param>
-        public VariableGet TryGet(string name, out SolValue value)
+        public VariableState TryGet(string name, out SolValue value)
         {
-            switch (Members.TryGet(name, out value)) {
-                case VariableGet.Success:
-                    return VariableGet.Success;
-                case VariableGet.FailedNotDeclared:
-                    // Not declared variables can be functions or parent variables.
-                    break;
-                case VariableGet.FailedNotAssigned:
-                    return VariableGet.FailedNotAssigned;
-                case VariableGet.FailedNativeError:
-                    return VariableGet.FailedNativeError;
-                default:
-                    throw new ArgumentOutOfRangeException();
+            VariableState membersState = Members.TryGet(name, out value);
+            if (membersState != VariableState.FailedNotDeclared)
+            {
+                // Not declared variables can be functions or parent variables
+                // since functions are create lazily.
+                return membersState;
             }
-            SolFunctionDefinition functionDefinition;
-            if (Definition.TryGetFunction(name, false, out functionDefinition) && ValidateFunctionDefinition(functionDefinition)) {
-                switch (functionDefinition.Chunk.ChunkType) {
-                    case SolChunkWrapper.Type.ScriptChunk:
-                        value = new SolScriptClassFunction(GetInstance(), functionDefinition);
-                        break;
-                    case SolChunkWrapper.Type.NativeMethod:
-                        value = new SolNativeClassFunction(GetInstance(), functionDefinition);
-                        break;
-                    case SolChunkWrapper.Type.NativeConstructor:
-                        value = new SolNativeClassConstructorFunction(GetInstance(), functionDefinition);
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
-                SolDebug.WriteLine("Created function instance '" + name + " for class '" + GetInstance() + " :: " + value);
-                Members.SetValue(name, value, new SolType(SolFunction.TYPE, false));
-                return VariableGet.Success;
+            value = AttemptFunctionCreation(name);
+            if (value != null) {
+                return VariableState.Success;
             }
             if (Parent != null) {
                 return Parent.TryGet(name, out value);
             }
-            return VariableGet.FailedNotDeclared;
+            return VariableState.FailedNotDeclared;
         }
 
         /// <summary>
@@ -121,6 +91,7 @@ namespace SolScript.Interpreter
         /// </param>
         /// <param name="field"> The native field handle. </param>
         /// <param name="fieldReference"> The reference to the native object handle. </param>
+        /// <exception cref="SolVariableException">Another variable with the same name is already declared.</exception>
         public void DeclareNative(string name, SolType type, FieldOrPropertyInfo field, DynamicReference fieldReference)
         {
             Members.DeclareNative(name, type, field, fieldReference);
@@ -131,7 +102,11 @@ namespace SolScript.Interpreter
         /// <param name="annotations"> The annotations to assign to the variable. </param>
         public void AssignAnnotations(string name, params SolClass[] annotations)
         {
-            // issue: annotations in class variables not handled
+            if (!IsDeclared(name)) {
+                // The function may not have been created yet.
+                AttemptFunctionCreation(name);
+            }
+            Members.AssignAnnotations(name, annotations);
         }
 
         /// <summary> Assigns a value to the variable with the giv en name. </summary>
@@ -144,7 +119,7 @@ namespace SolScript.Interpreter
         {
             if (Members.IsDeclared(name)) {
                 Members.Assign(name, value);
-            } else if (Definition.HasFunction(name, false)) {
+            } else if (Definition.HasFunction(name, OnlyUseDeclaredFunctions)) {
                 throw new SolVariableException("Cannot assign values to class function \"" + name + "\", they are immutable.");
             } else if (Parent != null) {
                 Parent.Assign(name, value);
@@ -160,7 +135,7 @@ namespace SolScript.Interpreter
                 return true;
             }
             SolFunctionDefinition definition;
-            if (Definition.TryGetFunction(name, false, out definition) && ValidateFunctionDefinition(definition)) {
+            if (Definition.TryGetFunction(name, OnlyUseDeclaredFunctions, out definition) && ValidateFunctionDefinition(definition)) {
                 return true;
             }
             if (Parent != null) {
@@ -168,6 +143,11 @@ namespace SolScript.Interpreter
             }
             return false;
         }
+
+        /// <summary>
+        /// If this is true only functions declared in the the <see cref="Definition"/> directly will be used for the functions of this <see cref="ClassVariables"/> instance.
+        /// </summary>
+        protected abstract bool OnlyUseDeclaredFunctions { get; }
 
         /// <summary>
         ///     Is a variable with this name assigned(Also returns false if the
@@ -179,7 +159,7 @@ namespace SolScript.Interpreter
                 return true;
             }
             SolFunctionDefinition definition;
-            if (Definition.TryGetFunction(name, false, out definition) && ValidateFunctionDefinition(definition)) {
+            if (Definition.TryGetFunction(name, OnlyUseDeclaredFunctions, out definition) && ValidateFunctionDefinition(definition)) {
                 return true;
             }
             if (Parent != null) {
@@ -189,6 +169,43 @@ namespace SolScript.Interpreter
         }
 
         #endregion
+
+        /// <summary>
+        ///     Attempts to create, declared and assign the function with the given name.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <returns>The function.</returns>
+        /// <remarks>
+        ///     This method uses <see cref="Variables.SetValue" /> - This means that any possibly previously declared
+        ///     variables with this name will be overwritten. Make sure to check if a field with this name has been declared
+        ///     beforehand.
+        /// </remarks>
+        public SolFunction AttemptFunctionCreation(string name)
+        {
+            SolFunctionDefinition functionDefinition;
+            if (Definition.TryGetFunction(name, OnlyUseDeclaredFunctions, out functionDefinition) && ValidateFunctionDefinition(functionDefinition)) {
+                SolFunction function;
+                switch (functionDefinition.Chunk.ChunkType) {
+                    case SolChunkWrapper.Type.ScriptChunk:
+                        function = new SolScriptClassFunction(GetInstance(), functionDefinition);
+                        break;
+                    case SolChunkWrapper.Type.NativeMethod:
+                        function = new SolNativeClassFunction(GetInstance(), functionDefinition);
+                        break;
+                    case SolChunkWrapper.Type.NativeConstructor:
+                        function = new SolNativeClassConstructorFunction(GetInstance(), functionDefinition);
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+                SolDebug.WriteLine("Created function instance '" + name + " for class '" + GetInstance() + " :: " + function);
+                // ReSharper disable once ExceptionNotDocumented
+                // "function!" is always compatible with functions.
+                Members.SetValue(name, function, new SolType(SolFunction.TYPE, false));
+                return function;
+            }
+            return null;
+        }
 
         protected abstract SolClass GetInstance();
 

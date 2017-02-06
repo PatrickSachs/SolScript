@@ -31,35 +31,41 @@ namespace SolScript.Interpreter
             Function = function;
         }
 
-        [Pure]
-        public override string ToString()
+        public void AppendFunctionName(StringBuilder builder)
         {
-            StringBuilder builder = new StringBuilder();
-            builder.Append(Location);
-            builder.Append(" : ");
             SolClassFunction classFunction = Function as SolClassFunction;
             DefinedSolFunction definedFunction = Function as DefinedSolFunction;
             if (classFunction != null) {
                 SolClassDefinition definingClass = classFunction.GetDefiningClass();
                 builder.Append(definingClass.Type);
                 builder.Append(".");
-            } else if (definedFunction != null) {
+            }
+            if (definedFunction != null) {
                 builder.Append(definedFunction.Definition.Name);
             } else {
                 builder.Append("function#" + Function.Id);
             }
+        }
+
+        [Pure]
+        public override string ToString()
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.Append(Location);
+            builder.Append(" : ");
+            AppendFunctionName(builder);
             builder.Append("(");
-            AppendParameters(builder, Function);
+            AppendFunctionParameters(builder);
             builder.Append(") [@ ");
             builder.Append(Function.Location);
             builder.Append("]");
             return builder.ToString();
         }
 
-        private void AppendParameters(StringBuilder builder, SolFunction function)
+        public void AppendFunctionParameters(StringBuilder builder)
         {
             bool first = true;
-            foreach (SolParameter parameter in function.ParameterInfo) {
+            foreach (SolParameter parameter in Function.ParameterInfo) {
                 if (!first) {
                     builder.Append(", ");
                 }

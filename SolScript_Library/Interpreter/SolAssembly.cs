@@ -3,19 +3,17 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
+using System.Text;
 using Ionic.Zip;
 using Irony;
 using Irony.Parsing;
 using JetBrains.Annotations;
-using SolScript.Interpreter;
 using SolScript.Interpreter.Builders;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Library;
 using SolScript.Interpreter.Statements;
 using SolScript.Interpreter.Types;
-using SolScript.Interpreter.Types.Implementation;
 using SolScript.Parser;
 
 namespace SolScript.Interpreter
@@ -29,6 +27,8 @@ namespace SolScript.Interpreter
         }
 
         private static readonly SolScriptGrammar s_Grammar = new SolScriptGrammar();
+
+        private static readonly ClassCreationOptions SingletonClassCreationOptions = new ClassCreationOptions.Customizable().SetEnforceCreation(true);
         private readonly List<SolLibrary> m_Libraries = new List<SolLibrary>();
 
         private StatementFactory l_factory;
@@ -183,7 +183,7 @@ namespace SolScript.Interpreter
             SolExecutionContext context = new SolExecutionContext(this, Name + " initialization context");
             GlobalVariables = new GlobalVariables(this);
             InternalVariables = new GlobalInternalVariables(this);
-            LocalVariables= new GlobalLocalVariables(this);
+            LocalVariables = new GlobalLocalVariables(this);
             // Build language functions/values
             RegisterGlobal("nil", SolNil.Instance, new SolType(SolNil.TYPE, true));
             RegisterGlobal("false", SolBool.False, new SolType(SolBool.TYPE, true));
@@ -242,8 +242,6 @@ namespace SolScript.Interpreter
             }
             return this;
         }
-
-        private static readonly ClassCreationOptions SingletonClassCreationOptions = new ClassCreationOptions.Customizable().SetEnforceCreation(true);
     }
 
     [SolGlobal(SolLibrary.STD_NAME)]
@@ -277,7 +275,20 @@ namespace SolScript.Interpreter
         [SolGlobal(SolLibrary.STD_NAME)]
         public static void print(SolExecutionContext context, params SolValue[] values)
         {
-            Console.WriteLine(context.CurrentLocation + " : " + string.Join(", ", (object[]) values));
+            StringBuilder builder = new StringBuilder();
+            SolStackFrame frame;
+            // We are peeking at a depth of one since zero would be this
+            // method. And the user doesn't need to know that the print
+            // method is the print method.
+            if (context.PeekStackFrame(out frame, 1)) {
+                frame.AppendFunctionName(builder);
+                builder.Append(' ');
+            }
+            builder.Append("[");
+            builder.Append(context.CurrentLocation);
+            builder.Append("] : ");
+            builder.Append(InternalHelper.JoinToString(",", values));
+            Console.WriteLine(builder.ToString());
         }
 
         [PublicAPI]

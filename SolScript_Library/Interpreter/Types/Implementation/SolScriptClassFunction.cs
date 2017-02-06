@@ -20,7 +20,7 @@ namespace SolScript.Interpreter.Types.Implementation
         protected override SolValue Call_Impl(SolExecutionContext context, params SolValue[] args)
         {
             SolClass.Inheritance inheritance = m_HoldingClass.FindInheritance(Definition.DefinedIn).NotNull();
-            ChunkVariables varContext = new ChunkVariables(Assembly) {
+            Variables varContext = new Variables(Assembly) {
                 Parent = inheritance.Variables // todo: orginally this was parented to the internal variables? was this a mistake or does it mave a reason?
             };
             try {
