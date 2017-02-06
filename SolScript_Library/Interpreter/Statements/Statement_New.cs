@@ -20,7 +20,7 @@ namespace SolScript.Interpreter.Statements
         #region Overrides
 
         /// <exception cref="SolRuntimeException">An error occured while creating the class instance.</exception>
-        public override SolValue Execute(SolExecutionContext context, IVariables parentVariables)
+        public override SolValue Execute(SolExecutionContext context, IVariables parentVariables, out Terminators terminators)
         {
             context.CurrentLocation = Location;
             var arguments = new SolValue[Arguments.Length];
@@ -33,6 +33,7 @@ namespace SolScript.Interpreter.Statements
             } catch (SolTypeRegistryException ex) {
                 throw new SolRuntimeException(context, $"An error occured while creating a class instance of type \"{TypeName}\".", ex);
             }
+            terminators = Terminators.None;
             return instance;
         }
 

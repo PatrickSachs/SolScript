@@ -6,7 +6,7 @@
     public interface ISourceLocateable
     {
         /// <summary>
-        ///     The position in code.
+        ///     The location in code.
         /// </summary>
         SolSourceLocation Location { get; }
     }

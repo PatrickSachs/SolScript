@@ -247,23 +247,6 @@ namespace SolScript.Interpreter
     [SolGlobal(SolLibrary.STD_NAME)]
     internal static class SolAssemblyGlobals
     {
-        /*static SolAssemblyGlobals()
-        {
-            error_Method = typeof(SolAssemblyGlobals).GetMethod("error", BindingFlags.Public | BindingFlags.Static);
-            print_Method = typeof(SolAssemblyGlobals).GetMethod("print", BindingFlags.Public | BindingFlags.Static);
-            type_Method = typeof(SolAssemblyGlobals).GetMethod("type", BindingFlags.Public | BindingFlags.Static);
-            to_string_Method = typeof(SolAssemblyGlobals).GetMethod("to_string", BindingFlags.Public | BindingFlags.Static);
-            assert_Method = typeof(SolAssemblyGlobals).GetMethod("assert", BindingFlags.Public | BindingFlags.Static);
-            default_Method = typeof(SolAssemblyGlobals).GetMethod("default", BindingFlags.Public | BindingFlags.Static);
-        }
-
-        public static readonly MethodInfo error_Method;
-        public static readonly MethodInfo print_Method;
-        public static readonly MethodInfo type_Method;
-        public static readonly MethodInfo to_string_Method;
-        public static readonly MethodInfo assert_Method;
-        public static readonly MethodInfo default_Method;*/
-
         [PublicAPI]
         [SolGlobal(SolLibrary.STD_NAME)]
         public static void error(SolExecutionContext context, string message)

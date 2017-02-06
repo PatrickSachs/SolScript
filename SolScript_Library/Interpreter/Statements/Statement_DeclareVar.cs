@@ -23,9 +23,10 @@ namespace SolScript.Interpreter.Statements
 
         #region Overrides
 
-        public override SolValue Execute(SolExecutionContext context, IVariables parentVariables)
+        public override SolValue Execute(SolExecutionContext context, IVariables parentVariables, out Terminators terminators)
         {
             context.CurrentLocation = Location;
+            terminators = Terminators.None;
             parentVariables.Declare(Name, Type);
             if (ValueGetter != null) {
                 SolValue value = ValueGetter.Evaluate(context, parentVariables);

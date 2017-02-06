@@ -5,7 +5,7 @@ using SolScript.Interpreter.Statements;
 using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter {
-    public class SolChunk : ITerminateable {
+    public class SolChunk {
         public SolChunk(SolAssembly assembly) {
             Assembly = assembly;
             Id = ++s_LastId;
@@ -18,12 +18,6 @@ namespace SolScript.Interpreter {
         [CanBeNull] public TerminatingSolExpression ReturnExpression;
 
         public SolStatement[] Statements;
-
-        #region ITerminateable Members
-
-        public Terminators Terminators { get; private set; }
-
-        #endregion
 
         #region Overrides
 
@@ -50,40 +44,19 @@ namespace SolScript.Interpreter {
             return builder.ToString();
         }
 
-        public SolValue ExecuteInTarget(SolExecutionContext context, IVariables variables) {
-            Terminators = Terminators.None;
+        public SolValue Execute(SolExecutionContext context, IVariables variables, out Terminators terminators) {
             foreach (SolStatement statement in Statements) {
-                SolValue value = statement.Execute(context, variables);
-                Terminators = statement.Terminators;
+                SolValue value = statement.Execute(context, variables, out terminators);
                 // If either return, break, or continue occured we break out of the current chunk.
-                if (Terminators != Terminators.None) {
+                if (terminators != Terminators.None) {
                     return value;
                 }
             }
             if (ReturnExpression != null) {
-                SolValue value = ReturnExpression.Evaluate(context, variables);
-                Terminators = ReturnExpression.Terminators;
+                SolValue value = ReturnExpression.Evaluate(context, variables, out terminators);
                 return value;
             }
-            return SolNil.Instance;
-        }
-
-        public SolValue ExecuteInNew(SolExecutionContext context) {
-            Terminators = Terminators.None;
-            Variables variables = new Variables(Assembly);
-            foreach (SolStatement statement in Statements) {
-                statement.Execute(context, variables);
-                Terminators = statement.Terminators;
-                // If either return, break, or continue occured we break out of the current chunk.
-                if (Terminators != Terminators.None) {
-                    return SolNil.Instance;
-                }
-            }
-            if (ReturnExpression != null) {
-                SolValue value = ReturnExpression.Evaluate(context, variables);
-                Terminators = ReturnExpression.Terminators;
-                return value;
-            }
+            terminators = Terminators.None;
             return SolNil.Instance;
         }
     }

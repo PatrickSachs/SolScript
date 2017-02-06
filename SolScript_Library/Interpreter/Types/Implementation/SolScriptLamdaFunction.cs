@@ -45,7 +45,9 @@ namespace SolScript.Interpreter.Types.Implementation
             } catch (SolVariableException ex) {
                 throw new SolRuntimeException(context, ex.Message);
             }
-            SolValue value = m_Chunk.ExecuteInTarget(context, variables);
+            // Functions pretty much eat the terminators since that's what the terminators are supposed to terminate down to.
+            Terminators terminators;
+            SolValue value = m_Chunk.Execute(context, variables, out terminators);
             return value;
         }
 

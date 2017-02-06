@@ -359,7 +359,10 @@ namespace SolScript.Interpreter.Statements
                 ParseTreeNode lastStatement = chunkEndNode.ChildNodes[0];
                 switch (lastStatement.ChildNodes[0].Term.Name) {
                     case "return": {
-                        returnValue = new Expression_Return(Assembly, new SolSourceLocation(ActiveFile, lastStatement.Span.Location), GetExpression(lastStatement.ChildNodes[1]));
+                        SolExpression returnExpression = lastStatement.ChildNodes.Count > 1
+                            ? GetExpression(lastStatement.ChildNodes[1])
+                            : new Expression_Nil(Assembly, new SolSourceLocation(ActiveFile, lastStatement.Span.Location));
+                        returnValue = new Expression_Return(Assembly, new SolSourceLocation(ActiveFile, lastStatement.Span.Location), returnExpression);
                         break;
                     }
                     case "break": {

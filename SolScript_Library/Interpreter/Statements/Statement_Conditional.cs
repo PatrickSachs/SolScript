@@ -15,23 +15,21 @@ namespace SolScript.Interpreter.Statements {
 
         #region Overrides
 
-        public override SolValue Execute(SolExecutionContext context, IVariables parentVariables) {
+        public override SolValue Execute(SolExecutionContext context, IVariables parentVariables, out Terminators terminators) {
             context.CurrentLocation = Location;
-            Terminators = Terminators.None;
             foreach (IfBranch branch in If) {
                 Variables branchVariables = new Variables(Assembly) {Parent = parentVariables};
                 if (branch.Condition.Evaluate(context, parentVariables).IsTrue(context)) {
-                    SolValue value = branch.Chunk.ExecuteInTarget(context, branchVariables);
-                    Terminators = branch.Chunk.Terminators;
+                    SolValue value = branch.Chunk.Execute(context, branchVariables, out terminators);
                     return value;
                 }
             }
             if (Else != null) {
                 Variables branchVariables = new Variables(Assembly) {Parent = parentVariables};
-                SolValue value = Else.ExecuteInTarget(context, branchVariables);
-                Terminators = Else.Terminators;
+                SolValue value = Else.Execute(context, branchVariables, out terminators);
                 return value;
             }
+            terminators = Terminators.None;
             return SolNil.Instance;
         }
 

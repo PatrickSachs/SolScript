@@ -15,27 +15,25 @@ namespace SolScript.Interpreter.Statements {
 
         #region Overrides
 
-        public override SolValue Execute(SolExecutionContext context, IVariables parentVariables) {
-            Terminators = Terminators.None;
+        public override SolValue Execute(SolExecutionContext context, IVariables parentVariables, out Terminators terminators) {
             while (Condition.Evaluate(context, parentVariables).IsTrue(context)) {
                 // The chunk is running in a new variable context in order to discard the
                 // locals from the previous iteration.
                 Variables variables = new Variables(Assembly) {Parent = parentVariables};
-                SolValue returnValue = Chunk.ExecuteInTarget(context, variables);
-                Terminators terminators = Chunk.Terminators;
-                if (InternalHelper.DidReturn(terminators)) {
-                    Terminators = Terminators.Return;
+                Terminators chunkTerminators;
+                SolValue returnValue = Chunk.Execute(context, variables, out chunkTerminators);
+                if (InternalHelper.DidReturn(chunkTerminators)) {
+                    terminators = Terminators.Return;
                     return returnValue;
                 }
-                if (InternalHelper.DidBreak(terminators)) {
-                    Terminators = Terminators.None;
+                if (InternalHelper.DidBreak(chunkTerminators)) {
                     break;
                 }
                 // Continue is breaking the chunk execution.
-                if (InternalHelper.DidContinue(terminators)) {
-                    Terminators = Terminators.None;
+                if (InternalHelper.DidContinue(chunkTerminators)) {
                 }
             }
+            terminators = Terminators.None;
             return SolNil.Instance;
         }
 

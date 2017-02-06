@@ -11,8 +11,6 @@ namespace SolScript.Interpreter.Statements
     {
         public Statement_CallInstanceFunction(SolAssembly assembly, SolSourceLocation location, string statementDefinedInClass, SolExpression functionGetter, params SolExpression[] args) : base(assembly, location)
         {
-            //ClassGetter = classGetter;
-            //FunctionName = functionName;
             FunctionGetter = functionGetter;
             Arguments = args;
             StatementDefinedInClassName = statementDefinedInClass;
@@ -20,7 +18,6 @@ namespace SolScript.Interpreter.Statements
 
         public readonly SolExpression[] Arguments;
         public readonly SolExpression FunctionGetter;
-        //public readonly SolString FunctionName;
 
         // WARNING: This could have been defined __ anywhere__ not even necessarily within the class inheritance tree!
         /// <summary>
@@ -36,7 +33,7 @@ namespace SolScript.Interpreter.Statements
         
         #region Overrides
 
-        public override SolValue Execute(SolExecutionContext context, IVariables parentVariables)
+        public override SolValue Execute(SolExecutionContext context, IVariables parentVariables, out Terminators terminators)
         {
             context.CurrentLocation = Location;
             SolValue functionRaw = FunctionGetter.Evaluate(context, parentVariables);
@@ -46,53 +43,8 @@ namespace SolScript.Interpreter.Statements
                 throw new SolRuntimeException(context, $"Tried to call a \"{functionRaw.Type}\" value.");
             }
             SolValue[] callArgs = GetArguments(context, parentVariables);
+            terminators = Terminators.None;
             return function.Call(context, callArgs);
-
-            /*SolValue classInstRaw = ClassGetter.Evaluate(context, parentVariables);
-            SolClass classInst = classInstRaw as SolClass;
-            // Check 1: Are we calling a class instance function?
-            if (classInst != null) {
-                // If the statement was written anywhere inside the calling function we can access the 
-                // locals of the respective inheritance level.
-                // If not(=the statement was written in another class/global context) we will simply
-                // grant access to the globals.
-                SolValue functionRaw;
-                SolClass.Inheritance classInheritance = classInst.FindInheritance(StatementDefinedInClassName);
-                try {
-                    if (classInheritance != null) {
-                        functionRaw = classInheritance.Variables.Get(FunctionName.Value);
-                    } else {
-                        functionRaw = classInst.GlobalVariables.Get(FunctionName.Value);
-                    }
-                } catch (SolVariableException ex) {
-                    throw new SolRuntimeException(context, $"Failed to get \"{classInst.Type}\" instance function \"{FunctionName}\" - {ex.Message}");
-                }
-                SolFunction function = functionRaw as SolFunction;
-                if (function == null) {
-                    throw new SolRuntimeException(context, $"Tried to call a \"{functionRaw.Type}\" value.");
-                }
-                SolValue[] callArgs = GetArguments(context, parentVariables);
-                SolValue ret = function.Call(context, callArgs);
-                return ret;
-            }
-            // Check 2: Are we calling a global function on any other indexable?
-            IValueIndexable indexable = classInstRaw as IValueIndexable;
-            if (indexable != null) {
-                SolValue functionRaw;
-                try {
-                    functionRaw = indexable[FunctionName];
-                } catch (SolVariableException ex) {
-                    throw new SolRuntimeException(context, $"Failed to get function \"{FunctionName}\"  on an indexable value of type \"{classInstRaw.Type}\" - {ex.Message}");
-                }
-                SolFunction function = functionRaw as SolFunction;
-                if (function == null) {
-                    throw new SolRuntimeException(context, $"Tried to call a \"{functionRaw.Type}\" value.");
-                }
-                SolValue[] callArgs = GetArguments(context, parentVariables);
-                function.Call(context, callArgs);
-            }
-
-            throw new SolRuntimeException(context, "Class instance functions cannot be called on " + classInstRaw.Type + " values.");*/
         }
 
         protected override string ToString_Impl()

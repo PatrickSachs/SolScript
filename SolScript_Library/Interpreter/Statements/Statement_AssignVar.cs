@@ -17,8 +17,8 @@ namespace SolScript.Interpreter.Statements
         public readonly SolExpression ValueGetter;
 
         #region Overrides
-
-        public override SolValue Execute(SolExecutionContext context, IVariables parentVariables)
+        
+        public override SolValue Execute(SolExecutionContext context, IVariables parentVariables, out Terminators terminators)
         {
             context.CurrentLocation = Location;
             SolValue value = ValueGetter.Evaluate(context, parentVariables);
@@ -27,6 +27,7 @@ namespace SolScript.Interpreter.Statements
             } catch (SolVariableException ex) {
                 throw new SolRuntimeException(context, ex.Message);
             }
+            terminators = Terminators.None;
             return value;
         }
 

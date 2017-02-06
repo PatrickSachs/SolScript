@@ -10,12 +10,10 @@ namespace SolScript.Interpreter.Statements {
         }
 
         public readonly SolChunk Chunk;
-
-        public override Terminators Terminators => Chunk.Terminators;
-
-        public override SolValue Execute(SolExecutionContext context, IVariables parentVariables) {
+        
+        public override SolValue Execute(SolExecutionContext context, IVariables parentVariables, out Terminators terminators) {
             Variables isolatedVariables = new Variables(Assembly) {Parent = parentVariables};
-            return Chunk.ExecuteInTarget(context, isolatedVariables);
+            return Chunk.Execute(context, isolatedVariables, out terminators);
         }
 
         protected override string ToString_Impl() {

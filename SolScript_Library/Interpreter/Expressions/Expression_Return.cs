@@ -8,12 +8,11 @@ namespace SolScript.Interpreter.Expressions {
         }
 
         public readonly SolExpression ReturnExpression;
-
-        public override Terminators Terminators => Terminators.Return;
-
+        
         #region Overrides
 
-        public override SolValue Evaluate(SolExecutionContext context, IVariables parentVariables) {
+        public override SolValue Evaluate(SolExecutionContext context, IVariables parentVariables, out Terminators terminators) {
+            terminators = Terminators.Return;
             return ReturnExpression.Evaluate(context, parentVariables);
         }
 

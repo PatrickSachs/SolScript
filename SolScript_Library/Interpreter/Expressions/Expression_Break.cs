@@ -17,7 +17,8 @@ namespace SolScript.Interpreter.Expressions {
         
         #region Overrides
 
-        public override SolValue Evaluate(SolExecutionContext context, IVariables parentVariables) {
+        public override SolValue Evaluate(SolExecutionContext context, IVariables parentVariables, out Terminators terminators) {
+            terminators = Terminators.Break;
             return SolNil.Instance;
         }
 
@@ -26,7 +27,6 @@ namespace SolScript.Interpreter.Expressions {
         }
 
         #endregion
-
-        public override Terminators Terminators => Terminators.Break;
+        
     }
 }

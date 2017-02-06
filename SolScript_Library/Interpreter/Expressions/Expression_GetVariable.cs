@@ -17,14 +17,15 @@ namespace SolScript.Interpreter.Expressions
         public readonly SourceRef Source;
 
         #region Overrides
-
+        /// <inheritdoc />
+        /// <exception cref="SolRuntimeException">An errir occured while getting the variable.</exception>
         public override SolValue Evaluate(SolExecutionContext context, IVariables parentVariables)
         {
             context.CurrentLocation = Location;
             try {
                 return Source.Get(context, parentVariables);
             } catch (SolVariableException ex) {
-                throw new SolRuntimeException(context, ex.Message);
+                throw new SolRuntimeException(context, ex.Message, ex);
             }
         }
 
@@ -64,6 +65,7 @@ namespace SolScript.Interpreter.Expressions
             #region Overrides
 
             /// <inheritdoc />
+            /// <exception cref="SolVariableException">An error occured while retrieving this value. All other possible exceptions are wrapped inside this exception. .</exception>
             public override SolValue Get(SolExecutionContext context, IVariables parentVariables)
             {
                 SolValue indexableRaw = IndexableGetter.Evaluate(context, parentVariables);
@@ -75,13 +77,11 @@ namespace SolScript.Interpreter.Expressions
                         throw new SolVariableException($"Tried to index a class by a \"{key.Type}\" value.");
                     }
                     SolClass.Inheritance inheritance = LinkedExpression.WrittenInClass != null ? solClass.FindInheritance(LinkedExpression.WrittenInClass) : null;
-                    // <bubble>SolVariableException</bubble>
                     return inheritance?.Variables.Get(keyString.Value) ?? solClass.GlobalVariables.Get(keyString.Value);
                 }
                 IValueIndexable indexable = indexableRaw as IValueIndexable;
                 if (indexable != null)
                 {
-                    // <bubble>SolVariableException</bubble>
                     SolValue value = indexable[key];
                     return value;
                 }
@@ -119,9 +119,10 @@ namespace SolScript.Interpreter.Expressions
             #region Overrides
 
             /// <inheritdoc />
+            /// <exception cref="SolVariableException">An error occured while retrieving this value. All other possible exceptions are wrapped inside this exception. .</exception>
+
             public override SolValue Get(SolExecutionContext context, IVariables parentVariables)
             {
-                // <bubble>SolVariableException</bubble>
                 return parentVariables.Get(Name);
             }
 

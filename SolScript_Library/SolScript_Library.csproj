@@ -126,7 +126,6 @@
     <Compile Include="Interpreter\Builders\SolConstructWithMembersBuilder.cs" />
     <Compile Include="Interpreter\SolSourceLocation.cs" />
     <Compile Include="Interpreter\SolStackFrame.cs" />
-    <Compile Include="Interpreter\Statements\Statement_CallGlobalFunctionFromGlobalContext.cs" />
     <Compile Include="Interpreter\Statements\Statement_DeclareVar.cs" />
     <Compile Include="Interpreter\Statements\Statement_Do.cs" />
     <Compile Include="Interpreter\Statements\Statement_For.cs" />
@@ -165,7 +164,6 @@
     <Compile Include="Interpreter\Expressions\SolExpression.cs" />
     <Compile Include="Interpreter\Expressions\Expression_String.cs" />
     <Compile Include="Interpreter\Expressions\Expression_Nil.cs" />
-    <Compile Include="Interpreter\ITerminateable.cs" />
     <Compile Include="Interpreter\InternalHelper.cs" />
     <Compile Include="Interpreter\Library\Classes\MathModule.cs" />
     <Compile Include="Interpreter\SolChunk.cs" />
