@@ -190,7 +190,7 @@ namespace SolScript.Interpreter
                         function = new SolScriptClassFunction(GetInstance(), functionDefinition);
                         break;
                     case SolChunkWrapper.Type.NativeMethod:
-                        function = new SolNativeClassFunction(GetInstance(), functionDefinition);
+                        function = new SolNativeClassMemberFunction(GetInstance(), functionDefinition);
                         break;
                     case SolChunkWrapper.Type.NativeConstructor:
                         function = new SolNativeClassConstructorFunction(GetInstance(), functionDefinition);

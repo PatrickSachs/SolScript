@@ -71,6 +71,7 @@
     <Compile Include="Interpreter\AccessModifier.cs" />
     <Compile Include="Interpreter\Builders\IAnnotateableBuilder.cs" />
     <Compile Include="Interpreter\Builders\SolBuilderBase.cs" />
+    <Compile Include="Interpreter\Types\Implementation\SolNativeClassMemberFunction.cs" />
     <Compile Include="Interpreter\Variables.cs" />
     <Compile Include="Interpreter\ClassCreationOptions.cs" />
     <Compile Include="Interpreter\ClassGlobalVariables.cs" />

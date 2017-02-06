@@ -2,11 +2,18 @@
 using System.Collections.Generic;
 using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
+using SolScript.Interpreter.Library;
 using SolScript.Interpreter.Types.Interfaces;
 
 namespace SolScript.Interpreter.Types
 {
-    public class SolClass : SolValue, IValueIndexable
+    /// <summary>
+    ///     This class represents a class in SolScript. If you wish to create you own classes have a look at the
+    ///     <see cref="SolLibraryClassAttribute" /> attribute.<br />
+    ///     Classes can be instantiated using the
+    ///     <see cref="TypeRegistry.CreateInstance(string, ClassCreationOptions, SolValue[])" /> method.
+    /// </summary>
+    public sealed class SolClass : SolValue, IValueIndexable
     {
         internal SolClass(SolClassDefinition definition)
         {
@@ -249,26 +256,6 @@ namespace SolScript.Interpreter.Types
             return InheritanceChain.Definition.TryGetMetaFunction(meta, out link);
         }
 
-        /*/// <summary>
-        ///     Returns a stack of the inheritances starting at the given definition, and including the derived inheritance.<br />
-        ///     <c>(Uber:Medium:Base:Slave).FindInheritancesUpward(Base) -> (Base, Medium, Uber)</c>
-        /// </summary>
-        /// <param name="definition">The definition</param>
-        /// <returns>The stack.</returns>
-        internal Stack<Inheritance> FindInheritancesUpward(SolClassDefinition definition)
-        {
-            var stack = new Stack<Inheritance>();
-            Inheritance active = InheritanceChain;
-            while (active != null) {
-                stack.Push(active);
-                if (active.Definition == definition) {
-                    return stack;
-                }
-                active = active.BaseClass;
-            }
-            return null;
-        }*/
-
         /// <summary>
         ///     Gets the inheritance chain in reversed order. The base base class comes first, while the most derived class(this
         ///     one) comes last.
@@ -367,7 +354,8 @@ namespace SolScript.Interpreter.Types
                     if (metaTable.TryGet("new_args", out metaNewArgsRaw)) {
                         SolTable metaNewArgs = metaNewArgsRaw as SolTable;
                         if (metaNewArgs == null) {
-                            throw new SolRuntimeException(callingContext, $"The annotation \"{annotation}\" tried to override the constructor arguments of a class instance of type \"{Type}\" with a \"{metaNewArgsRaw.Type}\" value. Expected a \"table!\" value.");
+                            throw new SolRuntimeException(callingContext,
+                                $"The annotation \"{annotation}\" tried to override the constructor arguments of a class instance of type \"{Type}\" with a \"{metaNewArgsRaw.Type}\" value. Expected a \"table!\" value.");
                         }
                         args = metaNewArgs.ToArray();
                     }
@@ -419,83 +407,5 @@ namespace SolScript.Interpreter.Types
         }
 
         #endregion
-
-        /*#region Nested type: Initializer
-
-        /// <summary> The initializer class is used to initialize SolClasses. </summary>
-        public sealed class Initializer
-        {
-            internal Initializer(SolClass forClass)
-            {
-                m_ForClass = forClass;
-            }
-
-            private readonly SolClass m_ForClass;
-
-            /// <summary>
-            ///     Creates the instance of this SolClass by assigning the default (or
-            ///     specified) values to the fields and then calls the constructor.
-            /// </summary>
-            /// <exception cref="SolRuntimeException">An error occured while initializing the class.</exception>
-            public SolClass Create(SolExecutionContext context, params SolValue[] args)
-            {
-                // todo: annotations during class initialization
-                Stack<Inheritance> inheritanceStack = m_ForClass.GetInheritanceChainReversed();
-                var annotations = new List<SolClass>();
-                while (inheritanceStack.Count != 0) {
-                    Inheritance inheritance = inheritanceStack.Pop();
-                    foreach (KeyValuePair<string, SolFieldDefinition> fieldPair in inheritance.Definition.FieldPairs) {
-                        if (fieldPair.Value.FieldInitializer != null) {
-                            SolValue initialValue = fieldPair.Value.FieldInitializer.Evaluate(context, inheritance.Variables);
-                            SolDebug.WriteLine("Initializing field " + fieldPair.Key + " to " + initialValue);
-                            try {
-                                inheritance.Variables.Assign(fieldPair.Key, initialValue);
-                            } catch (SolVariableException ex) {
-                                throw new SolRuntimeException(context,
-                                    $"An error occured while initializing the field \"{fieldPair.Key}\" of class \"{m_ForClass.Type}\"(Inheritance Level: \"{inheritance.Definition.Type}\"). {ex.Message}",
-                                    ex);
-                            }
-                        }
-                    }
-                    foreach (SolAnnotationDefinition annotation in inheritance.Definition.Annotations) {
-                        var annotationArgs = new SolValue[annotation.Arguments.Length];
-                        for (int i = 0; i < annotationArgs.Length; i++) {
-                            annotationArgs[i] = annotation.Arguments[i].Evaluate(context, inheritance.Variables);
-                        }
-                        try {
-                            SolClass annotationInstance = m_ForClass.Assembly.TypeRegistry.PrepareInstance(annotation.Definition, true).Create(context, annotationArgs);
-                            annotations.Add(annotationInstance);
-                        } catch (SolTypeRegistryException ex) {
-                            throw new SolRuntimeException(context,
-                                $"An error occured while initializing the annotation \"{annotation.Definition.Type}\" of class \"{m_ForClass.Type}\"(Inheritance Level: \"{inheritance.Definition.Type}\").",
-                                ex);
-                        }
-                    }
-                }
-                m_ForClass.AnnotationsArray = annotations.ToArray();
-                m_ForClass.CallConstructor(context, args);
-                return m_ForClass;
-            }
-
-
-
-            /// <summary>
-            ///     Warning: NO finds of this class have been assigned and the ctor will
-            ///     NOT be called. The IsInitialized variable of the class is set to FALSE. You
-            ///     are responsible for making sure that this class can be used.
-            /// </summary>
-            /// <remarks>
-            ///     The runtime internally uses this method to marshal already existing
-            ///     native objects to new SolClasses.
-            /// </remarks>
-            [NotNull]
-            public SolClass CreateWithoutInitialization()
-            {
-                m_ForClass.AnnotationsArray = Array.Empty<SolClass>();
-                return m_ForClass;
-            }
-        }
-
-        #endregion*/
     }
 }

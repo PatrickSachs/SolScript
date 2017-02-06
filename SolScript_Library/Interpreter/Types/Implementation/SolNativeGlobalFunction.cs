@@ -4,16 +4,30 @@ using SolScript.Interpreter.Exceptions;
 
 namespace SolScript.Interpreter.Types.Implementation
 {
-    public class SolNativeGlobalFunction : DefinedSolFunction
+    /// <summary>
+    ///     This class is used for native global functions.
+    /// </summary>
+    public sealed class SolNativeGlobalFunction : DefinedSolFunction
     {
+        /// <summary>
+        ///     Creates the function instance.
+        /// </summary>
+        /// <param name="definition">The function definiton.</param>
+        /// <param name="instance">The reference to the native object to invoke the function on.</param>
+        /// <seealso cref="DynamicReference"/>
         public SolNativeGlobalFunction(SolFunctionDefinition definition, DynamicReference instance)
         {
             Definition = definition;
             m_Instance = instance;
         }
 
+        // The native object to invoke the function on. Typically a null reference unless manually created by the user.
         private readonly DynamicReference m_Instance;
+
+        /// <inheritdoc />
         public override SolFunctionDefinition Definition { get; }
+
+        /// <inheritdoc cref="SolFunction.ParameterInfo" />
         public new SolParameterInfo.Native ParameterInfo => (SolParameterInfo.Native) base.ParameterInfo;
 
         #region Overrides
@@ -24,11 +38,13 @@ namespace SolScript.Interpreter.Types.Implementation
             throw new NotImplementedException();
         }
 
+        /// <inheritdoc />
         protected override string ToString_Impl(SolExecutionContext context)
         {
             return "function#" + Id + "<global>";
         }
 
+        /// <inheritdoc />
         public override int GetHashCode()
         {
             unchecked {
@@ -64,6 +80,7 @@ namespace SolScript.Interpreter.Types.Implementation
             return returnValue;
         }
 
+        /// <inheritdoc />
         public override bool Equals(object other)
         {
             return other == this;

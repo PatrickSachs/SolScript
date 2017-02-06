@@ -3,7 +3,10 @@ using SolScript.Interpreter.Exceptions;
 
 namespace SolScript.Interpreter.Types.Implementation
 {
-    public class SolScriptLamdaFunction : SolFunction
+    /// <summary>
+    ///     A lamda function. No real documentation yet since lamda functions are subject to change and to be expanded.
+    /// </summary>
+    public sealed class SolScriptLamdaFunction : SolFunction
     {
         public SolScriptLamdaFunction(SolAssembly assembly, SolSourceLocation location, SolChunk chunk, IVariables parentVariables, SolType returnType, SolParameterInfo parameterInfo)
         {
@@ -16,7 +19,7 @@ namespace SolScript.Interpreter.Types.Implementation
         }
 
         private readonly SolChunk m_Chunk;
-        // todo: improve variable mcapturing for lamda functions. as of now it may capture entire class hierachies (but maybe that's desired?)
+        // todo: improve variable capturing for lamda functions. as of now it may capture entire class hierachies (but maybe that's desired?)
         private readonly IVariables m_ParentVariables;
 
         public override SolAssembly Assembly { get; }

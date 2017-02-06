@@ -3,17 +3,14 @@ using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
 
 namespace SolScript.Interpreter.Types {
-    public class SolNil : SolValue
+    public sealed class SolNil : SolValue
     {
         public const string TYPE = "nil";
         private SolNil() {
         }
 
         public static readonly SolNil Instance = new SolNil();
-
-        // TODO: Nil as type constraint?
-        public static readonly SolType MarshalFromCSharpType = new SolType("nil", true);
-
+        
         public override string Type => TYPE;
 
         /// <summary> Tries to convert the local value into a value of a C# type. May

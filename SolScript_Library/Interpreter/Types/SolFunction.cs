@@ -4,33 +4,57 @@ using SolScript.Interpreter.Exceptions;
 
 namespace SolScript.Interpreter.Types
 {
+    /// <summary>
+    ///     This is the base class for all function in SolScript. Only use more derived type if you know exactly what you are
+    ///     doing.<br />
+    ///     The <see cref="SolFunction" /> class itself allows you to easily call a function with some arguments and obtain its
+    ///     return value.
+    /// </summary>
     public abstract class SolFunction : SolValue, ISourceLocateable
     {
-        protected SolFunction()
+        // SolFunction may not be extended by other assemblies.
+        internal SolFunction()
         {
             Id = s_NextId++;
         }
 
+        /// <summary>
+        ///     A <see cref="SolFunction" /> is always of type "function".
+        /// </summary>
         public const string TYPE = "function";
 
-        // public IVariables ParentVariables;
         private static uint s_NextId;
         public readonly uint Id;
 
+        /// <summary>
+        ///     The <see cref="SolAssembly" /> this function belongs to.
+        /// </summary>
         public abstract SolAssembly Assembly { get; }
+
+        /// <summary>
+        ///     The parameters of this function.
+        /// </summary>
         public abstract SolParameterInfo ParameterInfo { get; }
+
+        /// <summary>
+        ///     The return type of this function.
+        /// </summary>
         public abstract SolType ReturnType { get; }
 
+        /// <inheritdoc cref="TYPE" />
         public override string Type => TYPE;
 
         #region ISourceLocateable Members
 
+        /// <inheritdoc />
         public abstract SolSourceLocation Location { get; }
 
         #endregion
 
         #region Overrides
 
+        /// <inheritdoc />
+        /// <remarks>One function equals another if they share the same <see cref="Id" />.</remarks>
         public override bool IsEqual(SolExecutionContext context, SolValue other)
         {
             SolFunction otherFunc = other as SolFunction;
@@ -64,7 +88,7 @@ namespace SolScript.Interpreter.Types
             return returnValue;
         }
 
-        /// <inheritdoc cref="Call"/>
+        /// <inheritdoc cref="Call" />
         protected abstract SolValue Call_Impl([NotNull] SolExecutionContext context, [ItemNotNull] params SolValue[] args);
 
         /// <summary>

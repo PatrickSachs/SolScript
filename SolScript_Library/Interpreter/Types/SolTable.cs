@@ -7,7 +7,7 @@ using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types.Interfaces;
 
 namespace SolScript.Interpreter.Types {
-    public class SolTable : SolValue, IValueIndexable, IEnumerable<KeyValuePair<SolValue, SolValue>> {
+    public sealed class SolTable : SolValue, IValueIndexable, IEnumerable<KeyValuePair<SolValue, SolValue>> {
         public SolTable()
         {
             m_Id = s_NextId++;

@@ -1,6 +1,4 @@
-﻿using System;
-using System.Reflection;
-using JetBrains.Annotations;
+﻿using JetBrains.Annotations;
 using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter
@@ -79,6 +77,7 @@ namespace SolScript.Interpreter
             return Type.Equals(other.Type) && string.Equals(Name, other.Name);
         }
 
+        /// <inheritdoc cref="Equals(object)" />
         [Pure]
         public bool Equals(SolMetaKey other)
         {
@@ -96,24 +95,18 @@ namespace SolScript.Interpreter
     /// <typeparam name="T">This generic parameter defines the return type of the meta function.</typeparam>
     public sealed class SolMetaKey<T> : SolMetaKey where T : SolValue
     {
-        // todo: provide a better way to statically access the type name without or with cached reflection.
-        internal SolMetaKey(string name, bool canBeNil)
-            : base(
-                name,
-                new SolType(
-                    (string)
-                    typeof(T).GetField("TYPE", BindingFlags.Static | BindingFlags.Public).NotNull("Every SolValue type needs to have a public const string field named TYPE.").GetValue(null).NotNull(),
-                    canBeNil)) {}
+        internal SolMetaKey(string name, bool canBeNil) : base(name, new SolType(SolValue.PrimitiveTypeNameOf<T>(), canBeNil)) {}
 
         /// <summary>
         ///     Casts the given <see cref="SolValue" /> to the return value type specified in <typeparamref name="T" />.
         /// </summary>
         /// <param name="value">The value to cast.</param>
         /// <returns>The casted value.</returns>
-        /// <remarks>If the <see cref="SolMetaKey.Type"/> can be nil, this method by return <c>null</c> if a nil value was passed.</remarks>
+        /// <remarks>If the <see cref="SolMetaKey.Type" /> can be nil, this method by return <c>null</c> if a nil value was passed.</remarks>
         [CanBeNull]
         public T Cast(SolValue value)
         {
+            // todo: the CanBeNull attribute seems to create more trouble that it worth. Maybe find other some way to ahnde null/nil.
             if (Type.CanBeNil && value == SolNil.Instance) {
                 return null;
             }

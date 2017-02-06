@@ -5,7 +5,7 @@ using SolScript.Interpreter.Exceptions;
 
 namespace SolScript.Interpreter.Types
 {
-    public class SolNumber : SolValue
+    public sealed class SolNumber : SolValue
     {
         public SolNumber(double value)
         {

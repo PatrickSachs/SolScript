@@ -4,7 +4,7 @@ using SolScript.Interpreter.Exceptions;
 
 namespace SolScript.Interpreter.Types
 {
-    public class SolString : SolValue
+    public sealed class SolString : SolValue
     {
         public SolString(string value)
         {

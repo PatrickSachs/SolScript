@@ -6,7 +6,7 @@ using SolScript.Interpreter.Exceptions;
 
 namespace SolScript.Interpreter.Types
 {
-    public class SolBool : SolValue
+    public sealed class SolBool : SolValue
     {
         private SolBool(bool value)
         {

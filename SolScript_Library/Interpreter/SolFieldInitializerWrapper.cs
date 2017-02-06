@@ -46,7 +46,6 @@ namespace SolScript.Interpreter
         /// <param name="field">The native field itself.</param>
         public SolFieldInitializerWrapper(FieldOrPropertyInfo field)
         {
-            // todo: wrapper inside a wrapper, possibly create field & property seperate?
             FieldType = Type.NativeField;
             m_Field = field;
         }

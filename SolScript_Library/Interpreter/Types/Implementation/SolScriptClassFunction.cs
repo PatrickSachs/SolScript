@@ -1,25 +1,47 @@
 ﻿using System;
-using System.Windows.Forms.VisualStyles;
-using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
 
 namespace SolScript.Interpreter.Types.Implementation
 {
-    public class SolScriptClassFunction : SolClassFunction
+    /// <summary>
+    ///     This class is used for class functions declared in code.
+    /// </summary>
+    public sealed class SolScriptClassFunction : SolClassFunction
     {
+        /// <summary>
+        ///     Creates a new function instance.
+        /// </summary>
+        /// <param name="inClass">The class this function belongs to.</param>
+        /// <param name="definition">The definition of this function.</param>
         public SolScriptClassFunction(SolClass inClass, SolFunctionDefinition definition)
         {
-            m_HoldingClass = inClass;
+            ClassInstance = inClass;
             Definition = definition;
         }
 
-        private readonly SolClass m_HoldingClass;
+        /// <inheritdoc />
+        public override SolAssembly Assembly {
+            get {
+                if (Definition.DefinedIn != null) {
+                    return Definition.DefinedIn.Assembly;
+                }
+                throw new InvalidOperationException("Could not get the defining class of a class function.");
+            }
+        }
+
+        /// <inheritdoc />
+        public override SolFunctionDefinition Definition { get; }
+
+        /// <inheritdoc />
+        public override SolClass ClassInstance { get; }
 
         #region Overrides
 
+        /// <inheritdoc />
+        /// <exception cref="SolRuntimeException">A runtime error occured.</exception>
         protected override SolValue Call_Impl(SolExecutionContext context, params SolValue[] args)
         {
-            SolClass.Inheritance inheritance = m_HoldingClass.FindInheritance(Definition.DefinedIn).NotNull();
+            SolClass.Inheritance inheritance = ClassInstance.FindInheritance(Definition.DefinedIn).NotNull();
             Variables varContext = new Variables(Assembly) {
                 Parent = inheritance.Variables // todo: orginally this was parented to the internal variables? was this a mistake or does it mave a reason?
             };
@@ -43,10 +65,6 @@ namespace SolScript.Interpreter.Types.Implementation
         /// <exception cref="SolMarshallingException"> The value cannot be converted. </exception>
         public override object ConvertTo(Type type)
         {
-            /*if (type == typeof (SolCSharpFunction.CSharpDelegate)) {
-                SolCSharpFunction.CSharpDelegate csharpDel = args => this.Call(args, Owner.GlobalContext);
-                return csharpDel;
-            }*/
             throw new SolMarshallingException("function", type);
         }
 
@@ -56,31 +74,25 @@ namespace SolScript.Interpreter.Types.Implementation
             return "function#" + Id + "<class#" + Definition.DefinedIn.Type + ">";
         }
 
+        /// <inheritdoc />
         public override int GetHashCode()
         {
             unchecked {
-                return 11 + (int)Id;
+                return 11 + (int) Id;
             }
         }
 
+        /// <inheritdoc />
         public override bool Equals(object other)
         {
             return other == this;
         }
 
+        /// <inheritdoc />
         public override SolClassDefinition GetDefiningClass()
         {
             return Definition.DefinedIn;
         }
-
-        public override SolAssembly Assembly {
-            get {
-                if (Definition.DefinedIn != null) return Definition.DefinedIn.Assembly;
-                throw new InvalidOperationException("Could not get the defining class of a class function.");
-            }
-        }
-
-        public override SolFunctionDefinition Definition { get; }
 
         #endregion
     }
