@@ -341,42 +341,39 @@ namespace SolScript.Interpreter
         /// </summary>
         /// <param name="assembly">The assembly to use for type lookups.</param>
         /// <param name="member">The name to exctract the info out of.</param>
-        /// <param name="type">The type of this member info. This takes the <see cref="SolContractAttribute" /> into consideration.</param>
+        /// <returns>The type of this member info. This takes the <see cref="SolContractAttribute" /> into consideration.</returns>
         /// <exception cref="SolMarshallingException">No matching SolType for the return type.</exception>
-        internal static void GetMemberReturnType(SolAssembly assembly, MethodInfo member, out SolType type)
+        internal static SolType GetMemberReturnType(SolAssembly assembly, MethodInfo member)
         {
             SolContractAttribute contract = member.GetCustomAttribute<SolContractAttribute>();
             if (contract != null) {
-                type = contract.GetSolType();
-            } else {
-                type = SolMarshal.GetSolType(assembly, member.ReturnType);
+                return contract.GetSolType();
             }
+            return SolMarshal.GetSolType(assembly, member.ReturnType);
         }
 
         /// <inheritdoc
-        ///     cref="GetMemberReturnType(SolScript.Interpreter.SolAssembly,System.Reflection.MethodInfo,out SolScript.Interpreter.SolType)" />
+        ///     cref="GetMemberReturnType(SolScript.Interpreter.SolAssembly,System.Reflection.MethodInfo)" />
         /// <exception cref="SolMarshallingException">No matching SolType for the return type.</exception>
-        internal static void GetMemberReturnType(SolAssembly assembly, ConstructorInfo member, out SolType type)
+        internal static SolType GetMemberReturnType(SolAssembly assembly, ConstructorInfo member)
         {
             SolContractAttribute contract = member.GetCustomAttribute<SolContractAttribute>();
             if (contract != null) {
-                type = contract.GetSolType();
-            } else {
-                type = SolMarshal.GetSolType(assembly, member.DeclaringType);
+                return contract.GetSolType();
             }
+            return SolMarshal.GetSolType(assembly, member.DeclaringType);
         }
 
         /// <inheritdoc
-        ///     cref="GetMemberReturnType(SolScript.Interpreter.SolAssembly,System.Reflection.MethodInfo,out SolScript.Interpreter.SolType)" />
+        ///     cref="GetMemberReturnType(SolScript.Interpreter.SolAssembly,System.Reflection.MethodInfo)" />
         /// <exception cref="SolMarshallingException">No matching SolType for the return type.</exception>
-        internal static void GetMemberReturnType(SolAssembly assembly, FieldOrPropertyInfo member, out SolType type)
+        internal static SolType GetMemberReturnType(SolAssembly assembly, FieldOrPropertyInfo member)
         {
-            SolContractAttribute contract = member.GetCustomAttribute<SolContractAttribute>(true);
+            SolContractAttribute contract = member.GetCustomAttribute<SolContractAttribute>();
             if (contract != null) {
-                type = contract.GetSolType();
-            } else {
-                type = SolMarshal.GetSolType(assembly, member.DeclaringType);
+                return contract.GetSolType();
             }
+            return SolMarshal.GetSolType(assembly, member.DataType);
         }
 
         /// <exception cref="SolMarshallingException">No matching SolType for a parameter type.</exception>

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Text;
 using System.Text.RegularExpressions;
 using SolScript.Interpreter;
 using SolScript.Interpreter.Exceptions;
@@ -95,12 +96,14 @@ namespace SolScript
                     script.IncludeLibrary(SolLibrary.StandardLibrary).Create();
                     try {
                         script.TypeRegistry.CreateInstance("Main", ClassCreationOptions.Default, new SolString("Hello from the command line :)"), new SolNumber(42));
-                    } catch (SolRuntimeException ex) {
+                    } catch (SolTypeRegistryException ex) {
                         Console.ForegroundColor = ConsoleColor.Yellow;
                         Console.WriteLine("   A runtime error occured!");
                         Console.WriteLine(" ================================================");
                         Console.ForegroundColor = ConsoleColor.White;
-                        Console.WriteLine(ex.Message);
+                            StringBuilder builder = new StringBuilder();
+                            SolScriptException.UnwindExceptionStack(ex, builder);
+                        Console.WriteLine(builder.ToString());
                         Console.ForegroundColor = ConsoleColor.Yellow;
                         Console.WriteLine(" ================================================");
                         Console.ForegroundColor = ConsoleColor.White;

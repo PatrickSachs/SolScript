@@ -8,5 +8,15 @@
         public override SolSourceLocation Location => Definition.Location;
 
         public abstract SolFunctionDefinition Definition { get; }
+
+        #region Overrides
+
+        /// <inheritdoc />
+        protected override string ToString_Impl(SolExecutionContext context)
+        {
+            return "function#" + Id + "<" + Definition.Name + ">";
+        }
+
+        #endregion
     }
 }

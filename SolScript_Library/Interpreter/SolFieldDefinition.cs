@@ -38,7 +38,7 @@ namespace SolScript.Interpreter
                 if (builder.NativeReturnTypeHasBeenResolved) {
                     Type = builder.Type;
                 } else {
-                    InternalHelper.GetMemberReturnType(assembly, builder.NativeField, out Type);
+                    Type = InternalHelper.GetMemberReturnType(assembly, builder.NativeField);
                     builder.FieldNativeType(Type);
                 }
             } else {

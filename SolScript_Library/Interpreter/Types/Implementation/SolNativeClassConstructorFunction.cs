@@ -33,12 +33,6 @@ namespace SolScript.Interpreter.Types.Implementation
         }
 
         /// <inheritdoc />
-        protected override string ToString_Impl(SolExecutionContext context)
-        {
-            return "function#" + Id + "<class#" + Definition.DefinedIn.NotNull().Type + ">";
-        }
-
-        /// <inheritdoc />
         public override int GetHashCode()
         {
             unchecked {

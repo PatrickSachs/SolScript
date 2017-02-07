@@ -49,7 +49,7 @@ namespace SolScript.Interpreter
                     } else {
                         // The return type cannot be fully determined in the library since other libraries may
                         // be required in order for the return type to be resolved.
-                        InternalHelper.GetMemberReturnType(assembly, builder.NativeMethod, out ReturnType);
+                        ReturnType = InternalHelper.GetMemberReturnType(assembly, builder.NativeMethod);
                         builder.NativeReturns(ReturnType);
                     }
                     Chunk = new SolChunkWrapper(builder.NativeMethod);

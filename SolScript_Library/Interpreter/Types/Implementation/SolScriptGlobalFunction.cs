@@ -29,12 +29,6 @@ namespace SolScript.Interpreter.Types.Implementation
         }
 
         /// <inheritdoc/>
-        protected override string ToString_Impl(SolExecutionContext context)
-        {
-            return "function#" + Id + "<global>";
-        }
-
-        /// <inheritdoc/>
         public override int GetHashCode()
         {
             unchecked {

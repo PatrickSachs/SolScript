@@ -1,4 +1,5 @@
-﻿using SolScript.Interpreter.Statements;
+﻿using System.Text;
+using SolScript.Interpreter.Statements;
 using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter.Expressions

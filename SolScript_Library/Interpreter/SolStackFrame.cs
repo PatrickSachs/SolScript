@@ -36,7 +36,7 @@ namespace SolScript.Interpreter
             SolClassFunction classFunction = Function as SolClassFunction;
             DefinedSolFunction definedFunction = Function as DefinedSolFunction;
             if (classFunction != null) {
-                SolClassDefinition definingClass = classFunction.GetDefiningClass();
+                SolClassDefinition definingClass = classFunction.ClassInstance.InheritanceChain.Definition;
                 builder.Append(definingClass.Type);
                 builder.Append(".");
             }

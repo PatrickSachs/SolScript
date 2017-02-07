@@ -61,6 +61,12 @@ namespace SolScript.Interpreter.Types
             return otherFunc != null && Id == otherFunc.Id;
         }
 
+        /// <inheritdoc />
+        protected override string ToString_Impl(SolExecutionContext context)
+        {
+            return "function#" + Id;
+        }
+
         #endregion
 
         /// <summary>

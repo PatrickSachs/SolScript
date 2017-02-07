@@ -24,7 +24,7 @@ namespace SolScript.Interpreter.Expressions
         public override SolValue Evaluate(SolExecutionContext context, IVariables parentVariables)
         {
             // todo: better way for lamda to capture the parent variables (done by compiler to scan for needed ones?)
-            return new SolScriptLamdaFunction(Assembly, Location, Chunk, parentVariables, Type, Parameters);
+            return new SolScriptLamdaFunction(Assembly, Location, Parameters, Type, Chunk, parentVariables);
         }
 
         protected override string ToString_Impl()

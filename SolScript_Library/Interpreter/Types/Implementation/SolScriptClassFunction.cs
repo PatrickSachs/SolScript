@@ -68,12 +68,6 @@ namespace SolScript.Interpreter.Types.Implementation
             throw new SolMarshallingException("function", type);
         }
 
-        /// <summary> Converts the value to a culture specfifc string. </summary>
-        protected override string ToString_Impl(SolExecutionContext context)
-        {
-            return "function#" + Id + "<class#" + Definition.DefinedIn.Type + ">";
-        }
-
         /// <inheritdoc />
         public override int GetHashCode()
         {
@@ -86,12 +80,6 @@ namespace SolScript.Interpreter.Types.Implementation
         public override bool Equals(object other)
         {
             return other == this;
-        }
-
-        /// <inheritdoc />
-        public override SolClassDefinition GetDefiningClass()
-        {
-            return Definition.DefinedIn;
         }
 
         #endregion

@@ -56,18 +56,6 @@ namespace SolScript.Interpreter.Types.Implementation
             throw new SolMarshallingException("function", type);
         }
 
-        /// <inheritdoc />
-        protected override string ToString_Impl(SolExecutionContext context)
-        {
-            return "function#" + Id + "<class#" + (Definition.DefinedIn?.Type ?? "<ERROR>") + ">";
-        }
-
-        /// <inheritdoc />
-        public override SolClassDefinition GetDefiningClass()
-        {
-            return Definition.DefinedIn;
-        }
-
         #endregion
     }
 }
