@@ -53,7 +53,7 @@ namespace SolScript.Interpreter.Types.Implementation
             try {
                 InsertParameters(varContext, args);
             } catch (SolVariableException ex) {
-                throw new SolRuntimeException(context, ex.Message, ex);
+                throw SolRuntimeException.InvalidFunctionCallParameters(context, ex);
             }
             // Functions pretty much eat the terminators since that's what the terminators are supposed to terminate down to.
             Terminators terminators;

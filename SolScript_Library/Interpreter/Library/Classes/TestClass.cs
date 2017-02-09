@@ -9,9 +9,10 @@ namespace SolScript.Interpreter.Library.Classes {
     public class TestClass {
         public int counter;
 
-        public void test_func() {
+        public int test_func() {
             counter++;
             Console.WriteLine("Hello from C#! Counter: " + counter);
+            return counter;
         }
     }
 
@@ -27,16 +28,31 @@ namespace SolScript.Interpreter.Library.Classes {
             return testClass;
         }
 
-        private void MyMethod()
+        public int[] int_array()
+        {
+            return new[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+        }
+
+        public string a_string()
+        {
+            return Guid.NewGuid().ToString();
+        }
+
+        private static void MyMethod()
         {
             Console.WriteLine("-- I am a native lamda function!");
         }
 
-        private readonly MethodInfo m_Method = typeof(TestClassSingleton).GetMethod("MyMethod", BindingFlags.Instance|BindingFlags.NonPublic);
+        private readonly MethodInfo m_Method = typeof(TestClassSingleton).GetMethod("MyMethod", BindingFlags.Static|BindingFlags.NonPublic);
 
         public SolFunction Lamda(SolExecutionContext context)
         {
-            return new SolNativeLamdaFunction(context.Assembly, m_Method, new DynamicReference.FixedReference(this));
+            return new SolNativeLamdaFunction(context.Assembly, m_Method, DynamicReference.NullReference.Instance);
+        }
+
+        public MethodInfo MethodRaw()
+        {
+            return m_Method;
         }
     }
 }

@@ -16,5 +16,10 @@ namespace SolScript.Interpreter.Exceptions
 
         public SolRuntimeException(SolExecutionContext context, string message, Exception inner) : base(
             $"{context.CurrentLocation} : {message}\nStack Trace:\n{context.GenerateStackTrace(inner)}", inner) {}
+
+        internal static SolRuntimeException InvalidFunctionCallParameters(SolExecutionContext context, Exception inner)
+        {
+            return new SolRuntimeException(context, "Invalid function call parameters.", inner);
+        }
     }
 }

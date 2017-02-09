@@ -72,6 +72,16 @@
     <Compile Include="Interpreter\Builders\IAnnotateableBuilder.cs" />
     <Compile Include="Interpreter\Builders\SolBuilderBase.cs" />
     <Compile Include="Interpreter\Types\Implementation\SolNativeClassMemberFunction.cs" />
+    <Compile Include="Interpreter\Types\Marshal\ISolNativeMarshaller.cs" />
+    <Compile Include="Interpreter\Types\Marshal\ISolScriptMarshaller.cs" />
+    <Compile Include="Interpreter\Types\Marshal\NativeArrayMarshaller.cs" />
+    <Compile Include="Interpreter\Types\Marshal\NativeBoolMarshaller.cs" />
+    <Compile Include="Interpreter\Types\Marshal\NativeCharMarshaller.cs" />
+    <Compile Include="Interpreter\Types\Marshal\NativeMethodInfoMarshaller.cs" />
+    <Compile Include="Interpreter\Types\Marshal\NativeNullableMarshaller.cs" />
+    <Compile Include="Interpreter\Types\Marshal\NativeNumericMarshaller.cs" />
+    <Compile Include="Interpreter\Types\Marshal\NativeStringMarshaller.cs" />
+    <Compile Include="Interpreter\Types\Marshal\NativeVoidMarshaller.cs" />
     <Compile Include="Interpreter\Variables.cs" />
     <Compile Include="Interpreter\ClassCreationOptions.cs" />
     <Compile Include="Interpreter\ClassGlobalVariables.cs" />

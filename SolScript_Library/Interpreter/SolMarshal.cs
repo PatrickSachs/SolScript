@@ -4,14 +4,61 @@ using JetBrains.Annotations;
 using NesterovskyBros.Utils;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
+using SolScript.Interpreter.Types.Marshal;
 
 namespace SolScript.Interpreter
 {
     public static class SolMarshal
     {
+        static SolMarshal()
+        {
+            NativeMarshallers.Add(new NativeNumericMarshaller());
+            NativeMarshallers.Add(new NativeCharMarshaller());
+            NativeMarshallers.Add(new NativeBoolMarshaller());
+            NativeMarshallers.Add(new NativeStringMarshaller());
+            NativeMarshallers.Add(new NativeVoidMarshaller());
+            NativeMarshallers.Add(new NativeArrayMarshaller());
+            NativeMarshallers.Add(new NativeNullableMarshaller());
+            NativeMarshallers.Add(new NativeMethodInfoMarshaller());
+            SortMarshallers();
+        }
+
+        public const int PRIORITY_VERY_HIGH = 1000;
+        public const int PRIORITY_HIGH = 500;
+        public const int PRIORITY_DEFAULT = 0;
+        public const int PRIORITY_LOW = -500;
+        public const int PRIORITY_VERY_LOW = -1000;
+
+        private static readonly List<ISolNativeMarshaller> NativeMarshallers = new List<ISolNativeMarshaller>();
+
         private static readonly Dictionary<SolAssembly, AssemblyCache> s_AssemblyCaches = new Dictionary<SolAssembly, AssemblyCache>();
 
         private static readonly ClassCreationOptions NativeClassCreationOptions = new ClassCreationOptions.Customizable().SetEnforceCreation(true).SetCallConstructor(false);
+
+        private static void SortMarshallers()
+        {
+            NativeMarshallers.Sort(delegate(ISolNativeMarshaller m1, ISolNativeMarshaller m2) {
+                if (m1.Priority > m2.Priority) {
+                    return -1;
+                }
+                if (m1.Priority < m2.Priority) {
+                    return 1;
+                }
+                return 0;
+            });
+        }
+
+        public static void RegisterMarshaller(ISolNativeMarshaller marshaller)
+        {
+            NativeMarshallers.Add(marshaller);
+            SortMarshallers();
+        }
+
+        public static void RegisterMarshallers(IEnumerable<ISolNativeMarshaller> marshallers)
+        {
+            NativeMarshallers.AddRange(marshallers);
+            SortMarshallers();
+        }
 
         public static object[] MarshalFromSol(SolAssembly assembly, SolValue[] values, Type[] types)
         {
@@ -25,61 +72,6 @@ namespace SolScript.Interpreter
         {
             return type == typeof(SolValue) || type.IsSubclassOf(typeof(SolValue)) ? value : value.ConvertTo(type);
         }
-
-        /*/// <summary>
-        ///     Marshalls the given values into a pre-created array. This array must
-        ///     be of equal size of longer than the amount of given values/types.
-        /// </summary>
-        /// <exception cref="SolMarshallingException">An error occured during marshalling.</exception>
-        public static void MarshalFromSol(SolAssembly assembly, SolValue[] values, Type[] types, object[] array, int offset)
-        {
-            if (array.Length - offset < types.Length) {
-                throw new ArgumentException("Cannot marshall " + types.Length +
-                                            " elements to an array with a length of " +
-                                            array.Length + " and offset of " + offset + ".");
-            }
-            // If the last type is an array we will put all excess values into this array.
-            bool lastValuesToArray = types.Length > 0 && types[types.Length - 1].IsArray;
-            if (!lastValuesToArray && values.Length > types.Length) {
-                throw new ArgumentException(
-                    "Marshalling requires a type for each value (or the last type needs to be an array)! Got values: " +
-                    values.Length +
-                    ", Got types: " + types.Length, nameof(values));
-            }
-            for (int i = 0; i < types.Length; i++) {
-                Type type = types[i];
-                object iValue;
-                if (lastValuesToArray && i == types.Length - 1) {
-                    // We want to support params and are at the last type
-                    Type elementType = type.GetElementType();
-                    Array paramsArray = Array.CreateInstance(elementType, values.Length - i);
-                    for (int v = 0; v < values.Length - i; v++) {
-                        object clrArrayObj = MarshalFromSol(values[v + i], elementType);
-                        paramsArray.SetValue(clrArrayObj, v);
-                    }
-                    iValue = paramsArray;
-                } else {
-                    // Otherwise
-                    if (values.Length > i) {
-                        SolValue value = values[i];
-                        // unsure about IsSubclassOf just added it without testing
-                        iValue = type == typeof(SolValue) || type.IsSubclassOf(typeof(SolValue)) ? value : value.ConvertTo(type);
-                    } else {
-                        if (type == typeof(SolValue) || type.IsSubclassOf(typeof(SolValue))) {
-                            iValue = SolNil.Instance;
-                        } else {
-                            try {
-                                // todo: use cache (?)
-                                iValue = type.IsClass ? null : Activator.CreateInstance(type);
-                            } catch (TargetInvocationException ex) {
-                                throw new SolMarshallingException($"A native error occured while creating a class instance of native type \"{type}\".", ex);
-                            }
-                        }
-                    }
-                }
-                array[i + offset] = iValue;
-            }
-        }*/
 
         /// <exception cref="SolMarshallingException">Failed to marshal a value.</exception>
         public static void MarshalFromSol(SolAssembly assembly, SolValue[] values, Type[] types, object[] array, int offset)
@@ -150,59 +142,18 @@ namespace SolScript.Interpreter
         /// <param name="value">The value to marshal.</param>
         /// <returns>The marshalled <see cref="SolValue" />.</returns>
         /// <exception cref="SolMarshallingException">Failed to marshal the given value.</exception>
-        public static SolValue MarshalFromCSharp(SolAssembly assembly, Type type, [CanBeNull] object value)
+        public static SolValue MarshalFromNative(SolAssembly assembly, Type type, [CanBeNull] object value)
         {
             if (value == null) {
                 return SolNil.Instance;
             }
-            if (type == typeof(void)) {
-                return SolNil.Instance;
-            }
-            // todo: provide a way to register them
             if (type == typeof(SolValue) || type.IsSubclassOf(typeof(SolValue))) {
                 return (SolValue) value;
             }
-            if (type == typeof(double)) {
-                return new SolNumber((double) value);
-            }
-            if (type == typeof(float)) {
-                return new SolNumber((float) value);
-            }
-            if (type == typeof(byte)) {
-                return new SolNumber((byte) value);
-            }
-            if (type == typeof(int)) {
-                return new SolNumber((int) value);
-            }
-            if (type == typeof(uint)) {
-                return new SolNumber((uint) value);
-            }
-            if (type == typeof(long)) {
-                return new SolNumber((long) value);
-            }
-            if (type == typeof(ulong)) {
-                return new SolNumber((ulong) value);
-            }
-            if (type == typeof(short)) {
-                return new SolNumber((short) value);
-            }
-            if (type == typeof(ushort)) {
-                return new SolNumber((ushort) value);
-            }
-            if (type == typeof(string)) {
-                return new SolString(value as string ?? string.Empty);
-            }
-            if (type == typeof(bool)) {
-                return SolBool.ValueOf((bool) value);
-            }
-            if (type.IsArray) {
-                Array array = (Array) value;
-                SolTable table = new SolTable();
-                for (int i = 0; i < array.Length; i++) {
-                    object iValue = array.GetValue(i);
-                    table.Append(MarshalFromCSharp(assembly, iValue.GetType(), iValue));
+            foreach (ISolNativeMarshaller nativeMarshaller in NativeMarshallers) {
+                if (nativeMarshaller.DoesHandle(assembly, type)) {
+                    return nativeMarshaller.Marshal(assembly, value, type);
                 }
-                return table;
             }
             if (type.IsClass) {
                 AssemblyCache cache = GetAssemblyCache(assembly);
@@ -224,7 +175,7 @@ namespace SolScript.Interpreter
                 }
                 return solClass;
             }
-            throw new NotImplementedException();
+            throw new SolMarshallingException(type, "No native marshaller has been registered for this type.");
         }
 
         /// <summary>
@@ -236,53 +187,23 @@ namespace SolScript.Interpreter
         /// <exception cref="SolMarshallingException">No matching SolType for this native type.</exception>
         public static SolType GetSolType(SolAssembly assembly, Type type)
         {
-            if (type.IsGenericType) {
-                Type[] genericArgs = type.GetGenericArguments();
-                type = type.GetGenericTypeDefinition();
-                if (type == typeof(Nullable<>)) {
-                    // Recursion will only occur once unless someone nests nullables 
-                    //       .. cause tree.
-                    SolType solType = GetSolType(assembly, genericArgs[0]);
-                    return new SolType(solType.Type, true);
-                }
-            } else {
-                if (type.IsArray) {
-                    return new SolType("table", false);
-                }
-                if (type == typeof(SolValue) || type == typeof(object)) {
-                    return new SolType(SolValue.ANY_TYPE, true);
-                }
-                if (type == typeof(SolClass)) {
-                    // todo: handle SolClass! (maybe "class" type constraint?)
-                    return new SolType(SolValue.ANY_TYPE, true);
-                }
-                if (type == typeof(SolString) || type == typeof(string)) {
-                    return new SolType("string", true);
-                }
-                if (type == typeof(SolBool) || type == typeof(bool)) {
-                    return new SolType("bool", false);
-                }
-                if (type == typeof(SolNumber) || type == typeof(double) || type == typeof(float) ||
-                    type == typeof(int)) {
-                    return new SolType("number", false);
-                }
-                if (type == typeof(SolNil) || type == typeof(void)) {
-                    return new SolType("nil", true);
-                }
-                if (type == typeof(SolTable)) {
-                    return new SolType("table", true);
-                }
-                if (type == typeof(SolFunction)) {
-                    return new SolType("function", true);
-                }
-                if (type.IsClass) {
-                    SolClassDefinition classDef;
-                    if (assembly.TypeRegistry.TryGetClass(type, out classDef)) {
-                        return new SolType(classDef.Type, true);
-                    }
+            if (type == typeof(SolValue) || type.IsSubclassOf(typeof(SolValue))) {
+                return new SolType(SolValue.PrimitiveTypeNameOf(type), true);
+            }
+            foreach (ISolNativeMarshaller nativeMarshaller in NativeMarshallers) {
+                if (nativeMarshaller.DoesHandle(assembly, type)) {
+                    return nativeMarshaller.GetSolType(assembly, type);
                 }
             }
-            throw new SolMarshallingException(type);
+            if (type.IsClass)
+            {
+                SolClassDefinition classDef;
+                if (assembly.TypeRegistry.TryGetClass(type, out classDef))
+                {
+                    return new SolType(classDef.Type, true);
+                }
+            }
+            throw new SolMarshallingException(type, "No native marshaller has been registered for this type.");
         }
 
         private static AssemblyCache GetAssemblyCache(SolAssembly assembly)

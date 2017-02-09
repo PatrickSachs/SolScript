@@ -294,7 +294,7 @@ namespace SolScript.Interpreter
                         throw;
                     }
                     try {
-                        value = SolMarshal.MarshalFromCSharp(assembly, m_Field.DataType, clrValue);
+                        value = SolMarshal.MarshalFromNative(assembly, m_Field.DataType, clrValue);
                     } catch (SolMarshallingException ex) {
                         return new GetOperation(null, VariableState.FailedNativeException, ex);
                     }
@@ -338,7 +338,8 @@ namespace SolScript.Interpreter
             public SetOperation TryAssignValue(SolAssembly assembly, SolValue value, bool ignoreAnnotations = false)
             {
                 if (!AssignedType.IsCompatible(assembly, value.Type)) {
-                    return new SetOperation(VariableState.FailedTypeMismatch, null);
+                    return new SetOperation(VariableState.FailedTypeMismatch,
+                        new SolVariableException("The field type \"" + AssignedType + "\" of field \"" + Name + "\" is not compatible with the given value of type \"" + value.Type + "\"."));
                 }
                 if (!ignoreAnnotations && Annotations != null) {
                     SolExecutionContext context = new SolExecutionContext(assembly, $"\"{Name}\" field-setter");
@@ -356,7 +357,10 @@ namespace SolScript.Interpreter
                             SolValue metaOverride;
                             if (table.TryGet("override", out metaOverride)) {
                                 if (!AssignedType.IsCompatible(assembly, metaOverride.Type)) {
-                                    return new SetOperation(VariableState.FailedTypeMismatch, null);
+                                    return new SetOperation(VariableState.FailedTypeMismatch,
+                                        new SolVariableException("The annotation \"" + annotation.Type + "\" tried to override the value set to the field \"" + Name + "\" with a value of type \"" +
+                                                                 metaOverride.Type +
+                                                                 "\". Is type is not compatible with the field type \"" + AssignedType + "\"."));
                                 }
                                 value = metaOverride;
                             }

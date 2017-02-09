@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using JetBrains.Annotations;
+using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter
@@ -152,14 +153,16 @@ namespace SolScript.Interpreter
         public virtual string GenerateStackTrace(Exception nativeException)
         {
             StringBuilder builder = GenerateStackTraceImpl();
-            builder.Append("Caused by a native exception: ");
-            builder.Append(nativeException.GetType().Name);
-            if (!string.IsNullOrEmpty(nativeException.Message)) {
-                builder.Append("(");
-                builder.Append(nativeException.Message);
-                builder.AppendLine(")");
+            if (!(nativeException is SolScriptException)) {
+                builder.Append("Caused by a native exception: ");
+                builder.Append(nativeException.GetType().Name);
+                if (!string.IsNullOrEmpty(nativeException.Message)) {
+                    builder.Append("(");
+                    builder.Append(nativeException.Message);
+                    builder.AppendLine(")");
+                }
+                builder.AppendLine(nativeException.StackTrace);
             }
-            builder.AppendLine(nativeException.StackTrace);
             return builder.ToString();
         }
     }

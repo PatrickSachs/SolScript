@@ -84,7 +84,7 @@ namespace SolScript.Interpreter.Types
             try {
                 ParameterInfo.VerifyArguments(Assembly, args);
             } catch (SolVariableException ex) {
-                throw new SolRuntimeException(context, ex.Message, ex);
+                throw SolRuntimeException.InvalidFunctionCallParameters(context, ex);
             }
             SolValue returnValue = Call_Impl(context, args);
             if (!ReturnType.IsCompatible(Assembly, returnValue.Type)) {

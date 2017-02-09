@@ -38,7 +38,7 @@ namespace SolScript.Interpreter.Types.Implementation
             object nativeObject = InternalHelper.SandboxInvokeMethod(context, Definition.Chunk.GetNativeMethod(), inheritance.NativeObject, values);
             SolValue returnValue;
             try {
-                returnValue = SolMarshal.MarshalFromCSharp(Assembly, nativeMethod.ReturnType, nativeObject);
+                returnValue = SolMarshal.MarshalFromNative(Assembly, nativeMethod.ReturnType, nativeObject);
             } catch (SolMarshallingException ex) {
                 throw new SolRuntimeException(context, "Failed to marshal the return value(Native Type: \"" + (nativeObject?.GetType().Name ?? "null") + "\") to SolScript.", ex);
             }

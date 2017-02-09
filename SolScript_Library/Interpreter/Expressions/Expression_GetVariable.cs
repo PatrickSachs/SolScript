@@ -1,6 +1,5 @@
 ﻿using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
-using SolScript.Interpreter.Types.Implementation;
 using SolScript.Interpreter.Types.Interfaces;
 
 namespace SolScript.Interpreter.Expressions
@@ -16,7 +15,14 @@ namespace SolScript.Interpreter.Expressions
 
         public readonly SourceRef Source;
 
+        #region IWrittenInClass Members
+
+        public string WrittenInClass { get; }
+
+        #endregion
+
         #region Overrides
+
         /// <inheritdoc />
         /// <exception cref="SolRuntimeException">An errir occured while getting the variable.</exception>
         public override SolValue Evaluate(SolExecutionContext context, IVariables parentVariables)
@@ -25,7 +31,7 @@ namespace SolScript.Interpreter.Expressions
             try {
                 return Source.Get(context, parentVariables);
             } catch (SolVariableException ex) {
-                throw new SolRuntimeException(context, ex.Message, ex);
+                throw new SolRuntimeException(context, "Could not obtain the value of the desired variable.", ex);
             }
         }
 
@@ -33,8 +39,6 @@ namespace SolScript.Interpreter.Expressions
         {
             return Source.ToString();
         }
-
-        public string WrittenInClass { get; }
 
         #endregion
 
@@ -56,7 +60,7 @@ namespace SolScript.Interpreter.Expressions
             ///     The value that will be indexed. The return value must implement <see cref="IValueIndexable" />.
             /// </summary>
             public readonly SolExpression IndexableGetter;
-            
+
             /// <summary>
             ///     The key by which the result of <see cref="IndexableGetter" /> will be indexed.
             /// </summary>
@@ -65,7 +69,10 @@ namespace SolScript.Interpreter.Expressions
             #region Overrides
 
             /// <inheritdoc />
-            /// <exception cref="SolVariableException">An error occured while retrieving this value. All other possible exceptions are wrapped inside this exception. .</exception>
+            /// <exception cref="SolVariableException">
+            ///     An error occured while retrieving this value. All other possible exceptions are
+            ///     wrapped inside this exception. .
+            /// </exception>
             public override SolValue Get(SolExecutionContext context, IVariables parentVariables)
             {
                 SolValue indexableRaw = IndexableGetter.Evaluate(context, parentVariables);
@@ -74,14 +81,13 @@ namespace SolScript.Interpreter.Expressions
                 if (solClass != null) {
                     SolString keyString = key as SolString;
                     if (keyString == null) {
-                        throw new SolVariableException($"Tried to index a class by a \"{key.Type}\" value.");
+                        throw new SolVariableException($"Tried to index a class with a \"{key.Type}\" value.");
                     }
                     SolClass.Inheritance inheritance = LinkedExpression.WrittenInClass != null ? solClass.FindInheritance(LinkedExpression.WrittenInClass) : null;
                     return inheritance?.Variables.Get(keyString.Value) ?? solClass.GlobalVariables.Get(keyString.Value);
                 }
                 IValueIndexable indexable = indexableRaw as IValueIndexable;
-                if (indexable != null)
-                {
+                if (indexable != null) {
                     SolValue value = indexable[key];
                     return value;
                 }
@@ -119,8 +125,10 @@ namespace SolScript.Interpreter.Expressions
             #region Overrides
 
             /// <inheritdoc />
-            /// <exception cref="SolVariableException">An error occured while retrieving this value. All other possible exceptions are wrapped inside this exception. .</exception>
-
+            /// <exception cref="SolVariableException">
+            ///     An error occured while retrieving this value. All other possible exceptions are
+            ///     wrapped inside this exception. .
+            /// </exception>
             public override SolValue Get(SolExecutionContext context, IVariables parentVariables)
             {
                 return parentVariables.Get(Name);

@@ -91,7 +91,7 @@ namespace SolScript.Interpreter.Types.Implementation
             object nativeReturn = InternalHelper.SandboxInvokeMethod(context, m_Method, target, nativeArgs);
             SolValue solReturn;
             try {
-                solReturn = SolMarshal.MarshalFromCSharp(Assembly, m_Method.ReturnType, nativeReturn);
+                solReturn = SolMarshal.MarshalFromNative(Assembly, m_Method.ReturnType, nativeReturn);
             } catch (SolMarshallingException ex) {
                 throw new SolRuntimeException(context, $"Could not marshal return value of type \"{nativeReturn?.GetType().Name ?? "null"}\" to SolScript.", ex);
             }
@@ -140,7 +140,7 @@ namespace SolScript.Interpreter.Types.Implementation
             try {
                 InsertParameters(variables, args);
             } catch (SolVariableException ex) {
-                throw new SolRuntimeException(context, ex.Message, ex);
+                throw SolRuntimeException.InvalidFunctionCallParameters(context, ex);
             }
             // Functions pretty much eat the terminators since that's what the terminators are supposed to terminate down to.
             Terminators terminators;

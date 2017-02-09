@@ -70,7 +70,7 @@ namespace SolScript.Interpreter.Types.Implementation
                 default:
                     throw new ArgumentOutOfRangeException();
             }
-            SolValue returnValue = SolMarshal.MarshalFromCSharp(Assembly, nativeMethod.ReturnType, nativeObject);
+            SolValue returnValue = SolMarshal.MarshalFromNative(Assembly, nativeMethod.ReturnType, nativeObject);
             return returnValue;
         }
 
