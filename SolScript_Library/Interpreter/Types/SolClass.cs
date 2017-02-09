@@ -78,24 +78,24 @@ namespace SolScript.Interpreter.Types
         }
 
         #endregion
-
+  
         #region Overrides
 
+        /// <inheritdoc />
+        /// <exception cref="SolMarshallingException"> The value cannot be converted. </exception>
         public override object ConvertTo(Type type)
         {
-            if (type == typeof(SolClass)) {
-                return this;
+            Inheritance inheritance = FindInheritance(type);
+            if (inheritance != null) {
+                object nativeObject = inheritance.NativeObject;
+                if (nativeObject == null) {
+                    return null;
+                }
+                // The value/class relation is cached in case the value will be marshalled back to SolScript.
+                SolMarshal.GetAssemblyCache(Assembly).StoreReference(nativeObject, this);
+                return nativeObject;
             }
-            /* for (int i = 0; i < m_Mixins.Length; i++) {
-                object clrObj = m_Mixins[i].Native;
-                if (clrObj == null) {
-                    continue;
-                }
-                if (clrObj.GetType() == type || clrObj.GetType().IsSubclassOf(type)) {
-                    return clrObj;
-                }
-            }*/
-            return null;
+            return base.ConvertTo(type);
         }
 
         /// <exception cref="InvalidOperationException">A critical internal error occured while calling this function.</exception>
@@ -254,22 +254,6 @@ namespace SolScript.Interpreter.Types
         internal bool TryGetMetaFunction(SolMetaKey meta, out SolClassDefinition.MetaFunctionLink link)
         {
             return InheritanceChain.Definition.TryGetMetaFunction(meta, out link);
-        }
-
-        /// <summary>
-        ///     Gets the inheritance chain in reversed order. The base base class comes first, while the most derived class(this
-        ///     one) comes last.
-        /// </summary>
-        /// <returns>A stack containing the inheritance.</returns>
-        internal Stack<Inheritance> GetInheritanceChainReversed()
-        {
-            var stack = new Stack<Inheritance>();
-            Inheritance active = InheritanceChain;
-            while (active != null) {
-                stack.Push(active);
-                active = active.BaseClass;
-            }
-            return stack;
         }
 
         /// <summary> Finds the inheritance link that contains the given class definition. </summary>

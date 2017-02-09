@@ -32,7 +32,6 @@ namespace SolScript.Interpreter.Types
         /// <param name="type"> The target type </param>
         /// <returns> The object </returns>
         /// <exception cref="SolMarshallingException"> The value cannot be converted. </exception>
-        [CanBeNull]
         public override object ConvertTo(Type type)
         {
             if (type == typeof(bool)) {
@@ -41,10 +40,14 @@ namespace SolScript.Interpreter.Types
             if (type == typeof(bool?)) {
                 return (bool?) Value;
             }
-            throw new SolMarshallingException("bool", type, "Cannot convert SolBool!");
+            object number;
+            if (InternalHelper.TryNumberObject(type, Value ? 1 : 0, out number)) {
+                return number;
+            }
+            return base.ConvertTo(type);
         }
 
-        protected override string ToString_Impl([CanBeNull] SolExecutionContext context)
+        protected override string ToString_Impl(SolExecutionContext context)
         {
             return Value ? TRUE_STRING : FALSE_STRING;
         }

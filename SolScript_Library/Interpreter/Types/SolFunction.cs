@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
 
@@ -12,6 +13,21 @@ namespace SolScript.Interpreter.Types
     /// </summary>
     public abstract class SolFunction : SolValue, ISourceLocateable
     {
+        #region Delegates
+
+        public delegate object AutoDelegate(params object[] arguments);
+
+        public delegate T AutoDelegate<out T>(params object[] arguments);
+
+        /// <summary>
+        ///     A delegate used to represent SolFunctions.
+        /// </summary>
+        /// <param name="arguments">The arguments to the function call.</param>
+        /// <returns>The return value.</returns>
+        public delegate SolValue Delegate(params SolValue[] arguments);
+
+        #endregion
+
         // SolFunction may not be extended by other assemblies.
         internal SolFunction()
         {
@@ -67,7 +83,79 @@ namespace SolScript.Interpreter.Types
             return "function#" + Id;
         }
 
+        /// <inheritdoc />
+        /// <exception cref="SolMarshallingException"> The value cannot be converted. </exception>
+        public override object ConvertTo(Type type)
+        {
+            if (type == typeof(Delegate)) {
+                return CreateDelegate();
+            }
+            if (type == typeof(AutoDelegate)) {
+                return CreateAutoDelegate(SolMarshal.GetNativeType(Assembly, ReturnType.Type));
+            }
+            if (type.IsGenericType) {
+                Type openGenericType = type.GetGenericTypeDefinition();
+                if (openGenericType == typeof(AutoDelegate<>)) {
+                    return CreateAutoDelegateMethod.MakeGenericMethod(type.GetGenericArguments()).Invoke(this, new object[0]);
+                }
+            }
+            return base.ConvertTo(type);
+        }
+        
         #endregion
+
+        private static readonly MethodInfo CreateAutoDelegateMethod = typeof(SolFunction).GetMethod("CreateAutoDelegateImpl", BindingFlags.NonPublic|BindingFlags.Instance);
+
+        /// <summary>
+        ///     Creates a delegate you can use to call the function.
+        /// </summary>
+        /// <returns>The delegate.</returns>
+        /// <remarks>
+        ///     Keep in mind that the preferred way of calling a function is using the <see cref="Call" /> method. If you are
+        ///     unsure about the <see cref="SolExecutionContext" /> parameter just create a new one.
+        /// </remarks>
+        public virtual Delegate CreateDelegate()
+        {
+            return delegate(SolValue[] arguments) { return Call(new SolExecutionContext(Assembly, "Native delegate call"), arguments); };
+        }
+
+        /// <typeparam name="T">The desired return type of the function.</typeparam>
+        /// <inheritdoc cref="CreateAutoDelegate" />
+        public AutoDelegate<T> CreateAutoDelegate<T>()
+        {
+            return CreateAutoDelegateImpl<T>();
+        }
+
+        // Implemented in 2nd method for easier reflection access.
+        protected virtual AutoDelegate<T> CreateAutoDelegateImpl<T>()
+        {
+            return delegate (object[] arguments) {
+                SolValue[] solArguments = SolMarshal.MarshalFromNative(Assembly, arguments);
+                SolValue returnValue = Call(new SolExecutionContext(Assembly, "Native auto delegate call"), solArguments);
+                return (T)SolMarshal.MarshalFromSol(returnValue, typeof(T));
+            };
+        }
+
+        /// <summary>
+        ///     Ceates a delegate you can use to the function. The passed arguments will automatically be marshalled to the types
+        ///     required by the function.
+        /// </summary>
+        /// <param name="returnType">The desired return type of the function.</param>
+        /// <returns>The delegate.</returns>
+        /// <remarks>
+        ///     Keep in mind that the preferred way of calling a function is using the <see cref="Call" /> method. If you are
+        ///     unsure about the <see cref="SolExecutionContext" /> parameter just create a new one.<br />Also make sure to check
+        ///     for <see cref="SolMarshallingException" />s whenever calling this function. They are thrown whenevr your arguments
+        ///     could not be converted into the ones required by this function.
+        /// </remarks>
+        public virtual AutoDelegate CreateAutoDelegate(Type returnType)
+        {
+            return delegate(object[] arguments) {
+                SolValue[] solArguments = SolMarshal.MarshalFromNative(Assembly, arguments);
+                SolValue returnValue = Call(new SolExecutionContext(Assembly, "Native auto delegate call"), solArguments);
+                return SolMarshal.MarshalFromSol(returnValue, returnType);
+            };
+        }
 
         /// <summary>
         ///     Calls the function.

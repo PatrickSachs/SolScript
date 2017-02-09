@@ -11,7 +11,7 @@ namespace SolScript.Interpreter.Expressions
         public sealed override SolValue Evaluate(SolExecutionContext context, IVariables parentVariables)
         {
             Terminators terminators;
-            SolDebug.WriteLine("WARNING: CALLED A TERMINATING SOL EXPRESSION USING BASE METHOD.");
+            SolDebug.WriteLine("WARNING: CALLED A TERMINATING SOL EXPRESSION USING BASE METHOD. -- " + GetType().Name);
             return Evaluate(context, parentVariables, out terminators);
         }
 

@@ -5,6 +5,7 @@ using System.Text.RegularExpressions;
 using SolScript.Interpreter;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Library;
+using SolScript.Interpreter.Library.Classes;
 using SolScript.Interpreter.Types;
 using SolScript.Reader;
 
@@ -93,7 +94,7 @@ namespace SolScript
                         goto ChooseDir;
                     }
                     SolAssembly script = SolAssembly.FromDirectory(dirRaw);
-                    script.IncludeLibrary(SolLibrary.StandardLibrary).Create();
+                    script.IncludeLibrary(SolLibrary.StandardLibrary).IncludeLibrary(new SolLibrary("test", typeof(MarshalTest).Assembly)).Create();
                     try {
                         script.TypeRegistry.CreateInstance("Main", ClassCreationOptions.Default, new SolString("Hello from the command line :)"), new SolNumber(42));
                     } catch (SolTypeRegistryException ex) {

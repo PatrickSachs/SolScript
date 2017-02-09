@@ -41,21 +41,6 @@ namespace SolScript.Interpreter.Types.Implementation
             }
         }
 
-        /// <summary>
-        ///     Tries to convert the local value into a value of a C# type. May
-        ///     return null.
-        /// </summary>
-        /// <param name="type"> The target type </param>
-        /// <returns> The object </returns>
-        /// <exception cref="SolMarshallingException"> The value cannot be converted. </exception>
-        public override object ConvertTo(Type type)
-        {
-            if (type.IsAssignableFrom(typeof(SolNativeClassFunction))) {
-                return this;
-            }
-            throw new SolMarshallingException("function", type);
-        }
-
         #endregion
     }
 }

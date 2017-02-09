@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 using Irony.Parsing;
 using JetBrains.Annotations;
@@ -12,9 +13,111 @@ using SolScript.Interpreter.Library;
 
 namespace SolScript.Interpreter
 {
+    /// <summary>
+    ///     This class contains several helper methods for SolScript. These methods are not directly related to SolScript(or
+    ///     not meant to be used by users) and thus not not exposed in the public API.
+    /// </summary>
     internal static class InternalHelper
     {
+        private static readonly HashSet<Type> FuncGenericTypes = new HashSet<Type> {
+            typeof(Func<>),
+            typeof(Func<,>),
+            typeof(Func<,,>),
+            typeof(Func<,,,>),
+            typeof(Func<,,,,>),
+            typeof(Func<,,,,,>),
+            typeof(Func<,,,,,,>),
+            typeof(Func<,,,,,,,>),
+            typeof(Func<,,,,,,,,>),
+            typeof(Func<,,,,,,,,,>),
+            typeof(Func<,,,,,,,,,,>),
+            typeof(Func<,,,,,,,,,,,>),
+            typeof(Func<,,,,,,,,,,,,>),
+            typeof(Func<,,,,,,,,,,,,,>),
+            typeof(Func<,,,,,,,,,,,,,,>),
+            typeof(Func<,,,,,,,,,,,,,,,>),
+            typeof(Func<,,,,,,,,,,,,,,,,>)
+        };
+
+        private static readonly HashSet<Type> ActionGenericTypes = new HashSet<Type> {
+            typeof(Action),
+            typeof(Action<>),
+            typeof(Action<,>),
+            typeof(Action<,,>),
+            typeof(Action<,,,>),
+            typeof(Action<,,,,>),
+            typeof(Action<,,,,,>),
+            typeof(Action<,,,,,,>),
+            typeof(Action<,,,,,,,>),
+            typeof(Action<,,,,,,,,>),
+            typeof(Action<,,,,,,,,,>),
+            typeof(Action<,,,,,,,,,,>),
+            typeof(Action<,,,,,,,,,,,>),
+            typeof(Action<,,,,,,,,,,,,>),
+            typeof(Action<,,,,,,,,,,,,,>),
+            typeof(Action<,,,,,,,,,,,,,,>),
+            typeof(Action<,,,,,,,,,,,,,,,>)
+        };
+
         internal static readonly SolParameterInfo.Native EmptyNativeParameterInfo = new SolParameterInfo.Native(Array.Empty<SolParameter>(), Array.Empty<Type>(), false, false);
+
+        /// <summary>
+        ///     Checks if the given type is an <see cref="Action" />.
+        /// </summary>
+        /// <param name="type">The type to check.</param>
+        /// <returns>true if the type is an action, false if not.</returns>
+        /// <exception cref="ArgumentException">The type is not an open geneic type.</exception>
+        public static bool IsOpenGenericAction(Type type)
+        {
+            if (type.ContainsGenericParameters) {
+                throw new ArgumentException("The type is not an open geneic type.", nameof(type));
+            }
+            return ActionGenericTypes.Contains(type);
+        }
+
+        /// <summary>
+        ///     Checks if <paramref name="mainArray" /> contains <see cref="contentArray" /> starting at index
+        ///     <see cref="mainStartIndex" />.
+        /// </summary>
+        /// <typeparam name="T">The array type.</typeparam>
+        /// <param name="mainArray">The array to check for contents.</param>
+        /// <param name="contentArray">The content array.</param>
+        /// <param name="mainStartIndex">The index in <see cref="mainArray" /> <see cref="contentArray" /> has to start at.</param>
+        /// <param name="referenceEquals">If this is true values will be compared by reference, if false by equality.</param>
+        /// <returns>true if <see cref="mainArray" /> contained <see cref="contentArray" />, false if not.</returns>
+        public static bool ArrayContainsAt<T>(T[] mainArray, T[] contentArray, int mainStartIndex = 0, bool referenceEquals = true)
+        {
+            if (mainArray.Length < contentArray.Length + mainStartIndex) {
+                return false;
+            }
+            for (int i = 0; i < contentArray.Length; i++) {
+                T main = mainArray[i + mainStartIndex];
+                if (referenceEquals) {
+                    if (!ReferenceEquals(main, contentArray[i])) {
+                        return false;
+                    }
+                } else {
+                    if (!main.Equals(contentArray[i])) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        /// <summary>
+        ///     Checks if the given type is a <see cref="Func{TResult}" />.
+        /// </summary>
+        /// <param name="type">The type to check.</param>
+        /// <returns>true if the type is a func, false if not.</returns>
+        /// <exception cref="ArgumentException">The type is not an open geneic type.</exception>
+        public static bool IsOpenGenericFunc(Type type)
+        {
+            if (type.ContainsGenericParameters) {
+                throw new ArgumentException("The type is not an open geneic type.", nameof(type));
+            }
+            return FuncGenericTypes.Contains(type);
+        }
 
         /// <summary>
         ///     This method uniformly creates an exception for the result of a variable get exception. You may wish to check for
@@ -334,6 +437,177 @@ namespace SolScript.Interpreter
                 throw new InvalidOperationException("An unspecified internal error occured while calling native method \"" + method.Name + "\": " + ex.Message, ex);
             }
             return nativeObject;
+        }
+
+        /// <summary>
+        ///     Creates an instance of the given object using <see cref="Activator.CreateInstance(Type, object[])" />.
+        /// </summary>
+        /// <typeparam name="T">The exception type to throw.</typeparam>
+        /// <param name="type">The type to create.</param>
+        /// <param name="arguments">The constructor arguments.</param>
+        /// <param name="exceptionFactory">A delegate to create the exception instances(1: Exception message, 2: Inner Exception).</param>
+        /// <returns>The object.</returns>
+        /// <exception cref="Exception">An error occured while creating the object(Actual type: <typeparamref name="T" />).</exception>
+        internal static object SandboxCreateObject<T>(Type type, object[] arguments, Func<string, Exception, T> exceptionFactory) where T : Exception
+        {
+            try {
+                return Activator.CreateInstance(type, arguments);
+            } catch (TargetInvocationException ex) {
+                throw exceptionFactory($"An exception occured while invoking the constructor of type \"{type}\".", ex);
+            } catch (MethodAccessException ex) {
+                throw exceptionFactory($"No access to the constructor of type \"{type}\".", ex);
+            } catch (MemberAccessException ex) {
+                throw exceptionFactory($"Cannot instantiate abstract class \"{type}\".", ex);
+            } catch (InvalidComObjectException ex) {
+                throw exceptionFactory($"Invalid Com Object of type \"{type}\".", ex);
+            } catch (COMException ex) {
+                throw exceptionFactory($"\"{type}\" is a COM object but the class identifier used to obtain the type is invalid, or the identified class is not registered.", ex);
+            } catch (TypeLoadException ex) {
+                throw exceptionFactory($"\"{type}\" is not a valid type.", ex);
+            } catch (ArgumentException ex) {
+                throw exceptionFactory($"\"{type}\" is an open generic type. ", ex);
+            }
+        }
+
+        /// <summary>
+        ///     Quick helper to create a number object of the given type with the given value.
+        /// </summary>
+        /// <param name="numberType">The type of the number you wish to create.</param>
+        /// <param name="value">The value of the number. May loose accuracy(e.g. if using an integer).</param>
+        /// <param name="number">The number. Only valid if the method returned true.</param>
+        /// <param name="nullable">Should nullable number types be checked aswell?</param>
+        /// <param name="isNull">Only valid if <paramref name="nullable" /> is true - Should the value of nullable types be null?</param>
+        /// <returns>true if the number object could be created, false if not(e.g. type is not a numeric type).</returns>
+        /// <exception cref="SolMarshallingException">An exception occured while creating the number value.</exception>
+        /// <remarks>Supported are: double, float, int, uint, long, ulong, short, ushort, byte, sbyte, char, decimal</remarks>
+        [ContractAnnotation("number:null => false")]
+        internal static bool TryNumberObject(Type numberType, double value, out object number, bool nullable = true, bool isNull = false)
+        {
+            try {
+                if (numberType == typeof(int)) {
+                    number = (int) value;
+                    return true;
+                }
+                if (numberType == typeof(double)) {
+                    number = value;
+                    return true;
+                }
+                if (numberType == typeof(float)) {
+                    number = (float) value;
+                    return true;
+                }
+                if (numberType == typeof(long)) {
+                    number = (long) value;
+                    return true;
+                }
+                if (numberType == typeof(uint)) {
+                    number = (uint) value;
+                    return true;
+                }
+                if (numberType == typeof(ulong)) {
+                    number = (ulong) value;
+                    return true;
+                }
+                if (numberType == typeof(short)) {
+                    number = (short) value;
+                    return true;
+                }
+                if (numberType == typeof(ushort)) {
+                    number = (ushort) value;
+                    return true;
+                }
+                if (numberType == typeof(byte)) {
+                    number = (byte) value;
+                    return true;
+                }
+                if (numberType == typeof(sbyte)) {
+                    number = (sbyte) value;
+                    return true;
+                }
+                if (numberType == typeof(char)) {
+                    number = (char) (short) value;
+                    return true;
+                }
+                if (numberType == typeof(decimal)) {
+                    number = new decimal(value);
+                    return true;
+                }
+                if (nullable) {
+                    if (numberType == typeof(int?)) {
+                        number = isNull ? new int?() : (int?) value;
+                        return true;
+                    }
+                    if (numberType == typeof(double?)) {
+                        number = isNull ? new double?() : (double?) value;
+                        return true;
+                    }
+                    if (numberType == typeof(float?)) {
+                        number = isNull ? new float?() : (float?) value;
+                        return true;
+                    }
+                    if (numberType == typeof(long?)) {
+                        number = isNull ? new long?() : (long?) value;
+                        return true;
+                    }
+                    if (numberType == typeof(uint?)) {
+                        number = isNull ? new uint?() : (uint?) value;
+                        return true;
+                    }
+                    if (numberType == typeof(ulong?)) {
+                        number = isNull ? new ulong?() : (ulong?) value;
+                        return true;
+                    }
+                    if (numberType == typeof(short?)) {
+                        number = isNull ? new short?() : (short?) value;
+                        return true;
+                    }
+                    if (numberType == typeof(ushort?)) {
+                        number = isNull ? new ushort?() : (ushort?) value;
+                        return true;
+                    }
+                    if (numberType == typeof(byte?)) {
+                        number = isNull ? new byte?() : (byte?) value;
+                        return true;
+                    }
+                    if (numberType == typeof(sbyte?)) {
+                        number = isNull ? new sbyte?() : (sbyte?) value;
+                        return true;
+                    }
+                    if (numberType == typeof(char?)) {
+                        number = isNull ? new char?() : (char?) (short) value;
+                        return true;
+                    }
+                    if (numberType == typeof(decimal?)) {
+                        number = isNull ? new decimal?() : (decimal?) new decimal(value);
+                        return true;
+                    }
+                }
+            } catch
+                (OverflowException ex) {
+                throw new SolMarshallingException($"Overflow while creating a \"{numberType.Name}\" number object.", ex);
+            }
+            number = null;
+            return false;
+        }
+
+        /// <inheritdoc cref="TryNumberObject" />
+        /// <param name="numberType">The type of the number you wish to create.</param>
+        /// <param name="value">The value of the number. May loose accuracy(e.g. if using an integer).</param>
+        /// <returns>The number object.</returns>
+        /// <param name="nullable">Should nullable number types be checked aswell?</param>
+        /// <param name="isNull">Only valid if <paramref name="nullable" /> is true - Should the value of nullable types be null?</param>
+        /// <returns>true if the number object could be created, false if not(e.g. type is not a numeric type).</returns>
+        /// <exception cref="SolMarshallingException">
+        ///     The type is not a numeric type/An exception occured while creating the number
+        ///     value.
+        /// </exception>
+        internal static object NumberObject(Type numberType, double value, bool nullable = true, bool isNull = false)
+        {
+            object number;
+            if (!TryNumberObject(numberType, value, out number, nullable, isNull)) {
+                throw new SolMarshallingException(numberType, "The type is not a numeric type.");
+            }
+            return number;
         }
 
         /// <summary>

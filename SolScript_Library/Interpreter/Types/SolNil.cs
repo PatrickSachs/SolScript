@@ -1,76 +1,83 @@
 ﻿using System;
-using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
 
-namespace SolScript.Interpreter.Types {
+namespace SolScript.Interpreter.Types
+{
     public sealed class SolNil : SolValue
     {
+        private SolNil() {}
+
         public const string TYPE = "nil";
-        private SolNil() {
-        }
 
         public static readonly SolNil Instance = new SolNil();
-        
+
+        /// <inheritdoc />
         public override string Type => TYPE;
 
-        /// <summary> Tries to convert the local value into a value of a C# type. May
-        ///     return null. </summary>
-        /// <param name="type"> The target type </param>
-        /// <returns> The object </returns>
+        #region Overrides
+
+        /// <inheritdoc />
         /// <exception cref="SolMarshallingException"> The value cannot be converted. </exception>
-        [CanBeNull]
-        public override object ConvertTo(Type type) {
-            if (type == typeof (SolValue) || type == typeof (SolNil)) {
-                return this;
-            }
+        public override object ConvertTo(Type type)
+        {
             if (type.IsClass) {
                 return null;
             }
-            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof (Nullable<>)) {
-                return null;
-            }
-            if (type == typeof (bool)) {
+            if (type == typeof(bool)) {
                 return false;
             }
-            if (type == typeof (int)) {
-                return 0;
+            object number;
+            if (InternalHelper.TryNumberObject(type, 0, out number, true, true)) {
+                return number;
             }
-            if (type == typeof (float)) {
-                return 0f;
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>)) {
+                return Activator.CreateInstance(type);
             }
-            if (type == typeof (double)) {
-                return 0d;
-            }
-            throw new SolMarshallingException("nil", type);
+            return base.ConvertTo(type);
         }
 
-        protected override string ToString_Impl([CanBeNull]SolExecutionContext context) {
+        /// <inheritdoc />
+        protected override string ToString_Impl(SolExecutionContext context)
+        {
             return "nil";
         }
 
-        public override bool IsEqual(SolExecutionContext context, SolValue other) {
+        /// <inheritdoc />
+        public override bool IsEqual(SolExecutionContext context, SolValue other)
+        {
             return other.Type == TYPE;
         }
 
-        public override bool NotEqual(SolExecutionContext context, SolValue other) {
+        /// <inheritdoc />
+        public override bool NotEqual(SolExecutionContext context, SolValue other)
+        {
             return other.Type != TYPE;
         }
 
-        public override int GetHashCode() {
+        /// <inheritdoc />
+        public override int GetHashCode()
+        {
             return 0;
         }
-        
-        public override bool IsTrue(SolExecutionContext context) {
+
+        /// <inheritdoc />
+        public override bool IsTrue(SolExecutionContext context)
+        {
             return false;
         }
-        
-        public override bool IsFalse(SolExecutionContext context) {
+
+        /// <inheritdoc />
+        public override bool IsFalse(SolExecutionContext context)
+        {
             return true;
         }
 
+        /// <inheritdoc />
         public override bool Equals(object other)
         {
             return other == this;
         }
+
+        #endregion
     }
 }

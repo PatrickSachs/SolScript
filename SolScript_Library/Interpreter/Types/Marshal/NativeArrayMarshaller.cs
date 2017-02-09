@@ -1,4 +1,4 @@
-﻿using System;
+﻿/*using System;
 using SolScript.Interpreter.Exceptions;
 
 namespace SolScript.Interpreter.Types.Marshal
@@ -37,4 +37,4 @@ namespace SolScript.Interpreter.Types.Marshal
 
         #endregion
     }
-}
+}*/

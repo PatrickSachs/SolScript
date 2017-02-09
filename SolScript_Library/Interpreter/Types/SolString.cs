@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
 
@@ -17,41 +18,40 @@ namespace SolScript.Interpreter.Types
         
         public readonly string Value;
 
+        /// <inheritdoc />
         public override string Type => TYPE;
 
         #region Overrides
-
-        /// <summary>
-        ///     Tries to convert the local value into a value of a C# type. May
-        ///     return null.
-        /// </summary>
-        /// <param name="type"> The target type </param>
-        /// <returns> The object </returns>
+        
+        /// <inheritdoc />
         /// <exception cref="SolMarshallingException"> The value cannot be converted. </exception>
-        [CanBeNull]
         public override object ConvertTo(Type type)
         {
-            if (type == typeof(SolValue) || type == typeof(SolString)) {
-                return this;
-            }
             if (type == typeof(string)) {
                 return Value;
             }
             if (type == typeof(char)) {
                 if (Value.Length != 1) {
-                    throw new SolMarshallingException("string", typeof(char),
-                        "The string has the wrong size! Length: " + Value.Length + ", Required: 1");
+                    throw new SolMarshallingException("string", typeof(char), "Can only convert strings with a length of one to a char! Size: " + Value.Length);
                 }
                 return Value[0];
             }
-            throw new SolMarshallingException("string", type);
+            if (type == typeof(char[])) {
+                return Value.ToCharArray();
+            }
+            if (type == typeof(StringBuilder)) {
+                return new StringBuilder(Value);
+            }
+            return base.ConvertTo(type);
         }
 
-        protected override string ToString_Impl([CanBeNull] SolExecutionContext context)
+        /// <inheritdoc />
+        protected override string ToString_Impl(SolExecutionContext context)
         {
             return Value;
         }
 
+        /// <inheritdoc />
         public override int GetHashCode()
         {
             unchecked {
@@ -59,6 +59,7 @@ namespace SolScript.Interpreter.Types
             }
         }
 
+        /// <inheritdoc />
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(obj, this)) {
@@ -74,6 +75,7 @@ namespace SolScript.Interpreter.Types
             return Value.Equals(otherSolString.Value);
         }
 
+        /// <inheritdoc />
         public override bool IsEqual(SolExecutionContext context, SolValue other)
         {
             if (other.Type != TYPE) {
@@ -83,6 +85,7 @@ namespace SolScript.Interpreter.Types
             return Value == otherStr.Value;
         }
 
+        /// <inheritdoc />
         public override bool SmallerThan(SolExecutionContext context, SolValue other)
         {
             if (other.Type != TYPE) {
@@ -92,6 +95,7 @@ namespace SolScript.Interpreter.Types
             return Value.Length < otherStr.Value.Length;
         }
 
+        /// <inheritdoc />
         public override bool GreaterThan(SolExecutionContext context, SolValue other)
         {
             if (other.Type != TYPE) {
@@ -101,6 +105,7 @@ namespace SolScript.Interpreter.Types
             return Value.Length > otherStr.Value.Length;
         }
 
+        /// <inheritdoc />
         public override SolNumber GetN(SolExecutionContext context)
         {
             return new SolNumber(Value.Length);

@@ -6,8 +6,8 @@ namespace SolScript.Interpreter.Types.Marshal
 {
     public class NativeNullableMarshaller : ISolNativeMarshaller
     {
-        private readonly PropertyInfo m_HasValue = typeof(Nullable<>).GetProperty("HasValue", BindingFlags.Public | BindingFlags.Instance);
-        private readonly PropertyInfo m_Value = typeof(Nullable<>).GetProperty("Value", BindingFlags.Public | BindingFlags.Instance);
+        //private readonly PropertyInfo m_HasValue = typeof(Nullable<>).GetProperty("HasValue", BindingFlags.Public | BindingFlags.Instance);
+        //private readonly PropertyInfo m_Value = typeof(Nullable<>).GetProperty("Value", BindingFlags.Public | BindingFlags.Instance);
 
         #region ISolNativeMarshaller Members
 
@@ -27,8 +27,8 @@ namespace SolScript.Interpreter.Types.Marshal
         /// <exception cref="SolMarshallingException">Failed to marshal the wrapped value.</exception>
         public SolValue Marshal(SolAssembly assembly, object value, Type type)
         {
-            if ((bool) m_HasValue.GetValue(value)) {
-                object wrapped = m_Value.GetValue(value);
+            if ((bool)type.GetProperty("HasValue", BindingFlags.Public | BindingFlags.Instance).GetValue(value)) {
+                object wrapped = type.GetProperty("Value", BindingFlags.Public | BindingFlags.Instance).GetValue(value);
                 Type dataType = Nullable.GetUnderlyingType(type);
                 return SolMarshal.MarshalFromNative(assembly, dataType, wrapped);
             }

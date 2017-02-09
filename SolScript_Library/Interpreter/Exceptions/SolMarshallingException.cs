@@ -14,7 +14,12 @@ namespace SolScript.Interpreter.Exceptions {
         }
 
         public SolMarshallingException(string from, Type to, string message = "Cannot convert types!")
-            : base(from + "->" + to.Name + ": " + message) {
+            : base(from + "->" + to.Name + ": " + message)
+        {
+        }
+        public SolMarshallingException(string from, Type to, string message, Exception inner)
+            : base(from + "->" + to.Name + ": " + message, inner)
+        {
         }
 
         public SolMarshallingException(Type from, string to, string message = "Cannot convert types!")

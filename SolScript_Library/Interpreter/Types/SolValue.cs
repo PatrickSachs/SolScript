@@ -92,14 +92,27 @@ namespace SolScript.Interpreter.Types
         }
 
         /// <summary>
-        ///     Tries to convert the local value into a value of a C# type. May
+        ///     Tries to convert the local value into a value of a native type. May
         ///     return null.
         /// </summary>
-        /// <param name="type"> The target type </param>
+        /// <param name="type"> The target type. </param>
         /// <returns> The object </returns>
         /// <exception cref="SolMarshallingException"> The value cannot be converted. </exception>
+        /// <remarks>
+        ///     You do not need to handle conversion to other SolTypes here(and should not to ensure consistency). Make sure
+        ///     to call the base method LAST when overriding this method.
+        /// </remarks>
         [CanBeNull]
-        public abstract object ConvertTo(Type type);
+        public virtual object ConvertTo(Type type)
+        {
+            if (type == typeof(object)) {
+                return this;
+            }
+            if (type == typeof(string)) {
+                return ToString();
+            }
+            throw new SolMarshallingException(Type, type);
+        }
 
         /// <summary>
         ///     Tried to cast the value to another given type using the Convert()

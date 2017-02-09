@@ -27,40 +27,13 @@ namespace SolScript.Interpreter.Types
         /// <param name="type"> The target type </param>
         /// <returns> The object </returns>
         /// <exception cref="SolMarshallingException"> The value cannot be converted. </exception>
-        [CanBeNull]
         public override object ConvertTo(Type type)
         {
-            if (type == typeof(SolValue) || type == typeof(SolNumber)) {
-                return this;
+            object number;
+            if (InternalHelper.TryNumberObject(type, Value, out number)) {
+                return number;
             }
-            if (type == typeof(double)) {
-                return Value;
-            }
-            if (type == typeof(float)) {
-                return (float) Value;
-            }
-            if (type == typeof(int)) {
-                return (int) Value;
-            }
-            if (type == typeof(uint)) {
-                return (uint) Value;
-            }
-            if (type == typeof(long)) {
-                return (long) Value;
-            }
-            if (type == typeof(ulong)) {
-                return (ulong) Value;
-            }
-            if (type == typeof(byte)) {
-                return (byte) Value;
-            }
-            if (type == typeof(short)) {
-                return (short) Value;
-            }
-            if (type == typeof(ushort)) {
-                return (ushort) Value;
-            }
-            throw new SolMarshallingException("number", type);
+            return base.ConvertTo(type);
         }
 
         protected override string ToString_Impl([CanBeNull] SolExecutionContext context)

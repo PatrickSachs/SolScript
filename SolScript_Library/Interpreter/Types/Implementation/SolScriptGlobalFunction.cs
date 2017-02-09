@@ -23,12 +23,6 @@ namespace SolScript.Interpreter.Types.Implementation
         #region Overrides
 
         /// <inheritdoc/>
-        public override object ConvertTo(Type type)
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <inheritdoc/>
         public override int GetHashCode()
         {
             unchecked {

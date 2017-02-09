@@ -31,16 +31,6 @@ namespace SolScript.Interpreter.Types.Implementation
 
         /// <inheritdoc />
         public override SolSourceLocation Location { get; }
-
-        #region Overrides
-
-        /// <inheritdoc />
-        public override object ConvertTo(Type type)
-        {
-            throw new NotImplementedException();
-        }
-
-        #endregion
     }
 
     /// <summary>
@@ -119,13 +109,7 @@ namespace SolScript.Interpreter.Types.Implementation
         private readonly IVariables m_ParentVariables;
 
         #region Overrides
-
-        /// <inheritdoc />
-        public override object ConvertTo(Type type)
-        {
-            throw new NotImplementedException();
-        }
-
+        
         /// <inheritdoc />
         protected override string ToString_Impl(SolExecutionContext context)
         {

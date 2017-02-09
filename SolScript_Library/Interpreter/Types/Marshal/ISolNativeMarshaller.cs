@@ -8,20 +8,8 @@ namespace SolScript.Interpreter.Types.Marshal
     ///     Register your custom marshallers using <see cref="SolMarshal.RegisterMarshaller" />.
     /// </summary>
     /// <remarks>As a general rule of thumb, one Marshaller should typically only be responsible for marshalling one class.</remarks>
-    public interface ISolNativeMarshaller
+    public interface ISolNativeMarshaller : IPriority
     {
-        /// <summary>
-        ///     The priority of the the marshaller. Marshallers with a higher priority will be promted to marshal the value before
-        ///     ones with a lower value.
-        /// </summary>
-        /// <remarks><see cref="int.MaxValue" /> and <see cref="int.MinValue" /> are reserved for internal usage.</remarks>
-        /// <seealso cref="SolMarshal.PRIORITY_VERY_HIGH" />
-        /// <seealso cref="SolMarshal.PRIORITY_HIGH" />
-        /// <seealso cref="SolMarshal.PRIORITY_DEFAULT" />
-        /// <seealso cref="SolMarshal.PRIORITY_LOW" />
-        /// <seealso cref="SolMarshal.PRIORITY_VERY_LOW" />
-        int Priority { get; }
-
         /// <summary>
         ///     Checks if this marshaller can marshal the given type to a <see cref="SolValue" />. If the method returns true
         ///     <see cref="Marshal" /> will be called.
