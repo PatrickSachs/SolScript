@@ -322,7 +322,7 @@ namespace SolScript.Interpreter
             var annotations = new List<SolClass>();
             SolClass instance = new SolClass(definition);
             // The context is required to actually initialize the fields.
-            SolExecutionContext creationContext = new SolExecutionContext(LinkedAssembly, definition.Type + "#" + instance.Id + " creation context");
+            SolExecutionContext creationContext = options.CallingContext ?? new SolExecutionContext(LinkedAssembly, definition.Type + "#" + instance.Id + " creation context");
             SolClass.Inheritance activeInheritance = instance.InheritanceChain;
             while (activeInheritance != null) {
                 // Create Annotations
