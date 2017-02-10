@@ -34,12 +34,12 @@ namespace SolScript.Interpreter.Library.Classes
 
             public SolString get_name()
             {
-                return new SolString(Name);
+                return SolString.ValueOf(Name);
             }
 
             public SolString get_compatible_class()
             {
-                return new SolString(Type);
+                return SolString.ValueOf(Type);
             }
 
             public SolValue call(SolExecutionContext context, SolClass instance, params SolValue[] args)
@@ -86,12 +86,12 @@ namespace SolScript.Interpreter.Library.Classes
 
             public SolString get_name()
             {
-                return new SolString(Name);
+                return SolString.ValueOf(Name);
             }
 
             public SolString get_compatible_class()
             {
-                return new SolString(Type);
+                return SolString.ValueOf(Type);
             }
 
             public SolValue get(SolExecutionContext context, SolClass instance)

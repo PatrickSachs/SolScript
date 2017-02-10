@@ -13,8 +13,8 @@ namespace SolScript.Interpreter.Types
             Value = value;
         }
 
-        private const string TRUE_STRING = "true";
-        private const string FALSE_STRING = "false";
+        internal const string TRUE_STRING = "true";
+        internal const string FALSE_STRING = "false";
         public const string TYPE = "bool";
 
         public static readonly SolBool True = new SolBool(true);

@@ -27,8 +27,8 @@ namespace SolScript.Interpreter.Types
 
         private static uint s_NextId;
 
-        private static readonly SolString s_IteratorKey = new SolString("key");
-        private static readonly SolString s_IteratorValue = new SolString("value");
+        private static readonly SolString s_IteratorKey = SolString.ValueOf("key");
+        private static readonly SolString s_IteratorValue = SolString.ValueOf("value");
         private readonly uint m_Id;
         private readonly Dictionary<SolValue, SolValue> m_Table = new Dictionary<SolValue, SolValue>();
         private int m_N;
@@ -251,7 +251,7 @@ namespace SolScript.Interpreter.Types
         [CanBeNull]
         public SolValue GetIfDefined(string key)
         {
-            return GetIfDefined(new SolString(key));
+            return GetIfDefined(SolString.ValueOf(key));
         }
 
         [CanBeNull]
@@ -265,7 +265,7 @@ namespace SolScript.Interpreter.Types
 
         public bool TryGet(string key, out SolValue value)
         {
-            return m_Table.TryGetValue(new SolString(key), out value);
+            return m_Table.TryGetValue(SolString.ValueOf(key), out value);
         }
 
         public bool TryGet(SolValue key, out SolValue value)

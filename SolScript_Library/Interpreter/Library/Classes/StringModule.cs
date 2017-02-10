@@ -59,7 +59,7 @@ namespace SolScript.Interpreter.Library.Classes
             if (index > value.Length) {
                 throw new SolRuntimeException(context, "Tried to access index " + index + " in string \"" + value + "\"(Length: " + value.Length + ").");
             }
-            return new SolString(new string(value[index], 1));
+            return SolString.ValueOf(new string(value[index], 1));
         }
 
         [UsedImplicitly]
@@ -71,7 +71,7 @@ namespace SolScript.Interpreter.Library.Classes
                 if (asIds) {
                     table.Append(new SolNumber(chr));
                 } else {
-                    table.Append(new SolString(new string(chr, 1)));
+                    table.Append(SolString.ValueOf(new string(chr, 1)));
                 }
             }
             return table;
@@ -107,8 +107,7 @@ namespace SolScript.Interpreter.Library.Classes
         [UsedImplicitly]
         public string skip(SolExecutionContext context, string value, int amount)
         {
-            if (amount > value.Length)
-            {
+            if (amount > value.Length) {
                 throw new SolRuntimeException(context, "Tried to skip " + amount + " characters in string \"" + value + "\"(Length: " + value.Length + ").");
             }
             return value.Substring(amount, value.Length - amount);
@@ -117,8 +116,7 @@ namespace SolScript.Interpreter.Library.Classes
         [UsedImplicitly]
         public string take(SolExecutionContext context, string value, int amount)
         {
-            if (amount > value.Length)
-            {
+            if (amount > value.Length) {
                 throw new SolRuntimeException(context, "Tried to take " + amount + " characters in string \"" + value + "\"(Length: " + value.Length + ").");
             }
             return value.Substring(0, amount);
@@ -133,9 +131,8 @@ namespace SolScript.Interpreter.Library.Classes
         public string substring(SolExecutionContext context, string value, int start, int amount)
         {
             int checkIdx = start + amount;
-            if (checkIdx > value.Length || start < 0 || amount < 0)
-            {
-                throw new SolRuntimeException(context, "Tried to substring " + amount + " characters starting at index " + start+ " in string \"" + value + "\"(Length: " + value.Length + ").");
+            if (checkIdx > value.Length || start < 0 || amount < 0) {
+                throw new SolRuntimeException(context, "Tried to substring " + amount + " characters starting at index " + start + " in string \"" + value + "\"(Length: " + value.Length + ").");
             }
             return value.Substring(start, amount);
         }
@@ -173,14 +170,21 @@ namespace SolScript.Interpreter.Library.Classes
             string[] splitResult = value.Split(separators, StringSplitOptions.None);
             SolTable table = new SolTable();
             foreach (string s in splitResult) {
-                table.Append(new SolString(s));
+                table.Append(SolString.ValueOf(s));
             }
             return table;
         }
 
-        private static readonly SolString s_RegexIndex = new SolString("index");
-        private static readonly SolString s_RegexLength = new SolString("length");
-        private static readonly SolString s_RegexValue = new SolString("value");
+        private static readonly SolString s_RegexIndex = SolString.ValueOf("index");
+        private static readonly SolString s_RegexLength = SolString.ValueOf("length");
+        private static readonly SolString s_RegexValue = SolString.ValueOf("value");
+
+        [SolContract("string", false)]
+        public SolString intern([SolContract("string", false)] SolString value)
+        {
+            value.Intern();
+            return value;
+        }
 
         [UsedImplicitly]
         public SolValue regex(string pattern, string input)
@@ -194,7 +198,7 @@ namespace SolScript.Interpreter.Library.Classes
                 SolTable grpTable = new SolTable {
                     [s_RegexIndex] = new SolNumber(mGrp.Index),
                     [s_RegexLength] = new SolNumber(mGrp.Length),
-                    [s_RegexValue] = new SolString(mGrp.Value)
+                    [s_RegexValue] = SolString.ValueOf(mGrp.Value)
                 };
                 matchTable.Append(grpTable);
             }

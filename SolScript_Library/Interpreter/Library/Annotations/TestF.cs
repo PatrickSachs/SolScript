@@ -17,7 +17,7 @@ namespace SolScript.Interpreter.Library.Annotations
         public SolTable __a_set_variable(SolExecutionContext context, SolValue value, SolValue raw)
         {
             return new SolTable {
-                [new SolString("override")] = m_Value
+                [SolString.ValueOf("override")] = m_Value
             };
         }
     }

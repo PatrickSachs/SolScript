@@ -204,7 +204,7 @@ namespace SolScript.Interpreter.Types
         /// </remarks>
         public virtual SolString Concatenate(SolExecutionContext context, SolValue other)
         {
-            return new SolString(ToString() + other);
+            return SolString.ValueOf(ToString() + other);
         }
 
         public virtual SolValue And(SolExecutionContext context, SolValue other)

@@ -18,7 +18,7 @@ namespace SolScript.Interpreter.Types.Marshal
         /// <inheritdoc />
         public SolValue Marshal(SolAssembly assembly, object value, Type type)
         {
-            return new SolString(new string((char) value, 1));
+            return SolString.ValueOf(new string((char) value, 1));
         }
 
         /// <inheritdoc />

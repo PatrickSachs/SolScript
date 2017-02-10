@@ -1,28 +1,57 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
-using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
 
 namespace SolScript.Interpreter.Types
 {
+    /// <summary>
+    ///     The <see cref="SolString" /> is used to represent well... a string. As opposed to may other languages a string is
+    ///     an actual primite in SolScript. There is not character type. Characters are either represented by a string with a
+    ///     length of one or a number.
+    /// </summary>
     public sealed class SolString : SolValue
     {
-        public SolString(string value)
+        static SolString()
+        {
+            // Intern some often used values.
+            Empty.Intern();
+            new SolString(" ").Intern();
+            new SolString(SolBool.TRUE_STRING).Intern();
+            new SolString(SolBool.FALSE_STRING).Intern();
+            new SolString("key").Intern();
+            new SolString("value").Intern();
+            new SolString("index").Intern();
+            new SolString("length").Intern();
+            new SolString("override").Intern();
+            new SolString("new_args").Intern();
+        }
+
+        // Private constrcutor to support interning.
+        private SolString(string value)
         {
             Value = value;
         }
 
         public const string TYPE = "string";
 
+        private static readonly Dictionary<string, SolString> Interned = new Dictionary<string, SolString>();
+
+        /// <summary>
+        ///     An empty("") string.
+        /// </summary>
         public static readonly SolString Empty = new SolString(string.Empty);
-        
+
+        /// <summary>
+        ///     The current value of this string.
+        /// </summary>
         public readonly string Value;
 
         /// <inheritdoc />
         public override string Type => TYPE;
 
         #region Overrides
-        
+
         /// <inheritdoc />
         /// <exception cref="SolMarshallingException"> The value cannot be converted. </exception>
         public override object ConvertTo(Type type)
@@ -112,5 +141,28 @@ namespace SolScript.Interpreter.Types
         }
 
         #endregion
+
+        /// <summary>
+        ///     Gets the <see cref="SolString" /> of the given value.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The created string.</returns>
+        public static SolString ValueOf(string value)
+        {
+            SolString str;
+            if (Interned.TryGetValue(value, out str)) {
+                return str;
+            }
+            return new SolString(value);
+        }
+
+        /// <summary>
+        ///     Interns the string. Interned strings only exist once in memory and thus safe memory if they are expected to exist
+        ///     very often within your application.
+        /// </summary>
+        public void Intern()
+        {
+            Interned.Add(string.Intern(Value), this);
+        }
     }
 }

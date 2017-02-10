@@ -4,7 +4,7 @@ using SolScript.Interpreter.Types;
 namespace SolScript.Interpreter.Expressions {
     public class Expression_String : SolExpression {
         public Expression_String(SolAssembly assembly, SolSourceLocation location, string value) : base(assembly, location) {
-            Value = new SolString(value);
+            Value = SolString.ValueOf(value);
         }
 
         public readonly SolString Value;

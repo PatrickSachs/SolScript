@@ -25,7 +25,7 @@ namespace SolScript.Interpreter.Library.Classes {
                 Console.WriteLine(message);
             }
             Console.Write(" > ");
-            return new SolString(Console.ReadLine() ?? string.Empty);
+            return SolString.ValueOf(Console.ReadLine() ?? string.Empty);
         }
 
         [UsedImplicitly]

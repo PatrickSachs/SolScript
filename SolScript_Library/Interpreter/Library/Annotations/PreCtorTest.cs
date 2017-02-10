@@ -15,7 +15,7 @@ namespace SolScript.Interpreter.Library.Annotations
         [SolContract("table", false)]
         public SolTable __a_pre_new(SolExecutionContext ctx, SolTable args, SolTable rawArgs)
         {
-            args.Append(new SolString("I am an annotation! o:"));
+            args.Append(SolString.ValueOf("I am an annotation! o:"));
             SolDebug.WriteLine("====================================");
             SolDebug.WriteLine("__a_pre_new");
             SolDebug.WriteLine("=== args:    ===");
@@ -23,7 +23,7 @@ namespace SolScript.Interpreter.Library.Annotations
             SolDebug.WriteLine("=== rawArgs: ===");
             SolDebug.WriteLine(rawArgs.ToString(ctx));
             return new SolTable {
-                [new SolString("new_args")] = args
+                [SolString.ValueOf("new_args")] = args
             };
         }
     }

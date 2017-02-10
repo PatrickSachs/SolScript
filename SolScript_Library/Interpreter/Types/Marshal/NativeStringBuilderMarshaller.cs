@@ -26,7 +26,7 @@ namespace SolScript.Interpreter.Types.Marshal
         public SolValue Marshal(SolAssembly assembly, object value, Type type)
         {
             StringBuilder builder = (StringBuilder) value;
-            return new SolString(builder.ToString());
+            return SolString.ValueOf(builder.ToString());
         }
 
         #endregion
