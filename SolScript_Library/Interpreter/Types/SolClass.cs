@@ -18,7 +18,13 @@ namespace SolScript.Interpreter.Types
         internal SolClass(SolClassDefinition definition)
         {
             Id = s_NextId++;
-            InheritanceChain = new Inheritance(this, definition, null);
+            Stack<SolClassDefinition> inheritanceStack = definition.GetInheritanceReversed();
+            Inheritance inheritance = null;
+            while (inheritanceStack.Count > 0) {
+                SolClassDefinition activeDefinition = inheritanceStack.Pop();
+                inheritance = new Inheritance(this, activeDefinition, inheritance);
+            }
+            InheritanceChain = inheritance;
             GlobalVariables = new ClassGlobalVariables(this);
             InternalVariables = new ClassInternalVariables(this);
         }
@@ -26,13 +32,14 @@ namespace SolScript.Interpreter.Types
         private static uint s_NextId;
         public readonly ClassGlobalVariables GlobalVariables;
         public readonly uint Id;
-        internal readonly Inheritance InheritanceChain;
         public readonly ClassInternalVariables InternalVariables;
 
         internal SolClass[] AnnotationsArray;
+        internal readonly Inheritance InheritanceChain;
 
         public IReadOnlyList<SolClass> Annotations => AnnotationsArray;
 
+        // todo: investigate if this wont cause problems. A class may be in a different assembly that the one it was declared in.
         public SolAssembly Assembly => InheritanceChain.Definition.Assembly;
         public SolTypeMode TypeMode => InheritanceChain.Definition.TypeMode;
         public override bool IsClass => true;
@@ -78,7 +85,7 @@ namespace SolScript.Interpreter.Types
         }
 
         #endregion
-  
+
         #region Overrides
 
         /// <inheritdoc />
@@ -267,7 +274,7 @@ namespace SolScript.Interpreter.Types
                 if (active.Definition == definition) {
                     return active;
                 }
-                active = active.BaseClass;
+                active = active.BaseInheritance;
             }
             return null;
         }
@@ -284,7 +291,7 @@ namespace SolScript.Interpreter.Types
                 if (nativeType.IsAssignableFrom(active.Definition.NativeType)) {
                     return active;
                 }
-                active = active.BaseClass;
+                active = active.BaseInheritance;
             }
             return null;
         }
@@ -300,7 +307,7 @@ namespace SolScript.Interpreter.Types
                 if (active.Definition.Type == className) {
                     return active;
                 }
-                active = active.BaseClass;
+                active = active.BaseInheritance;
             }
             return null;
         }
@@ -364,16 +371,43 @@ namespace SolScript.Interpreter.Types
 
         #region Nested type: Inheritance
 
+        /// <summary>
+        ///     The <see cref="Inheritance" /> type is used to represent data related to a certain class in the inheritance chain
+        ///     of a class(such as the local variables).
+        /// </summary>
         internal class Inheritance
         {
-            public Inheritance(SolClass classInstance, SolClassDefinition definition, [CanBeNull] Inheritance baseClass)
+            /// <summary>
+            ///     Creates a new <see cref="Inheritance" /> object.
+            /// </summary>
+            /// <param name="instance"> The class instance this <see cref="Inheritance" /> belongs to.</param>
+            /// <param name="definition">
+            ///     The definition of this exact <see cref="Inheritance" /> element. Not just the parent class
+            ///     definition of the class.
+            /// </param>
+            /// <param name="baseInheritance">The base inheritance(The inheritance this one extends).</param>
+            public Inheritance(SolClass instance, SolClassDefinition definition, [CanBeNull] Inheritance baseInheritance)
             {
-                BaseClass = baseClass;
+                Instance = instance;
+                BaseInheritance = baseInheritance;
                 Definition = definition;
-                Variables = new ClassInheritanceVariables(classInstance, this);
+                Variables = new ClassInheritanceVariables(this);
             }
 
+            /// <summary>
+            ///     The base inheritance(The inheritance this one extends).
+            /// </summary>
+            [CanBeNull] public readonly Inheritance BaseInheritance;
+
+            /// <summary>
+            ///     The definition of this exact <see cref="Inheritance" /> element. Not just the parent class definition of the class.
+            /// </summary>
             public readonly SolClassDefinition Definition;
+
+            /// <summary>
+            ///     The class instance this <see cref="Inheritance" /> belongs to.
+            /// </summary>
+            public readonly SolClass Instance;
 
             /// <summary>
             ///     The local variables of this inheritance level. Uses the class global variables as parent.
@@ -386,7 +420,9 @@ namespace SolScript.Interpreter.Types
             /// </remarks>
             public readonly ClassInheritanceVariables Variables;
 
-            [CanBeNull] public Inheritance BaseClass;
+            /// <summary>
+            ///     The native object representing this exact <see cref="Inheritance" />.
+            /// </summary>
             [CanBeNull] public object NativeObject;
         }
 

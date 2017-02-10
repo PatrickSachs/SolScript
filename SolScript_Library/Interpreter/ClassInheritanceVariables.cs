@@ -8,24 +8,12 @@ namespace SolScript.Interpreter
     /// </summary>
     public class ClassInheritanceVariables : ClassVariables
     {
-        internal ClassInheritanceVariables(SolClass ofClass, SolClass.Inheritance inheritance) : base(inheritance.Definition.Assembly)
+        internal ClassInheritanceVariables(SolClass.Inheritance inheritance) : base(inheritance.Definition.Assembly)
         {
-            // Note: ofClass is not fully created at this point. Most properties(incl. Assembly)
-            // rely on the inheritance chain which is still being construced.
-            m_OfClass = ofClass;
             m_Inheritance = inheritance;
         }
 
-        /// <summary>
-        ///     The inheritance these variables belong to.
-        /// </summary>
         private readonly SolClass.Inheritance m_Inheritance;
-
-        /// <summary>
-        ///     The class these variables and inheritance belong to.
-        /// </summary>
-        // todo: class field inside inheritance. no additional overhead since the class would be stored in multiple other places anyways.
-        private readonly SolClass m_OfClass;
 
         /// <inheritdoc />
         public override SolClassDefinition Definition => m_Inheritance.Definition;
@@ -51,11 +39,11 @@ namespace SolScript.Interpreter
         /// <inheritdoc />
         protected override IVariables GetParent()
         {
-            return m_OfClass.InternalVariables;
+            return m_Inheritance.Instance.InternalVariables;
         }
 
         /// <inheritdoc />
-        protected override SolClass GetInstance() => m_OfClass;
+        protected override SolClass GetInstance() => m_Inheritance.Instance;
 
         #endregion
     }

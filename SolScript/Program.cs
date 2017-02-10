@@ -96,7 +96,7 @@ namespace SolScript
                     SolAssembly script = SolAssembly.FromDirectory(dirRaw);
                     script.IncludeLibrary(SolLibrary.StandardLibrary).IncludeLibrary(new SolLibrary("test", typeof(MarshalTest).Assembly)).Create();
                     try {
-                        script.TypeRegistry.CreateInstance("Main", ClassCreationOptions.Default, new SolString("Hello from the command line :)"), new SolNumber(42));
+                        script.TypeRegistry.CreateInstance("Main", ClassCreationOptions.Default(), new SolString("Hello from the command line :)"), new SolNumber(42));
                     } catch (SolTypeRegistryException ex) {
                         Console.ForegroundColor = ConsoleColor.Yellow;
                         Console.WriteLine("   A runtime error occured!");
@@ -131,7 +131,7 @@ namespace SolScript
                         goto ChooseFile;
                     }
                     SolAssembly script = SolAssembly.FromFile(fileRaw).IncludeLibrary(SolLibrary.StandardLibrary).Create();
-                    script.TypeRegistry.CreateInstance("Main", ClassCreationOptions.Default, new SolString("Hello from the command line :)"), new SolNumber(42));
+                    script.TypeRegistry.CreateInstance("Main", ClassCreationOptions.Default(), new SolString("Hello from the command line :)"), new SolNumber(42));
                     Console.WriteLine("\n === Script execution finished ... Press any key to return to the main menu.");
                     Console.ReadKey(true);
                     goto Hello;

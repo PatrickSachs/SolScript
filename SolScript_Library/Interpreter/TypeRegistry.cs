@@ -237,7 +237,6 @@ namespace SolScript.Interpreter
         /// <seealso cref="CurrentState" />
         internal void GenerateDefinitions()
         {
-            // <bubble>InvalidOperationException</bubble>
             AssetStateExact(State.Registry, "Generating class definitions will advance the state to GeneratedClassBodies, and thus can only be called in Registry state.");
             CurrentState = State.GenerationStarted;
             foreach (SolClassBuilder builder in m_ClassBuilders.Values) {
@@ -320,27 +319,15 @@ namespace SolScript.Interpreter
             if (!options.EnforceCreation && !definition.CanBeCreated()) {
                 throw new InvalidOperationException($"The class \"{definition.Type}\" cannot be instantiated.");
             }
-            // The class instace is created here. Only the root node of the inheritance 
-            // chain, the global/internal variable fields and the id are created.
+            var annotations = new List<SolClass>();
             SolClass instance = new SolClass(definition);
             // The context is required to actually initialize the fields.
             SolExecutionContext creationContext = new SolExecutionContext(LinkedAssembly, definition.Type + "#" + instance.Id + " creation context");
-            // Build inheritance tree and declare fields
-            SolClassDefinition activeDefinition = definition;
-            SolClass.Inheritance activeInheritance = null;
-            var annotations = new List<SolClass>();
-            while (activeDefinition != null) {
-                if (activeInheritance == null) {
-                    activeInheritance = instance.InheritanceChain;
-                }
-                else {
-                    SolClass.Inheritance newInheritance = new SolClass.Inheritance(instance, activeDefinition, null);
-                    activeInheritance.BaseClass = newInheritance;
-                    activeInheritance = newInheritance;
-                }
+            SolClass.Inheritance activeInheritance = instance.InheritanceChain;
+            while (activeInheritance != null) {
                 // Create Annotations
                 if (options.CreateAnnotations) {
-                    foreach (SolAnnotationDefinition annotation in activeDefinition.Annotations) {
+                    foreach (SolAnnotationDefinition annotation in activeInheritance.Definition.Annotations) {
                         var annotationArgs = new SolValue[annotation.Arguments.Length];
                         for (int i = 0; i < annotationArgs.Length; i++) {
                             annotationArgs[i] = annotation.Arguments[i].Evaluate(creationContext, activeInheritance.Variables);
@@ -350,11 +337,11 @@ namespace SolScript.Interpreter
                             annotations.Add(annotationInstance);
                         } catch (SolRuntimeException ex) {
                             throw new SolTypeRegistryException(
-                                $"An error occured while initializing the annotation \"{annotation.Definition.Type}\" of class \"{instance.Type}\"(Inheritance Level: \"{activeDefinition.Type}\").", ex);
+                                $"An error occured while initializing the annotation \"{annotation.Definition.Type}\" of class \"{instance.Type}\"(Inheritance Level: \"{activeInheritance.Definition.Type}\").", ex);
                         }
                     }
                 }
-                foreach (KeyValuePair<string, SolFieldDefinition> fieldPair in activeDefinition.FieldPairs) {
+                foreach (KeyValuePair<string, SolFieldDefinition> fieldPair in activeInheritance.Definition.FieldPairs) {
                     SolFieldDefinition fieldDefinition = fieldPair.Value;
                     ClassVariables variables;
                     // Which variable context is this field declared in?
@@ -410,7 +397,7 @@ namespace SolScript.Interpreter
                         }
                     }
                 }
-                activeDefinition = activeDefinition.BaseClass;
+                activeInheritance = activeInheritance.BaseInheritance;
             }
             instance.AnnotationsArray = annotations.ToArray();
             if (options.CallConstructor) {
@@ -430,7 +417,7 @@ namespace SolScript.Interpreter
         /// <param name="name">The name of the class to instantiate.</param>
         /// <param name="options">
         ///     The otpions for the instance creation. If you are unsure about what this is, passing
-        ///     <see cref="ClassCreationOptions.Default" /> is typically a good idea.
+        ///     <see cref="ClassCreationOptions.Default()" /> is typically a good idea.
         /// </param>
         /// <param name="constructorArguments">The arguments for the constructor function call.</param>
         /// <returns>The created class instance.</returns>

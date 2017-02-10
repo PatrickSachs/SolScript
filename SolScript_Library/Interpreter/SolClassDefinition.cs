@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
-using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter
@@ -31,7 +30,7 @@ namespace SolScript.Interpreter
 
         private bool DidBuildMetaFunctions => l_MetaFunctions != null;
 
-        public IReadOnlyCollection<SolAnnotationDefinition> Annotations => m_Annotations;
+        public IReadOnlyList<SolAnnotationDefinition> Annotations => m_Annotations;
 
         public IReadOnlyCollection<SolFieldDefinition> Fields => m_Fields.Values;
         public IReadOnlyCollection<SolFunctionDefinition> Functions => m_Functions.Values;
@@ -50,6 +49,22 @@ namespace SolScript.Interpreter
         }
 
         #endregion
+
+        /// <summary>
+        ///     Gets the reversed inheritance chain of this definition, first containing the most abstract definition and last the
+        ///     most derived one(this one).
+        /// </summary>
+        /// <returns>A stack containing the class definitions.</returns>
+        public Stack<SolClassDefinition> GetInheritanceReversed()
+        {
+            var stack = new Stack<SolClassDefinition>();
+            SolClassDefinition definition = this;
+            while (definition != null) {
+                stack.Push(definition);
+                definition = definition.BaseClass;
+            }
+            return stack;
+        }
 
         internal void SetAnnotations(params SolAnnotationDefinition[] annotations)
         {

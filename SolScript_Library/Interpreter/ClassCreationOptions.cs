@@ -1,4 +1,5 @@
 ﻿using System;
+using JetBrains.Annotations;
 
 namespace SolScript.Interpreter
 {
@@ -58,9 +59,21 @@ namespace SolScript.Interpreter
         public abstract bool EnforceCreation { get; }
 
         /// <summary>
+        ///     Setting a value to this context will allow you to specify a context that will be used to instantiate the class.
+        ///     This improves stak trace quality for easier debugging. If this value is null a new context will be created.
+        /// </summary>
+        [CanBeNull]
+        public abstract SolExecutionContext CallingContext { get; }
+
+        /// <summary>
         ///     The default creation options, returning true for every property except <see cref="EnforceCreation" />.
         /// </summary>
-        public static ClassCreationOptions Default => DefaultOptions.Instance;
+        public static ClassCreationOptions Default() => DefaultOptions.Instance;
+
+        /// <inheritdoc cref="Default()" />
+        /// <param name="callingContext">Additionally allows you to specify the conext from which the class was created.</param>
+        /// <seealso cref="CallingContext" />
+        public static ClassCreationOptions Default(SolExecutionContext callingContext) => new Customizable().SetCallingContext(callingContext);
 
         #region Nested type: Customizable
 
@@ -71,6 +84,7 @@ namespace SolScript.Interpreter
         {
             private bool m_AssignScriptFields = true;
             private bool m_CallConstructor = true;
+            private SolExecutionContext m_CallingContext;
             private bool m_CreateAnnotations = true;
             private bool m_CreateFieldAnnotations = true;
             private bool m_DeclareNativeFields = true;
@@ -97,6 +111,9 @@ namespace SolScript.Interpreter
 
             /// <inheritdoc />
             public override bool EnforceCreation => m_EnforceCreation;
+
+            /// <inheritdoc />
+            public override SolExecutionContext CallingContext => m_CallingContext;
 
             /// <inheritdoc cref="DeclareNativeFields" />
             public Customizable SetDeclareNativeFields(bool value)
@@ -157,6 +174,13 @@ namespace SolScript.Interpreter
                 m_EnforceCreation = value;
                 return this;
             }
+
+            /// <inheritdoc cref="EnforceCreation" />
+            public Customizable SetCallingContext([CanBeNull] SolExecutionContext value)
+            {
+                m_CallingContext = value;
+                return this;
+            }
         }
 
         #endregion
@@ -191,6 +215,9 @@ namespace SolScript.Interpreter
 
             /// <inheritdoc />
             public override bool EnforceCreation => false;
+
+            /// <inheritdoc />
+            public override SolExecutionContext CallingContext => null;
         }
 
         #endregion

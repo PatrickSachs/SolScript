@@ -29,7 +29,7 @@ namespace SolScript.Interpreter.Statements
             }
             SolClass instance;
             try {
-                instance = Assembly.TypeRegistry.CreateInstance(TypeName, ClassCreationOptions.Default, arguments);
+                instance = Assembly.TypeRegistry.CreateInstance(TypeName, ClassCreationOptions.Default(context), arguments);
             } catch (SolTypeRegistryException ex) {
                 throw new SolRuntimeException(context, $"An error occured while creating a class instance of type \"{TypeName}\".", ex);
             }
