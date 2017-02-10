@@ -1,4 +1,5 @@
-﻿using JetBrains.Annotations;
+﻿using System.Collections.Generic;
+using JetBrains.Annotations;
 using SolScript.Interpreter.Builders;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
@@ -10,7 +11,7 @@ namespace SolScript.Interpreter
     ///     two-step creation of functions.<br />
     ///     A function definion may or may not be for a class or global function.<br />
     /// </summary>
-    public sealed class SolFunctionDefinition : ISourceLocateable
+    public sealed class SolFunctionDefinition : SolAnnotateableDefinitionBase
     {
         /// <summary>
         ///     Creates a new function definition for a function declared in a class.
@@ -30,12 +31,11 @@ namespace SolScript.Interpreter
         /// <param name="assembly">The assembly to use for type lookups and register the definition to.</param>
         /// <param name="builder">The function builder.</param>
         /// <exception cref="SolMarshallingException">No matching SolType for the return type of the native builder.</exception>
-        public SolFunctionDefinition(SolAssembly assembly, SolFunctionBuilder builder)
+        public SolFunctionDefinition(SolAssembly assembly, SolFunctionBuilder builder) : base(assembly, builder.Location)
         {
             Name = builder.Name;
-            Location = builder.Location;
-            Assembly = assembly;
             AccessModifier = builder.AccessModifier;
+            AnnotationsFromData(builder.Annotations);
             if (builder.IsNative) {
                 if (builder.NativeMethod != null) {
                     // Native Method
@@ -70,11 +70,6 @@ namespace SolScript.Interpreter
         }
 
         /// <summary>
-        /// The assembly this definition was defined in.
-        /// </summary>
-        public readonly SolAssembly Assembly;
-
-        /// <summary>
         ///     The access modifier for this function which decide from where the function can be accessed.
         /// </summary>
         public readonly AccessModifier AccessModifier;
@@ -106,13 +101,7 @@ namespace SolScript.Interpreter
         /// </summary>
         public readonly SolParameterInfo ParameterInfo;
 
-        #region ISourceLocateable Members
-
-        /// <summary>
-        ///     Where in the code is this function located?
-        /// </summary>
-        public SolSourceLocation Location { get; }
-
-        #endregion
+        /// <inheritdoc />
+        public override IReadOnlyList<SolAnnotationDefinition> Annotations { get; protected set; }
     }
 }

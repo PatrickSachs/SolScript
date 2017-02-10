@@ -314,9 +314,9 @@ namespace SolScript.Interpreter.Statements
             ParseTreeNode assignmentOpt = node.ChildNodes[4];
             SolFieldBuilder fieldBuilder = new SolFieldBuilder(fieldName, fieldType).SetAccessModifier(accessModifier).AtLocation(new SolSourceLocation(ActiveFile, identifierNode.Span.Location));
             InsertAnnotations(annotationsListNode, fieldBuilder);
-            if (assignmentOpt.ChildNodes.Count != 0) {
-                fieldBuilder.MakeScriptField(GetExpression(assignmentOpt.ChildNodes[0]));
-            }
+            fieldBuilder.MakeScriptField(assignmentOpt.ChildNodes.Count != 0
+                ? GetExpression(assignmentOpt.ChildNodes[0])
+                : new Expression_Nil(Assembly, new SolSourceLocation(ActiveFile, assignmentOpt.Span.Location)));
             return fieldBuilder;
         }
 

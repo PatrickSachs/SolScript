@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Reflection;
-using Vexe.Runtime.Extensions;
 
 namespace SolScript.Interpreter
 {

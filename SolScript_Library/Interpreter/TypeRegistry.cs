@@ -51,12 +51,10 @@ namespace SolScript.Interpreter
         /// <seealso cref="CurrentState" />
         public SolGlobalsBuilder GlobalsBuilder {
             get {
-                // <bubble>InvalidOperationException</bubble>
                 AssetStateExact(State.Registry, "Can only access the globals builder during registry state.");
                 return m_GlobalsBuilder;
             }
             set {
-                // <bubble>InvalidOperationException</bubble>
                 AssetStateExact(State.Registry, "Can only access the globals builder during registry state.");
                 m_GlobalsBuilder = value;
             }
@@ -71,7 +69,6 @@ namespace SolScript.Interpreter
         /// <seealso cref="HasReachedState" />
         public IReadOnlyCollection<SolClassDefinition> ClassDefinitions {
             get {
-                // <bubble>InvalidOperationException</bubble>
                 AssetStateExactAndHigher(State.GeneratedClassHulls, "Cannot receive class definitions if they aren't generated yet.");
                 return m_ClassDefinitions.Values;
             }
@@ -90,7 +87,6 @@ namespace SolScript.Interpreter
         [ContractAnnotation("definition:null => false")]
         public bool TryGetGlobalFunction(string name, out SolFunctionDefinition definition)
         {
-            // <bubble>InvalidOperationException</bubble>
             AssetStateExactAndHigher(State.GeneratedGlobals, "Cannot receive global function definitions if they aren't generated yet.");
             return m_GlobalFunctions.TryGetValue(name, out definition);
         }
@@ -108,7 +104,6 @@ namespace SolScript.Interpreter
         [ContractAnnotation("definition:null => false")]
         public bool TryGetGlobalField(string name, out SolFieldDefinition definition)
         {
-            // <bubble>InvalidOperationException</bubble>
             AssetStateExactAndHigher(State.GeneratedGlobals, "Cannot receive global function definitions if they aren't generated yet.");
             return m_GlobalFields.TryGetValue(name, out definition);
         }
@@ -146,7 +141,6 @@ namespace SolScript.Interpreter
         [ContractAnnotation("definition:null => false")]
         public bool TryGetClass(Type nativeType, [CanBeNull] out SolClassDefinition definition)
         {
-            // <bubble>InvalidOperationException</bubble>
             AssetStateExactAndHigher(State.GeneratedClassHulls, "Cannot receive class definitions if they aren't generated yet.");
             return m_NativeClasses.TryGetValue(nativeType, out definition);
         }
@@ -164,7 +158,6 @@ namespace SolScript.Interpreter
         [ContractAnnotation("definition:null => false")]
         public bool TryGetClass(string className, [CanBeNull] out SolClassDefinition definition)
         {
-            // <bubble>InvalidOperationException</bubble>
             AssetStateExactAndHigher(State.GeneratedClassHulls, "Cannot receive class definitions if they aren't generated yet.");
             return m_ClassDefinitions.TryGetValue(className, out definition);
         }
@@ -205,7 +198,6 @@ namespace SolScript.Interpreter
         /// <seealso cref="CurrentState" />
         public void RegisterClass(SolClassBuilder builder)
         {
-            // <bubble>InvalidOperationException</bubble>
             AssetStateExact(State.Registry, "Can only register classes during registry state. New classes cannot be registered once the definitions have been generated.");
             try {
                 m_ClassBuilders.Add(builder.Name, builder);
@@ -220,10 +212,13 @@ namespace SolScript.Interpreter
         /// <param name="builders">The class builders.</param>
         /// <exception cref="InvalidOperationException">The Type Registry is not in <see cref="State.Registry" /> state.</exception>
         /// <seealso cref="CurrentState" />
+        /// <exception cref="SolTypeRegistryException">
+        ///     Another class with the same <see cref="SolClassBuilder.Name" /> already
+        ///     exists.
+        /// </exception>
         public void RegisterClasses(IEnumerable<SolClassBuilder> builders)
         {
             foreach (SolClassBuilder builder in builders) {
-                // <bubble>InvalidOperationException</bubble>
                 RegisterClass(builder);
             }
         }
@@ -337,7 +332,8 @@ namespace SolScript.Interpreter
                             annotations.Add(annotationInstance);
                         } catch (SolRuntimeException ex) {
                             throw new SolTypeRegistryException(
-                                $"An error occured while initializing the annotation \"{annotation.Definition.Type}\" of class \"{instance.Type}\"(Inheritance Level: \"{activeInheritance.Definition.Type}\").", ex);
+                                $"An error occured while initializing the annotation \"{annotation.Definition.Type}\" of class \"{instance.Type}\"(Inheritance Level: \"{activeInheritance.Definition.Type}\").",
+                                ex);
                         }
                     }
                 }
@@ -382,9 +378,18 @@ namespace SolScript.Interpreter
                     // At this point not all fields have fully been declared, which is fine since field
                     // initializers are not supposed/allowed to reference other members anyways.
                     if (wasDeclared) {
-                        // Let's create the field annotations.
-                        if (options.CreateFieldAnnotations) {
-                            // todo: create field annotations
+                        // Let's create the field annotations(If we actually have some to create).
+                        if (options.CreateFieldAnnotations && fieldDefinition.Annotations.Count > 0) {
+                            SolClass[] fieldAnnotationInstances = new SolClass[fieldDefinition.Annotations.Count];
+                            for (int i = 0; i < fieldAnnotationInstances.Length; i++) {
+                                SolAnnotationDefinition fieldAnnotation = fieldDefinition.Annotations[i];
+                                SolValue[] values = new SolValue[fieldAnnotation.Arguments.Length];
+                                for (int v = 0; v < values.Length; v++) {
+                                    values[v] = fieldAnnotation.Arguments[v].Evaluate(creationContext, activeInheritance.Variables);
+                                }
+                                fieldAnnotationInstances[i] = CreateInstance(fieldAnnotation.Definition, AnnotationClassCreationOptions, values);
+                            }
+                            variables.AssignAnnotations(fieldDefinition.Name, fieldAnnotationInstances);
                         }
                         // Assign the script fields.
                         if (options.AssignScriptFields && fieldDefinition.Initializer.FieldType == SolFieldInitializerWrapper.Type.ScriptField) {
@@ -397,6 +402,8 @@ namespace SolScript.Interpreter
                         }
                     }
                 }
+                // todo: function annotations? should they lazily be created?(that stuff really does not belong into variables though?!)
+                // or it is time to get rid of this stupid lazy function init stuff(but my sweet memory!)
                 activeInheritance = activeInheritance.BaseInheritance;
             }
             instance.AnnotationsArray = annotations.ToArray();

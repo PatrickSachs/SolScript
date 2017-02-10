@@ -32,10 +32,10 @@ namespace SolScript.Interpreter.Types
         private static uint s_NextId;
         public readonly ClassGlobalVariables GlobalVariables;
         public readonly uint Id;
+        internal readonly Inheritance InheritanceChain;
         public readonly ClassInternalVariables InternalVariables;
 
         internal SolClass[] AnnotationsArray;
-        internal readonly Inheritance InheritanceChain;
 
         public IReadOnlyList<SolClass> Annotations => AnnotationsArray;
 
@@ -234,9 +234,9 @@ namespace SolScript.Interpreter.Types
             return base.Iterate(context);
         }
 
+        /// <inheritdoc />
         public override bool Equals(object other)
         {
-#if DEBUG
             if (ReferenceEquals(other, this)) {
                 return true;
             }
@@ -247,17 +247,21 @@ namespace SolScript.Interpreter.Types
             if (otherClass == null) {
                 return false;
             }
-            if (otherClass.Id == Id) {
-                throw new InvalidOperationException("One instance of class " + Type + " seems to have multiple instances.");
-            }
-            return false;
-#else
-            return other == this;
-#endif
+            return Id == otherClass.Id;
         }
 
         #endregion
 
+        /// <summary>
+        ///     Tries to get a meta function of this class.
+        /// </summary>
+        /// <param name="meta">The meta key identifier.</param>
+        /// <param name="link">The meta function link. Only valid if the method returned true.</param>
+        /// <returns>true if the meta function could be found, false if not.</returns>
+        /// <exception cref="SolVariableException">
+        ///     The meta function could be found but was in an invalid state(e.g. wrong type, accessor...).
+        /// </exception>
+        [ContractAnnotation("link:null => false")]
         internal bool TryGetMetaFunction(SolMetaKey meta, out SolClassDefinition.MetaFunctionLink link)
         {
             return InheritanceChain.Definition.TryGetMetaFunction(meta, out link);

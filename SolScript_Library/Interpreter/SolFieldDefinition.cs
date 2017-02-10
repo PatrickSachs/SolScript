@@ -1,4 +1,5 @@
-﻿using JetBrains.Annotations;
+﻿using System.Collections.Generic;
+using JetBrains.Annotations;
 using SolScript.Interpreter.Builders;
 using SolScript.Interpreter.Exceptions;
 
@@ -7,7 +8,7 @@ namespace SolScript.Interpreter
     /// <summary>
     ///     This definitions contains information about a field in SolScript.
     /// </summary>
-    public sealed class SolFieldDefinition : ISourceLocateable
+    public sealed class SolFieldDefinition : SolAnnotateableDefinitionBase
     {
         /// <summary>
         ///     Creates a new field definition for a field located in a class.
@@ -27,12 +28,11 @@ namespace SolScript.Interpreter
         /// <param name="assembly">The assembly to use for type lookups and register the definition to.</param>
         /// <param name="builder">The field builder.</param>
         /// <exception cref="SolMarshallingException">No matching SolType for the native field type.</exception>
-        public SolFieldDefinition(SolAssembly assembly, SolFieldBuilder builder)
+        public SolFieldDefinition(SolAssembly assembly, SolFieldBuilder builder) : base(assembly, builder.Location)
         {
-            Assembly = assembly;
             Name = builder.Name;
             Modifier = builder.AccessModifier;
-            Location = builder.Location;
+            AnnotationsFromData(builder.Annotations);
             if (builder.IsNativeField) {
                 Initializer = new SolFieldInitializerWrapper(builder.NativeField);
                 if (builder.NativeReturnTypeHasBeenResolved) {
@@ -48,19 +48,9 @@ namespace SolScript.Interpreter
         }
 
         /// <summary>
-        ///     The assembly the field belongs to.
-        /// </summary>
-        public readonly SolAssembly Assembly;
-
-        /// <summary>
         ///     The class this field was defined in. This is null for global fields.
         /// </summary>
         [CanBeNull] public readonly SolClassDefinition DefinedIn;
-
-        /// <summary>
-        ///     The name of the field.
-        /// </summary>
-        public readonly string Name;
 
         /// <summary>
         ///     This class wraps the initializer of the field. Make sure to check the
@@ -74,15 +64,16 @@ namespace SolScript.Interpreter
         public readonly AccessModifier Modifier;
 
         /// <summary>
+        ///     The name of the field.
+        /// </summary>
+        public readonly string Name;
+
+        /// <summary>
         ///     The data type of the field.
         /// </summary>
         public readonly SolType Type;
 
-        #region ISourceLocateable Members
-
         /// <inheritdoc />
-        public SolSourceLocation Location { get; }
-
-        #endregion
+        public override IReadOnlyList<SolAnnotationDefinition> Annotations { get; protected set; }
     }
 }

@@ -67,12 +67,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Compiler\SolScriptCompiler.cs" />
-    <Compile Include="FastReflection.cs" />
     <Compile Include="Interpreter\AccessModifier.cs" />
     <Compile Include="Interpreter\Builders\IAnnotateableBuilder.cs" />
     <Compile Include="Interpreter\Builders\SolBuilderBase.cs" />
     <Compile Include="Interpreter\IPriority.cs" />
+    <Compile Include="Interpreter\Library\Annotations\TestF.cs" />
     <Compile Include="Interpreter\PriorityComparer.cs" />
+    <Compile Include="Interpreter\SolAnnotateableDefinitionBase.cs" />
     <Compile Include="Interpreter\Types\Marshal\NativeDelegateMarshaller.cs" />
     <Compile Include="Interpreter\Types\Implementation\SolAutoDelegateWrapperFunction.cs" />
     <Compile Include="Interpreter\Types\Implementation\SolDelegateWrapperFunction.cs" />
@@ -98,7 +99,6 @@
     <Compile Include="Interpreter\ClassInheritanceVariables.cs" />
     <Compile Include="Interpreter\ClassInternalVariables.cs" />
     <Compile Include="Interpreter\ClassVariables.cs" />
-    <Compile Include="Interpreter\CodeLocation.cs" />
     <Compile Include="Interpreter\Exceptions\SolInterpreterException.cs" />
     <Compile Include="Interpreter\Exceptions\SolRuntimeException.cs" />
     <Compile Include="Interpreter\Exceptions\SolTypeRegistryException.cs" />
@@ -134,7 +134,6 @@
     <Compile Include="Interpreter\SolDefinitionBase.cs" />
     <Compile Include="Interpreter\SolFieldInitializerWrapper.cs" />
     <Compile Include="Interpreter\SolMetaKey.cs" />
-    <Compile Include="Interpreter\MixinId.cs" />
     <Compile Include="Interpreter\SolChunkWrapper.cs" />
     <Compile Include="Interpreter\SolParameterInfo.cs" />
     <Compile Include="Interpreter\Builders\SolClassBuilder.cs" />

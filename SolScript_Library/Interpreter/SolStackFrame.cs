@@ -82,6 +82,26 @@ namespace SolScript.Interpreter
             return Location.Equals(other.Location) && Function == other.Function;
         }
 
+        public static bool operator ==(SolStackFrame frame1, SolStackFrame frame2)
+        {
+            return frame1.Equals(frame2);
+        }
+
+        public static bool operator ==(SolStackFrame frame1, object frame2)
+        {
+            return frame1.Equals(frame2);
+        }
+
+        public static bool operator !=(SolStackFrame frame1, object frame2)
+        {
+            return frame1.Equals(frame2);
+        }
+
+        public static bool operator !=(SolStackFrame frame1, SolStackFrame frame2)
+        {
+            return !frame1.Equals(frame2);
+        }
+
         [Pure]
         public override bool Equals(object obj)
         {

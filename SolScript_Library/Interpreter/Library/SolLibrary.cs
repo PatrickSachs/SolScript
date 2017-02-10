@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using JetBrains.Annotations;
-using SolScript.Interpreter;
 using SolScript.Interpreter.Builders;
 
 namespace SolScript.Interpreter.Library
@@ -15,12 +14,19 @@ namespace SolScript.Interpreter.Library
             Name = libraryName;
             m_Assemblies = sourceAssemblies;
             FallbackMethodPostProcessor = NativeMethodPostProcessor.GetDefault();
+            // object Methods
             RegisterMethodPostProcessor(nameof(GetHashCode), NativeMethodPostProcessor.GetFailer());
             RegisterMethodPostProcessor(nameof(GetType), NativeMethodPostProcessor.GetFailer());
-            // The built-in equals comparison if faster than marshalling the type to C# and performing a potentially costly operation.
-            // todo: do regardless if the method has been overwritten.
             RegisterMethodPostProcessor(nameof(Equals), NativeMethodPostProcessor.GetFailer());
             RegisterMethodPostProcessor(nameof(ToString), NativeMethodPostProcessor.GetRenamerAndAccessorAndReturn(SolMetaKey.Stringify.Name, AccessModifier.Internal, SolMetaKey.Stringify.Type));
+            // Annotations
+            NativeMethodPostProcessor internalPostProcessor = NativeMethodPostProcessor.GetAccessor(AccessModifier.Internal);
+            RegisterMethodPostProcessor(SolMetaKey.AnnotationGetVariable.Name, internalPostProcessor);
+            RegisterMethodPostProcessor(SolMetaKey.AnnotationSetVariable.Name, internalPostProcessor);
+            RegisterMethodPostProcessor(SolMetaKey.AnnotationCallFunction.Name, internalPostProcessor);
+            RegisterMethodPostProcessor(SolMetaKey.AnnotationPreConstructor.Name, internalPostProcessor);
+            RegisterMethodPostProcessor(SolMetaKey.AnnotationPostConstructor.Name, internalPostProcessor);
+            // todo: meta function post processors (detect operators).
             FallbackFieldPostProcessor = NativeFieldPostProcessor.GetDefault();
         }
 
@@ -366,6 +372,17 @@ namespace SolScript.Interpreter.Library
             }
 
             /// <summary>
+            ///     Returns a <see cref="NativeMethodPostProcessor" /> that generates all default values aside from the
+            ///     <see cref="AccessModifier" /> which is a fixed values.
+            /// </summary>
+            /// <param name="access">The access modifiers.</param>
+            /// <returns>The post processor instance.</returns>
+            public static NativeMethodPostProcessor GetAccessor(AccessModifier access)
+            {
+                return new Access(access);
+            }
+
+            /// <summary>
             ///     Returns a <see cref="NativeMethodPostProcessor" /> that generates all default values aside from the name &
             ///     <see cref="AccessModifier" /> which are fixed values.
             /// </summary>
@@ -431,6 +448,26 @@ namespace SolScript.Interpreter.Library
             /// <param name="method">The method referene.</param>
             /// <returns>The new function <see cref="AccessModifier" /> to use in SolScript.</returns>
             public virtual AccessModifier GetAccessModifier(MethodInfo method) => AccessModifier.None;
+
+            #region Nested type: Access
+
+            private class Access : NativeMethodPostProcessor
+            {
+                public Access(AccessModifier access)
+                {
+                    m_Access = access;
+                }
+
+                private readonly AccessModifier m_Access;
+
+                #region Overrides
+
+                public override AccessModifier GetAccessModifier(MethodInfo method) => m_Access;
+
+                #endregion
+            }
+
+            #endregion
 
             #region Nested type: Default
 

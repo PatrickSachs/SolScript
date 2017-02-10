@@ -6,6 +6,7 @@ namespace SolScript.Interpreter.Exceptions
     /// <summary>
     ///     This exception is used to indicate an error inside the type registry.
     /// </summary>
+    [Serializable]
     public class SolTypeRegistryException : SolScriptException
     {
         protected SolTypeRegistryException() {}

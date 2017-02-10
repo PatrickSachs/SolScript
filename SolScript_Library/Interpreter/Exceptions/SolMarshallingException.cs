@@ -27,7 +27,12 @@ namespace SolScript.Interpreter.Exceptions {
         }
 
         public SolMarshallingException(Type type, string message = "Cannot find matching SolType!")
-            : base(type.Name + ": " + message) {
+            : base(type.Name + ": " + message)
+        {
+        }
+        public SolMarshallingException(string type, string message = "Cannot find matching SolType!")
+           : base(type + ": " + message)
+        {
         }
 
         protected SolMarshallingException(

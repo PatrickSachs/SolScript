@@ -1,15 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter
 {
-    public sealed class SolClassDefinition : SolDefinitionBase
+    public sealed class SolClassDefinition : SolAnnotateableDefinitionBase
     {
         // todo: type registry state assertions in this class
-        internal SolClassDefinition(SolAssembly assembly, SolSourceLocation location, string type, SolTypeMode typeMode) : base(assembly)
+        internal SolClassDefinition(SolAssembly assembly, SolSourceLocation location, string type, SolTypeMode typeMode) : base(assembly, location)
         {
             Type = type;
             TypeMode = typeMode;
@@ -30,7 +31,11 @@ namespace SolScript.Interpreter
 
         private bool DidBuildMetaFunctions => l_MetaFunctions != null;
 
-        public IReadOnlyList<SolAnnotationDefinition> Annotations => m_Annotations;
+        /// <inheritdoc />
+        public override IReadOnlyList<SolAnnotationDefinition> Annotations {
+            get { return m_Annotations; }
+            protected set { m_Annotations = value.ToArray(); }
+        }
 
         public IReadOnlyCollection<SolFieldDefinition> Fields => m_Fields.Values;
         public IReadOnlyCollection<SolFunctionDefinition> Functions => m_Functions.Values;
@@ -38,8 +43,6 @@ namespace SolScript.Interpreter
         public IReadOnlyCollection<KeyValuePair<string, SolFunctionDefinition>> FunctionPairs => m_Functions;
         public IReadOnlyCollection<string> FieldNames => m_Fields.Keys;
         public IReadOnlyCollection<string> FunctionNames => m_Functions.Keys;
-
-        public override SolSourceLocation Location { get; }
 
         #region Overrides
 
@@ -355,13 +358,6 @@ namespace SolScript.Interpreter
             definition = null;
             return false;
         }
-
-        /*[CanBeNull]
-        public SolExpression GetFieldInitializer(string name)
-        {
-            Assembly.TypeRegistry.AssetStateExactAndHigher(TypeRegistry.State.GeneratedClassBodies, "Class bodies need to be generated before class fields can be used.");
-            return m_Fields[name].FieldInitializer;
-        }*/
 
         internal void SetField(string name, SolFieldDefinition field)
         {

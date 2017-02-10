@@ -114,6 +114,26 @@ namespace SolScript.Interpreter
             return string.Equals(File, other.File) && Column == other.Column && Line == other.Line && Position == other.Position;
         }
 
+        public static bool operator ==(SolSourceLocation obj1, SolSourceLocation obj2)
+        {
+            return obj1.Equals(obj2);
+        }
+
+        public static bool operator ==(SolSourceLocation obj1, object obj2)
+        {
+            return obj1.Equals(obj2);
+        }
+
+        public static bool operator !=(SolSourceLocation obj1, object obj2)
+        {
+            return obj1.Equals(obj2);
+        }
+
+        public static bool operator !=(SolSourceLocation obj1, SolSourceLocation obj2)
+        {
+            return !obj1.Equals(obj2);
+        }
+
         [Pure]
         public override bool Equals(object obj)
         {

@@ -6,6 +6,7 @@ namespace SolScript.Interpreter.Exceptions
     /// <summary>
     ///     The SolRuntimeException is used to represent an exception that occured during the actual run of an assembly.
     /// </summary>
+    [Serializable]
     public class SolRuntimeException : SolScriptException
     {
         protected SolRuntimeException() {}
