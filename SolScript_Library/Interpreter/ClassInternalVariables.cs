@@ -38,7 +38,7 @@ namespace SolScript.Interpreter
         protected override bool ValidateFunctionDefinition(SolFunctionDefinition definition)
         {
             // Internal and globals are ok for internal scope.
-            if (definition.AccessModifier == AccessModifier.Internal) {
+            if (definition.AccessModifier == SolAccessModifier.Internal) {
                 return true;
             }
             // Locals cannot be accessed outside of their inheritance scope.

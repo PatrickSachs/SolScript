@@ -69,7 +69,7 @@ namespace SolScript.Interpreter
         /// <seealso cref="HasReachedState" />
         public IReadOnlyCollection<SolClassDefinition> ClassDefinitions {
             get {
-                AssetStateExactAndHigher(State.GeneratedClassHulls, "Cannot receive class definitions if they aren't generated yet.");
+                AssertStateExactAndHigher(State.GeneratedClassHulls, "Cannot receive class definitions if they aren't generated yet.");
                 return m_ClassDefinitions.Values;
             }
         }
@@ -87,7 +87,7 @@ namespace SolScript.Interpreter
         [ContractAnnotation("definition:null => false")]
         public bool TryGetGlobalFunction(string name, out SolFunctionDefinition definition)
         {
-            AssetStateExactAndHigher(State.GeneratedGlobals, "Cannot receive global function definitions if they aren't generated yet.");
+            AssertStateExactAndHigher(State.GeneratedGlobals, "Cannot receive global function definitions if they aren't generated yet.");
             return m_GlobalFunctions.TryGetValue(name, out definition);
         }
 
@@ -104,7 +104,7 @@ namespace SolScript.Interpreter
         [ContractAnnotation("definition:null => false")]
         public bool TryGetGlobalField(string name, out SolFieldDefinition definition)
         {
-            AssetStateExactAndHigher(State.GeneratedGlobals, "Cannot receive global function definitions if they aren't generated yet.");
+            AssertStateExactAndHigher(State.GeneratedGlobals, "Cannot receive global function definitions if they aren't generated yet.");
             return m_GlobalFields.TryGetValue(name, out definition);
         }
 
@@ -141,7 +141,7 @@ namespace SolScript.Interpreter
         [ContractAnnotation("definition:null => false")]
         public bool TryGetClass(Type nativeType, [CanBeNull] out SolClassDefinition definition)
         {
-            AssetStateExactAndHigher(State.GeneratedClassHulls, "Cannot receive class definitions if they aren't generated yet.");
+            AssertStateExactAndHigher(State.GeneratedClassHulls, "Cannot receive class definitions if they aren't generated yet.");
             return m_NativeClasses.TryGetValue(nativeType, out definition);
         }
 
@@ -158,12 +158,12 @@ namespace SolScript.Interpreter
         [ContractAnnotation("definition:null => false")]
         public bool TryGetClass(string className, [CanBeNull] out SolClassDefinition definition)
         {
-            AssetStateExactAndHigher(State.GeneratedClassHulls, "Cannot receive class definitions if they aren't generated yet.");
+            AssertStateExactAndHigher(State.GeneratedClassHulls, "Cannot receive class definitions if they aren't generated yet.");
             return m_ClassDefinitions.TryGetValue(className, out definition);
         }
 
         /// <exception cref="InvalidOperationException">The TypeRegistry is not in the required state.</exception>
-        internal void AssetStateExactAndHigher(State state, string message = "Invalid State!")
+        internal void AssertStateExactAndHigher(State state, string message = "Invalid State!")
         {
             if (!HasReachedState(state)) {
                 throw new InvalidOperationException($"{message} - In State: {CurrentState}({(int) CurrentState}); Required State: {state}({(int) state}) or higher.");
@@ -173,7 +173,7 @@ namespace SolScript.Interpreter
         /// <exception cref="InvalidOperationException">The TypeRegistry is not in the required state.</exception>
         internal void AssetStateExactAndLower(State state, string message = "Invalid State!")
         {
-            if (!HasNotReachedState(state)) {
+            if ((int)CurrentState > (int)state) {
                 throw new InvalidOperationException($"{message} - In State: {CurrentState}({(int) CurrentState}); Required State: {state}({(int) state}) or lower.");
             }
         }
@@ -310,7 +310,7 @@ namespace SolScript.Interpreter
         /// <exception cref="SolTypeRegistryException">An error occured while creating the instance.</exception>
         private SolClass PrepareInstance_Impl(SolClassDefinition definition, ClassCreationOptions options, params SolValue[] constructorArguments)
         {
-            AssetStateExactAndHigher(State.GeneratedClassBodies, "Class instances can only be created once the class definitions have been generated.");
+            AssertStateExactAndHigher(State.GeneratedClassBodies, "Class instances can only be created once the class definitions have been generated.");
             if (!options.EnforceCreation && !definition.CanBeCreated()) {
                 throw new InvalidOperationException($"The class \"{definition.Type}\" cannot be instantiated.");
             }
@@ -343,13 +343,13 @@ namespace SolScript.Interpreter
                     // Which variable context is this field declared in?
                     // todo: check if already declared somewhere else with same name -> create proper overriding system for fields and functions.
                     switch (fieldDefinition.Modifier) {
-                        case AccessModifier.None:
+                        case SolAccessModifier.None:
                             variables = instance.GlobalVariables;
                             break;
-                        case AccessModifier.Local:
+                        case SolAccessModifier.Local:
                             variables = activeInheritance.Variables;
                             break;
-                        case AccessModifier.Internal:
+                        case SolAccessModifier.Internal:
                             variables = instance.InternalVariables;
                             break;
                         default:
@@ -435,7 +435,7 @@ namespace SolScript.Interpreter
         /// </exception>
         public SolClass CreateInstance(string name, ClassCreationOptions options, params SolValue[] constructorArguments)
         {
-            AssetStateExactAndHigher(State.GeneratedClassBodies, "Cannot create class instances without having generated the class definitions.");
+            AssertStateExactAndHigher(State.GeneratedClassBodies, "Cannot create class instances without having generated the class definitions.");
             SolClassDefinition definition;
             if (!m_ClassDefinitions.TryGetValue(name, out definition)) {
                 throw new InvalidOperationException($"The class \"{name}\" does not exist.");
@@ -450,7 +450,7 @@ namespace SolScript.Interpreter
         /// </exception>
         public SolClass CreateInstance(SolClassDefinition definition, ClassCreationOptions options, params SolValue[] constructorArguments)
         {
-            AssetStateExactAndHigher(State.GeneratedClassBodies, "Cannot create class instances without having generated the class definitions.");
+            AssertStateExactAndHigher(State.GeneratedClassBodies, "Cannot create class instances without having generated the class definitions.");
             if (definition.Assembly != LinkedAssembly) {
                 throw new InvalidOperationException($"Cannot create class \"{definition.Type}\"(Assembly: \"{definition.Assembly.Name}\") in the Type Registry for Assembly \"{LinkedAssembly.Name}\".");
             }

@@ -37,9 +37,7 @@ namespace SolScript.Interpreter.Types
 
         private static readonly Dictionary<string, SolString> Interned = new Dictionary<string, SolString>();
 
-        /// <summary>
-        ///     An empty("") string.
-        /// </summary>
+        /// <inheritdoc cref="string.Empty" />
         public static readonly SolString Empty = new SolString(string.Empty);
 
         /// <summary>
@@ -160,9 +158,20 @@ namespace SolScript.Interpreter.Types
         ///     Interns the string. Interned strings only exist once in memory and thus safe memory if they are expected to exist
         ///     very often within your application.
         /// </summary>
-        public void Intern()
+        public SolString Intern()
         {
-            Interned.Add(string.Intern(Value), this);
+            Interned[string.Intern(Value)] = this;
+            return this;
+        }
+
+        public static implicit operator string(SolString value)
+        {
+            return value.Value;
+        }
+
+        public static implicit operator SolString(string value)
+        {
+            return ValueOf(value);
         }
     }
 }

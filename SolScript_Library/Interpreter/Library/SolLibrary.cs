@@ -18,9 +18,9 @@ namespace SolScript.Interpreter.Library
             RegisterMethodPostProcessor(nameof(GetHashCode), NativeMethodPostProcessor.GetFailer());
             RegisterMethodPostProcessor(nameof(GetType), NativeMethodPostProcessor.GetFailer());
             RegisterMethodPostProcessor(nameof(Equals), NativeMethodPostProcessor.GetFailer());
-            RegisterMethodPostProcessor(nameof(ToString), NativeMethodPostProcessor.GetRenamerAndAccessorAndReturn(SolMetaKey.Stringify.Name, AccessModifier.Internal, SolMetaKey.Stringify.Type));
+            RegisterMethodPostProcessor(nameof(ToString), NativeMethodPostProcessor.GetRenamerAndAccessorAndReturn(SolMetaKey.Stringify.Name, SolAccessModifier.Internal, SolMetaKey.Stringify.Type));
             // Annotations
-            NativeMethodPostProcessor internalPostProcessor = NativeMethodPostProcessor.GetAccessor(AccessModifier.Internal);
+            NativeMethodPostProcessor internalPostProcessor = NativeMethodPostProcessor.GetAccessor(SolAccessModifier.Internal);
             RegisterMethodPostProcessor(SolMetaKey.AnnotationGetVariable.Name, internalPostProcessor);
             RegisterMethodPostProcessor(SolMetaKey.AnnotationSetVariable.Name, internalPostProcessor);
             RegisterMethodPostProcessor(SolMetaKey.AnnotationCallFunction.Name, internalPostProcessor);
@@ -312,11 +312,11 @@ namespace SolScript.Interpreter.Library
             public virtual SolType? GetFieldType(FieldOrPropertyInfo field) => null;
 
             /// <summary>
-            ///     Gets the remapped field <see cref="AccessModifier" />. Default is <see cref="AccessModifier.None" />.
+            ///     Gets the remapped field <see cref="SolAccessModifier" />. Default is <see cref="SolAccessModifier.None" />.
             /// </summary>
             /// <param name="field">The field referene.</param>
-            /// <returns>The new field <see cref="AccessModifier" /> to use in SolScript.</returns>
-            public virtual AccessModifier GetAccessModifier(FieldOrPropertyInfo field) => AccessModifier.None;
+            /// <returns>The new field <see cref="SolAccessModifier" /> to use in SolScript.</returns>
+            public virtual SolAccessModifier GetAccessModifier(FieldOrPropertyInfo field) => SolAccessModifier.None;
 
             #region Nested type: Default
 
@@ -373,36 +373,36 @@ namespace SolScript.Interpreter.Library
 
             /// <summary>
             ///     Returns a <see cref="NativeMethodPostProcessor" /> that generates all default values aside from the
-            ///     <see cref="AccessModifier" /> which is a fixed values.
+            ///     <see cref="SolAccessModifier" /> which is a fixed values.
             /// </summary>
             /// <param name="access">The access modifiers.</param>
             /// <returns>The post processor instance.</returns>
-            public static NativeMethodPostProcessor GetAccessor(AccessModifier access)
+            public static NativeMethodPostProcessor GetAccessor(SolAccessModifier access)
             {
                 return new Access(access);
             }
 
             /// <summary>
             ///     Returns a <see cref="NativeMethodPostProcessor" /> that generates all default values aside from the name &
-            ///     <see cref="AccessModifier" /> which are fixed values.
+            ///     <see cref="SolAccessModifier" /> which are fixed values.
             /// </summary>
             /// <param name="name">The name.</param>
             /// <param name="access">The access modifiers.</param>
             /// <returns>The post processor instance.</returns>
-            public static NativeMethodPostProcessor GetRenamerAndAccessor(string name, AccessModifier access)
+            public static NativeMethodPostProcessor GetRenamerAndAccessor(string name, SolAccessModifier access)
             {
                 return new RenameAccess(name, access);
             }
 
             /// <summary>
             ///     Returns a <see cref="NativeMethodPostProcessor" /> that generates all default values aside from the name,
-            ///     <see cref="AccessModifier" /> & return type which are fixed values.
+            ///     <see cref="SolAccessModifier" /> & return type which are fixed values.
             /// </summary>
             /// <param name="name">The name.</param>
             /// <param name="access">The access modifiers.</param>
             /// <param name="returnType">The return type.</param>
             /// <returns>The post processor instance.</returns>
-            public static NativeMethodPostProcessor GetRenamerAndAccessorAndReturn(string name, AccessModifier access, SolType returnType)
+            public static NativeMethodPostProcessor GetRenamerAndAccessorAndReturn(string name, SolAccessModifier access, SolType returnType)
             {
                 return new RenameAccessReturn(name, access, returnType);
             }
@@ -443,26 +443,26 @@ namespace SolScript.Interpreter.Library
             public virtual SolType? GetReturn(MethodInfo method) => null;
 
             /// <summary>
-            ///     Gets the remapped function <see cref="AccessModifier" />. Default is <see cref="AccessModifier.None" />.
+            ///     Gets the remapped function <see cref="SolAccessModifier" />. Default is <see cref="SolAccessModifier.None" />.
             /// </summary>
             /// <param name="method">The method referene.</param>
-            /// <returns>The new function <see cref="AccessModifier" /> to use in SolScript.</returns>
-            public virtual AccessModifier GetAccessModifier(MethodInfo method) => AccessModifier.None;
+            /// <returns>The new function <see cref="SolAccessModifier" /> to use in SolScript.</returns>
+            public virtual SolAccessModifier GetAccessModifier(MethodInfo method) => SolAccessModifier.None;
 
             #region Nested type: Access
 
             private class Access : NativeMethodPostProcessor
             {
-                public Access(AccessModifier access)
+                public Access(SolAccessModifier access)
                 {
                     m_Access = access;
                 }
 
-                private readonly AccessModifier m_Access;
+                private readonly SolAccessModifier m_Access;
 
                 #region Overrides
 
-                public override AccessModifier GetAccessModifier(MethodInfo method) => m_Access;
+                public override SolAccessModifier GetAccessModifier(MethodInfo method) => m_Access;
 
                 #endregion
             }
@@ -520,16 +520,16 @@ namespace SolScript.Interpreter.Library
 
             private class RenameAccess : Rename
             {
-                public RenameAccess(string name, AccessModifier access) : base(name)
+                public RenameAccess(string name, SolAccessModifier access) : base(name)
                 {
                     m_Access = access;
                 }
 
-                private readonly AccessModifier m_Access;
+                private readonly SolAccessModifier m_Access;
 
                 #region Overrides
 
-                public override AccessModifier GetAccessModifier(MethodInfo method) => m_Access;
+                public override SolAccessModifier GetAccessModifier(MethodInfo method) => m_Access;
 
                 #endregion
             }
@@ -541,7 +541,7 @@ namespace SolScript.Interpreter.Library
             private sealed class RenameAccessReturn : RenameAccess
             {
                 /// <inheritdoc />
-                public RenameAccessReturn(string name, AccessModifier access, SolType returnType) : base(name, access)
+                public RenameAccessReturn(string name, SolAccessModifier access, SolType returnType) : base(name, access)
                 {
                     m_ReturnType = returnType;
                 }
@@ -600,12 +600,21 @@ namespace SolScript.Interpreter.Library
                 }
                 foreach (MethodInfo method in builder.NativeType.GetMethods(BINDING_FLAGS)) {
                     SolFunctionBuilder solMethod;
+                    string str = method.Name;
+                    Attribute[] attr = method.GetCustomAttributes().ToArray();
+                    if (method.IsSpecialName) {
+                        continue;
+                    }
                     if (TryBuildMethod(forAssembly, method, out solMethod)) {
                         builder.AddFunction(solMethod);
                     }
                 }
                 foreach (FieldOrPropertyInfo field in FieldOrPropertyInfo.Get(builder.NativeType)) {
                     SolFieldBuilder solField;
+                    if (field.IsSpecialName)
+                    {
+                        continue;
+                    }
                     if (TryBuildField(forAssembly, field, out solField)) {
                         builder.AddField(solField);
                     }
@@ -625,14 +634,14 @@ namespace SolScript.Interpreter.Library
         private bool TryBuildField(SolAssembly forAssembly, FieldOrPropertyInfo field, [CanBeNull] out SolFieldBuilder solField)
         {
             // todo: investigate if invisibility should truly take precendence over the post processor enforcing creation control over attributes. ("OverrideExplicitAttributes")
-            SolLibraryVisibilityAttribute visibility = field.GetCustomAttributes<SolLibraryVisibilityAttribute>(true).FirstOrDefault(a => a.LibraryName == Name);
+            SolLibraryVisibilityAttribute visibility = field.GetCustomAttributes<SolLibraryVisibilityAttribute>().FirstOrDefault(a => a.LibraryName == Name);
             bool visible = visibility?.Visible ?? field.IsPublic;
             if (!visible) {
                 solField = null;
                 return false;
             }
             string name;
-            AccessModifier access;
+            SolAccessModifier access;
             SolType? remappedType;
             NativeFieldPostProcessor postProcessor = GetFieldPostProcessor(field.Name);
             if (postProcessor.DoesFailCreation(field)) {
@@ -645,13 +654,15 @@ namespace SolScript.Interpreter.Library
                 remappedType = postProcessor.GetFieldType(field);
             } else {
                 // todo: auto create sol style naming if desired
-                name = field.GetCustomAttribute<SolLibraryNameAttribute>(true)?.Name ?? postProcessor.GetName(field);
-                access = field.GetCustomAttribute<SolLibraryAccessModifierAttribute>(true)?.AccessModifier ?? postProcessor.GetAccessModifier(field);
-                remappedType = field.GetCustomAttribute<SolContractAttribute>(true)?.GetSolType() ?? postProcessor.GetFieldType(field);
+                name = field.GetCustomAttribute<SolLibraryNameAttribute>()?.Name ?? postProcessor.GetName(field);
+                access = field.GetCustomAttribute<SolLibraryAccessModifierAttribute>()?.AccessModifier ?? postProcessor.GetAccessModifier(field);
+                remappedType = field.GetCustomAttribute<SolContractAttribute>()?.GetSolType() ?? postProcessor.GetFieldType(field);
             }
-            solField = new SolFieldBuilder(name, SolMarshal.GetSolType(forAssembly, field.DataType)).MakeNativeField(field).SetAccessModifier(access);
+            solField = new SolFieldBuilder(name).MakeNativeField(field).SetAccessModifier(access);
             if (remappedType.HasValue) {
                 solField.FieldNativeType(remappedType.Value);
+            } else {
+                solField.FieldType(SolMarshal.GetSolType(forAssembly, field.DataType));
             }
             // todo: annotations for native fields
             return true;
@@ -675,7 +686,7 @@ namespace SolScript.Interpreter.Library
                 return false;
             }
             string name;
-            AccessModifier access;
+            SolAccessModifier access;
             SolType? remappedReturn;
             NativeMethodPostProcessor postProcessor = GetMethodPostProcessor(method.Name);
             if (postProcessor.DoesFailCreation(method)) {
@@ -710,7 +721,7 @@ namespace SolScript.Interpreter.Library
                 solConstructor = null;
                 return false;
             }
-            AccessModifier accessModifier = constructor.GetCustomAttribute<SolLibraryAccessModifierAttribute>()?.AccessModifier ?? AccessModifier.Internal;
+            SolAccessModifier accessModifier = constructor.GetCustomAttribute<SolLibraryAccessModifierAttribute>()?.AccessModifier ?? SolAccessModifier.Internal;
             solConstructor = new SolFunctionBuilder("__new").MakeNativeConstructor(constructor).SetAccessModifier(accessModifier);
             return true;
         }

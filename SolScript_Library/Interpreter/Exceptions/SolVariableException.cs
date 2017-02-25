@@ -7,7 +7,7 @@ namespace SolScript.Interpreter.Exceptions
     ///     The SolVariableException is used whenever an error while resolving a variable occured.
     /// </summary>
     [Serializable]
-    public class SolVariableException : SolScriptException
+    public class SolVariableException : SolException
     {
         public SolVariableException() {}
 

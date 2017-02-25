@@ -15,7 +15,7 @@ namespace SolScript.Interpreter.Builders
         private readonly List<SolParameter> m_Parameters = new List<SolParameter>();
 
         public string Name { get; set; }
-        public AccessModifier AccessModifier { get; set; }
+        public SolAccessModifier AccessModifier { get; set; }
 
         public SolSourceLocation Location { get; private set; }
         public bool IsNative { get; private set; }
@@ -55,7 +55,7 @@ namespace SolScript.Interpreter.Builders
 
         #endregion
 
-        public SolFunctionBuilder SetAccessModifier(AccessModifier modifier)
+        public SolFunctionBuilder SetAccessModifier(SolAccessModifier modifier)
         {
             AccessModifier = modifier;
             return this;

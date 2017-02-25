@@ -22,9 +22,19 @@ namespace SolScript.Interpreter
 
         #region SetState enum
 
+        /// <summary>
+        ///     Has the reference been set?
+        /// </summary>
         public enum SetState
         {
+            /// <summary>
+            ///     The variable has been set.
+            /// </summary>
             Assigned,
+
+            /// <summary>
+            ///     The variables has not been set.
+            /// </summary>
             NotAssigned
         }
 
@@ -55,8 +65,15 @@ namespace SolScript.Interpreter
 
         #region Nested type: FixedReference
 
+        /// <summary>
+        ///     A fixed reference always points to the same object. It is essentially just a wrapper around a "normal" reference.
+        /// </summary>
         public class FixedReference : DynamicReference
         {
+            /// <summary>
+            ///     Crates a new fixed reference for the given value.
+            /// </summary>
+            /// <param name="value">The value to reference to.</param>
             public FixedReference(object value)
             {
                 m_Value = value;

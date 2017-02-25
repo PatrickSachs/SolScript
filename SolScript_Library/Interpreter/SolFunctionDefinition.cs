@@ -72,7 +72,7 @@ namespace SolScript.Interpreter
         /// <summary>
         ///     The access modifier for this function which decide from where the function can be accessed.
         /// </summary>
-        public readonly AccessModifier AccessModifier;
+        public readonly SolAccessModifier AccessModifier;
 
         /// <summary>
         ///     The wrapper around the actual code of the function. The function may either be a chunk declared in your code or a

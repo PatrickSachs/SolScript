@@ -208,7 +208,7 @@ namespace SolScript.Interpreter
 
         protected virtual bool ValidateFunctionDefinition(SolFunctionDefinition definition)
         {
-            return definition.AccessModifier == AccessModifier.None;
+            return definition.AccessModifier == SolAccessModifier.None;
         }
     }
 }

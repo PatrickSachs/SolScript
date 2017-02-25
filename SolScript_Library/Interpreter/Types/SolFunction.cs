@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Linq;
 using System.Reflection;
 using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
+using SolScript.Interpreter.Types.Implementation;
 
 namespace SolScript.Interpreter.Types
 {
@@ -39,7 +41,15 @@ namespace SolScript.Interpreter.Types
         /// </summary>
         public const string TYPE = "function";
 
+        // The Id the next function will recceive.
         private static uint s_NextId;
+
+        private static readonly MethodInfo s_CreateAutoDelegateMethod =
+            typeof(SolFunction).GetMethods(BindingFlags.Instance | BindingFlags.Public).First(m => m.Name == nameof(CreateAutoDelegate) && m.GetGenericArguments().Length == 1);
+
+        /// <summary>
+        ///     The unique Id of this function.
+        /// </summary>
         public readonly uint Id;
 
         /// <summary>
@@ -96,15 +106,21 @@ namespace SolScript.Interpreter.Types
             if (type.IsGenericType) {
                 Type openGenericType = type.GetGenericTypeDefinition();
                 if (openGenericType == typeof(AutoDelegate<>)) {
-                    return CreateAutoDelegateMethod.MakeGenericMethod(type.GetGenericArguments()).Invoke(this, new object[0]);
+                    return s_CreateAutoDelegateMethod.MakeGenericMethod(type.GetGenericArguments()).Invoke(this, new object[0]);
                 }
             }
             return base.ConvertTo(type);
         }
-        
+
         #endregion
 
-        private static readonly MethodInfo CreateAutoDelegateMethod = typeof(SolFunction).GetMethod("CreateAutoDelegateImpl", BindingFlags.NonPublic|BindingFlags.Instance);
+        /// <summary>
+        ///     A dummy function, doing nothing once called. Accepts any parameter, returns nothing(thus nil).
+        /// </summary>
+        /// <param name="assembly">The assembly this function belongs to.</param>
+        /// <returns>The dummy function.</returns>
+        public static SolFunction Dummy(SolAssembly assembly)
+            => new SolScriptLamdaFunction(assembly, SolSourceLocation.Native(), SolParameterInfo.Any, SolType.AnyNil, new SolChunk(assembly, null), null);
 
         /// <summary>
         ///     Creates a delegate you can use to call the function.
@@ -121,18 +137,12 @@ namespace SolScript.Interpreter.Types
 
         /// <typeparam name="T">The desired return type of the function.</typeparam>
         /// <inheritdoc cref="CreateAutoDelegate" />
-        public AutoDelegate<T> CreateAutoDelegate<T>()
+        public virtual AutoDelegate<T> CreateAutoDelegate<T>()
         {
-            return CreateAutoDelegateImpl<T>();
-        }
-
-        // Implemented in 2nd method for easier reflection access.
-        protected virtual AutoDelegate<T> CreateAutoDelegateImpl<T>()
-        {
-            return delegate (object[] arguments) {
+            return delegate(object[] arguments) {
                 SolValue[] solArguments = SolMarshal.MarshalFromNative(Assembly, arguments);
                 SolValue returnValue = Call(new SolExecutionContext(Assembly, "Native auto delegate call"), solArguments);
-                return (T)SolMarshal.MarshalFromSol(returnValue, typeof(T));
+                return (T) SolMarshal.MarshalFromSol(returnValue, typeof(T));
             };
         }
 
@@ -170,13 +180,13 @@ namespace SolScript.Interpreter.Types
         {
             context.PushStackFrame(this);
             try {
-                ParameterInfo.VerifyArguments(Assembly, args);
+                args = ParameterInfo.VerifyArguments(Assembly, args);
             } catch (SolVariableException ex) {
                 throw SolRuntimeException.InvalidFunctionCallParameters(context, ex);
             }
             SolValue returnValue = Call_Impl(context, args);
             if (!ReturnType.IsCompatible(Assembly, returnValue.Type)) {
-                throw new SolRuntimeException(context, $"Expected a return value of type '\"{ReturnType}\", recceived a value of type \"{returnValue.Type}\".");
+                throw new SolRuntimeException(context, $"Expected a return value of type \"{ReturnType}\", recceived a value of type \"{returnValue.Type}\".");
             }
             context.PopStackFrame();
             return returnValue;

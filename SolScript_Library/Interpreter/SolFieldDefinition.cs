@@ -61,7 +61,7 @@ namespace SolScript.Interpreter
         /// <summary>
         ///     The field's access modifier.
         /// </summary>
-        public readonly AccessModifier Modifier;
+        public readonly SolAccessModifier Modifier;
 
         /// <summary>
         ///     The name of the field.

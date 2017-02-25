@@ -20,6 +20,7 @@ namespace SolScript.Interpreter.Statements
         private readonly Stack<MetaItem> m_MetaStack = new Stack<MetaItem>();
         public string ActiveFile { get; set; }
 
+        /// <exception cref="SolInterpreterException">An error occured.</exception>
         public void InterpretTree(ParseTree tree, SolGlobalsBuilder globals, out IReadOnlyCollection<SolClassBuilder> classes)
         {
             ActiveFile = tree.FileName;
@@ -250,7 +251,7 @@ namespace SolScript.Interpreter.Statements
             // 5 -> TypeRef_opt
             // 6 -> FunctionBody
             ParseTreeNode annotationsListNode = node.ChildNodes[0];
-            AccessModifier accessModifier = GetAccessModifier(node.ChildNodes[1]);
+            SolAccessModifier accessModifier = GetAccessModifier(node.ChildNodes[1]);
             ParseTreeNode funcNameNode = node.ChildNodes[3];
             ParseTreeNode parametersNode = node.ChildNodes[4];
             ParseTreeNode typeNode = node.ChildNodes[5];
@@ -307,12 +308,13 @@ namespace SolScript.Interpreter.Statements
             // TypeRef_opt 
             // Assignment_opt;
             ParseTreeNode annotationsListNode = node.ChildNodes[0];
-            AccessModifier accessModifier = GetAccessModifier(node.ChildNodes[1]);
+            SolAccessModifier accessModifier = GetAccessModifier(node.ChildNodes[1]);
             ParseTreeNode identifierNode = node.ChildNodes[2];
             string fieldName = identifierNode.Token.Text;
             SolType fieldType = GetTypeRef(node.ChildNodes[3]);
             ParseTreeNode assignmentOpt = node.ChildNodes[4];
-            SolFieldBuilder fieldBuilder = new SolFieldBuilder(fieldName, fieldType).SetAccessModifier(accessModifier).AtLocation(new SolSourceLocation(ActiveFile, identifierNode.Span.Location));
+            SolFieldBuilder fieldBuilder =
+                new SolFieldBuilder(fieldName).FieldType(fieldType).SetAccessModifier(accessModifier).AtLocation(new SolSourceLocation(ActiveFile, identifierNode.Span.Location));
             InsertAnnotations(annotationsListNode, fieldBuilder);
             fieldBuilder.MakeScriptField(assignmentOpt.ChildNodes.Count != 0
                 ? GetExpression(assignmentOpt.ChildNodes[0])
@@ -320,20 +322,20 @@ namespace SolScript.Interpreter.Statements
             return fieldBuilder;
         }
 
-        private AccessModifier GetAccessModifier(ParseTreeNode node)
+        private SolAccessModifier GetAccessModifier(ParseTreeNode node)
         {
             if (node.Term.Name == "AccessModifier_opt") {
                 if (node.ChildNodes.Count != 1) {
-                    return AccessModifier.None;
+                    return SolAccessModifier.None;
                 }
                 node = node.ChildNodes[0];
             }
             switch (node.Token.Text) {
                 case "local": {
-                    return AccessModifier.Local;
+                    return SolAccessModifier.Local;
                 }
                 case "internal": {
-                    return AccessModifier.Internal;
+                    return SolAccessModifier.Internal;
                 }
                 default: {
                     throw new SolInterpreterException(new SolSourceLocation(ActiveFile, node.Span.Location), "Invalid access modifier node name \"" + node.Token.Text + "\".");
@@ -379,10 +381,7 @@ namespace SolScript.Interpreter.Statements
                     }
                 }
             }
-            return new SolChunk(Assembly) {
-                Statements = GetStatements(node.ChildNodes[0]),
-                ReturnExpression = returnValue
-            };
+            return new SolChunk(Assembly, returnValue, GetStatements(node.ChildNodes[0]));
         }
 
         public SolExpression[] GetExpressions(ParseTreeNode node)
@@ -673,8 +672,25 @@ namespace SolScript.Interpreter.Statements
                     }
                     return tableCtor;
                 }
+                case "Expression_Bool": {
+                    switch (expressionNode.ChildNodes[0].Term.Name) {
+                        case "true": {
+                            return new Expression_Bool(Assembly, new SolSourceLocation(ActiveFile, expressionNode.Span.Location), SolBool.True);
+                        }
+                        case "false": {
+                            return new Expression_Bool(Assembly, new SolSourceLocation(ActiveFile, expressionNode.Span.Location), SolBool.False);
+                        }
+                        default: {
+                            throw new SolInterpreterException(new SolSourceLocation(ActiveFile, expressionNode.Span.Location),
+                                "Invalid bool expression \"" + expressionNode.ChildNodes[0].Term.Name + "\".");
+                        }
+                    }
+                }
+                case "Expression_Nil": {
+                    return new Expression_Nil(Assembly, new SolSourceLocation(ActiveFile, expressionNode.Span.Location));
+                }
                 default: {
-                    throw new SolInterpreterException(new SolSourceLocation(ActiveFile, node.Span.Location), "Invalid expression node id \"" + node.Term.Name + "\".");
+                    throw new SolInterpreterException(new SolSourceLocation(ActiveFile, expressionNode.Span.Location), "Invalid expression node id \"" + expressionNode.Term.Name + "\".");
                 }
             }
         }

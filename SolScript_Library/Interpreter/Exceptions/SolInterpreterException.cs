@@ -8,7 +8,7 @@ namespace SolScript.Interpreter.Exceptions
     ///     This exception signals an exception during the interpretation phase of a script.
     /// </summary>
     [Serializable]
-    public class SolInterpreterException : SolScriptException
+    public class SolInterpreterException : SolException
     {
         protected SolInterpreterException()
         {

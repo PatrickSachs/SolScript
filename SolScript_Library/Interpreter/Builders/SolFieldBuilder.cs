@@ -6,10 +6,9 @@ namespace SolScript.Interpreter.Builders
 {
     public sealed class SolFieldBuilder : SolBuilderBase, IAnnotateableBuilder
     {
-        public SolFieldBuilder(string name, SolType type)
+        public SolFieldBuilder(string name)
         {
             Name = name;
-            Type = type;
         }
 
         private readonly List<SolAnnotationData> m_Annotations = new List<SolAnnotationData>();
@@ -19,7 +18,7 @@ namespace SolScript.Interpreter.Builders
         public bool IsNativeField { get; private set; }
         public FieldOrPropertyInfo NativeField { get; private set; }
         public SolExpression ScriptField { get; private set; }
-        public AccessModifier AccessModifier { get; set; }
+        public SolAccessModifier AccessModifier { get; set; }
         public bool NativeReturnTypeHasBeenResolved { get; private set; }
         public SolSourceLocation Location { get; set; }
 
@@ -57,7 +56,7 @@ namespace SolScript.Interpreter.Builders
         
         #endregion
 
-        public SolFieldBuilder SetAccessModifier(AccessModifier modifier)
+        public SolFieldBuilder SetAccessModifier(SolAccessModifier modifier)
         {
             AccessModifier = modifier;
             return this;

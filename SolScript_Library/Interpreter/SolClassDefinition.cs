@@ -80,7 +80,7 @@ namespace SolScript.Interpreter
         /// </exception>
         private void BuildMetaFunctions()
         {
-            Assembly.TypeRegistry.AssetStateExactAndHigher(TypeRegistry.State.GeneratedClassHulls, "Class meta functions can only be built once the generation of class bodies hsa completed.");
+            Assembly.TypeRegistry.AssertStateExactAndHigher(TypeRegistry.State.GeneratedClassHulls, "Class meta functions can only be built once the generation of class bodies hsa completed.");
             l_MetaFunctions = new Dictionary<SolMetaKey, MetaFunctionLink>();
             FindMetaFunction(SolMetaKey.Constructor);
             FindMetaFunction(SolMetaKey.Stringify);
@@ -129,10 +129,10 @@ namespace SolScript.Interpreter
         private bool FindMetaFunction(SolMetaKey meta, params SolType[] parameters)
         {
             // todo: find meta function parameters
-            Assembly.TypeRegistry.AssetStateExactAndHigher(TypeRegistry.State.GeneratedClassHulls, "Class meta functions can only be built once the generation of class bodies hsa completed.");
+            Assembly.TypeRegistry.AssertStateExactAndHigher(TypeRegistry.State.GeneratedClassHulls, "Class meta functions can only be built once the generation of class bodies hsa completed.");
             SolFunctionDefinition definition;
             if (TryGetFunction(meta.Name, false, out definition)) {
-                if (definition.AccessModifier != AccessModifier.Local && definition.AccessModifier != AccessModifier.Internal) {
+                if (definition.AccessModifier != SolAccessModifier.Local && definition.AccessModifier != SolAccessModifier.Internal) {
                     throw new SolVariableException($"The meta function \"{meta.Name}\" of class \"{Type}\" must either be local or internal.");
                 }
                 if (!meta.Type.IsCompatible(Assembly, definition.ReturnType)) {
@@ -155,7 +155,7 @@ namespace SolScript.Interpreter
         /// </exception>
         public bool DoesExtendInHierarchy(string className)
         {
-            Assembly.TypeRegistry.AssetStateExactAndHigher(TypeRegistry.State.GeneratedClassBodies, "Class bodies need to be generated before inheritance can be checked.");
+            Assembly.TypeRegistry.AssertStateExactAndHigher(TypeRegistry.State.GeneratedClassBodies, "Class bodies need to be generated before inheritance can be checked.");
             SolClassDefinition definedIn;
             return DoesExtendInHierarchy(className, out definedIn);
         }
@@ -170,7 +170,7 @@ namespace SolScript.Interpreter
         /// </exception>
         public bool DoesExtendInHierarchy(string className, out SolClassDefinition definedIn)
         {
-            Assembly.TypeRegistry.AssetStateExactAndHigher(TypeRegistry.State.GeneratedClassBodies, "Class bodies need to be generated before inheritance can be checked.");
+            Assembly.TypeRegistry.AssertStateExactAndHigher(TypeRegistry.State.GeneratedClassBodies, "Class bodies need to be generated before inheritance can be checked.");
             definedIn = BaseClass;
             while (definedIn != null) {
                 if (definedIn.Type == className) {
@@ -218,7 +218,7 @@ namespace SolScript.Interpreter
 
         public bool HasFunction(string name, bool declaredOnly)
         {
-            Assembly.TypeRegistry.AssetStateExactAndHigher(TypeRegistry.State.GeneratedClassBodies, "Class bodies need to be generated before class functions can be used.");
+            Assembly.TypeRegistry.AssertStateExactAndHigher(TypeRegistry.State.GeneratedClassBodies, "Class bodies need to be generated before class functions can be used.");
             return m_Functions.ContainsKey(name);
         }
 
@@ -232,7 +232,7 @@ namespace SolScript.Interpreter
         /// </param>
         /// <returns>true if a field with this name could be found, false if not.</returns>
         /// <remarks>
-        ///     This method will not take the <see cref="AccessModifier" /> of the field into account. Use one of the
+        ///     This method will not take the <see cref="SolAccessModifier" /> of the field into account. Use one of the
         ///     <see cref="TryGetField(string,bool,out SolFieldDefinition)" /> methods for more sophistcated behaviour.
         /// </remarks>
         /// <exception cref="InvalidOperationException">
@@ -241,7 +241,7 @@ namespace SolScript.Interpreter
         public bool HasField(string name, bool declaredOnly)
         {
             //<bubble>InvalidOperationException</bubble>
-            Assembly.TypeRegistry.AssetStateExactAndHigher(TypeRegistry.State.GeneratedClassBodies, "Class bodies need to be generated before class fields can be used.");
+            Assembly.TypeRegistry.AssertStateExactAndHigher(TypeRegistry.State.GeneratedClassBodies, "Class bodies need to be generated before class fields can be used.");
             return m_Fields.ContainsKey(name);
         }
 
@@ -256,7 +256,7 @@ namespace SolScript.Interpreter
         ///     returned true.
         /// </param>
         /// <remarks>
-        ///     This does not account for the <see cref="AccessModifier" /> of the function. Use the overload accepting a
+        ///     This does not account for the <see cref="SolAccessModifier" /> of the function. Use the overload accepting a
         ///     delegate if you wish to provide custom matching behaviour.
         /// </remarks>
         /// <exception cref="InvalidOperationException">
@@ -290,7 +290,7 @@ namespace SolScript.Interpreter
         public bool TryGetFunction(string name, bool declaredOnly, [CanBeNull] out SolFunctionDefinition definition, Func<SolFunctionDefinition, bool> validator)
         {
             //<bubble>InvalidOperationException</bubble>
-            Assembly.TypeRegistry.AssetStateExactAndHigher(TypeRegistry.State.GeneratedClassBodies, "Class bodies need to be generated before class functions can be used.");
+            Assembly.TypeRegistry.AssertStateExactAndHigher(TypeRegistry.State.GeneratedClassBodies, "Class bodies need to be generated before class functions can be used.");
             SolClassDefinition activeClassDefinition = this;
             while (activeClassDefinition != null) {
                 if (activeClassDefinition.m_Functions.TryGetValue(name, out definition) && validator(definition)) {
@@ -347,7 +347,7 @@ namespace SolScript.Interpreter
         public bool TryGetField(string name, bool declaredOnly, [CanBeNull] out SolFieldDefinition definition, Func<SolFieldDefinition, bool> validator)
         {
             //<bubble>InvalidOperationException</bubble>
-            Assembly.TypeRegistry.AssetStateExactAndHigher(TypeRegistry.State.GeneratedClassBodies, "Class bodies need to be generated before class fields can be used.");
+            Assembly.TypeRegistry.AssertStateExactAndHigher(TypeRegistry.State.GeneratedClassBodies, "Class bodies need to be generated before class fields can be used.");
             SolClassDefinition activeClassDefinition = this;
             while (activeClassDefinition != null) {
                 if (activeClassDefinition.m_Fields.TryGetValue(name, out definition) && validator(definition)) {

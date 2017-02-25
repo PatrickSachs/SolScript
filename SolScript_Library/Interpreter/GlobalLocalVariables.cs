@@ -8,7 +8,7 @@
 
         protected override bool ValidateFunctionDefinition(SolFunctionDefinition definition)
         {
-            return definition.AccessModifier == AccessModifier.Local;
+            return definition.AccessModifier == SolAccessModifier.Local;
         }
 
         public override IVariables GetParent()

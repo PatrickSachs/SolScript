@@ -17,24 +17,11 @@ namespace SolScript.Interpreter.Library {
             CanBeNil = canBeNil;
         }
 
-        /// <summary> Creates a new contract from a given type name. Values can be nil. </summary>
-        /// <param name="typeName"> The name of the type </param>
-        public SolContractAttribute([NotNull] string typeName) {
-            TypeName = typeName;
-            CanBeNil = true;
-        }
-
-        /// <summary> Creates a new contract valid for all types and nil values. </summary>
-        public SolContractAttribute() {
-            TypeName = "any";
-            CanBeNil = true;
-        }
-
         /// <summary> Can this value be nil? (Default: true) </summary>
-        public bool CanBeNil { get; set; }
+        public bool CanBeNil { get; }
 
         /// <summary> The type name. (Default: any) </summary>
-        public string TypeName { get; set; }
+        public string TypeName { get; }
         
         /// <summary> Generates the SolType from the provided type name and nilability. </summary>
         /// <returns> An explicit SolType </returns>

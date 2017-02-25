@@ -3,36 +3,56 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
+using System.Runtime.CompilerServices;
+using System.Security;
 using Ionic.Zip;
 using Irony;
 using Irony.Parsing;
-using JetBrains.Annotations;
 using SolScript.Interpreter.Builders;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Library;
 using SolScript.Interpreter.Statements;
 using SolScript.Interpreter.Types;
+using SolScript.Libraries.lang;
 using SolScript.Parser;
 
 namespace SolScript.Interpreter
 {
-    public class SolAssembly
+    /// <summary>
+    ///     The <see cref="SolAssembly" /> is the heart of SolScript. An assembly is the collection of all classes and global
+    ///     variables of an ongoing exceution. From here you can create new classes, access global variables, include libraries
+    ///     and generally start using SolScript.
+    /// </summary>
+    public sealed class SolAssembly
     {
-        public SolAssembly(string name = "Unnamed SolAssembly")
+        private SolAssembly(SolAssemblyOptions options)
         {
-            Name = name;
+            m_Options = (SolAssemblyOptions) options.Clone();
             TypeRegistry = new TypeRegistry(this);
+            m_Libraries.Add(lang.GetLibrary());
+            Errors = SolErrorCollection.CreateCollection(out m_ErrorAdder, options.WarningsAreErrors);
         }
 
+        // The Irony Grammar rules used for SolScript.
         private static readonly SolScriptGrammar s_Grammar = new SolScriptGrammar();
-
-        private static readonly ClassCreationOptions SingletonClassCreationOptions = new ClassCreationOptions.Customizable().SetEnforceCreation(true);
+        // These options will be used for creating a singeton. Their creation will need to be enforced since they are not creatable.
+        private static readonly ClassCreationOptions s_SingletonClassCreationOptions = new ClassCreationOptions.Customizable().SetEnforceCreation(true);
+        // Errors can be added here.
+        private readonly SolErrorCollection.Adder m_ErrorAdder;
+        // All libraries registered in this Assembly.
         private readonly List<SolLibrary> m_Libraries = new List<SolLibrary>();
-
+        // The options for creating this assembly.
+        private readonly SolAssemblyOptions m_Options;
+        // The lazy statement factory.
         private StatementFactory l_factory;
+        // The statement factory is used for parsing raw source files.
         private StatementFactory Factory => l_factory ?? (l_factory = new StatementFactory(this));
+
+        /// <summary>
+        ///     The <see cref="TypeRegistry" /> is used to access the classes in a <see cref="SolAssembly" />. You can create new
+        ///     class instances or simply look up the <see cref="SolClassDefinition" /> of a class.
+        /// </summary>
         public TypeRegistry TypeRegistry { get; }
 
         /// <summary>
@@ -42,14 +62,12 @@ namespace SolScript.Interpreter
         public IVariables GlobalVariables { get; private set; }
 
         /// <summary>
-        ///     The local variables of an assembly can only be accessed from other global variables.
+        ///     The local variables of an assembly can only be accessed from other global variables and functions.
         /// </summary>
         public IVariables LocalVariables { get; private set; }
 
         /// <summary>
-        ///     The internal variables of an assembly can only be accessed from inside the assembly. <br />
-        ///     todo: is this really the desired behaviour considering internal=protected?
-        ///     (and if so, all other statements, classes, etc. need to check for assembly consitence aswell)
+        ///     todo: figure out what internal globals should be used for or if they should be allowed at all.
         /// </summary>
         public IVariables InternalVariables { get; private set; }
 
@@ -57,37 +75,97 @@ namespace SolScript.Interpreter
         ///     A descriptivate name of this assembly(e.g. "Enemy AI Logic"). The name will be used during debugging and error
         ///     output.
         /// </summary>
-        public string Name { get; set; }
+        public string Name => m_Options.Name;
 
-        public static SolAssembly FromDirectory(string sourceDir)
+        /// <summary>
+        ///     Contains the errors raised during the creation of the assembly.<br /> Runtime errors are NOT added to this error
+        ///     collection. They are thrown as a <see cref="SolRuntimeException" /> instead.
+        /// </summary>
+        public SolErrorCollection Errors { get; }
+
+        /// <summary>
+        ///     Creates a new <see cref="SolAssembly" /> from the parsed contents of the given directory.
+        /// </summary>
+        /// <param name="sourceDir">The directory to scan for source files.</param>
+        /// <param name="options">
+        ///     The options for creating this assembly. - The options will be cloned in the assembly and further
+        ///     changes to the options will thus have no effect.
+        /// </param>
+        /// <returns>
+        ///     The assembly which can directly be created(<see cref="Create" />) or first have some libraries included(
+        ///     <see cref="IncludeLibrary" />).
+        /// </returns>
+        /// <exception cref="DirectoryNotFoundException">The directory (or a file) does not exist.</exception>
+        /// <exception cref="IOException">An IO exception occured while trying to read the files.</exception>
+        /// <exception cref="UnauthorizedAccessException">Cannot access a file within the directory or the directory itself.</exception>
+        public static SolAssembly FromDirectory(SolAssemblyOptions options, string sourceDir)
         {
+            if (!Directory.Exists(sourceDir)) {
+                throw new DirectoryNotFoundException("The directory \"" + sourceDir + "\" does not exist.");
+            }
+#if DEBUG
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
             try {
+#endif
                 SolDebug.WriteLine("Creating Parser ...");
                 Irony.Parsing.Parser parser = new Irony.Parsing.Parser(s_Grammar);
                 SolDebug.WriteLine("Loading Trees ...");
                 var trees = new List<ParseTree>(100);
-                foreach (string dir in Directory.GetFiles(sourceDir)) {
-                    ParseTree tree = parser.Parse(File.ReadAllText(dir), dir);
+                string[] files;
+                try {
+                    files = Directory.GetFiles(sourceDir, options.SourceFilePattern);
+                } catch (DirectoryNotFoundException ex) {
+                    throw new DirectoryNotFoundException(
+                        "The directory \"" + sourceDir + "\" does not exist. However a previous check indicated that the directory exists. Do you have other threads messing with the directory?",
+                        ex);
+                }
+                foreach (string dir in files) {
+                    ParseTree tree;
+                    try {
+                        tree = parser.Parse(File.ReadAllText(dir), dir);
+                    } catch (FileNotFoundException ex) {
+                        throw new DirectoryNotFoundException(
+                            "The file \"" + dir + "\" does not exist. However the OS told us about the existance of this file. Do you have other threads messing with the file?", ex);
+                    } catch (SecurityException ex) {
+                        throw new UnauthorizedAccessException("Cannot access file \"" + dir + "\".", ex);
+                    }
                     trees.Add(tree);
                     SolDebug.WriteLine("  ... Loaded " + dir);
                     foreach (LogMessage message in tree.ParserMessages) {
                         SolDebug.WriteLine("   " + message.Location + " : " + message);
                     }
                 }
-                return FromTrees(trees);
+                SolAssembly a = FromTrees(trees, options);
+                return a;
+#if DEBUG
             } finally {
                 stopwatch.Stop();
                 SolDebug.WriteLine("StopWatch: " + stopwatch.ElapsedMilliseconds);
             }
+#endif
         }
 
-        public static SolAssembly FromStrings(params string[] strings)
+        /// <summary>
+        ///     Creates an <see cref="SolAssembly" /> from the given code strings.
+        /// </summary>
+        /// <param name="strings">The code strings.</param>
+        /// <param name="options">
+        ///     The options for creating this assembly. - The options will be cloned in the assembly and further
+        ///     changes to the options will thus have no effect.
+        /// </param>
+        /// <returns>
+        ///     The assembly which can directly be created(<see cref="Create" />) or first have some libraries included(
+        ///     <see cref="IncludeLibrary" />).
+        /// </returns>
+        /// <exception cref="SolInterpreterException">An error occured while interpreting the syntax tree.</exception>
+        public static SolAssembly FromStrings(SolAssemblyOptions options, params string[] strings)
         {
+#if DEBUG
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
             try {
+#endif
                 SolDebug.WriteLine("Creating Parser ...");
                 Irony.Parsing.Parser parser = new Irony.Parsing.Parser(s_Grammar);
                 var trees = new List<ParseTree>(strings.Length);
@@ -100,35 +178,37 @@ namespace SolScript.Interpreter
                         SolDebug.WriteLine("   " + message.Location + " : " + message);
                     }
                 }
-                return FromTrees(trees);
+                SolAssembly a = FromTrees(trees, options);
+                return a;
+#if DEBUG
             } finally {
                 stopwatch.Stop();
                 SolDebug.WriteLine("StopWatch: " + stopwatch.ElapsedMilliseconds);
             }
+#endif
         }
 
-        private static SolAssembly FromTrees(IEnumerable<ParseTree> trees)
+        /// <summary>
+        ///     Creates a <see cref="SolAssembly" /> by interpreting the contents of a single zip file.
+        /// </summary>
+        /// <param name="options">
+        ///     The options for creating this assembly. - The options will be cloned in the assembly and further
+        ///     changes to the options will thus have no effect.
+        /// </param>
+        /// <param name="file">The file to interpret.</param>
+        /// <returns>
+        ///     The assembly which can directly be created(<see cref="Create" />) or first have some libraries included(
+        ///     <see cref="IncludeLibrary" />).
+        /// </returns>
+        /// <exception cref="FileNotFoundException">The file does not exist. <paramref name="file" /></exception>
+        /// <exception cref="IOException">An I/O error occurs. </exception>
+        public static SolAssembly FromFile(SolAssemblyOptions options, string file)
         {
-            SolDebug.WriteLine("Building Trees ...");
-            SolAssembly script = new SolAssembly();
-            StatementFactory factory = script.Factory;
-            foreach (ParseTree tree in trees) {
-                SolDebug.WriteLine("  ... Building File " + tree.FileName);
-                IReadOnlyCollection<SolClassBuilder> classBuilders;
-                factory.InterpretTree(tree, script.TypeRegistry.GlobalsBuilder, out classBuilders);
-                foreach (SolClassBuilder typeDef in classBuilders) {
-                    script.TypeRegistry.RegisterClass(typeDef);
-                    SolDebug.WriteLine("    ... Type " + typeDef.Name);
-                }
-            }
-            return script;
-        }
-
-        public static SolAssembly FromFile(string file)
-        {
+#if DEBUG
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
             try {
+#endif
                 if (!File.Exists(file)) {
                     throw new FileNotFoundException("Tried to load SolAssembly from file " + file +
                                                     ", which does not exist.");
@@ -145,7 +225,12 @@ namespace SolScript.Interpreter
                                 entry.Extract(entryStream);
                                 entryStream.Position = 0;
                                 using (StreamReader stream = new StreamReader(entryStream)) {
-                                    string str = stream.ReadToEnd();
+                                    string str;
+                                    try {
+                                        str = stream.ReadToEnd();
+                                    } catch (OutOfMemoryException ex) {
+                                        throw new IOException("The internal buffer ran out of memory.", ex);
+                                    }
                                     //SolDebug.WriteLine(str);
                                     ParseTree tree = parser.Parse(str, entry.FileName);
                                     trees.Add(tree);
@@ -159,35 +244,103 @@ namespace SolScript.Interpreter
                         }
                     }
                 }
-                return FromTrees(trees);
+                return FromTrees(trees, options);
+#if DEBUG
             } finally {
                 stopwatch.Stop();
                 SolDebug.WriteLine("StopWatch: " + stopwatch.ElapsedMilliseconds);
             }
+#endif
         }
 
+        /// <summary>
+        ///     Builds the assembly from the irony parse trees.
+        /// </summary>
+        private static SolAssembly FromTrees(IEnumerable<ParseTree> trees, SolAssemblyOptions options)
+        {
+            SolDebug.WriteLine("Building Trees ...");
+            SolAssembly script = new SolAssembly(options);
+            StatementFactory factory = script.Factory;
+            foreach (ParseTree tree in trees) {
+                SolDebug.WriteLine("  ... Checking tree " + tree.FileName);
+                foreach (LogMessage message in tree.ParserMessages) {
+                    switch (message.Level) {
+                        case ErrorLevel.Info:
+                        case ErrorLevel.Warning:
+                            script.m_ErrorAdder.Add(new SolError(new SolSourceLocation(tree.FileName, message.Location), ErrorId.None, message.Message, true));
+                            break;
+                        case ErrorLevel.Error:
+                            // todo: properly warning through the parser states in message.
+                            script.m_ErrorAdder.Add(new SolError(new SolSourceLocation(tree.FileName, message.Location), ErrorId.None, message.Message));
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
+                }
+            }
+            if (!script.Errors.HasErrors) {
+                foreach (ParseTree tree in trees) {
+                    SolDebug.WriteLine("  ... Building File " + tree.FileName);
+                    IReadOnlyCollection<SolClassBuilder> classBuilders;
+                    try {
+                        factory.InterpretTree(tree, script.TypeRegistry.GlobalsBuilder, out classBuilders);
+                    } catch (SolInterpreterException ex) {
+                        // todo: error id on exception (or just one error in general since its probably always an internal error?)
+                        script.m_ErrorAdder.Add(new SolError(ex.Location, ErrorId.InternalFailedToResolve, ex.Message, false, ex));
+                        return script;
+                    }
+                    foreach (SolClassBuilder typeDef in classBuilders) {
+                        script.TypeRegistry.RegisterClass(typeDef);
+                        SolDebug.WriteLine("    ... Type " + typeDef.Name);
+                    }
+                }
+            } else {
+                script.m_ErrorAdder.Add(new SolError(SolSourceLocation.Native(), ErrorId.InternalSecurityMeasure, "Not interpreting the syntax trees since one or more of them had errors.", true));
+            }
+            return script;
+        }
+
+        /// <summary>
+        ///     Inclused a <see cref="SolLibrary" /> which will be included in the library upon creation.
+        /// </summary>
+        /// <param name="library"></param>
+        /// <returns></returns>
+        /// <exception cref="InvalidOperationException">
+        ///     Libraries can only be registered during the
+        ///     <see cref="Interpreter.TypeRegistry.State.Registry" /> state.
+        /// </exception>
+        /// <seealso cref="TypeRegistry.CurrentState" />
         public SolAssembly IncludeLibrary(SolLibrary library)
         {
+            TypeRegistry.AssetStateExactAndLower(TypeRegistry.State.Registry, "Libraries can only be registered during the registry state.");
             m_Libraries.Add(library);
             return this;
         }
 
+        /// <summary>
+        ///     Quick helper to register globals.
+        /// </summary>
+        /// <exception cref="SolVariableException">An error occured while registering the variables.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void RegisterGlobal(string name, SolValue value, SolType type)
         {
             GlobalVariables.Declare(name, type);
             GlobalVariables.Assign(name, value);
         }
 
+        /// <summary>
+        ///     This method truly creates the assembly. Everything is prepared for actual usage, the classes are created and global
+        ///     variables registered. You can start using the <see cref="SolAssembly" /> after calling this method(although you
+        ///     probably want to check for errors and warnings first!).
+        /// </summary>
+        /// <returns>The created assembly; ready for usage.</returns>
+        /// <exception cref="SolTypeRegistryException">An error occured while creating the class or global definitions.</exception>
         public SolAssembly Create()
         {
             SolExecutionContext context = new SolExecutionContext(this, Name + " initialization context");
             GlobalVariables = new GlobalVariables(this);
             InternalVariables = new GlobalInternalVariables(this);
             LocalVariables = new GlobalLocalVariables(this);
-            // Build language functions/values
-            RegisterGlobal("nil", SolNil.Instance, new SolType(SolNil.TYPE, true));
-            RegisterGlobal("false", SolBool.False, new SolType(SolBool.TYPE, true));
-            RegisterGlobal("true", SolBool.True, new SolType(SolBool.TYPE, true));
             // todo: investigate either merging type registry and library or making it clearer, the separation seems a bit arbitrary.
             // Build class hulls, required in order to be able to have access too all types when building the bodies.
             foreach (SolLibrary library in m_Libraries) {
@@ -207,13 +360,13 @@ namespace SolScript.Interpreter
                 SolFieldDefinition fieldDefinition = fieldPair.Value;
                 IVariables declareInVariables;
                 switch (fieldDefinition.Modifier) {
-                    case AccessModifier.None:
+                    case SolAccessModifier.None:
                         declareInVariables = GlobalVariables;
                         break;
-                    case AccessModifier.Local:
+                    case SolAccessModifier.Local:
                         declareInVariables = LocalVariables;
                         break;
-                    case AccessModifier.Internal:
+                    case SolAccessModifier.Internal:
                         declareInVariables = InternalVariables;
                         break;
                     default:
@@ -222,133 +375,37 @@ namespace SolScript.Interpreter
                 switch (fieldDefinition.Initializer.FieldType) {
                     case SolFieldInitializerWrapper.Type.ScriptField:
                         SolExpression scriptInitializer = fieldDefinition.Initializer.GetScriptField();
-                        declareInVariables.Declare(fieldPair.Key, fieldDefinition.Type);
-                        declareInVariables.Assign(fieldPair.Key, scriptInitializer.Evaluate(context, LocalVariables));
+                        try {
+                            declareInVariables.Declare(fieldPair.Key, fieldDefinition.Type);
+                            declareInVariables.Assign(fieldPair.Key, scriptInitializer.Evaluate(context, LocalVariables));
+                        } catch (SolVariableException ex) {
+                            throw new SolTypeRegistryException("Failed to register global field \"" + fieldDefinition.Name + "\"", ex);
+                        }
                         break;
                     case SolFieldInitializerWrapper.Type.NativeField:
                         FieldOrPropertyInfo nativeField = fieldDefinition.Initializer.GetNativeField();
-                        declareInVariables.DeclareNative(fieldPair.Key, fieldDefinition.Type, nativeField, DynamicReference.NullReference.Instance);
+                        try {
+                            declareInVariables.DeclareNative(fieldPair.Key, fieldDefinition.Type, nativeField, DynamicReference.NullReference.Instance);
+                        } catch (SolVariableException ex) {
+                            throw new SolTypeRegistryException("Failed to register native global field \"" + fieldDefinition.Name + "\"", ex);
+                        }
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
             }
             // Create singleton instances
+            // todo: investigate to create them lazily as as of now they are unable to use other singletons in their ctor.
             foreach (SolClassDefinition classDef in TypeRegistry.ClassDefinitions.Where(c => c.TypeMode == SolTypeMode.Singleton)) {
                 SolDebug.WriteLine("Singleton: " + classDef.Type);
-                SolClass instance = TypeRegistry.CreateInstance(classDef, SingletonClassCreationOptions);
-                GlobalVariables.Declare(instance.Type, new SolType(classDef.Type, false));
-                GlobalVariables.Assign(instance.Type, instance);
+                SolClass instance = TypeRegistry.CreateInstance(classDef, s_SingletonClassCreationOptions);
+                try {
+                    RegisterGlobal(instance.Type, instance, new SolType(classDef.Type, false));
+                } catch (SolVariableException ex) {
+                    throw new SolTypeRegistryException("Failed to register singleton instance \"" + classDef.Type + "\" as global variable.", ex);
+                }
             }
             return this;
-        }
-    }
-
-    [SolGlobal(SolLibrary.STD_NAME)]
-    internal static class SolAssemblyGlobals
-    {
-        [PublicAPI]
-        [SolGlobal(SolLibrary.STD_NAME)]
-        public static void error(SolExecutionContext context, string message)
-        {
-            throw new SolRuntimeException(context, message);
-        }
-
-        [PublicAPI]
-        [SolGlobal(SolLibrary.STD_NAME)]
-        public static void print(SolExecutionContext context, params SolValue[] values)
-        {
-            StringBuilder builder = new StringBuilder();
-            SolStackFrame frame;
-            // We are peeking at a depth of one since zero would be this
-            // method. And the user doesn't need to know that the print
-            // method is the print method.
-            if (context.PeekStackFrame(out frame, 1)) {
-                frame.AppendFunctionName(builder);
-                builder.Append(' ');
-            }
-            builder.Append("[");
-            builder.Append(context.CurrentLocation);
-            builder.Append("] : ");
-            builder.Append(InternalHelper.JoinToString(",", values));
-            Console.WriteLine(builder.ToString());
-        }
-
-        [PublicAPI]
-        [SolGlobal(SolLibrary.STD_NAME)]
-        public static string type(SolValue value)
-        {
-            return value.Type;
-        }
-
-        [PublicAPI]
-        [SolGlobal(SolLibrary.STD_NAME)]
-        public static string to_string(SolValue value)
-        {
-            return value.ToString();
-        }
-
-        // ReSharper disable once UnusedParameter.Global
-        [PublicAPI]
-        [SolGlobal(SolLibrary.STD_NAME)]
-        public static bool assert(SolExecutionContext context, SolValue value, string message = "Assertion failed!")
-        {
-            if (value.IsEqual(context, SolNil.Instance) || value.IsEqual(context, SolBool.False)) {
-                throw new SolRuntimeException(context, message);
-            }
-            return true;
-        }
-
-        [PublicAPI]
-        [SolGlobal(SolLibrary.STD_NAME)]
-        public static SolValue @default(SolExecutionContext context, string type /*, params SolValue[] ctorArgs*/)
-        {
-            /*char lastChar = type[type.Length - 1];
-            if (lastChar == '?') {
-                return SolNil.Instance;
-            }
-            if (lastChar == '!') {
-                type = type.Substring(0, type.Length - 1);
-            }*/
-            switch (type) {
-                case "nil": {
-                    return SolNil.Instance;
-                }
-                case "bool": {
-                    return SolBool.False;
-                }
-                case "number": {
-                    return new SolNumber(0);
-                }
-                case "table": {
-                    return new SolTable();
-                }
-                case "string": {
-                    return SolString.Empty;
-                }
-                default: {
-                    SolClassDefinition classDef;
-                    if (!context.Assembly.TypeRegistry.TryGetClass(type, out classDef)) {
-                        // todo: more exceptions
-                        throw new NotImplementedException("class does not exist");
-                    }
-                    return SolNil.Instance;
-                    /*switch (classDef.TypeMode) {
-                        case SolTypeMode.Sealed:
-                        case SolTypeMode.Default:
-                            return context.Assembly.TypeRegistry.PrepareInstance(classDef, false, ctorArgs);
-                        case SolTypeMode.Singleton:
-                            // This should return the singleton object.
-                            return context.Assembly.RootContext.VariableContext.GetValue(context, classDef.Name);
-                        case SolTypeMode.Annotation:
-                            throw new NotImplementedException();
-                        case SolTypeMode.Abstract:
-                            throw new NotImplementedException();
-                        default:
-                            throw new ArgumentOutOfRangeException();
-                    }*/
-                }
-            }
         }
     }
 }

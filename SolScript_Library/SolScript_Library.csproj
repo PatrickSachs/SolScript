@@ -23,6 +23,7 @@
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Prefer32Bit>false</Prefer32Bit>
+    <DocumentationFile>bin\Debug\SolScript_Library.XML</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -66,14 +67,19 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Interpreter\Expressions\Expression_Bool.cs" />
+    <Compile Include="SolError.cs" />
     <Compile Include="Compiler\SolScriptCompiler.cs" />
-    <Compile Include="Interpreter\AccessModifier.cs" />
+    <Compile Include="ErrorId.cs" />
+    <Compile Include="Interpreter\SolAccessModifier.cs" />
     <Compile Include="Interpreter\Builders\IAnnotateableBuilder.cs" />
     <Compile Include="Interpreter\Builders\SolBuilderBase.cs" />
+    <Compile Include="Interpreter\Exceptions\SolRuntimeNativeException.cs" />
     <Compile Include="Interpreter\IPriority.cs" />
     <Compile Include="Interpreter\Library\Annotations\TestF.cs" />
     <Compile Include="Interpreter\PriorityComparer.cs" />
     <Compile Include="Interpreter\SolAnnotateableDefinitionBase.cs" />
+    <Compile Include="Interpreter\SolAssemblyOptions.cs" />
     <Compile Include="Interpreter\Types\Marshal\NativeDelegateMarshaller.cs" />
     <Compile Include="Interpreter\Types\Implementation\SolAutoDelegateWrapperFunction.cs" />
     <Compile Include="Interpreter\Types\Implementation\SolDelegateWrapperFunction.cs" />
@@ -116,18 +122,25 @@
     <Compile Include="Interpreter\IVariables.cs" />
     <Compile Include="Interpreter\Library\Annotations\PreCtorTest.cs" />
     <Compile Include="Interpreter\Library\Annotations\ReadOnlyAnnotation.cs" />
-    <Compile Include="Interpreter\Library\Classes\EmissionModule.cs" />
-    <Compile Include="Interpreter\Library\Classes\IOModule.cs" />
-    <Compile Include="Interpreter\Library\Classes\ReflectionModule.cs" />
-    <Compile Include="Interpreter\Library\Classes\TestClass.cs" />
+    <Compile Include="Libraries\lang\lang.cs" />
+    <Compile Include="Libraries\lang\lang_Globals.cs" />
+    <Compile Include="Libraries\os\os.cs" />
+    <Compile Include="Libraries\os\os_File.cs" />
+    <Compile Include="Libraries\os\os_OS.cs" />
+    <Compile Include="Libraries\std\std.cs" />
+    <Compile Include="Libraries\std\std_Stream - Copy.cs" />
+    <Compile Include="Libraries\std\std_Stream.cs" />
+    <Compile Include="Libraries\std\std_IO.cs" />
+    <Compile Include="Libraries\std\std_Reflect.cs" />
+    <Compile Include="Libraries\std\TestClass.cs" />
     <Compile Include="Interpreter\Library\SolContractAttribute.cs" />
     <Compile Include="Interpreter\Library\SolGlobalAttribute.cs" />
     <Compile Include="Interpreter\Library\SolLibraryAccessModifierAttribute.cs" />
     <Compile Include="Interpreter\Library\SolLibraryClassAttribute.cs" />
     <Compile Include="Interpreter\Library\SolLibraryNameAttribute.cs" />
     <Compile Include="Interpreter\Library\SolLibraryVisibilityAttribute.cs" />
-    <Compile Include="Interpreter\Library\Classes\StringModule.cs" />
-    <Compile Include="Interpreter\Library\Classes\TableModule.cs" />
+    <Compile Include="Libraries\std\std_String.cs" />
+    <Compile Include="Libraries\std\std_Table.cs" />
     <Compile Include="Interpreter\Expressions\Expression_Break.cs" />
     <Compile Include="Interpreter\Expressions\Expression_Continue.cs" />
     <Compile Include="Interpreter\SolAnnotationDefinition.cs" />
@@ -174,7 +187,7 @@
     <Compile Include="Interpreter\Types\Implementation\SolScriptClassFunction.cs" />
     <Compile Include="Interpreter\Types\SolString.cs" />
     <Compile Include="Interpreter\Types\SolValue.cs" />
-    <Compile Include="Interpreter\Exceptions\SolScriptException.cs" />
+    <Compile Include="Interpreter\Exceptions\SolException.cs" />
     <Compile Include="Interpreter\Exceptions\SolMarshallingException.cs" />
     <Compile Include="Interpreter\Expressions\Expression_Binary.cs" />
     <Compile Include="Interpreter\Expressions\Expression_CreateFunc.cs" />
@@ -185,7 +198,7 @@
     <Compile Include="Interpreter\Expressions\Expression_String.cs" />
     <Compile Include="Interpreter\Expressions\Expression_Nil.cs" />
     <Compile Include="Interpreter\InternalHelper.cs" />
-    <Compile Include="Interpreter\Library\Classes\MathModule.cs" />
+    <Compile Include="Libraries\std\std_Math.cs" />
     <Compile Include="Interpreter\SolChunk.cs" />
     <Compile Include="Interpreter\Library\SolLibrary.cs" />
     <Compile Include="Interpreter\SolAssembly.cs" />
@@ -205,6 +218,8 @@
     <Compile Include="Parser\SolScriptGrammar.cs" />
     <Compile Include="Parser\Terminals\SolScriptCommentTerminal.cs" />
     <Compile Include="Parser\Terminals\SolScriptLongStringTerminal.cs" />
+    <Compile Include="NamespaceDoc.cs" />
+    <Compile Include="SolErrorCollection.cs" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

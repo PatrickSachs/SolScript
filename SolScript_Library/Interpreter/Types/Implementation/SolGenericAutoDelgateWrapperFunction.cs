@@ -17,12 +17,12 @@ namespace SolScript.Interpreter.Types.Implementation
         }
 
         /// <inheritdoc />
-        protected override AutoDelegate<T1> CreateAutoDelegateImpl<T1>()
+        public override AutoDelegate<T1> CreateAutoDelegate<T1>()
         {
             if (typeof(T1) == typeof(T)) {
                 return (AutoDelegate<T1>)(object)m_AutoDelegate;
             }
-            return base.CreateAutoDelegateImpl<T1>();
+            return base.CreateAutoDelegate<T1>();
         }
 
         /// <inheritdoc />

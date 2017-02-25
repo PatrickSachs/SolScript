@@ -82,9 +82,9 @@ namespace SolScript.Parser {
             KeyTerm SEALED = Keyword("sealed");
             // =======================================
             // === KEYWORDS
-            ConstantTerminal NIL = new ConstantTerminal("nil");
-            ConstantTerminal FALSE = new ConstantTerminal("false");
-            ConstantTerminal TRUE = new ConstantTerminal("true");
+            KeyTerm NIL = Keyword("nil");
+            KeyTerm FALSE = Keyword("false");
+            KeyTerm TRUE = Keyword("true");
 
             #endregion
 
@@ -146,7 +146,8 @@ namespace SolScript.Parser {
             NonTerminal Expression_Unary = new NonTerminal("Expression_Unary");
             NonTerminal Expression_Unary_Operand_trans = new NonTerminal("$Expression_Unary_Operand_trans");
             NonTerminal Expression_GetVariable = new NonTerminal("Expression_GetVariable");
-
+            NonTerminal Expression_Bool = new NonTerminal("Expression_Bool");
+            NonTerminal Expression_Nil = new NonTerminal("Expression_Nil");
             NonTerminal Expression_Parenthetical = new NonTerminal("Expression_Parenthetical");
             NonTerminal FunctionParameters = new NonTerminal("FunctionParameters");
             NonTerminal Chunk = new NonTerminal("Chunk");
@@ -176,7 +177,7 @@ namespace SolScript.Parser {
             Root = new NonTerminal("ROOT");
 
             #endregion
-
+            // todo: tertiary expression for: (a ? b : c)
             #region Grammar Rules
             RootElement_trans.Rule = FieldWithAccess
                 | FunctionWithAccess
@@ -195,6 +196,13 @@ namespace SolScript.Parser {
                 | SINGLETON
                 | ABSTRACT
                 | SEALED
+                ;
+            Expression_Bool.Rule = 
+                TRUE 
+                | FALSE
+                ;
+            Expression_Nil.Rule = 
+                NIL
                 ;
             IdentifierPlusList.Rule =
                 MakePlusRule(IdentifierPlusList, ToTerm(","), _identifier)
@@ -300,7 +308,6 @@ namespace SolScript.Parser {
             Statement.Rule =
                 Statement_AssignVar
                 | Statement_DeclareVar
-                //| Statement_CallFunctionCompilerResolveRef
                 | Statement_CallFunction
                 | Statement_Conditional
                 | Statement_For
@@ -328,29 +335,25 @@ namespace SolScript.Parser {
                 MakeStarRule(ExpressionList, ToTerm(","), Expression)
                 ;
             Expression_Statement.Rule =
-                /*Statement_CallFunctionCompilerResolveRef
-                |*/ Statement_CallFunction
+                Statement_CallFunction
                 | Statement_Conditional
                 | Statement_New
                 | Statement_AssignVar
                 ;
             Expression.Rule =
                  _number
-                | Expression_Unary
-                | Expression_Binary
+                | Expression_Bool
+                | Expression_Nil
                 | _string
                 | _long_string
+                | Expression_Unary
+                | Expression_Binary
                 | ELLIPSIS
                 | Expression_GetVariable
-                /*|
-                Statement_CallFunctionCompilerResolveRef*/
                 | Expression_CreateFunc
                 | Expression_Statement
                 | Expression_Parenthetical
                 | Expression_TableConstructor
-                | NIL
-                | FALSE
-                | TRUE
                 ;
             Expression_GetVariable.Rule =
                 Variable
@@ -376,10 +379,6 @@ namespace SolScript.Parser {
                 Expression + Arguments_trans
                 | Expression + "()"
                 ;
-            /*Statement_CallFunctionCompilerResolveRef.Rule =
-                _identifier + Arguments_trans
-                | _identifier + "()" // required since the parser otherwise cant handle empty arguments
-                ;*/
             Arguments_trans.Rule =
                 "(" + ExpressionList + ")"
                 ;

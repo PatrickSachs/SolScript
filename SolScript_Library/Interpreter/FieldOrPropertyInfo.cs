@@ -56,6 +56,11 @@ namespace SolScript.Interpreter
         private readonly MemberInfo m_Member;
         private readonly PropertyInfo m_Property;
 
+        /// <summary>
+        ///     Gets a value indicating if this field or property has a special name.
+        /// </summary>
+        public bool IsSpecialName => m_Field?.IsSpecialName ?? m_Property.IsSpecialName;
+
         /// <inheritdoc />
         public override Type DeclaringType => m_Member.DeclaringType;
 

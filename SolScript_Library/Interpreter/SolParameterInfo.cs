@@ -24,6 +24,11 @@ namespace SolScript.Interpreter
             m_Parameters = parameters;
         }
 
+        /// <summary>
+        ///     Allows any value to be passed to this <see cref="SolParameterInfo" />.
+        /// </summary>
+        public static readonly SolParameterInfo Any = new SolParameterInfo(Array.Empty<SolParameter>(), true);
+
         private readonly SolParameter[] m_Parameters;
 
         /// <summary>
@@ -104,12 +109,14 @@ namespace SolScript.Interpreter
         /// </summary>
         /// <param name="assembly">The assembly to use for type lookups and checks.</param>
         /// <param name="arguments">The arguments.</param>
+        /// <returns>The arguments more fitting for calling the function. Arguments length has bene adjusted to match the expected parameter count.</returns>
         /// <exception cref="SolVariableException">The parameters do not fit.</exception>
-        public void VerifyArguments(SolAssembly assembly, SolValue[] arguments)
+        public SolValue[] VerifyArguments(SolAssembly assembly, SolValue[] arguments)
         {
-            if (!AllowOptional && Count != arguments.Length) {
+            /*if (!AllowOptional && Count != arguments.Length) {
                 throw new SolVariableException($"Invalid parameter count. Expected {Count}, got {arguments.Length}.");
-            }
+            }*/
+            SolValue[] newArguments = new SolValue[Count > arguments.Length ? Count : arguments.Length];
             for (int i = 0; i < Count; i++) {
                 // First go through every declared parameter and see if the types are compatible.
                 if (i < arguments.Length) {
@@ -119,12 +126,14 @@ namespace SolScript.Interpreter
                         throw new SolVariableException(
                             $"Parameter \"{m_Parameters[i].Name}\" expected a value of type \"{m_Parameters[i].Type}\", but recceived a value of the incompatible type \"{arg.Type}\".");
                     }
+                    newArguments[i] = arg;
                 } else {
                     // The parameter has no longer been passed and will thus be treated as nil.
                     if (!m_Parameters[i].Type.CanBeNil) {
                         throw new SolVariableException(
                             $"Parameter \"{m_Parameters[i].Name}\" expected a value of type \"{m_Parameters[i].Type}\", but did not recceive a value at all. No implicit nil value can be passed since the parameter does not accept nil values.");
                     }
+                    newArguments[i] = SolNil.Instance;
                 }
             }
             if (arguments.Length > Count) {
@@ -133,7 +142,11 @@ namespace SolScript.Interpreter
                     // Additional arguments are not allowed.
                     throw new SolVariableException("Tried to pass " + (arguments.Length - Count) + " optional arguments although optional arguments are not allowed.");
                 }
+                for (int i = Count; i < arguments.Length; i++) {
+                    newArguments[i] = arguments[i];
+                }
             }
+            return newArguments;
         }
 
         public bool Equals([CanBeNull] SolParameterInfo other)

@@ -10,6 +10,7 @@ using Irony.Parsing;
 using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Library;
+using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter
 {
@@ -60,6 +61,17 @@ namespace SolScript.Interpreter
         };
 
         internal static readonly SolParameterInfo.Native EmptyNativeParameterInfo = new SolParameterInfo.Native(Array.Empty<SolParameter>(), Array.Empty<Type>(), false, false);
+
+        /// <summary>
+        ///     Checks if a <see cref="SolValue" /> is <see cref="SolNil" /> or null.
+        /// </summary>
+        /// <param name="value">The <see cref="SolValue" /> to check.</param>
+        /// <returns>true if the see <see cref="SolValue" /> is <see cref="SolNil" />, false if not.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsNil([CanBeNull] this SolValue value)
+        {
+            return value == null || value.Type == SolNil.TYPE;
+        }
 
         /// <summary>
         ///     Checks if the given type is an <see cref="Action" />.
@@ -213,6 +225,7 @@ namespace SolScript.Interpreter
             int pos = 0;
             while (pos < source.Length) {
                 char c = source[pos];
+                string replStr = null;
                 if (c == '\\') {
                     // Handle escape sequences
                     pos++;
@@ -243,7 +256,7 @@ namespace SolScript.Interpreter
                             c = '\f';
                             break;
                         case 'n':
-                            c = ' ';
+                            replStr = Environment.NewLine;
                             break;
                         case 'r':
                             c = ' ';
@@ -330,7 +343,11 @@ namespace SolScript.Interpreter
                     }
                 }
                 pos++;
-                sb.Append(c);
+                if (replStr == null) {
+                    sb.Append(c);
+                } else {
+                    sb.Append(replStr);
+                }
             }
 
             return sb.ToString();
@@ -388,6 +405,21 @@ namespace SolScript.Interpreter
         internal static bool DidContinue(Terminators terminators)
         {
             return (terminators & Terminators.Continue) == Terminators.Continue;
+        }
+
+        /// <summary>
+        ///     Converts a number to an integer.
+        /// </summary>
+        /// <param name="number">The number to convert.</param>
+        /// <param name="integer">The resulting integer.</param>
+        /// <returns>True if the integer is the exact same as the number, false if not.</returns>
+        internal static bool NumberToInteger(SolNumber number, out int integer)
+        {
+            integer = (int) number.Value;
+            if (integer == number.Value) {
+                return true;
+            }
+            return false;
         }
 
         /// <summary>

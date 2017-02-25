@@ -115,11 +115,20 @@ namespace SolScript.Interpreter
                     } else {
                         string toSolType = SolValue.PrimitiveTypeNameOf(type);
                         if (!allowCasting) {
-                            throw new SolMarshallingException(type, toSolType, "Cannot implictly convert types. Explicit casting is required.");
+                            throw new SolMarshallingException(value.Type, type, "Cannot implictly convert types. Explicit casting is required.");
                         }
-                        // todo: cast sol value
-                        // todo: type safety lol
-                        throw new NotImplementedException("todo: cast sol value");
+                        if (toSolType == SolValue.ANY_TYPE) {
+                            nativeValue = value;
+                        } else if (toSolType == SolValue.CLASS_TYPE) {
+                            if (!value.IsClass) {
+                                throw new SolMarshallingException(value.Type, type, "Cannot marshal a SolValue of type \"" + value.Type + "\" to a class.");
+                            }
+                            nativeValue = (SolClass) value;
+                        } else {
+                            // todo: cast sol value
+                            // todo: type safety lol
+                            throw new NotImplementedException("todo: cast sol value");
+                        }
                     }
                 } else {
                     nativeValue = value.ConvertTo(type);

@@ -6,18 +6,20 @@ using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter {
     public class SolChunk {
-        public SolChunk(SolAssembly assembly) {
+        public SolChunk(SolAssembly assembly, [CanBeNull]  TerminatingSolExpression returnExpression, params SolStatement[] statements) {
             Assembly = assembly;
             Id = ++s_LastId;
+            ReturnExpression = returnExpression;
+            Statements = statements;
         }
 
         private static int s_LastId = -1;
         public readonly SolAssembly Assembly;
         public readonly int Id;
 
-        [CanBeNull] public TerminatingSolExpression ReturnExpression;
+        [CanBeNull] public readonly TerminatingSolExpression ReturnExpression;
 
-        public SolStatement[] Statements;
+        public readonly SolStatement[] Statements;
 
         #region Overrides
 

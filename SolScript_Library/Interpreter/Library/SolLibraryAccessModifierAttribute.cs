@@ -4,11 +4,11 @@ namespace SolScript.Interpreter.Library
 {
     public class SolLibraryAccessModifierAttribute : Attribute
     {
-        public SolLibraryAccessModifierAttribute(AccessModifier accessModifier)
+        public SolLibraryAccessModifierAttribute(SolAccessModifier accessModifier)
         {
             AccessModifier = accessModifier;
         }
 
-        public AccessModifier AccessModifier { get; }
+        public SolAccessModifier AccessModifier { get; }
     }
 }

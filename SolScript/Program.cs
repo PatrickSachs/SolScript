@@ -5,8 +5,9 @@ using System.Text.RegularExpressions;
 using SolScript.Interpreter;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Library;
-using SolScript.Interpreter.Library.Classes;
 using SolScript.Interpreter.Types;
+using SolScript.Libraries.os;
+using SolScript.Libraries.std;
 using SolScript.Reader;
 
 namespace SolScript
@@ -93,28 +94,74 @@ namespace SolScript
                         Console.WriteLine("This directory does not exist. :( Please try again.");
                         goto ChooseDir;
                     }
-                    SolAssembly script = SolAssembly.FromDirectory(dirRaw);
-                    script.IncludeLibrary(SolLibrary.StandardLibrary).IncludeLibrary(new SolLibrary("test", typeof(MarshalTest).Assembly)).Create();
+                    ChooseEntry:
+                    Console.WriteLine(
+                        "Main class(\"0\"/\"class\") or main function(\"1\"/\"function\") as entry point?");
+                    Console.Write(" > ");
+                    string entryRaw = Console.ReadLine()?.Trim().ToLower();
                     try {
-                        script.TypeRegistry.CreateInstance("Main", ClassCreationOptions.Default(), SolString.ValueOf("Hello from the command line :)"), new SolNumber(42));
-                    } catch (SolTypeRegistryException ex) {
+                        if (entryRaw == "0" || entryRaw == "class") {
+                            SolAssembly script = SolAssembly.FromDirectory(new SolAssemblyOptions("Command Line Assembly"), dirRaw);
+                            script.IncludeLibrary(std.GetLibrary()).IncludeLibrary(os.GetLibrary()).Create();
+                            if (script.Errors.Count > 0) {
+                                bool isDone = false;
+                                Console.WriteLine("================== ERRORS ==================");
+                                foreach (SolError error in script.Errors) {
+                                    Console.ForegroundColor = error.IsWarning ? ConsoleColor.Yellow : ConsoleColor.Red;
+                                    Console.WriteLine(error.ToString());
+                                    if (!error.IsWarning || error.IsWarning && script.Errors.WarningsAreErrors) {
+                                        isDone = true;
+                                    }
+                                }
+                                Console.ForegroundColor = ConsoleColor.White;
+                                if (isDone) {
+                                    goto Done;
+                                }
+                            }
+                            script.TypeRegistry.CreateInstance("Main", new ClassCreationOptions.Customizable().SetCallingContext(new SolExecutionContext(script, "Command Line Interpreter")),
+                                SolString.ValueOf("Hello from the command line :)"), new SolNumber(42));
+                        } else if (entryRaw == "1" || entryRaw == "function") {
+                            SolAssembly script = SolAssembly.FromDirectory(new SolAssemblyOptions("Command Line Assembly"), dirRaw);
+                            script.IncludeLibrary(std.GetLibrary()).IncludeLibrary(os.GetLibrary()).Create();
+                            if (script.Errors.Count > 0) {
+                                bool isDone = false;
+                                Console.WriteLine("================== ERRORS ==================");
+                                foreach (SolError error in script.Errors) {
+                                    Console.ForegroundColor = error.IsWarning ? ConsoleColor.Yellow : ConsoleColor.Red;
+                                    Console.WriteLine(error.ToString());
+                                    if (!error.IsWarning || error.IsWarning && script.Errors.WarningsAreErrors) {
+                                        isDone = true;
+                                    }
+                                }
+                                Console.ForegroundColor = ConsoleColor.White;
+                                if (isDone) {
+                                    goto Done;
+                                }
+                            }
+                            SolValue main = script.GlobalVariables.Get("main");
+                            SolFunction mainFunction = main as SolFunction;
+                            if (mainFunction == null) {
+                                throw new SolVariableException("No main() function exists.");
+                            }
+                            SolValue returnValue = mainFunction.Call(new SolExecutionContext(script, "Command Line Interpreter"));
+                            Console.WriteLine("main() returned: " + returnValue);
+                        } else {
+                            Console.WriteLine("This entry point is invalid. :( Please try again.");
+                            goto ChooseEntry;
+                        }
+                    } catch (SolException ex) {
                         Console.ForegroundColor = ConsoleColor.Yellow;
                         Console.WriteLine("   A runtime error occured!");
                         Console.WriteLine(" ================================================");
                         Console.ForegroundColor = ConsoleColor.White;
-                            StringBuilder builder = new StringBuilder();
-                            SolScriptException.UnwindExceptionStack(ex, builder);
+                        StringBuilder builder = new StringBuilder();
+                        SolException.UnwindExceptionStack(ex, builder);
                         Console.WriteLine(builder.ToString());
                         Console.ForegroundColor = ConsoleColor.Yellow;
                         Console.WriteLine(" ================================================");
                         Console.ForegroundColor = ConsoleColor.White;
                     }
-                    //try {
-                    //Console.WriteLine("Main Class: "+script.Run());
-                    /*} catch (SolScriptInterpreterException exception) {
-                        Console.WriteLine("An exception occured: " + exception.Message);
-                        throw;
-                    }*/
+                    Done:
                     Console.ForegroundColor = ConsoleColor.Green;
                     Console.WriteLine("\n === Script execution finished ... Press any key to return to the main menu.");
                     Console.ForegroundColor = ConsoleColor.White;
@@ -130,7 +177,7 @@ namespace SolScript
                         Console.WriteLine("This file does not exist. :( Please try again. (Make sure to NOT specify the file ending, as the file ending must be .sol_a1)");
                         goto ChooseFile;
                     }
-                    SolAssembly script = SolAssembly.FromFile(fileRaw).IncludeLibrary(SolLibrary.StandardLibrary).Create();
+                    SolAssembly script = SolAssembly.FromFile(new SolAssemblyOptions("Command Line Assembly"), fileRaw).IncludeLibrary(SolLibrary.StandardLibrary).Create();
                     script.TypeRegistry.CreateInstance("Main", ClassCreationOptions.Default(), SolString.ValueOf("Hello from the command line :)"), new SolNumber(42));
                     Console.WriteLine("\n === Script execution finished ... Press any key to return to the main menu.");
                     Console.ReadKey(true);

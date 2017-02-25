@@ -153,7 +153,7 @@ namespace SolScript.Interpreter
         public virtual string GenerateStackTrace(Exception nativeException)
         {
             StringBuilder builder = GenerateStackTraceImpl();
-            if (!(nativeException is SolScriptException)) {
+            if (!(nativeException is SolException)) {
                 builder.Append("Caused by a native exception: ");
                 builder.Append(nativeException.GetType().Name);
                 if (!string.IsNullOrEmpty(nativeException.Message)) {

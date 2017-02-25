@@ -37,3 +37,4 @@ E:\Data\Development\SolScript\SolScript\bin\Debug\SolScript_Library.pdb
 E:\Data\Development\SolScript\SolScript\bin\Debug\Irony.pdb
 E:\Data\Development\SolScript\SolScript\bin\Debug\JetBrains.Annotations.xml
 E:\Data\Development\SolScript\SolScript\obj\Debug\SolScript_Console.csprojResolveAssemblyReference.cache
+E:\Data\Development\SolScript\SolScript\bin\Debug\SolScript_Library.xml

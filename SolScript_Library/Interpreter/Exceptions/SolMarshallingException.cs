@@ -3,7 +3,7 @@ using System.Runtime.Serialization;
 
 namespace SolScript.Interpreter.Exceptions {
     [Serializable]
-    public class SolMarshallingException : SolScriptException {
+    public class SolMarshallingException : SolException {
         public SolMarshallingException() {
         }
 

@@ -27,8 +27,8 @@ namespace SolScript.Interpreter.Types
 
         private static uint s_NextId;
 
-        private static readonly SolString s_IteratorKey = SolString.ValueOf("key");
-        private static readonly SolString s_IteratorValue = SolString.ValueOf("value");
+        private static readonly SolString s_IteratorKey = SolString.ValueOf("key").Intern();
+        private static readonly SolString s_IteratorValue = SolString.ValueOf("value").Intern();
         private readonly uint m_Id;
         private readonly Dictionary<SolValue, SolValue> m_Table = new Dictionary<SolValue, SolValue>();
         private int m_N;
@@ -85,8 +85,7 @@ namespace SolScript.Interpreter.Types
                     throw new ArgumentNullException(nameof(key), "Debug -> Tried to set a null key as table element. This is NOT allowed!");
                 }
 #endif
-                bool valueIsNil = value.Type == SolNil.TYPE;
-                if (valueIsNil) {
+                if (value.Type == SolNil.TYPE) {
                     m_Table.Remove(key);
                 } else {
                     m_Table[key] = value;
@@ -231,6 +230,14 @@ namespace SolScript.Interpreter.Types
 
         #endregion
 
+        /// <summary>
+        ///     Clears all data in this <see cref="SolTable" />.
+        /// </summary>
+        public void Clear()
+        {
+            m_Table.Clear();
+        }
+
         private Array CreateArray(Type elementType)
         {
             Array array = Array.CreateInstance(elementType, Count);
@@ -251,7 +258,7 @@ namespace SolScript.Interpreter.Types
         [CanBeNull]
         public SolValue GetIfDefined(string key)
         {
-            return GetIfDefined(SolString.ValueOf(key));
+            return GetIfDefined((SolValue) SolString.ValueOf(key));
         }
 
         [CanBeNull]

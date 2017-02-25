@@ -36,3 +36,4 @@ E:\Data\Development\SolScript\SolScript_Library\bin\Debug\Newtonsoft.Json.xml
 E:\Data\Development\SolScript\SolScript_Library\obj\Debug\SolScript_Library.dll
 E:\Data\Development\SolScript\SolScript_Library\obj\Debug\SolScript_Library.pdb
 E:\Data\Development\SolScript\SolScript_Library\obj\Debug\SolScript_Library.csprojResolveAssemblyReference.cache
+E:\Data\Development\SolScript\SolScript_Library\bin\Debug\SolScript_Library.XML

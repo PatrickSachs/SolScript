@@ -27,7 +27,7 @@ namespace SolScript.Interpreter
         protected override bool ValidateFunctionDefinition(SolFunctionDefinition definition)
         {
             // Local functions can only be accessed from where they are defined in.
-            if (definition.AccessModifier == AccessModifier.Local) {
+            if (definition.AccessModifier == SolAccessModifier.Local) {
                 return definition.DefinedIn == Definition;
             }
             // Internal and global will be treated by the internal/global variables.

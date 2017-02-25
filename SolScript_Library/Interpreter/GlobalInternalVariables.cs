@@ -8,7 +8,7 @@ namespace SolScript.Interpreter
 
         protected override bool ValidateFunctionDefinition(SolFunctionDefinition definition)
         {
-            return definition.AccessModifier == AccessModifier.Internal;
+            return definition.AccessModifier == SolAccessModifier.Internal;
         }
 
         public override IVariables GetParent()

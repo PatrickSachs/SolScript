@@ -331,44 +331,52 @@ namespace SolScript.Interpreter.Types
             // The function is already recceived at this point
             // so that we can create a fake stack-frame helping
             // out with error reporting.
-            // todo: add dummy function if no ctor could be found? (or somehow else help with debugging if no ctor)
-            SolFunction ctorFunction = null;
-            SolClassDefinition.MetaFunctionLink link;
-            if (TryGetMetaFunction(SolMetaKey.Constructor, out link)) {
-                ctorFunction = link.GetFunction(this);
-                callingContext.PushStackFrame(ctorFunction);
+            SolFunction ctorFunction;
+            try {
+                SolClassDefinition.MetaFunctionLink link;
+                // If the constructor could not be found, we add a dummy function in order to have a stack trace.
+                ctorFunction = TryGetMetaFunction(SolMetaKey.Constructor, out link) ? link.GetFunction(this) : SolFunction.Dummy(Assembly);
+            } catch (SolVariableException ex) {
+                throw new InvalidOperationException($"The constructor of \"{Type}\" was in an invalid state.", ex);
             }
+            callingContext.PushStackFrame(ctorFunction);
             // ===========================================
             // __a_pre_new
             foreach (SolClass annotation in AnnotationsArray) {
                 SolValue[] rawArgs = args;
-                SolClassDefinition.MetaFunctionLink preLink;
-                if (annotation.TryGetMetaFunction(SolMetaKey.AnnotationPreConstructor, out preLink)) {
-                    SolTable metaTable = SolMetaKey.AnnotationPreConstructor.Cast(preLink.GetFunction(annotation).Call(callingContext, new SolTable(args), new SolTable(rawArgs))).NotNull();
-                    SolValue metaNewArgsRaw;
-                    if (metaTable.TryGet("new_args", out metaNewArgsRaw)) {
-                        SolTable metaNewArgs = metaNewArgsRaw as SolTable;
-                        if (metaNewArgs == null) {
-                            throw new SolRuntimeException(callingContext,
-                                $"The annotation \"{annotation}\" tried to override the constructor arguments of a class instance of type \"{Type}\" with a \"{metaNewArgsRaw.Type}\" value. Expected a \"table!\" value.");
+                try {
+                    SolClassDefinition.MetaFunctionLink preLink;
+                    if (annotation.TryGetMetaFunction(SolMetaKey.AnnotationPreConstructor, out preLink)) {
+                        SolTable metaTable = SolMetaKey.AnnotationPreConstructor.Cast(preLink.GetFunction(annotation).Call(callingContext, new SolTable(args), new SolTable(rawArgs))).NotNull();
+                        SolValue metaNewArgsRaw;
+                        if (metaTable.TryGet("new_args", out metaNewArgsRaw)) {
+                            SolTable metaNewArgs = metaNewArgsRaw as SolTable;
+                            if (metaNewArgs == null) {
+                                throw new SolRuntimeException(callingContext,
+                                    $"The annotation \"{annotation}\" tried to override the constructor arguments of a class instance of type \"{Type}\" with a \"{metaNewArgsRaw.Type}\" value. Expected a \"table!\" value.");
+                            }
+                            args = metaNewArgs.ToArray();
                         }
-                        args = metaNewArgs.ToArray();
                     }
+                } catch (SolVariableException ex) {
+                    throw new InvalidOperationException($"The pre-constructor function of annotation \"{annotation.Type}\" on \"{Type}\" was in an invalid state.", ex);
                 }
             }
             // ===========================================
             // Call actual constructor function
-            if (ctorFunction != null) {
-                // Remove the previously added fake stack frame.
-                callingContext.PopStackFrame();
-                ctorFunction.Call(callingContext, args);
-            }
+            // Remove the previously added fake stack frame.
+            callingContext.PopStackFrame();
+            ctorFunction.Call(callingContext, args);
             // ===========================================
             // __a_post_new
             foreach (SolClass annotation in AnnotationsArray) {
-                SolClassDefinition.MetaFunctionLink postLink;
-                if (annotation.TryGetMetaFunction(SolMetaKey.AnnotationPostConstructor, out postLink)) {
-                    postLink.GetFunction(annotation).Call(callingContext, new SolTable(args));
+                try {
+                    SolClassDefinition.MetaFunctionLink postLink;
+                    if (annotation.TryGetMetaFunction(SolMetaKey.AnnotationPostConstructor, out postLink)) {
+                        postLink.GetFunction(annotation).Call(callingContext, new SolTable(args));
+                    }
+                } catch (SolVariableException ex) {
+                    throw new InvalidOperationException($"The post-constructor function of annotation \"{annotation.Type}\" on \"{Type}\" was in an invalid state.", ex);
                 }
             }
         }
