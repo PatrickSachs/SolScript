@@ -1,11 +1,12 @@
 ﻿using System;
 using JetBrains.Annotations;
+using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter
 {
     /// <summary>
     ///     This class is used to provide some customization features when creation the class. You can either use the
-    ///     <see cref="Default" /> options which will create the class as you would expect, or further hook into the
+    ///     <see cref="Default()" /> options which will create the class as you would expect, or further hook into the
     ///     functionality by either creating a new instance of the <see cref="Customizable" /> subclass providing a
     ///     builder-style class.
     /// </summary>
@@ -59,6 +60,11 @@ namespace SolScript.Interpreter
         public abstract bool EnforceCreation { get; }
 
         /// <summary>
+        ///     Should the class be marked as <see cref="SolClass.IsInitialized" />?
+        /// </summary>
+        public abstract bool MarkAsInitialized { get; }
+
+        /// <summary>
         ///     Setting a value to this context will allow you to specify a context that will be used to instantiate the class.
         ///     This improves stak trace quality for easier debugging. If this value is null a new context will be created.
         /// </summary>
@@ -90,6 +96,7 @@ namespace SolScript.Interpreter
             private bool m_DeclareNativeFields = true;
             private bool m_DeclareScriptFields = true;
             private bool m_EnforceCreation;
+            private bool m_MarkAsInitialized = true;
 
             /// <inheritdoc />
             public override bool DeclareNativeFields => m_DeclareNativeFields;
@@ -114,6 +121,9 @@ namespace SolScript.Interpreter
 
             /// <inheritdoc />
             public override SolExecutionContext CallingContext => m_CallingContext;
+
+            /// <inheritdoc />
+            public override bool MarkAsInitialized => m_MarkAsInitialized;
 
             /// <inheritdoc cref="DeclareNativeFields" />
             public Customizable SetDeclareNativeFields(bool value)
@@ -181,6 +191,13 @@ namespace SolScript.Interpreter
                 m_CallingContext = value;
                 return this;
             }
+
+            /// <inheritdoc cref="MarkAsInitialized" />
+            public Customizable SetMarkAsInitialized(bool value)
+            {
+                m_MarkAsInitialized = value;
+                return this;
+            }
         }
 
         #endregion
@@ -218,6 +235,9 @@ namespace SolScript.Interpreter
 
             /// <inheritdoc />
             public override SolExecutionContext CallingContext => null;
+
+            /// <inheritdoc />
+            public override bool MarkAsInitialized => true;
         }
 
         #endregion

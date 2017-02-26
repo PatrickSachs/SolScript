@@ -69,7 +69,7 @@ namespace SolScript.Interpreter.Types.Implementation
         {
             DynamicReference.GetState getState;
             object target = m_Instance.GetReference(out getState);
-            if (getState == DynamicReference.GetState.NotRetrieved) {
+            if (getState != DynamicReference.GetState.Retrieved) {
                 throw new InvalidOperationException($"Failed to retieve native object reference for native lamda function \"{m_Method.Name}\".");
             }
             object[] nativeArgs;

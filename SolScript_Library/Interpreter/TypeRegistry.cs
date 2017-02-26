@@ -432,7 +432,7 @@ namespace SolScript.Interpreter
                     throw new SolTypeRegistryException($"An error occured while calling the constructor of class \"{definition.Type}\".", ex);
                 }
             }
-            instance.IsInitialized = true;
+            instance.IsInitialized = options.MarkAsInitialized;
             return instance;
         }
 

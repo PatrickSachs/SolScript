@@ -13,7 +13,10 @@ namespace SolScript.Interpreter
         public GlobalVariable(SolAssembly assembly) : base(assembly) {}
 
         // These options will be used for creating a singeton. Their creation will need to be enforced since they are not creatable.
-        private static readonly ClassCreationOptions s_SingletonClassCreationOptions = new ClassCreationOptions.Customizable().SetEnforceCreation(true).SetCallConstructor(false);
+        private static readonly ClassCreationOptions s_SingletonClassCreationOptions = new ClassCreationOptions.Customizable()
+            .SetEnforceCreation(true)
+            .SetCallConstructor(false)
+            .SetMarkAsInitialized(false);
 
         #region Overrides
 
@@ -31,7 +34,6 @@ namespace SolScript.Interpreter
                         SolDebug.WriteLine("Creating \"" + definition.Type + "\" singleton for variable \"" + name + "\" ... ");
                         try {
                             SolClass instance = Assembly.TypeRegistry.CreateInstance(definition, s_SingletonClassCreationOptions);
-                            instance.IsInitialized = false;
                             return instance;
                         } catch (SolTypeRegistryException ex) {
                             throw new SolVariableException("Failed to create singleton instance \"" + definition.Type + "\".", ex);

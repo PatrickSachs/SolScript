@@ -453,6 +453,14 @@ namespace SolScript.Interpreter
                         // If the method threw a proper runtime exception we'll just let it bubble through.
                         throw (SolRuntimeException) ex.InnerException;
                     }
+                    if (ex.InnerException is SolRuntimeNativeException) {
+                        SolRuntimeNativeException native = (SolRuntimeNativeException) ex.InnerException;
+                        // ReSharper disable once ThrowFromCatchWithNoInnerException
+                        // Throwing with inner exception since we want to "convert" the NativeRuntime-
+                        // Exception and swallow the InvocationException.
+                        throw new SolRuntimeException(context, native.Message, native.InnerException);
+                    }
+                    // ReSharper disable once ThrowFromCatchWithNoInnerException
                     // Throwing with inner exception since we want to have the error message that created the 
                     // TargetInvocationException and not the target invocation exception itself.
                     throw new SolRuntimeException(context, "A native exception occured while calling this instance function.", ex.InnerException);
