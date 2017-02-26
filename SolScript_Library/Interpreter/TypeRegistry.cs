@@ -37,6 +37,9 @@ namespace SolScript.Interpreter
         private readonly Dictionary<string, SolFunctionDefinition> m_GlobalFunctions = new Dictionary<string, SolFunctionDefinition>();
 
         private readonly Dictionary<Type, SolClassDefinition> m_NativeClasses = new Dictionary<Type, SolClassDefinition>();
+
+        // A helper lookup containing a type/defintion map of all singleton definitions.
+        private readonly Dictionary<string, SolClassDefinition> m_SingletonLookup = new Dictionary<string, SolClassDefinition>();
         private SolGlobalsBuilder m_GlobalsBuilder;
 
         public IReadOnlyCollection<KeyValuePair<string, SolFieldDefinition>> GlobalFieldPairs => m_GlobalFields;
@@ -173,7 +176,7 @@ namespace SolScript.Interpreter
         /// <exception cref="InvalidOperationException">The TypeRegistry is not in the required state.</exception>
         internal void AssetStateExactAndLower(State state, string message = "Invalid State!")
         {
-            if ((int)CurrentState > (int)state) {
+            if ((int) CurrentState > (int) state) {
                 throw new InvalidOperationException($"{message} - In State: {CurrentState}({(int) CurrentState}); Required State: {state}({(int) state}) or lower.");
             }
         }
@@ -224,6 +227,18 @@ namespace SolScript.Interpreter
         }
 
         /// <summary>
+        ///     Checks if the given name is a singleton type and returns the singleton definition if it is.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <param name="definition">The singleton definition. Only valid if the method returned true.</param>
+        /// <returns>true if the class with the given name is a singleton, false if not, or no class with this name exists at all.</returns>
+        [ContractAnnotation("definition:null => false")]
+        public bool IsSingleton(string name, out SolClassDefinition definition)
+        {
+            return m_SingletonLookup.TryGetValue(name, out definition);
+        }
+
+        /// <summary>
         ///     Creates the definitions(classes, global functions + fields) for this type registry. This will advance the state to
         ///     <see cref="State.GeneratedClassBodies" />.
         /// </summary>
@@ -239,6 +254,9 @@ namespace SolScript.Interpreter
                 if (builder.NativeType != null) {
                     def.NativeType = builder.NativeType;
                     m_NativeClasses.Add(builder.NativeType, def);
+                }
+                if (def.TypeMode == SolTypeMode.Singleton) {
+                    m_SingletonLookup.Add(def.Type, def);
                 }
                 m_ClassDefinitions.Add(builder.Name, def);
             }
@@ -380,10 +398,10 @@ namespace SolScript.Interpreter
                     if (wasDeclared) {
                         // Let's create the field annotations(If we actually have some to create).
                         if (options.CreateFieldAnnotations && fieldDefinition.Annotations.Count > 0) {
-                            SolClass[] fieldAnnotationInstances = new SolClass[fieldDefinition.Annotations.Count];
+                            var fieldAnnotationInstances = new SolClass[fieldDefinition.Annotations.Count];
                             for (int i = 0; i < fieldAnnotationInstances.Length; i++) {
                                 SolAnnotationDefinition fieldAnnotation = fieldDefinition.Annotations[i];
-                                SolValue[] values = new SolValue[fieldAnnotation.Arguments.Length];
+                                var values = new SolValue[fieldAnnotation.Arguments.Length];
                                 for (int v = 0; v < values.Length; v++) {
                                     values[v] = fieldAnnotation.Arguments[v].Evaluate(creationContext, activeInheritance.Variables);
                                 }

@@ -69,6 +69,7 @@
   <ItemGroup>
     <Compile Include="Interpreter\Expressions\Expression_Bool.cs" />
     <Compile Include="Interpreter\Expressions\Expression_Tertiary.cs" />
+    <Compile Include="Interpreter\GlobalVariablesBase.cs" />
     <Compile Include="SolError.cs" />
     <Compile Include="Compiler\SolScriptCompiler.cs" />
     <Compile Include="ErrorId.cs" />
@@ -113,8 +114,8 @@
     <Compile Include="Interpreter\Expressions\Expression_TableConstructor.cs" />
     <Compile Include="Interpreter\Expressions\Expression_Unary.cs" />
     <Compile Include="Interpreter\Expressions\TerminatingSolExpression.cs" />
-    <Compile Include="Interpreter\GlobalInternalVariables.cs" />
-    <Compile Include="Interpreter\GlobalLocalVariables.cs" />
+    <Compile Include="Interpreter\InternalVariables.cs" />
+    <Compile Include="Interpreter\LocalVariables.cs" />
     <Compile Include="Interpreter\GlobalVariables.cs" />
     <Compile Include="Interpreter\FieldOrPropertyInfo.cs" />
     <Compile Include="Interpreter\ISourceLocateable.cs" />
@@ -217,6 +218,7 @@
     <Compile Include="Parser\Terminals\SolScriptLongStringTerminal.cs" />
     <Compile Include="NamespaceDoc.cs" />
     <Compile Include="SolErrorCollection.cs" />
+    <Compile Include="ValueTypePair.cs" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

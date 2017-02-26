@@ -37,8 +37,6 @@ namespace SolScript.Interpreter
 
         // The Irony Grammar rules used for SolScript.
         private static readonly SolScriptGrammar s_Grammar = new SolScriptGrammar();
-        // These options will be used for creating a singeton. Their creation will need to be enforced since they are not creatable.
-        private static readonly ClassCreationOptions s_SingletonClassCreationOptions = new ClassCreationOptions.Customizable().SetEnforceCreation(true);
         // Errors can be added here.
         private readonly SolErrorCollection.Adder m_ErrorAdder;
         // All libraries registered in this Assembly.
@@ -339,9 +337,9 @@ namespace SolScript.Interpreter
         public SolAssembly Create()
         {
             SolExecutionContext context = new SolExecutionContext(this, Name + " initialization context");
-            GlobalVariables = new GlobalVariables(this);
-            InternalVariables = new GlobalInternalVariables(this);
-            LocalVariables = new GlobalLocalVariables(this);
+            GlobalVariables = new GlobalVariable(this);
+            InternalVariables = new InternalVariables(this);
+            LocalVariables = new LocalVariables(this);
             // todo: investigate either merging type registry and library or making it clearer, the separation seems a bit arbitrary.
             // Build class hulls, required in order to be able to have access too all types when building the bodies.
             foreach (SolLibrary library in m_Libraries) {
@@ -404,17 +402,6 @@ namespace SolScript.Interpreter
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
-                }
-            }
-            // Create singleton instances
-            // todo: investigate to create them lazily as as of now they are unable to use other singletons in their ctor.
-            foreach (SolClassDefinition classDef in TypeRegistry.ClassDefinitions.Where(c => c.TypeMode == SolTypeMode.Singleton)) {
-                SolDebug.WriteLine("Singleton: " + classDef.Type);
-                SolClass instance = TypeRegistry.CreateInstance(classDef, s_SingletonClassCreationOptions);
-                try {
-                    RegisterGlobal(instance.Type, instance, new SolType(classDef.Type, false));
-                } catch (SolVariableException ex) {
-                    throw new SolTypeRegistryException("Failed to register singleton instance \"" + classDef.Type + "\" as global variable.", ex);
                 }
             }
             return this;
