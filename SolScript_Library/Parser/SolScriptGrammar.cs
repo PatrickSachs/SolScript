@@ -27,7 +27,6 @@ namespace SolScript.Parser {
             DOT.Precedence = 5000;
             DOT.EditorInfo = new TokenEditorInfo(TokenType.Operator, TokenColor.Text, TokenTriggers.MemberSelect);
             // Colons are used to reference types. 
-            // todo: should this even be an operator?
             KeyTerm COLON = Operator(":");
             COLON.EditorInfo = new TokenEditorInfo(TokenType.Operator, TokenColor.Text, TokenTriggers.MemberSelect);
             // =======================================
@@ -141,10 +140,12 @@ namespace SolScript.Parser {
             // =======================================
             // === EXPRESSIONS
             NonTerminal Expression = new NonTerminal("Expression");
-            NonTerminal Expression_Binary = new NonTerminal("Expression_Binary");
-            NonTerminal Expression_Binary_Operand_trans = new NonTerminal("$BinaryExpression_Operand_trans");
             NonTerminal Expression_Unary = new NonTerminal("Expression_Unary");
             NonTerminal Expression_Unary_Operand_trans = new NonTerminal("$Expression_Unary_Operand_trans");
+            NonTerminal Expression_Binary = new NonTerminal("Expression_Binary");
+            NonTerminal Expression_Binary_Operand_trans = new NonTerminal("$BinaryExpression_Operand_trans");
+            NonTerminal Expression_Tertiary = new NonTerminal("Expression_Tertiary");
+            //NonTerminal Expression_Tertiary_Operand_trans = new NonTerminal("$Expression_Tertiary_Operand_trans");
             NonTerminal Expression_GetVariable = new NonTerminal("Expression_GetVariable");
             NonTerminal Expression_Bool = new NonTerminal("Expression_Bool");
             NonTerminal Expression_Nil = new NonTerminal("Expression_Nil");
@@ -348,6 +349,7 @@ namespace SolScript.Parser {
                 | _long_string
                 | Expression_Unary
                 | Expression_Binary
+                | Expression_Tertiary
                 | ELLIPSIS
                 | Expression_GetVariable
                 | Expression_CreateFunc
@@ -436,6 +438,11 @@ namespace SolScript.Parser {
             Expression_Binary.Rule =
                 Expression + Expression_Binary_Operand_trans + Expression
                 | ToTerm("(") + Expression + Expression_Binary_Operand_trans + Expression + ToTerm(")")
+                ;
+            // todo: find a better way to parse tertiary expressions
+            Expression_Tertiary.Rule =
+                Expression + ToTerm("?") + Expression + ToTerm(":") + Expression
+                | ToTerm("(") + Expression + ToTerm("?") + Expression + ToTerm(":") + Expression + ToTerm("(") 
                 ;
             Expression_Unary.Rule =
                 Expression_Unary_Operand_trans + Expression

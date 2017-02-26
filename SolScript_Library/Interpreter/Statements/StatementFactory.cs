@@ -480,11 +480,7 @@ namespace SolScript.Interpreter.Statements
             }
             SolExpression left = GetExpression(leftNode);
             SolExpression right = GetExpression(rightNode);
-            return new Expression_Binary(Assembly, new SolSourceLocation(ActiveFile, node.Span.Location)) {
-                Left = left,
-                Operation = operation,
-                Right = right
-            };
+            return new Expression_Binary(Assembly, new SolSourceLocation(ActiveFile, node.Span.Location), operation, left, right);
         }
 
         public SolExpression GetExpression(ParseTreeNode node)
@@ -506,7 +502,7 @@ namespace SolScript.Interpreter.Statements
                     return new Expression_String(Assembly, new SolSourceLocation(ActiveFile, expressionNode.Span.Location), text);
                 } // _string
                 case "_number": {
-                    return new Expression_Number(Assembly, new SolSourceLocation(ActiveFile, expressionNode.Span.Location), double.Parse(expressionNode.Token.ValueString));
+                    return new Expression_Number(Assembly, new SolSourceLocation(ActiveFile, expressionNode.Span.Location), new SolNumber(double.Parse(expressionNode.Token.ValueString)));
                 } // _number
                 case "Expression_Parenthetical": {
                     // This node is not transient since that would enable Expression->Expression 
@@ -603,6 +599,12 @@ namespace SolScript.Interpreter.Statements
                 case "Expression_Binary": {
                     return BinaryExpression(expressionNode);
                 }
+                case "Expression_Tertiary": {
+                    SolExpression condition = GetExpression(expressionNode.ChildNodes[0]);
+                    SolExpression trueValue = GetExpression(expressionNode.ChildNodes[2]);
+                    SolExpression falseValue = GetExpression(expressionNode.ChildNodes[4]);
+                    return new Expression_Tertiary(Assembly, new SolSourceLocation(ActiveFile, expressionNode.Span.Location), Expression_Tertiary.Conditional.Instance, condition, trueValue, falseValue);
+                }
                 case "Expression_Statement": {
                     SolStatement statement = GetStatement(expressionNode);
                     return new Expression_Statement(Assembly, new SolSourceLocation(ActiveFile, expressionNode.Span.Location)) {
@@ -619,10 +621,8 @@ namespace SolScript.Interpreter.Statements
                 case "Expression_TableConstructor": {
                     ParseTreeNode fieldListNode = expressionNode.ChildNodes[0];
                     int fieldCount = fieldListNode.ChildNodes.Count;
-                    Expression_TableConstructor tableCtor = new Expression_TableConstructor(Assembly, new SolSourceLocation(ActiveFile, expressionNode.Span.Location)) {
-                        Keys = new SolExpression[fieldCount],
-                        Values = new SolExpression[fieldCount]
-                    };
+                    var keys = new SolExpression[fieldCount];
+                    var values = new SolExpression[fieldCount];
                     int nextN = 0;
                     for (int i = 0; i < fieldCount; i++) {
                         // TableField
@@ -638,7 +638,7 @@ namespace SolScript.Interpreter.Statements
                         switch (fieldNode.ChildNodes.Count) {
                             case 1: {
                                 ParseTreeNode valueNode = fieldNode.ChildNodes[0];
-                                key = new Expression_Number(Assembly, new SolSourceLocation(ActiveFile, fieldNode.Span.Location), nextN++);
+                                key = new Expression_Number(Assembly, new SolSourceLocation(ActiveFile, fieldNode.Span.Location), new SolNumber(nextN++));
                                 value = GetExpression(valueNode);
                                 break;
                             }
@@ -667,10 +667,10 @@ namespace SolScript.Interpreter.Statements
                                     "Invalid table initializer format. A table field must either be in the form of 'X = Y' or 'X'.");
                             }
                         }
-                        tableCtor.Keys[i] = key;
-                        tableCtor.Values[i] = value;
+                        keys[i] = key;
+                        values[i] = value;
                     }
-                    return tableCtor;
+                    return new Expression_TableConstructor(Assembly, new SolSourceLocation(ActiveFile, expressionNode.Span.Location), keys, values);
                 }
                 case "Expression_Bool": {
                     switch (expressionNode.ChildNodes[0].Term.Name) {

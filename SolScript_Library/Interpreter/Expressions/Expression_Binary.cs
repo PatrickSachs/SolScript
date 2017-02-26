@@ -1,46 +1,57 @@
-﻿using Irony.Parsing;
-using SolScript.Interpreter.Types;
+﻿using SolScript.Interpreter.Types;
 
-namespace SolScript.Interpreter.Expressions {
-    public class Expression_Binary : SolExpression {
-        public Expression_Binary(SolAssembly assembly, SolSourceLocation location) : base(assembly, location) {
+namespace SolScript.Interpreter.Expressions
+{
+    /// <summary>
+    ///     A binary expression is made out of two expressions and one operation evaluating them.
+    /// </summary>
+    public class Expression_Binary : SolExpression
+    {
+        /// <inheritdoc />
+        public Expression_Binary(SolAssembly assembly, SolSourceLocation location, OperationRef operation, SolExpression first, SolExpression second) : base(assembly, location)
+        {
+            Operation = operation;
+            First = first;
+            Second = second;
         }
 
-        public SolExpression Left;
-        public OperationRef Operation;
-        public SolExpression Right;
+        /// <summary>
+        ///     The first expression.
+        /// </summary>
+        public readonly SolExpression First;
+
+        /// <summary>
+        ///     The operation resolving the two expressions.
+        /// </summary>
+        public readonly OperationRef Operation;
+
+        /// <summary>
+        ///     The second expression.
+        /// </summary>
+        public readonly SolExpression Second;
 
         #region Overrides
 
-        public override SolValue Evaluate(SolExecutionContext context, IVariables parentVariables) {
+        /// <inheritdoc />
+        public override SolValue Evaluate(SolExecutionContext context, IVariables parentVariables)
+        {
             context.CurrentLocation = Location;
-            return Operation.Perform(Left.Evaluate(context, parentVariables), Right.Evaluate(context, parentVariables), context);
+            return Operation.Perform(First.Evaluate(context, parentVariables), Second.Evaluate(context, parentVariables), context);
         }
 
-        protected override string ToString_Impl() {
-            return $"{Left} {Operation.Name} {Right}";
+        /// <inheritdoc />
+        protected override string ToString_Impl()
+        {
+            return $"{First} {Operation.Name} {Second}";
         }
 
         #endregion
 
-        public class NilCoalescing : OperationRef
-        {
-            private NilCoalescing()
-            {
-            }
-
-            public static readonly NilCoalescing Instance = new NilCoalescing();
-            public override string Name => "??";
-            public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context) {
-                return left.IsEqual(context, SolNil.Instance) ? right : left;
-            }
-        }
-
         #region Nested type: Addition
 
-        public class Addition : OperationRef {
-            private Addition() {
-            }
+        public class Addition : OperationRef
+        {
+            private Addition() {}
 
             public static readonly Addition Instance = new Addition();
 
@@ -48,7 +59,8 @@ namespace SolScript.Interpreter.Expressions {
 
             #region Overrides
 
-            public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context) {
+            public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context)
+            {
                 return left.Add(context, right);
             }
 
@@ -59,16 +71,17 @@ namespace SolScript.Interpreter.Expressions {
 
         #region Nested type: And
 
-        public class And : OperationRef {
-            private And() {
-            }
+        public class And : OperationRef
+        {
+            private And() {}
 
             public static readonly And Instance = new And();
             public override string Name => "&&";
 
             #region Overrides
 
-            public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context) {
+            public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context)
+            {
                 return left.And(context, right);
             }
 
@@ -79,16 +92,17 @@ namespace SolScript.Interpreter.Expressions {
 
         #region Nested type: CompareEqual
 
-        public class CompareEqual : OperationRef {
-            private CompareEqual() {
-            }
+        public class CompareEqual : OperationRef
+        {
+            private CompareEqual() {}
 
             public static readonly CompareEqual Instance = new CompareEqual();
             public override string Name => "==";
 
             #region Overrides
 
-            public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context) {
+            public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context)
+            {
                 return SolBool.ValueOf(left.IsEqual(context, right));
             }
 
@@ -99,16 +113,17 @@ namespace SolScript.Interpreter.Expressions {
 
         #region Nested type: CompareGreater
 
-        public class CompareGreater : OperationRef {
-            private CompareGreater() {
-            }
+        public class CompareGreater : OperationRef
+        {
+            private CompareGreater() {}
 
             public static readonly CompareGreater Instance = new CompareGreater();
             public override string Name => ">";
 
             #region Overrides
 
-            public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context) {
+            public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context)
+            {
                 return SolBool.ValueOf(left.GreaterThan(context, right));
             }
 
@@ -119,9 +134,9 @@ namespace SolScript.Interpreter.Expressions {
 
         #region Nested type: CompareGreaterOrEqual
 
-        public class CompareGreaterOrEqual : OperationRef {
-            private CompareGreaterOrEqual() {
-            }
+        public class CompareGreaterOrEqual : OperationRef
+        {
+            private CompareGreaterOrEqual() {}
 
             public static readonly CompareGreaterOrEqual Instance = new CompareGreaterOrEqual();
 
@@ -129,7 +144,8 @@ namespace SolScript.Interpreter.Expressions {
 
             #region Overrides
 
-            public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context) {
+            public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context)
+            {
                 return SolBool.ValueOf(left.GreaterThanOrEqual(context, right));
             }
 
@@ -140,16 +156,17 @@ namespace SolScript.Interpreter.Expressions {
 
         #region Nested type: CompareNotEqual
 
-        public class CompareNotEqual : OperationRef {
-            private CompareNotEqual() {
-            }
+        public class CompareNotEqual : OperationRef
+        {
+            private CompareNotEqual() {}
 
             public static readonly CompareNotEqual Instance = new CompareNotEqual();
             public override string Name => "!=";
 
             #region Overrides
 
-            public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context) {
+            public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context)
+            {
                 return SolBool.ValueOf(left.NotEqual(context, right));
             }
 
@@ -160,9 +177,9 @@ namespace SolScript.Interpreter.Expressions {
 
         #region Nested type: CompareSmaller
 
-        public class CompareSmaller : OperationRef {
-            private CompareSmaller() {
-            }
+        public class CompareSmaller : OperationRef
+        {
+            private CompareSmaller() {}
 
             public static readonly CompareSmaller Instance = new CompareSmaller();
 
@@ -170,7 +187,8 @@ namespace SolScript.Interpreter.Expressions {
 
             #region Overrides
 
-            public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context) {
+            public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context)
+            {
                 return SolBool.ValueOf(left.SmallerThan(context, right));
             }
 
@@ -181,9 +199,9 @@ namespace SolScript.Interpreter.Expressions {
 
         #region Nested type: CompareSmallerOrEqual
 
-        public class CompareSmallerOrEqual : OperationRef {
-            private CompareSmallerOrEqual() {
-            }
+        public class CompareSmallerOrEqual : OperationRef
+        {
+            private CompareSmallerOrEqual() {}
 
             public static readonly CompareSmallerOrEqual Instance = new CompareSmallerOrEqual();
 
@@ -191,7 +209,8 @@ namespace SolScript.Interpreter.Expressions {
 
             #region Overrides
 
-            public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context) {
+            public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context)
+            {
                 return SolBool.ValueOf(left.SmallerThanOrEqual(context, right));
             }
 
@@ -203,16 +222,17 @@ namespace SolScript.Interpreter.Expressions {
         #region Nested type: Concatenation
 
         /// <remarks> Note: This operation is right-associative </remarks>
-        public class Concatenation : OperationRef {
-            private Concatenation() {
-            }
+        public class Concatenation : OperationRef
+        {
+            private Concatenation() {}
 
             public static readonly Concatenation Instance = new Concatenation();
             public override string Name => "..";
 
             #region Overrides
 
-            public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context) {
+            public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context)
+            {
                 return left.Concatenate(context, right);
             }
 
@@ -223,16 +243,17 @@ namespace SolScript.Interpreter.Expressions {
 
         #region Nested type: Division
 
-        public class Division : OperationRef {
-            private Division() {
-            }
+        public class Division : OperationRef
+        {
+            private Division() {}
 
             public static readonly Division Instance = new Division();
             public override string Name => "/";
 
             #region Overrides
 
-            public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context) {
+            public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context)
+            {
                 return left.Divide(context, right);
             }
 
@@ -244,9 +265,9 @@ namespace SolScript.Interpreter.Expressions {
         #region Nested type: Exponentiation
 
         /// <remarks> Note: This operation is right-associative </remarks>
-        public class Exponentiation : OperationRef {
-            private Exponentiation() {
-            }
+        public class Exponentiation : OperationRef
+        {
+            private Exponentiation() {}
 
             public static readonly Exponentiation Instance = new Exponentiation();
 
@@ -254,7 +275,8 @@ namespace SolScript.Interpreter.Expressions {
 
             #region Overrides
 
-            public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context) {
+            public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context)
+            {
                 return left.Exponentiate(context, right);
             }
 
@@ -265,16 +287,17 @@ namespace SolScript.Interpreter.Expressions {
 
         #region Nested type: Modulus
 
-        public class Modulus : OperationRef {
-            private Modulus() {
-            }
+        public class Modulus : OperationRef
+        {
+            private Modulus() {}
 
             public static readonly Modulus Instance = new Modulus();
             public override string Name => "%";
 
             #region Overrides
 
-            public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context) {
+            public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context)
+            {
                 return left.Modulo(context, right);
             }
 
@@ -285,9 +308,9 @@ namespace SolScript.Interpreter.Expressions {
 
         #region Nested type: Multiplication
 
-        public class Multiplication : OperationRef {
-            private Multiplication() {
-            }
+        public class Multiplication : OperationRef
+        {
+            private Multiplication() {}
 
             public static readonly Multiplication Instance = new Multiplication();
 
@@ -295,8 +318,31 @@ namespace SolScript.Interpreter.Expressions {
 
             #region Overrides
 
-            public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context) {
+            public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context)
+            {
                 return left.Multiply(context, right);
+            }
+
+            #endregion
+        }
+
+        #endregion
+
+        #region Nested type: NilCoalescing
+
+        // todo: lazy eval for binary operations (e.g. null coal.)
+        public class NilCoalescing : OperationRef
+        {
+            private NilCoalescing() {}
+
+            public static readonly NilCoalescing Instance = new NilCoalescing();
+            public override string Name => "??";
+
+            #region Overrides
+
+            public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context)
+            {
+                return left.IsEqual(context, SolNil.Instance) ? right : left;
             }
 
             #endregion
@@ -306,7 +352,8 @@ namespace SolScript.Interpreter.Expressions {
 
         #region Nested type: OperationRef
 
-        public abstract class OperationRef {
+        public abstract class OperationRef
+        {
             public abstract string Name { get; }
             public abstract SolValue Perform(SolValue left, SolValue right, SolExecutionContext context);
         }
@@ -315,16 +362,17 @@ namespace SolScript.Interpreter.Expressions {
 
         #region Nested type: Or
 
-        public class Or : OperationRef {
-            private Or() {
-            }
+        public class Or : OperationRef
+        {
+            private Or() {}
 
             public static readonly Or Instance = new Or();
             public override string Name => "||";
 
             #region Overrides
 
-            public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context) {
+            public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context)
+            {
                 return left.Or(context, right);
             }
 
@@ -335,16 +383,17 @@ namespace SolScript.Interpreter.Expressions {
 
         #region Nested type: Substraction
 
-        public class Substraction : OperationRef {
-            private Substraction() {
-            }
+        public class Substraction : OperationRef
+        {
+            private Substraction() {}
 
             public static readonly Substraction Instance = new Substraction();
             public override string Name => "-";
 
             #region Overrides
 
-            public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context) {
+            public override SolValue Perform(SolValue left, SolValue right, SolExecutionContext context)
+            {
                 return left.Subtract(context, right);
             }
 

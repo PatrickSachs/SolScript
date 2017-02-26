@@ -68,6 +68,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Interpreter\Expressions\Expression_Bool.cs" />
+    <Compile Include="Interpreter\Expressions\Expression_Tertiary.cs" />
     <Compile Include="SolError.cs" />
     <Compile Include="Compiler\SolScriptCompiler.cs" />
     <Compile Include="ErrorId.cs" />
@@ -76,7 +77,6 @@
     <Compile Include="Interpreter\Builders\SolBuilderBase.cs" />
     <Compile Include="Interpreter\Exceptions\SolRuntimeNativeException.cs" />
     <Compile Include="Interpreter\IPriority.cs" />
-    <Compile Include="Interpreter\Library\Annotations\TestF.cs" />
     <Compile Include="Interpreter\PriorityComparer.cs" />
     <Compile Include="Interpreter\SolAnnotateableDefinitionBase.cs" />
     <Compile Include="Interpreter\SolAssemblyOptions.cs" />
@@ -120,8 +120,6 @@
     <Compile Include="Interpreter\ISourceLocateable.cs" />
     <Compile Include="Interpreter\IWrittenInClass.cs" />
     <Compile Include="Interpreter\IVariables.cs" />
-    <Compile Include="Interpreter\Library\Annotations\PreCtorTest.cs" />
-    <Compile Include="Interpreter\Library\Annotations\ReadOnlyAnnotation.cs" />
     <Compile Include="Libraries\lang\lang.cs" />
     <Compile Include="Libraries\lang\lang_Globals.cs" />
     <Compile Include="Libraries\os\os.cs" />
@@ -132,7 +130,6 @@
     <Compile Include="Libraries\std\std_Stream.cs" />
     <Compile Include="Libraries\std\std_IO.cs" />
     <Compile Include="Libraries\std\std_Reflect.cs" />
-    <Compile Include="Libraries\std\TestClass.cs" />
     <Compile Include="Interpreter\Library\SolContractAttribute.cs" />
     <Compile Include="Interpreter\Library\SolGlobalAttribute.cs" />
     <Compile Include="Interpreter\Library\SolLibraryAccessModifierAttribute.cs" />

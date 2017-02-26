@@ -82,21 +82,21 @@ namespace SolScript.Interpreter
         public static bool IsOpenGenericAction(Type type)
         {
             if (type.ContainsGenericParameters) {
-                throw new ArgumentException("The type is not an open geneic type.", nameof(type));
+                throw new ArgumentException("The type is not an open generic type.", nameof(type));
             }
             return ActionGenericTypes.Contains(type);
         }
 
         /// <summary>
-        ///     Checks if <paramref name="mainArray" /> contains <see cref="contentArray" /> starting at index
-        ///     <see cref="mainStartIndex" />.
+        ///     Checks if <paramref name="mainArray" /> contains <paramref name="contentArray" /> starting at index
+        ///     <paramref name="mainStartIndex" />.
         /// </summary>
         /// <typeparam name="T">The array type.</typeparam>
         /// <param name="mainArray">The array to check for contents.</param>
         /// <param name="contentArray">The content array.</param>
-        /// <param name="mainStartIndex">The index in <see cref="mainArray" /> <see cref="contentArray" /> has to start at.</param>
+        /// <param name="mainStartIndex">The index in <paramref name="mainArray" /> <paramref name="contentArray" /> has to start at.</param>
         /// <param name="referenceEquals">If this is true values will be compared by reference, if false by equality.</param>
-        /// <returns>true if <see cref="mainArray" /> contained <see cref="contentArray" />, false if not.</returns>
+        /// <returns>true if <paramref name="mainArray" /> contained <paramref name="contentArray" />, false if not.</returns>
         public static bool ArrayContainsAt<T>(T[] mainArray, T[] contentArray, int mainStartIndex = 0, bool referenceEquals = true)
         {
             if (mainArray.Length < contentArray.Length + mainStartIndex) {
