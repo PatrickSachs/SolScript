@@ -109,14 +109,14 @@ namespace SolScript.Libraries.std
 
         /// <inheritdoc cref="double.IsInfinity" />
         [SolContract(SolBool.TYPE, false)]
-        public SolBool is_infinity([SolContract(SolBool.TYPE, false)] SolNumber value)
+        public SolBool is_infinity([SolContract(SolNumber.TYPE, false)] SolNumber value)
         {
             return SolBool.ValueOf(double.IsInfinity(value.Value));
         }
 
         /// <inheritdoc cref="Math.Sin" />
         [SolContract(SolNumber.TYPE, false)]
-        public SolNumber sin([SolContract(SolBool.TYPE, false)] SolNumber value)
+        public SolNumber sin([SolContract(SolNumber.TYPE, false)] SolNumber value)
         {
             return new SolNumber(Math.Sin(value.Value));
         }
@@ -124,7 +124,7 @@ namespace SolScript.Libraries.std
 
         /// <inheritdoc cref="Math.Sinh" />
         [SolContract(SolNumber.TYPE, false)]
-        public SolNumber sinh([SolContract(SolBool.TYPE, false)] SolNumber value)
+        public SolNumber sinh([SolContract(SolNumber.TYPE, false)] SolNumber value)
         {
             return new SolNumber(Math.Sinh(value.Value));
         }
@@ -132,7 +132,7 @@ namespace SolScript.Libraries.std
 
         /// <inheritdoc cref="Math.Asin" />
         [SolContract(SolNumber.TYPE, false)]
-        public SolNumber asin([SolContract(SolBool.TYPE, false)] SolNumber value)
+        public SolNumber asin([SolContract(SolNumber.TYPE, false)] SolNumber value)
         {
             return new SolNumber(Math.Asin(value.Value));
         }
@@ -140,7 +140,7 @@ namespace SolScript.Libraries.std
 
         /// <inheritdoc cref="Math.Cos" />
         [SolContract(SolNumber.TYPE, false)]
-        public SolNumber cos([SolContract(SolBool.TYPE, false)] SolNumber value)
+        public SolNumber cos([SolContract(SolNumber.TYPE, false)] SolNumber value)
         {
             return new SolNumber(Math.Cos(value.Value));
         }
@@ -148,7 +148,7 @@ namespace SolScript.Libraries.std
 
         /// <inheritdoc cref="Math.Cosh" />
         [SolContract(SolNumber.TYPE, false)]
-        public SolNumber cosh([SolContract(SolBool.TYPE, false)] SolNumber value)
+        public SolNumber cosh([SolContract(SolNumber.TYPE, false)] SolNumber value)
         {
             return new SolNumber(Math.Cosh(value.Value));
         }
@@ -156,7 +156,7 @@ namespace SolScript.Libraries.std
 
         /// <inheritdoc cref="Math.Acos" />
         [SolContract(SolNumber.TYPE, false)]
-        public SolNumber acos([SolContract(SolBool.TYPE, false)] SolNumber value)
+        public SolNumber acos([SolContract(SolNumber.TYPE, false)] SolNumber value)
         {
             return new SolNumber(Math.Acos(value.Value));
         }
@@ -164,7 +164,7 @@ namespace SolScript.Libraries.std
 
         /// <inheritdoc cref="Math.Tan" />
         [SolContract(SolNumber.TYPE, false)]
-        public SolNumber tan([SolContract(SolBool.TYPE, false)] SolNumber value)
+        public SolNumber tan([SolContract(SolNumber.TYPE, false)] SolNumber value)
         {
             return new SolNumber(Math.Tan(value.Value));
         }
@@ -172,7 +172,7 @@ namespace SolScript.Libraries.std
 
         /// <inheritdoc cref="Math.Tanh" />
         [SolContract(SolNumber.TYPE, false)]
-        public SolNumber tanh([SolContract(SolBool.TYPE, false)] SolNumber value)
+        public SolNumber tanh([SolContract(SolNumber.TYPE, false)] SolNumber value)
         {
             return new SolNumber(Math.Tanh(value.Value));
         }
@@ -180,7 +180,7 @@ namespace SolScript.Libraries.std
 
         /// <inheritdoc cref="Math.Atan" />
         [SolContract(SolNumber.TYPE, false)]
-        public SolNumber atan([SolContract(SolBool.TYPE, false)] SolNumber value)
+        public SolNumber atan([SolContract(SolNumber.TYPE, false)] SolNumber value)
         {
             return new SolNumber(Math.Atan(value.Value));
         }
@@ -188,7 +188,7 @@ namespace SolScript.Libraries.std
 
         /// <inheritdoc cref="Math.Abs(double)" />
         [SolContract(SolNumber.TYPE, false)]
-        public SolNumber abs([SolContract(SolBool.TYPE, false)] SolNumber value)
+        public SolNumber abs([SolContract(SolNumber.TYPE, false)] SolNumber value)
         {
             return new SolNumber(Math.Abs(value.Value));
         }
@@ -196,7 +196,7 @@ namespace SolScript.Libraries.std
 
         /// <inheritdoc cref="Math.Ceiling(double)" />
         [SolContract(SolNumber.TYPE, false)]
-        public SolNumber ceil([SolContract(SolBool.TYPE, false)] SolNumber value)
+        public SolNumber ceil([SolContract(SolNumber.TYPE, false)] SolNumber value)
         {
             return new SolNumber(Math.Ceiling(value.Value));
         }
@@ -204,7 +204,7 @@ namespace SolScript.Libraries.std
 
         /// <inheritdoc cref="Math.Floor(double)" />
         [SolContract(SolNumber.TYPE, false)]
-        public SolNumber floor([SolContract(SolBool.TYPE, false)] SolNumber value)
+        public SolNumber floor([SolContract(SolNumber.TYPE, false)] SolNumber value)
         {
             return new SolNumber(Math.Floor(value.Value));
         }
@@ -235,7 +235,7 @@ namespace SolScript.Libraries.std
 
         /// <inheritdoc cref="Math.Exp(double)" />
         [SolContract(SolNumber.TYPE, false)]
-        public SolNumber exp([SolContract(SolBool.TYPE, false)] SolNumber value)
+        public SolNumber exp([SolContract(SolNumber.TYPE, false)] SolNumber value)
         {
             return new SolNumber(Math.Exp(value.Value));
         }
@@ -245,7 +245,7 @@ namespace SolScript.Libraries.std
         /// <param name="d">The <see cref="SolNumber" /> whose logarithm is to be found. </param>
         /// <param name="newBase">(Optional) The base of the logarithm. </param>
         [SolContract(SolNumber.TYPE, false)]
-        public SolNumber log([SolContract(SolBool.TYPE, false)] SolNumber d, [SolContract(SolNumber.TYPE, true)] [CanBeNull] SolNumber newBase)
+        public SolNumber log([SolContract(SolNumber.TYPE, false)] SolNumber d, [SolContract(SolNumber.TYPE, true)] [CanBeNull] SolNumber newBase)
         {
             if (!newBase.IsNil()) {
                 return new SolNumber(Math.Log(d.Value, newBase.NotNull().Value));

@@ -19,8 +19,7 @@ namespace SolScript.Interpreter
     }
 
     #endregion
-
-
+    
     /// <summary> Interface all variable lookups must implement. </summary>
     public interface IVariables
     {
@@ -59,7 +58,7 @@ namespace SolScript.Interpreter
         ///     A variable with this name has already been declared.
         /// </exception>
         void Declare([NotNull] string name, SolType type);
-
+        
         /// <summary> Declares a native variable. </summary>
         /// <param name="name"> The name of the variable. </param>
         /// <param name="type">

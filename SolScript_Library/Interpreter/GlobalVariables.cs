@@ -1,17 +1,27 @@
 using System;
+using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
-using SolScript.Interpreter.Types.Implementation;
 
 namespace SolScript.Interpreter
 {
+    /// <summary>
+    ///     The global variables class is the base class for all variables registered in global context.
+    /// </summary>
     public class GlobalVariables : IVariables
     {
+        /// <summary>
+        ///     Creates a new global variables instance.
+        /// </summary>
+        /// <param name="assembly">The assembly the global variables belong to.</param>
         public GlobalVariables(SolAssembly assembly)
         {
             Members = new Variables(assembly);
         }
 
+        /// <summary>
+        ///     The member variables.
+        /// </summary>
         protected readonly Variables Members;
 
         #region IVariables Members
@@ -19,6 +29,10 @@ namespace SolScript.Interpreter
         /// <summary> The assembly this variable lookup belongs to. </summary>
         public SolAssembly Assembly => Members.Assembly;
 
+        /// <summary>
+        ///     The parent context. (read-only for <see cref="GlobalVariables" />).
+        /// </summary>
+        /// <exception cref="NotSupportedException" accessor="set">Cannot change the parent of global variables.</exception>
         public IVariables Parent {
             get { return GetParent(); }
             set { throw new NotSupportedException("Cannot change the parent of global variables."); }
@@ -51,10 +65,6 @@ namespace SolScript.Interpreter
                 // Functions are created lazily.
                 // todo: no more lazy function cration for globals, no real benifit in doing so.
                 return state;
-            }
-            value = AttemptFunctionCreation(name);
-            if (value != null) {
-                return VariableState.Success;
             }
             if (Parent != null) {
                 return Parent.TryGet(name, out value);
@@ -99,10 +109,6 @@ namespace SolScript.Interpreter
         /// <param name="annotations"> The annotations to assign to the variable. </param>
         public void AssignAnnotations(string name, params SolClass[] annotations)
         {
-            // In case we are trying to assign annotations to a function whcih has not been created.
-            if (!IsDeclared(name)) {
-                AttemptFunctionCreation(name);
-            }
             Members.AssignAnnotations(name, annotations);
         }
 
@@ -134,10 +140,6 @@ namespace SolScript.Interpreter
             if (Members.IsDeclared(name)) {
                 return true;
             }
-            SolFunctionDefinition definition;
-            if (Assembly.TypeRegistry.TryGetGlobalFunction(name, out definition) && ValidateFunctionDefinition(definition)) {
-                return true;
-            }
             if (Parent != null) {
                 return Parent.IsDeclared(name);
             }
@@ -153,10 +155,6 @@ namespace SolScript.Interpreter
             if (Members.IsAssigned(name)) {
                 return true;
             }
-            SolFunctionDefinition definition;
-            if (Assembly.TypeRegistry.TryGetGlobalFunction(name, out definition) && ValidateFunctionDefinition(definition)) {
-                return true;
-            }
             if (Parent != null) {
                 return Parent.IsAssigned(name);
             }
@@ -166,49 +164,13 @@ namespace SolScript.Interpreter
         #endregion
 
         /// <summary>
-        ///     Attempts to create, declared and assign the function with the given name.
+        ///     Gets the parent variables of these global variables.
         /// </summary>
-        /// <param name="name">The name.</param>
-        /// <returns>The function.</returns>
-        /// <remarks>
-        ///     This method uses <see cref="Variables.SetValue" /> - This means that any possibly previously declared
-        ///     variables with this name will be overwritten. Make sure to check if a field with this name has been declared
-        ///     beforehand.
-        /// </remarks>
-        public SolFunction AttemptFunctionCreation(string name)
-        {
-            SolFunctionDefinition functionDefinition;
-            if (Assembly.TypeRegistry.TryGetGlobalFunction(name, out functionDefinition) && ValidateFunctionDefinition(functionDefinition)) {
-                SolFunction function;
-                switch (functionDefinition.Chunk.ChunkType) {
-                    case SolChunkWrapper.Type.ScriptChunk:
-                        function = new SolScriptGlobalFunction(functionDefinition);
-                        break;
-                    case SolChunkWrapper.Type.NativeMethod:
-                        function = new SolNativeGlobalFunction(functionDefinition, DynamicReference.NullReference.Instance);
-                        break;
-                    case SolChunkWrapper.Type.NativeConstructor:
-                        throw new InvalidOperationException("A native constructor cannot be a global function.");
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
-                SolDebug.WriteLine("created global func " + name + " : " + function);
-                // ReSharper disable once ExceptionNotDocumented
-                // "function!" is always compatible with functions.
-                Members.SetValue(name, function, new SolType(SolFunction.TYPE, false));
-                return function;
-            }
-            return null;
-        }
-
-        public virtual IVariables GetParent()
+        /// <returns>The parent variables.</returns>
+        [CanBeNull]
+        protected virtual IVariables GetParent()
         {
             return null;
-        }
-
-        protected virtual bool ValidateFunctionDefinition(SolFunctionDefinition definition)
-        {
-            return definition.AccessModifier == SolAccessModifier.None;
         }
     }
 }

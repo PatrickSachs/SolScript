@@ -14,6 +14,7 @@ using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Library;
 using SolScript.Interpreter.Statements;
 using SolScript.Interpreter.Types;
+using SolScript.Interpreter.Types.Implementation;
 using SolScript.Libraries.lang;
 using SolScript.Parser;
 
@@ -355,23 +356,34 @@ namespace SolScript.Interpreter
             }
             // Create definitions.
             TypeRegistry.GenerateDefinitions();
-            // Initialize global fields
-            foreach (KeyValuePair<string, SolFieldDefinition> fieldPair in TypeRegistry.GlobalFieldPairs) {
-                SolFieldDefinition fieldDefinition = fieldPair.Value;
-                IVariables declareInVariables;
-                switch (fieldDefinition.Modifier) {
-                    case SolAccessModifier.None:
-                        declareInVariables = GlobalVariables;
+            // Create global functions
+            foreach (KeyValuePair<string, SolFunctionDefinition> funcPair in TypeRegistry.GlobalFunctionPairs) {
+                SolFunctionDefinition funcDefinition = funcPair.Value;
+                IVariables declareInVariables = GetVariablesForModifier(funcDefinition.AccessModifier);
+                SolFunction function;
+                switch (funcDefinition.Chunk.ChunkType) {
+                    case SolChunkWrapper.Type.ScriptChunk:
+                        function = new SolScriptGlobalFunction(funcDefinition);
                         break;
-                    case SolAccessModifier.Local:
-                        declareInVariables = LocalVariables;
+                    case SolChunkWrapper.Type.NativeMethod:
+                        function = new SolNativeGlobalFunction(funcDefinition, DynamicReference.NullReference.Instance);
                         break;
-                    case SolAccessModifier.Internal:
-                        declareInVariables = InternalVariables;
-                        break;
+                    case SolChunkWrapper.Type.NativeConstructor:
+                        throw new SolTypeRegistryException("Tried to make a native constructor the global function \"" + funcPair.Key + "\". Native constrcutors cannot be global functions.");
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
+                try {
+                    declareInVariables.Declare(funcPair.Key, new SolType(SolFunction.TYPE, false));
+                    declareInVariables.Assign(funcPair.Key, function);
+                } catch (SolVariableException ex) {
+                    throw new SolTypeRegistryException("Failed to register global function \"" + funcDefinition.Name + "\"", ex);
+                }
+            }
+            // Initialize global fields
+            foreach (KeyValuePair<string, SolFieldDefinition> fieldPair in TypeRegistry.GlobalFieldPairs) {
+                SolFieldDefinition fieldDefinition = fieldPair.Value;
+                IVariables declareInVariables = GetVariablesForModifier(fieldDefinition.AccessModifier);
                 switch (fieldDefinition.Initializer.FieldType) {
                     case SolFieldInitializerWrapper.Type.ScriptField:
                         SolExpression scriptInitializer = fieldDefinition.Initializer.GetScriptField();
@@ -406,6 +418,23 @@ namespace SolScript.Interpreter
                 }
             }
             return this;
+        }
+
+        /// <summary>
+        ///     Gets the variables matching the given access modifier.
+        /// </summary>
+        private IVariables GetVariablesForModifier(SolAccessModifier modifier)
+        {
+            switch (modifier) {
+                case SolAccessModifier.None:
+                    return GlobalVariables;
+                case SolAccessModifier.Local:
+                    return LocalVariables;
+                case SolAccessModifier.Internal:
+                    return InternalVariables;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
         }
     }
 }

@@ -162,7 +162,7 @@ namespace SolScript.Libraries.std
                 [Str_defined_in] = definition.DefinedIn != null ? (SolValue) SolString.ValueOf(definition.DefinedIn.Type) : SolNil.Instance,
                 [Str_annotations] = GetAnnotations(definition.Annotations),
                 [Str_source_location] = GetSourceLocation(definition.Location),
-                [Str_modifier] = SolString.ValueOf(definition.Modifier.ToString())
+                [Str_modifier] = SolString.ValueOf(definition.AccessModifier.ToString())
             };
             return table;
         }
