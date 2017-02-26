@@ -342,7 +342,7 @@ namespace SolScript.Interpreter
                     ClassVariables variables;
                     // Which variable context is this field declared in?
                     // todo: check if already declared somewhere else with same name -> create proper overriding system for fields and functions.
-                    switch (fieldDefinition.Modifier) {
+                    switch (fieldDefinition.AccessModifier) {
                         case SolAccessModifier.None:
                             variables = instance.GlobalVariables;
                             break;

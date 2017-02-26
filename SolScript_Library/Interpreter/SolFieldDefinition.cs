@@ -31,7 +31,7 @@ namespace SolScript.Interpreter
         public SolFieldDefinition(SolAssembly assembly, SolFieldBuilder builder) : base(assembly, builder.Location)
         {
             Name = builder.Name;
-            Modifier = builder.AccessModifier;
+            AccessModifier = builder.AccessModifier;
             AnnotationsFromData(builder.Annotations);
             if (builder.IsNativeField) {
                 Initializer = new SolFieldInitializerWrapper(builder.NativeField);
@@ -61,7 +61,7 @@ namespace SolScript.Interpreter
         /// <summary>
         ///     The field's access modifier.
         /// </summary>
-        public readonly SolAccessModifier Modifier;
+        public readonly SolAccessModifier AccessModifier;
 
         /// <summary>
         ///     The name of the field.

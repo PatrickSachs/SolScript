@@ -1,17 +1,17 @@
 ﻿namespace SolScript.Interpreter
 {
+    /// <summary>
+    /// These <see cref="IVariables"/> are used for global variables marked with the <see cref="SolAccessModifier.Local"/> <see cref="SolAccessModifier"/>.
+    /// </summary>
     public class GlobalLocalVariables : GlobalVariables
     {
         #region Overrides
 
+        ///<inheritdoc />
         public GlobalLocalVariables(SolAssembly assembly) : base(assembly) {}
 
-        protected override bool ValidateFunctionDefinition(SolFunctionDefinition definition)
-        {
-            return definition.AccessModifier == SolAccessModifier.Local;
-        }
-
-        public override IVariables GetParent()
+        ///<inheritdoc />
+        protected override IVariables GetParent()
         {
             return Assembly.InternalVariables;
         }
