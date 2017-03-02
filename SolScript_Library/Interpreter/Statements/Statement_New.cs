@@ -7,12 +7,12 @@ using SolScript.Interpreter.Types;
 namespace SolScript.Interpreter.Statements
 {
     /// <summary>
-    /// This statement creates a new class instance.
+    ///     This statement creates a new class instance.
     /// </summary>
     public class Statement_New : SolStatement
     {
         /// <summary>
-        /// Creates the statement from the given parameters.
+        ///     Creates the statement from the given parameters.
         /// </summary>
         /// <param name="assembly">The assembly this statement belongs to.</param>
         /// <param name="location">The location in source code.</param>
@@ -23,16 +23,19 @@ namespace SolScript.Interpreter.Statements
             m_Arguments = arguments;
             TypeName = typeName;
         }
-        /// <summary>
-        /// The constructor arguments.
-        /// </summary>
-        public IReadOnlyList<SolExpression> Arguments => m_Arguments;
+
         // The constructor arguments.
         private readonly SolExpression[] m_Arguments;
+
         /// <summary>
-        /// The name of the class that should be created.
+        ///     The name of the class that should be created.
         /// </summary>
         public readonly string TypeName;
+
+        /// <summary>
+        ///     The constructor arguments.
+        /// </summary>
+        public IReadOnlyList<SolExpression> Arguments => m_Arguments;
 
         #region Overrides
 

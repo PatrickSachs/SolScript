@@ -4,11 +4,9 @@ using System.Text;
 using System.Text.RegularExpressions;
 using SolScript.Interpreter;
 using SolScript.Interpreter.Exceptions;
-using SolScript.Interpreter.Library;
 using SolScript.Interpreter.Types;
 using SolScript.Libraries.os;
 using SolScript.Libraries.std;
-using SolScript.Reader;
 
 namespace SolScript
 {
@@ -59,7 +57,7 @@ namespace SolScript
                     goto Hello;
                 }
                 case 2: {
-                    ChooseDir:
+                    /*ChooseDir:
                     Console.WriteLine("Please enter the input directory (Absolute or relative path to this executable)");
                     Console.Write(" > ");
                     string dirRaw = Console.ReadLine();
@@ -79,7 +77,8 @@ namespace SolScript
                     }
                     Console.WriteLine("Compiling " + new DirectoryInfo(dirRaw).FullName + " into " +
                                       new FileInfo(fileRaw).FullName + " ...");
-                    SolAssemblyReader.ToAssembly(dirRaw, fileRaw);
+                    SolAssemblyReader.ToAssembly(dirRaw, fileRaw);*/
+                    Console.WriteLine("Not yet. Sorry! :(");
                     Console.WriteLine("\n === Done ... Press any key to return to the main menu.");
                     Console.ReadKey(true);
                     goto Hello;
@@ -102,11 +101,11 @@ namespace SolScript
                     try {
                         if (entryRaw == "0" || entryRaw == "class") {
                             SolAssembly script = SolAssembly.FromDirectory(new SolAssemblyOptions("Command Line Assembly"), dirRaw)
-                                    .IncludeLibrary(std.GetLibrary())
-                                    .IncludeLibrary(os.GetLibrary())
-                                    .FinalizeRegistry()
-                                    .GenerateDefinitions()
-                                    .Create();
+                                .IncludeLibrary(std.GetLibrary())
+                                .IncludeLibrary(os.GetLibrary())
+                                .FinalizeRegistry()
+                                .GenerateDefinitions()
+                                .Create();
                             if (script.Errors.Count > 0) {
                                 bool isDone = false;
                                 Console.WriteLine("================== ERRORS ==================");
@@ -126,11 +125,11 @@ namespace SolScript
                                 SolString.ValueOf("Hello from the command line :)"), new SolNumber(42));
                         } else if (entryRaw == "1" || entryRaw == "function") {
                             SolAssembly script = SolAssembly.FromDirectory(new SolAssemblyOptions("Command Line Assembly"), dirRaw)
-                                    .IncludeLibrary(std.GetLibrary())
-                                    .IncludeLibrary(os.GetLibrary())
-                                    .FinalizeRegistry()
-                                    .GenerateDefinitions()
-                                    .Create();
+                                .IncludeLibrary(std.GetLibrary())
+                                .IncludeLibrary(os.GetLibrary())
+                                .FinalizeRegistry()
+                                .GenerateDefinitions()
+                                .Create();
                             if (script.Errors.Count > 0) {
                                 bool isDone = false;
                                 Console.WriteLine("================== ERRORS ==================");
