@@ -5,12 +5,13 @@ using SolScript.Interpreter.Statements;
 using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter {
-    public class SolChunk {
-        public SolChunk(SolAssembly assembly, [CanBeNull]  TerminatingSolExpression returnExpression, params SolStatement[] statements) {
+    public class SolChunk : ISourceLocateable {
+        public SolChunk(SolAssembly assembly, SolSourceLocation location, [CanBeNull]  TerminatingSolExpression returnExpression, params SolStatement[] statements) {
             Assembly = assembly;
             Id = ++s_LastId;
             ReturnExpression = returnExpression;
             Statements = statements;
+            Location = location;
         }
 
         private static int s_LastId = -1;
@@ -61,5 +62,8 @@ namespace SolScript.Interpreter {
             terminators = Terminators.None;
             return SolNil.Instance;
         }
+
+        /// <inheritdoc />
+        public SolSourceLocation Location { get; }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Irony.Parsing;
 using SolScript.Interpreter.Builders;
 using SolScript.Interpreter.Exceptions;
@@ -21,7 +22,7 @@ namespace SolScript.Interpreter.Statements
         public string ActiveFile { get; set; }
 
         /// <exception cref="SolInterpreterException">An error occured.</exception>
-        public void InterpretTree(ParseTree tree, SolGlobalsBuilder globals, out IReadOnlyCollection<SolClassBuilder> classes)
+        public void InterpretTree(ParseTree tree, SolConstructWithMembersBuilder globals, out IReadOnlyCollection<SolClassBuilder> classes)
         {
             ActiveFile = tree.FileName;
             var classesList = new List<SolClassBuilder>();
@@ -29,10 +30,7 @@ namespace SolScript.Interpreter.Statements
             foreach (ParseTreeNode rootedNode in tree.Root.ChildNodes) {
                 switch (rootedNode.Term.Name) {
                     case "FunctionWithAccess": {
-                        SolFunctionBuilder functionBuilder = GetFunctionWithAccess(rootedNode,
-                            delegate(SolFunctionBuilder builder, SolChunk chunk, SolType returnType, SolParameter[] parameters, bool allowOptParameters) {
-                                builder.Chunk(chunk).ScriptReturns(returnType).SetParameters(parameters).OptionalParameters(allowOptParameters);
-                            });
+                        SolFunctionBuilder functionBuilder = GetFunctionWithAccess(rootedNode, delegate {});
                         globals.AddFunction(functionBuilder);
                         break;
                     }
@@ -51,12 +49,12 @@ namespace SolScript.Interpreter.Statements
             }
         }
 
-        public SolParameter[] GetParameters(ParseTreeNode node, out bool allowOptional)
+        public SolParameterBuilder[] GetParameters(ParseTreeNode node, out bool allowOptional)
         {
             ParseTreeNode parametersListNode = node.ChildNodes[0];
             if (parametersListNode.ChildNodes.Count == 0) {
                 allowOptional = false;
-                return new SolParameter[0];
+                return Array.Empty<SolParameterBuilder>();
             }
             // Tree for args:
             // - ParameterList
@@ -69,7 +67,7 @@ namespace SolScript.Interpreter.Statements
                 parametersListNode.ChildNodes.FindChildByName("ExplicitParameterList");
             allowOptional = optionalNode != null;
             return explicitNode == null
-                ? new SolParameter[0]
+                ? Array.Empty<SolParameterBuilder>()
                 : GetExplicitParameters(explicitNode);
         }
 
@@ -115,7 +113,7 @@ namespace SolScript.Interpreter.Statements
             }
 
             string className = node.ChildNodes[3].Token.Text;
-            SolClassBuilder classBuilder = new SolClassBuilder(className, typeMode).AtLocation(new SolSourceLocation(ActiveFile, node.Span.Location));
+            SolClassBuilder classBuilder = new SolClassBuilder(className, typeMode).SetLocation(new SolSourceLocation(ActiveFile, node.Span.Location));
             m_MetaStack.Push(new MetaItem {ActiveClass = classBuilder});
             // ===================================================================
             // == Annotations
@@ -136,7 +134,7 @@ namespace SolScript.Interpreter.Statements
             //  - _identifier
             ParseTreeNode mixinsNode = node.ChildNodes[4];
             if (mixinsNode.ChildNodes.Count != 0) {
-                classBuilder.Extends(mixinsNode.ChildNodes[1].Token.Text);
+                classBuilder.SetBaseClass(mixinsNode.ChildNodes[1].Token.Text);
             }
             // ===================================================================
             ParseTreeNode bodyMemberListNode = node.ChildNodes[5].ChildNodes[0];
@@ -154,16 +152,15 @@ namespace SolScript.Interpreter.Statements
                     // ===================================================================
                     case "FunctionWithAccess": {
                         SolFunctionBuilder functionBuilder = GetFunctionWithAccess(classMemberNode,
-                            delegate(SolFunctionBuilder builder, SolChunk chunk, SolType returnType, SolParameter[] parameters, bool allowOptParameters) {
-                                builder.Chunk(chunk).SetParameters(parameters).OptionalParameters(allowOptParameters);
-                                if (builder.Name != "__new") {
-                                    builder.ScriptReturns(returnType);
-                                } else {
+                            delegate(SolFunctionBuilder builder) {
+                                if (builder.Name == "__new") {
+                                    // todo: should this be done here or checked with other meta functions in perhaps the compiler later on? (probably!)
+                                    SolType returnType = builder.ReturnType.Get(Assembly);
                                     if (!returnType.CanBeNil || returnType.Type != "any" && returnType.Type != "nil") {
                                         throw new SolInterpreterException(builder.Location,
-                                            "The constructor on class \"" + builder.Name + "\" specified \"" + returnType + "\" as return type. A constrcutor function must not specify a return type.");
+                                            "The constructor on class \"" + builder.Name + "\" specified \"" + returnType + "\" as return type. A constructor function must not specify a return type.");
                                     }
-                                    builder.ScriptReturns(new SolType(SolNil.TYPE, true));
+                                    builder.SetReturnType(SolTypeBuilder.Fixed(new SolType(SolNil.TYPE, true)));
                                 }
                             });
                         classBuilder.AddFunction(functionBuilder);
@@ -240,34 +237,36 @@ namespace SolScript.Interpreter.Statements
         /// </param>
         /// <returns>The created function builder.</returns>
         /// <remarks></remarks>
-        public SolFunctionBuilder GetFunctionWithAccess(ParseTreeNode node, Action<SolFunctionBuilder, SolChunk, SolType, SolParameter[], bool> generator)
+        public SolFunctionBuilder GetFunctionWithAccess(ParseTreeNode node, Action<SolFunctionBuilder> generator)
         {
             // todo: annotations in statement factory on functions with access (the name sucks btw)
             // 0 -> AnnotationList
             // 1 -> AccessModifier_opt
-            // 2 -> "function"
-            // 3 -> _identifier
-            // 4 -> FunctionParameters
-            // 5 -> TypeRef_opt
-            // 6 -> FunctionBody
+            // 2 -> MemberModifier_opt
+            // 3 -> "function"
+            // 4 -> _identifier
+            // 5 -> FunctionParameters
+            // 6 -> TypeRef_opt
+            // 7 -> FunctionBody
             ParseTreeNode annotationsListNode = node.ChildNodes[0];
             SolAccessModifier accessModifier = GetAccessModifier(node.ChildNodes[1]);
-            ParseTreeNode funcNameNode = node.ChildNodes[3];
-            ParseTreeNode parametersNode = node.ChildNodes[4];
-            ParseTreeNode typeNode = node.ChildNodes[5];
-            ParseTreeNode bodyNode = node.ChildNodes[6];
+            SolMemberModifier memberModifier = GetMemberModifier(node.ChildNodes[2]);
+            ParseTreeNode funcNameNode = node.ChildNodes[4];
+            ParseTreeNode parametersNode = node.ChildNodes[5];
+            ParseTreeNode typeNode = node.ChildNodes[6];
+            ParseTreeNode bodyNode = node.ChildNodes[7];
 
             string funcName = funcNameNode.Token.Text;
             SolType funcType = GetTypeRef(typeNode);
             ParseTreeNode parametersListNode = parametersNode.ChildNodes[0];
             bool allowOptional;
-            SolParameter[] parameters;
+            SolParameterBuilder[] parameters;
             SolChunk chunk = GetChunk(bodyNode.ChildNodes[0]);
             if (parametersListNode.ChildNodes.Count == 0) {
                 // This cannot be parsed in one step.
                 // Tree for no args:
                 // - "()"
-                parameters = new SolParameter[0];
+                parameters = new SolParameterBuilder[0];
                 allowOptional = false;
             } else {
                 // Tree for args:
@@ -279,12 +278,16 @@ namespace SolScript.Interpreter.Statements
                 ParseTreeNode optionalNode = parametersListNode.ChildNodes.FindChildByName("...");
                 ParseTreeNode explicitNode = parametersListNode.ChildNodes.FindChildByName("ExplicitParameterList");
                 allowOptional = optionalNode != null;
-                parameters = explicitNode == null ? new SolParameter[0] : GetExplicitParameters(explicitNode);
+                parameters = explicitNode == null ? new SolParameterBuilder[0] : GetExplicitParameters(explicitNode);
             }
-            SolFunctionBuilder functionBuilder = new SolFunctionBuilder(funcName).SetAccessModifier(accessModifier);
+            SolFunctionBuilder functionBuilder = SolFunctionBuilder.NewScriptFunction(funcName, chunk)
+                .SetAccessModifier(accessModifier)
+                .SetMemberModifier(memberModifier)
+                .SetParameters(parameters)
+                .SetAllowOptionalParameters(allowOptional)
+                .SetReturnType(SolTypeBuilder.Fixed(funcType));
             InsertAnnotations(annotationsListNode, functionBuilder);
-            functionBuilder.AtLocation(new SolSourceLocation(ActiveFile, node.Span.Location));
-            generator(functionBuilder, chunk, funcType, parameters, allowOptional);
+            generator(functionBuilder);
             return functionBuilder;
         }
 
@@ -302,24 +305,49 @@ namespace SolScript.Interpreter.Statements
 
         public SolFieldBuilder GetFieldWithAccess(ParseTreeNode node)
         {
-            // AnnotationList 
-            // AccessModifier_opt
-            // _identifier 
-            // TypeRef_opt 
-            // Assignment_opt;
+            // 0 AnnotationList 
+            // 1 AccessModifier_opt
+            // 2 MemberModifier_opt
+            // 3 _identifier 
+            // 4 TypeRef_opt 
+            // 5 Assignment_opt;
             ParseTreeNode annotationsListNode = node.ChildNodes[0];
             SolAccessModifier accessModifier = GetAccessModifier(node.ChildNodes[1]);
-            ParseTreeNode identifierNode = node.ChildNodes[2];
+            SolMemberModifier memberModifier = GetMemberModifier(node.ChildNodes[2]);
+            ParseTreeNode identifierNode = node.ChildNodes[3];
             string fieldName = identifierNode.Token.Text;
-            SolType fieldType = GetTypeRef(node.ChildNodes[3]);
-            ParseTreeNode assignmentOpt = node.ChildNodes[4];
-            SolFieldBuilder fieldBuilder =
-                new SolFieldBuilder(fieldName).FieldType(fieldType).SetAccessModifier(accessModifier).AtLocation(new SolSourceLocation(ActiveFile, identifierNode.Span.Location));
-            InsertAnnotations(annotationsListNode, fieldBuilder);
-            fieldBuilder.MakeScriptField(assignmentOpt.ChildNodes.Count != 0
+            SolType fieldType = GetTypeRef(node.ChildNodes[4]);
+            ParseTreeNode assignmentOpt = node.ChildNodes[5];
+            SolExpression init = assignmentOpt.ChildNodes.Count != 0
                 ? GetExpression(assignmentOpt.ChildNodes[0])
-                : new Expression_Nil(Assembly, new SolSourceLocation(ActiveFile, assignmentOpt.Span.Location)));
+                : new Expression_Nil(Assembly, new SolSourceLocation(ActiveFile, assignmentOpt.Span.Location));
+            SolFieldBuilder fieldBuilder = SolFieldBuilder.NewScriptField(fieldName, init)
+                .SetFieldType(SolTypeBuilder.Fixed(fieldType))
+                .SetAccessModifier(accessModifier)
+                .SetMemberModifier(memberModifier);
+            InsertAnnotations(annotationsListNode, fieldBuilder);
             return fieldBuilder;
+        }
+
+        private SolMemberModifier GetMemberModifier(ParseTreeNode node)
+        {
+            if (node.Term.Name == "MemberModifier_opt") {
+                if (node.ChildNodes.Count != 1) {
+                    return SolMemberModifier.None;
+                }
+                node = node.ChildNodes[0];
+            }
+            switch (node.Token.Text) {
+                case "override": {
+                    return SolMemberModifier.Override;
+                }
+                case "abstract": {
+                    return SolMemberModifier.Abstract;
+                }
+                default: {
+                    throw new SolInterpreterException(new SolSourceLocation(ActiveFile, node.Span.Location), "Invalid member modifier node name \"" + node.Token.Text + "\".");
+                }
+            }
         }
 
         private SolAccessModifier GetAccessModifier(ParseTreeNode node)
@@ -381,7 +409,7 @@ namespace SolScript.Interpreter.Statements
                     }
                 }
             }
-            return new SolChunk(Assembly, returnValue, GetStatements(node.ChildNodes[0]));
+            return new SolChunk(Assembly, new SolSourceLocation(ActiveFile, node.Span.Location),  returnValue, GetStatements(node.ChildNodes[0]));
         }
 
         public SolExpression[] GetExpressions(ParseTreeNode node)
@@ -613,10 +641,11 @@ namespace SolScript.Interpreter.Statements
                 }
                 case "Expression_CreateFunc": {
                     bool allowOptional;
-                    SolParameter[] parameters = GetParameters(expressionNode.ChildNodes[1], out allowOptional);
+                    SolParameterBuilder[] parameters = GetParameters(expressionNode.ChildNodes[1], out allowOptional);
                     SolType type = GetTypeRef(expressionNode.ChildNodes[2]);
                     SolChunk chunk = GetChunk(expressionNode.ChildNodes[3].ChildNodes[0]);
-                    return new Expression_CreateFunc(Assembly, new SolSourceLocation(ActiveFile, expressionNode.Span.Location), chunk, type, allowOptional, parameters);
+                    return new Expression_CreateFunc(Assembly, new SolSourceLocation(ActiveFile, expressionNode.Span.Location), 
+                        chunk, type, allowOptional, parameters.Select(p => p.Get(Assembly)).ToArray());
                 }
                 case "Expression_TableConstructor": {
                     ParseTreeNode fieldListNode = expressionNode.ChildNodes[0];
@@ -1012,7 +1041,7 @@ namespace SolScript.Interpreter.Statements
             return new SolType(type, nullableStr[0] == '?');
         }
 
-        public SolParameter[] GetExplicitParameters(ParseTreeNode node)
+        public SolParameterBuilder[] GetExplicitParameters(ParseTreeNode node)
         {
 #if DEBUG
             if (node.Term.Name != "ExplicitParameterList") {
@@ -1020,14 +1049,14 @@ namespace SolScript.Interpreter.Statements
             }
 #endif
             ParseTreeNodeList childNodes = node.ChildNodes;
-            var parameterArray = new SolParameter[childNodes.Count];
+            var parameterArray = new SolParameterBuilder[childNodes.Count];
             for (int i = 0; i < childNodes.Count; i++) {
                 parameterArray[i] = GetParameter(childNodes[i]);
             }
             return parameterArray;
         }
 
-        public SolParameter GetParameter(ParseTreeNode node)
+        public SolParameterBuilder GetParameter(ParseTreeNode node)
         {
 #if DEBUG
             if (node.Term.Name != "Parameter") {
@@ -1037,7 +1066,7 @@ namespace SolScript.Interpreter.Statements
             string name = node.ChildNodes[0].Token.Text;
             // Parameter->(<name>, TypeRef_opt)
             ParseTreeNode typeRefOpt = node.ChildNodes[1];
-            return new SolParameter(name, GetTypeRef(typeRefOpt));
+            return new SolParameterBuilder(name, SolTypeBuilder.Fixed(GetTypeRef(typeRefOpt)));
         }
 
         #region Nested type: MetaItem

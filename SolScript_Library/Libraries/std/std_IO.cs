@@ -115,7 +115,7 @@ namespace SolScript.Libraries.std
         /// <summary>Writes <paramref name="data" /> to the standard output.</summary>
         /// <para name="data">
         ///     The data to write. The data will automatically be converted to a string using a
-        ///     <see cref="SolMetaKey.Stringify" /> call.
+        ///     <see cref="SolMetaKey.__to_string" /> call.
         /// </para>
         /// <returns>The <see cref="std_IO" /> singleton itself.</returns>
         /// <exception cref="SolRuntimeException">An error occured while writing or the type is invalid.</exception>

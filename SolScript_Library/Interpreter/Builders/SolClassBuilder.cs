@@ -7,7 +7,7 @@ namespace SolScript.Interpreter.Builders
     ///     A class builder is used to define the script created classes before they are processed
     ///     by the TypeRegistry.
     /// </summary>
-    public sealed class SolClassBuilder : SolConstructWithMembersBuilder.Generic<SolClassBuilder>, IAnnotateableBuilder
+    public sealed class SolClassBuilder : SolConstructWithMembersBuilder.Generic<SolClassBuilder>, IAnnotateableBuilder, ISourceLocateable
     {
         /// <summary> Creates a new class builder. </summary>
         /// <param name="name"> The type name of the class you wish to create. </param>
@@ -18,21 +18,23 @@ namespace SolScript.Interpreter.Builders
             TypeMode = typeMode;
         }
 
+        // All annotations on this class.
         private readonly List<SolAnnotationData> m_Annotations = new List<SolAnnotationData>();
 
-        public string BaseClass { get; set; }
+        /// <summary>
+        ///     The name of the base class(= the class this one extends).
+        /// </summary>
+        public string BaseClass { get; private set; }
 
         /// <summary> The native class this SolClass will marshal to and from. </summary>
-        public Type NativeType { get; set; }
+        public Type NativeType { get; private set; }
 
         /// <summary> The name of the class. </summary>
-        public string Name { get; set; }
+        public string Name { get; }
 
         /// <summary> Which type of class is the created class? </summary>
-        public SolTypeMode TypeMode { get; set; }
-
-        public SolSourceLocation Location { get; set; }
-
+        public SolTypeMode TypeMode { get; }
+        
         #region IAnnotateableBuilder Members
 
         /// <inheritdoc />
@@ -61,12 +63,28 @@ namespace SolScript.Interpreter.Builders
 
         #endregion
 
-        public SolClassBuilder AtLocation(SolSourceLocation location)
+        #region ISourceLocateable Members
+
+        /// <summary>
+        ///     The location in source code this class was defined at.
+        /// </summary>
+        public SolSourceLocation Location { get; private set; }
+
+        #endregion
+
+        /// <inheritdoc cref="Location" />
+        /// <exception cref="InvalidOperationException">A native class cannot have a source location.</exception>
+        /// <see cref="NativeType"/>
+        public SolClassBuilder SetLocation(SolSourceLocation location)
         {
+            if (NativeType != null) {
+                throw new InvalidOperationException("A native class cannot have a source location.");
+            }
             Location = location;
             return this;
         }
 
+        /// <inheritdoc cref="NativeType" />
         public SolClassBuilder SetNativeType(Type type)
         {
             NativeType = type;
@@ -74,7 +92,8 @@ namespace SolScript.Interpreter.Builders
             return this;
         }
 
-        public SolClassBuilder Extends(string baseClass)
+        /// <inheritdoc cref="BaseClass" />
+        public SolClassBuilder SetBaseClass(string baseClass)
         {
             BaseClass = baseClass;
             return this;

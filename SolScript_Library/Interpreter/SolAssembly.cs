@@ -2,12 +2,11 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Security;
-using Ionic.Zip;
 using Irony;
 using Irony.Parsing;
+using JetBrains.Annotations;
+using SolScript.Compiler;
 using SolScript.Interpreter.Builders;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Expressions;
@@ -22,21 +21,75 @@ namespace SolScript.Interpreter
 {
     /// <summary>
     ///     The <see cref="SolAssembly" /> is the heart of SolScript. An assembly is the collection of all classes and global
-    ///     variables of an ongoing exceution. From here you can create new classes, access global variables, include libraries
+    ///     variables of an ongoing execution. From here you can create new classes, access global variables, include libraries
     ///     and generally start using SolScript.
     /// </summary>
     public sealed class SolAssembly
     {
+        #region AssemblyState enum
+
+        /// <summary>
+        ///     An enum specifying the current state of the assembly. Some methods are only available during certain states.
+        /// </summary>
+        public enum AssemblyState
+        {
+            /// <summary>
+            ///     So,ething went wrong. Check <see cref="Errors" /> for more details.
+            /// </summary>
+            Error = -1,
+
+            /// <summary>
+            ///     No state. The assembly should never be in this state.
+            /// </summary>
+            None = 0,
+
+            /// <summary>
+            ///     The assembly is currently waiting for libraries and classes to be registered.
+            /// </summary>
+            Registry = 1,
+
+            /// <summary>
+            ///     The registry is done, the builders can now be built into definitions.
+            /// </summary>
+            AllRegistered = 2,
+
+            /// <summary>
+            ///     The class hulls have been built. All class definitions exist, but they are empty shells. No globals have been
+            ///     built.
+            /// </summary>
+            GeneratedClassHulls = 3,
+
+            /// <summary>
+            ///     All classes have been fully built. Their members, inheritance chain, etc. are ready for usage. No globals have been
+            ///     built.
+            /// </summary>
+            GeneratedClassBodies = 4,
+
+            /// <summary>
+            ///     The assembly has been fully built.
+            /// </summary>
+            GeneratedAll = 5,
+
+            /// <summary>
+            ///     The assembly is running. Hooray - we made it!
+            /// </summary>
+            Running = 6
+        }
+
+        #endregion
+
         private SolAssembly(SolAssemblyOptions options)
         {
             m_Options = (SolAssemblyOptions) options.Clone();
-            TypeRegistry = new TypeRegistry(this);
+            m_Compiler = new SolCompiler(this);
             m_Libraries.Add(lang.GetLibrary());
             Errors = SolErrorCollection.CreateCollection(out m_ErrorAdder, options.WarningsAreErrors);
         }
 
         // The Irony Grammar rules used for SolScript.
         private static readonly SolScriptGrammar s_Grammar = new SolScriptGrammar();
+        // The compiler used to validate and compile the assembly.
+        private readonly SolCompiler m_Compiler;
         // Errors can be added here.
         private readonly SolErrorCollection.Adder m_ErrorAdder;
         // All libraries registered in this Assembly.
@@ -49,13 +102,7 @@ namespace SolScript.Interpreter
         private StatementFactory Factory => l_factory ?? (l_factory = new StatementFactory(this));
 
         /// <summary>
-        ///     The <see cref="TypeRegistry" /> is used to access the classes in a <see cref="SolAssembly" />. You can create new
-        ///     class instances or simply look up the <see cref="SolClassDefinition" /> of a class.
-        /// </summary>
-        public TypeRegistry TypeRegistry { get; }
-
-        /// <summary>
-        ///     The global variables of an assembly are exposed to everything. Other assemblies, clases and other globals can
+        ///     The global variables of an assembly are exposed to everything. Other assemblies, classes and other globals can
         ///     access them.
         /// </summary>
         public IVariables GlobalVariables { get; private set; }
@@ -71,7 +118,7 @@ namespace SolScript.Interpreter
         public IVariables InternalVariables { get; private set; }
 
         /// <summary>
-        ///     A descriptivate name of this assembly(e.g. "Enemy AI Logic"). The name will be used during debugging and error
+        ///     A descriptive name of this assembly(e.g. "Enemy AI Logic"). The name will be used during debugging and error
         ///     output.
         /// </summary>
         public string Name => m_Options.Name;
@@ -81,6 +128,284 @@ namespace SolScript.Interpreter
         ///     collection. They are thrown as a <see cref="SolRuntimeException" /> instead.
         /// </summary>
         public SolErrorCollection Errors { get; }
+
+        /// <summary>
+        ///     The current state of this assembly. Some methods may only work in a certain state.
+        /// </summary>
+        /// <seealso cref="AssemblyState" />
+        public AssemblyState State { get; private set; }
+
+        /// <summary>
+        ///     Inclused a <see cref="SolLibrary" /> which will be included in the library upon creation.
+        /// </summary>
+        /// <param name="library"></param>
+        /// <returns></returns>
+        /// <exception cref="InvalidOperationException">
+        ///     Libraries can only be registered during the
+        ///     <see cref="AssemblyState.Registry" /> state.
+        /// </exception>
+        /// <seealso cref="State" />
+        public SolAssembly IncludeLibrary(SolLibrary library)
+        {
+            AssertState(AssemblyState.Registry, AssertMatch.Exact, "Libraries can only be registered during the library registry state.");
+            m_Libraries.Add(library);
+            return this;
+        }
+
+        /// <summary>
+        ///     Stops the assembly from allowing the registry of the libraries, classes and globals and creates the builders for
+        ///     these, which can later be built using the <see cref="GenerateDefinitions" /> method.
+        /// </summary>
+        /// <returns>The assembly.</returns>
+        /// <remarks>
+        ///     Requires the <see cref="AssemblyState.Registry" /> state, advances to
+        ///     <see cref="AssemblyState.AllRegistered" /> state.
+        /// </remarks>
+        public SolAssembly FinalizeRegistry()
+        {
+            AssertState(AssemblyState.Registry, AssertMatch.Exact, "Can only interpret in registry state.");
+            bool hadError = false;
+            foreach (SolLibrary library in m_Libraries) {
+                SolDebug.WriteLine("Building class hulls of library " + library.Name);
+                if (!library.HasBeenCreated) {
+                    library.Create();
+                }
+                try {
+                    RegisterClassBuilders(library.Classes.Values);
+                    foreach (SolFieldBuilder field in library.GlobalFields) {
+                        Builders.AddField(field);
+                    }
+                    foreach (SolFunctionBuilder function in library.GlobalFunctions) {
+                        Builders.AddFunction(function);
+                    }
+                } catch (SolTypeRegistryException ex) {
+                    // todo: type registry exception location
+                    m_ErrorAdder.Add(new SolError(SolSourceLocation.Native(), ErrorId.ClassRegistry, ex.Message, false, ex));
+                    hadError = true;
+                }
+            }
+            State = hadError
+                ? AssemblyState.Error
+                : AssemblyState.AllRegistered;
+            return this;
+        }
+
+        /// <summary>
+        ///     Builds all class definitions, globals and libraries.
+        /// </summary>
+        /// <returns>The assembly itself.</returns>
+        /// <remarks>
+        ///     Requires the assembly to be in the <see cref="AssemblyState.AllRegistered" /> state. Advances to
+        ///     <see cref="AssemblyState.GeneratedAll" /> state.
+        /// </remarks>
+        /// <seealso cref="State" />
+        public SolAssembly GenerateDefinitions()
+        {
+            AssertState(AssemblyState.AllRegistered, AssertMatch.Exact, "Can only interpret in registry state.");
+            bool hadError = false;
+            foreach (SolClassBuilder builder in Builders.ClassBuilders.Values) {
+                SolClassDefinition def = new SolClassDefinition(this, builder.Location, builder.Name, builder.TypeMode);
+                if (builder.NativeType != null) {
+                    def.NativeType = builder.NativeType;
+                    m_NativeClasses.Add(builder.NativeType, def);
+                }
+                if (def.TypeMode == SolTypeMode.Singleton) {
+                    m_SingletonLookup.Add(def.Type, def);
+                }
+                m_ClassDefinitions.Add(builder.Name, def);
+            }
+            State = AssemblyState.GeneratedClassHulls;
+            foreach (SolClassBuilder builder in Builders.ClassBuilders.Values) {
+                SolClassDefinition def = m_ClassDefinitions[builder.Name];
+                if (builder.BaseClass != null) {
+                    SolClassDefinition baseDef = m_ClassDefinitions[builder.BaseClass];
+                    if (!baseDef.CanBeInherited()) {
+                        m_ErrorAdder.Add(new SolError(def.Location, ErrorId.InvalidInheritance,
+                            "Class \"" + def.Type + "\" tried to inherit from class \"" + baseDef.Type + "\" which does not allow inheritance."));
+                        hadError = true;
+                    }
+                    def.BaseClass = baseDef;
+                }
+                foreach (SolFieldBuilder fieldBuilder in builder.Fields) {
+                    try {
+                        SolFieldDefinition fieldDefinition = new SolFieldDefinition(this, def, fieldBuilder);
+                        def.AssignFieldDirect(fieldDefinition);
+                    } catch (SolMarshallingException ex) {
+                        m_ErrorAdder.Add(new SolError(fieldBuilder.Location, ErrorId.ClassFieldRegistry,
+                            "Failed to get field type for field \"" + fieldBuilder.Name + "\" in class \"" + def.Type + "\": " + ex.Message, false, ex));
+                        hadError = true;
+                    }
+                }
+                foreach (SolFunctionBuilder functionBuilder in builder.Functions) {
+                    try {
+                        SolFunctionDefinition functionDefinition = new SolFunctionDefinition(this, def, functionBuilder);
+                        def.AssignFunctionDirect(functionDefinition);
+                    } catch (SolMarshallingException ex) {
+                        m_ErrorAdder.Add(new SolError(functionBuilder.Location, ErrorId.ClassFunctionRegistry,
+                            "Failed to get return type for function \"" + functionBuilder.Name + "\" in class \"" + def.Type + "\": " + ex.Message, false, ex));
+                        hadError = true;
+                    }
+                }
+                var annotations = new SolAnnotationDefinition[builder.Annotations.Count];
+                for (int i = 0; i < builder.Annotations.Count; i++) {
+                    SolAnnotationData builderAnnotation = builder.Annotations[i];
+                    SolClassDefinition annotationClass;
+                    if (!TryGetClass(builderAnnotation.Name, out annotationClass)) {
+                        m_ErrorAdder.Add(new SolError(builderAnnotation.Location, ErrorId.InvalidAnnotationType,
+                            "Could not find class \"" + builderAnnotation.Name + "\" which was required for an annotation on class \"" + def.Type + "\"."));
+                        hadError = true;
+                    }
+                    if (annotationClass.NotNull().TypeMode != SolTypeMode.Annotation) {
+                        m_ErrorAdder.Add(new SolError(builderAnnotation.Location, ErrorId.InvalidAnnotationType,
+                            "The class \"" + builderAnnotation.Name + "\" which was used as an annotation on class \"" + def.Type + "\" is no annotation."));
+                        hadError = true;
+                    }
+                    annotations[i] = new SolAnnotationDefinition(builderAnnotation.Location, annotationClass, builderAnnotation.Arguments);
+                }
+                def.SetAnnotations(annotations);
+                // We cannot validate the class since the base class may not be built yet.
+            }
+            State = AssemblyState.GeneratedClassHulls;
+            foreach (SolFieldBuilder globalFieldBuilder in Builders.Fields) {
+                try {
+                    SolFieldDefinition fieldDefinition = new SolFieldDefinition(this, globalFieldBuilder);
+                    m_GlobalFields.Add(globalFieldBuilder.Name, fieldDefinition);
+                } catch (SolMarshallingException ex) {
+                    m_ErrorAdder.Add(new SolError(globalFieldBuilder.Location, ErrorId.GlobalFieldRegistry,
+                        "Failed to get return type for global function \"" + globalFieldBuilder.Name + "\": " + ex.Message, false, ex));
+                    hadError = true;
+                }
+            }
+            foreach (SolFunctionBuilder globalFunctionBuilder in Builders.Functions) {
+                try {
+                    SolFunctionDefinition functionDefinition = new SolFunctionDefinition(this, globalFunctionBuilder);
+                    m_GlobalFunctions.Add(globalFunctionBuilder.Name, functionDefinition);
+                } catch (SolMarshallingException ex) {
+                    m_ErrorAdder.Add(new SolError(globalFunctionBuilder.Location, ErrorId.GlobalFunctionRegistry,
+                        "Failed to get field type for global field \"" + globalFunctionBuilder.Name + "\": " + ex.Message, false, ex));
+                    hadError = true;
+                }
+            }
+            // Validate
+            SolDebug.WriteLine("Validating ...");
+            foreach (SolClassDefinition definition in m_ClassDefinitions.Values) {
+                try
+                {
+                    SolDebug.WriteLine("   ... Class " + definition.Type);
+                    m_Compiler.ValidateClass(definition);
+                } catch (SolCompilerException ex) {
+                    // todo: compiler error source location.
+                    m_ErrorAdder.Add(new SolError(SolSourceLocation.Native(), ErrorId.CompilerError, ex.Message, false, ex));
+                    hadError = true;
+                }
+            }
+            foreach (SolFunctionDefinition definition in m_GlobalFunctions.Values) {
+                try
+                {
+                    SolDebug.WriteLine("   ... Global Function " + definition.Name);
+                    m_Compiler.ValidateFunction(definition);
+                } catch (SolCompilerException ex) {
+                    // todo: compiler error source location.
+                    m_ErrorAdder.Add(new SolError(SolSourceLocation.Native(), ErrorId.CompilerError, ex.Message, false, ex));
+                    hadError = true;
+                }
+            }
+            // todo: compiler validate fields
+            // todo: compiler validate fields in class (also figure out if field overwriting is sth we want)
+            State = hadError ? AssemblyState.Error : AssemblyState.GeneratedAll;
+            return this;
+        }
+
+        /// <summary>
+        ///     This method truly creates the assembly. Creates global functions and fields from the generated definitions and
+        ///     allows you to start using the assembly for whatever you need it afterwards.
+        /// </summary>
+        /// <returns>The created assembly; ready for usage.</returns>
+        /// <exception cref="SolTypeRegistryException">An error occured while creating the class or global definitions.</exception>
+        /// <exception cref="InvalidOperationException">Invalid state.</exception>
+        /// <remarks>
+        ///     Requires the <see cref="AssemblyState.GeneratedAll" /> state, advances to <see cref="AssemblyState.Running" />
+        ///     state. Last initialization method.
+        /// </remarks>
+        public SolAssembly Create()
+        {
+            AssertState(AssemblyState.GeneratedAll, AssertMatch.Exact, "The assembly must be generated to create it.");
+            State = AssemblyState.Running;
+            SolExecutionContext context = new SolExecutionContext(this, Name + " initialization context");
+            GlobalVariables = new GlobalVariable(this);
+            InternalVariables = new InternalVariables(this);
+            LocalVariables = new LocalVariables(this);
+            // Create global functions
+            foreach (KeyValuePair<string, SolFunctionDefinition> funcPair in GlobalFunctionPairs) {
+                SolFunctionDefinition funcDefinition = funcPair.Value;
+                IVariables declareInVariables = GetVariablesForModifier(funcDefinition.AccessModifier);
+                SolFunction function;
+                switch (funcDefinition.Chunk.ChunkType) {
+                    case SolChunkWrapper.Type.ScriptChunk:
+                        function = new SolScriptGlobalFunction(funcDefinition);
+                        break;
+                    case SolChunkWrapper.Type.NativeMethod:
+                        function = new SolNativeGlobalFunction(funcDefinition, DynamicReference.NullReference.Instance);
+                        break;
+                    case SolChunkWrapper.Type.NativeConstructor:
+                        throw new SolTypeRegistryException("Tried to make a native constructor the global function \"" + funcPair.Key + "\". Native constructors cannot be global functions.");
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+                try {
+                    declareInVariables.Declare(funcPair.Key, new SolType(SolFunction.TYPE, false));
+                    declareInVariables.Assign(funcPair.Key, function);
+                } catch (SolVariableException ex) {
+                    throw new SolTypeRegistryException("Failed to register global function \"" + funcDefinition.Name + "\"", ex);
+                }
+            }
+            // Initialize global fields
+            foreach (KeyValuePair<string, SolFieldDefinition> fieldPair in GlobalFieldPairs) {
+                SolFieldDefinition fieldDefinition = fieldPair.Value;
+                IVariables declareInVariables = GetVariablesForModifier(fieldDefinition.AccessModifier);
+                switch (fieldDefinition.Initializer.FieldType) {
+                    case SolFieldInitializerWrapper.Type.ScriptField:
+                        SolExpression scriptInitializer = fieldDefinition.Initializer.GetScriptField();
+                        try {
+                            declareInVariables.Declare(fieldPair.Key, fieldDefinition.Type);
+                            declareInVariables.Assign(fieldPair.Key, scriptInitializer.Evaluate(context, LocalVariables));
+                        } catch (SolVariableException ex) {
+                            throw new SolTypeRegistryException("Failed to register global field \"" + fieldDefinition.Name + "\"", ex);
+                        }
+                        break;
+                    case SolFieldInitializerWrapper.Type.NativeField:
+                        FieldOrPropertyInfo nativeField = fieldDefinition.Initializer.GetNativeField();
+                        try {
+                            declareInVariables.DeclareNative(fieldPair.Key, fieldDefinition.Type, nativeField, DynamicReference.NullReference.Instance);
+                        } catch (SolVariableException ex) {
+                            throw new SolTypeRegistryException("Failed to register native global field \"" + fieldDefinition.Name + "\"", ex);
+                        }
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
+            return this;
+        }
+
+        /// <summary>
+        ///     Gets the variables matching the given access modifier.
+        /// </summary>
+        private IVariables GetVariablesForModifier(SolAccessModifier modifier)
+        {
+            switch (modifier) {
+                case SolAccessModifier.None:
+                    return GlobalVariables;
+                case SolAccessModifier.Local:
+                    return LocalVariables;
+                case SolAccessModifier.Internal:
+                    return InternalVariables;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        #region From XYZ
 
         /// <summary>
         ///     Creates a new <see cref="SolAssembly" /> from the parsed contents of the given directory.
@@ -125,15 +450,12 @@ namespace SolScript.Interpreter
                         tree = parser.Parse(File.ReadAllText(dir), dir);
                     } catch (FileNotFoundException ex) {
                         throw new DirectoryNotFoundException(
-                            "The file \"" + dir + "\" does not exist. However the OS told us about the existance of this file. Do you have other threads messing with the file?", ex);
+                            "The file \"" + dir + "\" does not exist. However the OS told us about the existence of this file. Do you have other threads messing with the file?", ex);
                     } catch (SecurityException ex) {
                         throw new UnauthorizedAccessException("Cannot access file \"" + dir + "\".", ex);
                     }
                     trees.Add(tree);
                     SolDebug.WriteLine("  ... Loaded " + dir);
-                    foreach (LogMessage message in tree.ParserMessages) {
-                        SolDebug.WriteLine("   " + message.Location + " : " + message);
-                    }
                 }
                 SolAssembly a = FromTrees(trees, options);
                 return a;
@@ -173,77 +495,9 @@ namespace SolScript.Interpreter
                     ParseTree tree = parser.Parse(s);
                     trees.Add(tree);
                     SolDebug.WriteLine("  ... Loaded " + s);
-                    foreach (LogMessage message in tree.ParserMessages) {
-                        SolDebug.WriteLine("   " + message.Location + " : " + message);
-                    }
                 }
                 SolAssembly a = FromTrees(trees, options);
                 return a;
-#if DEBUG
-            } finally {
-                stopwatch.Stop();
-                SolDebug.WriteLine("StopWatch: " + stopwatch.ElapsedMilliseconds);
-            }
-#endif
-        }
-
-        /// <summary>
-        ///     Creates a <see cref="SolAssembly" /> by interpreting the contents of a single zip file.
-        /// </summary>
-        /// <param name="options">
-        ///     The options for creating this assembly. - The options will be cloned in the assembly and further
-        ///     changes to the options will thus have no effect.
-        /// </param>
-        /// <param name="file">The file to interpret.</param>
-        /// <returns>
-        ///     The assembly which can directly be created(<see cref="Create" />) or first have some libraries included(
-        ///     <see cref="IncludeLibrary" />).
-        /// </returns>
-        /// <exception cref="FileNotFoundException">The file does not exist. <paramref name="file" /></exception>
-        /// <exception cref="IOException">An I/O error occurs. </exception>
-        public static SolAssembly FromFile(SolAssemblyOptions options, string file)
-        {
-#if DEBUG
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
-            try {
-#endif
-                if (!File.Exists(file)) {
-                    throw new FileNotFoundException("Tried to load SolAssembly from file " + file +
-                                                    ", which does not exist.");
-                }
-                SolDebug.WriteLine("Creating Parser ...");
-                Irony.Parsing.Parser parser = new Irony.Parsing.Parser(s_Grammar);
-                List<ParseTree> trees;
-                using (ZipFile zip = ZipFile.Read(file)) {
-                    trees = new List<ParseTree>(zip.Count);
-                    SolDebug.WriteLine("Loading Trees ...");
-                    foreach (ZipEntry entry in zip) {
-                        using (MemoryStream entryStream = new MemoryStream()) {
-                            if (entry.FileName.EndsWith(".sol")) {
-                                entry.Extract(entryStream);
-                                entryStream.Position = 0;
-                                using (StreamReader stream = new StreamReader(entryStream)) {
-                                    string str;
-                                    try {
-                                        str = stream.ReadToEnd();
-                                    } catch (OutOfMemoryException ex) {
-                                        throw new IOException("The internal buffer ran out of memory.", ex);
-                                    }
-                                    //SolDebug.WriteLine(str);
-                                    ParseTree tree = parser.Parse(str, entry.FileName);
-                                    trees.Add(tree);
-                                    SolDebug.WriteLine("  ... Loaded " + entry.FileName + " in " +
-                                                       tree.ParseTimeMilliseconds + "ms");
-                                    foreach (LogMessage message in tree.ParserMessages) {
-                                        SolDebug.WriteLine("   " + message.Location + " : " + message);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                return FromTrees(trees, options);
 #if DEBUG
             } finally {
                 stopwatch.Stop();
@@ -258,7 +512,10 @@ namespace SolScript.Interpreter
         private static SolAssembly FromTrees(IEnumerable<ParseTree> trees, SolAssemblyOptions options)
         {
             SolDebug.WriteLine("Building Trees ...");
-            SolAssembly script = new SolAssembly(options);
+            SolAssembly script = new SolAssembly(options) {
+                l_builders = new BuildersContainer(),
+                State = AssemblyState.Registry
+            };
             StatementFactory factory = script.Factory;
             foreach (ParseTree tree in trees) {
                 SolDebug.WriteLine("  ... Checking tree " + tree.FileName);
@@ -266,12 +523,15 @@ namespace SolScript.Interpreter
                     switch (message.Level) {
                         case ErrorLevel.Info:
                         case ErrorLevel.Warning:
-                            script.m_ErrorAdder.Add(new SolError(new SolSourceLocation(tree.FileName, message.Location), ErrorId.None, message.Message, true));
-                            break;
+                            script.m_ErrorAdder.Add(new SolError(new SolSourceLocation(tree.FileName, message.Location), ErrorId.SyntaxError, message.Message, true));
+                            // Parse all trees even if we have errors. This allows easier debugging for the user if there are errors
+                            // spread accross multiple files.
+                            continue;
                         case ErrorLevel.Error:
-                            // todo: properly warning through the parser states in message.
-                            script.m_ErrorAdder.Add(new SolError(new SolSourceLocation(tree.FileName, message.Location), ErrorId.None, message.Message));
-                            break;
+                            script.m_ErrorAdder.Add(new SolError(new SolSourceLocation(tree.FileName, message.Location), ErrorId.SyntaxError, message.Message));
+                            // Parse all trees even if we have errors. This allows easier debugging for the user if there are errors
+                            // spread accross multiple files.
+                            continue;
                         default:
                             throw new ArgumentOutOfRangeException();
                     }
@@ -282,146 +542,435 @@ namespace SolScript.Interpreter
                     SolDebug.WriteLine("  ... Building File " + tree.FileName);
                     IReadOnlyCollection<SolClassBuilder> classBuilders;
                     try {
-                        factory.InterpretTree(tree, script.TypeRegistry.GlobalsBuilder, out classBuilders);
+                        factory.InterpretTree(tree, script.Builders, out classBuilders);
                     } catch (SolInterpreterException ex) {
-                        // todo: error id on exception (or just one error in general since its probably always an internal error?)
-                        script.m_ErrorAdder.Add(new SolError(ex.Location, ErrorId.InternalFailedToResolve, ex.Message, false, ex));
-                        return script;
+                        script.m_ErrorAdder.Add(new SolError(ex.Location, ErrorId.InterpreterError, ex.Message, false, ex));
+                        // Parse all trees even if we have errors. This allows easier debugging for the user if there are errors
+                        // spread accross multiple files.
+                        continue;
                     }
                     foreach (SolClassBuilder typeDef in classBuilders) {
-                        script.TypeRegistry.RegisterClass(typeDef);
+                        script.RegisterClassBuilder(typeDef);
                         SolDebug.WriteLine("    ... Type " + typeDef.Name);
                     }
                 }
             } else {
                 script.m_ErrorAdder.Add(new SolError(SolSourceLocation.Native(), ErrorId.InternalSecurityMeasure, "Not interpreting the syntax trees since one or more of them had errors.", true));
             }
+            if (script.Errors.HasErrors) {
+                script.State = AssemblyState.Error;
+            }
             return script;
         }
 
-        /// <summary>
-        ///     Inclused a <see cref="SolLibrary" /> which will be included in the library upon creation.
-        /// </summary>
-        /// <param name="library"></param>
-        /// <returns></returns>
-        /// <exception cref="InvalidOperationException">
-        ///     Libraries can only be registered during the
-        ///     <see cref="Interpreter.TypeRegistry.State.Registry" /> state.
-        /// </exception>
-        /// <seealso cref="TypeRegistry.CurrentState" />
-        public SolAssembly IncludeLibrary(SolLibrary library)
-        {
-            TypeRegistry.AssetStateExactAndLower(TypeRegistry.State.Registry, "Libraries can only be registered during the registry state.");
-            m_Libraries.Add(library);
-            return this;
-        }
+        #endregion
+        
+        private static readonly ClassCreationOptions AnnotationClassCreationOptions = new ClassCreationOptions.Customizable().SetEnforceCreation(true);
 
         /// <summary>
-        ///     Quick helper to register globals.
+        ///     A data container to encapsulate builders. This allows us to easily null the builders out once they are no longer
+        ///     needed, saving us memory.
         /// </summary>
-        /// <exception cref="SolVariableException">An error occured while registering the variables.</exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void RegisterGlobal(string name, SolValue value, SolType type)
+        private sealed class BuildersContainer : SolConstructWithMembersBuilder.Generic<BuildersContainer>
         {
-            GlobalVariables.Declare(name, type);
-            GlobalVariables.Assign(name, value);
+            public readonly Dictionary<string, SolClassBuilder> ClassBuilders = new Dictionary<string, SolClassBuilder>();
         }
 
-        /// <summary>
-        ///     This method truly creates the assembly. Everything is prepared for actual usage, the classes are created and global
-        ///     variables registered. You can start using the <see cref="SolAssembly" /> after calling this method(although you
-        ///     probably want to check for errors and warnings first!).
-        /// </summary>
-        /// <returns>The created assembly; ready for usage.</returns>
-        /// <exception cref="SolTypeRegistryException">An error occured while creating the class or global definitions.</exception>
-        public SolAssembly Create()
+        // The lazy builders. Only available until everything has been parsed.
+        private BuildersContainer l_builders;
+
+        /// <exception cref="InvalidOperationException">Invalid state.</exception>
+        /// <remarks>Only available in states lower than <see cref="AssemblyState.GeneratedAll" />.</remarks>
+        private BuildersContainer Builders {
+            get {
+                AssertState(AssemblyState.GeneratedAll, AssertMatch.LowerNoError, "Can only access builders until everything has been fully interpreted.");
+                return l_builders;
+            }
+        }
+
+        #region Assertion
+
+        internal enum AssertMatch
         {
-            SolExecutionContext context = new SolExecutionContext(this, Name + " initialization context");
-            GlobalVariables = new GlobalVariable(this);
-            InternalVariables = new InternalVariables(this);
-            LocalVariables = new LocalVariables(this);
-            // todo: investigate either merging type registry and library or making it clearer, the separation seems a bit arbitrary.
-            // Build class hulls, required in order to be able to have access too all types when building the bodies.
-            foreach (SolLibrary library in m_Libraries) {
-                SolDebug.WriteLine("Building class hulls of library " + library.Name);
-                IReadOnlyCollection<SolClassBuilder> classHulls = library.BuildClassHulls(this);
-                TypeRegistry.RegisterClasses(classHulls);
-            }
-            // Build class bodies
-            foreach (SolLibrary library in m_Libraries) {
-                SolDebug.WriteLine("Building class bodies of library " + library.Name);
-                library.BuildClassBodies(this);
-            }
-            // Create definitions.
-            TypeRegistry.GenerateDefinitions();
-            // Create global functions
-            foreach (KeyValuePair<string, SolFunctionDefinition> funcPair in TypeRegistry.GlobalFunctionPairs) {
-                SolFunctionDefinition funcDefinition = funcPair.Value;
-                IVariables declareInVariables = GetVariablesForModifier(funcDefinition.AccessModifier);
-                SolFunction function;
-                switch (funcDefinition.Chunk.ChunkType) {
-                    case SolChunkWrapper.Type.ScriptChunk:
-                        function = new SolScriptGlobalFunction(funcDefinition);
-                        break;
-                    case SolChunkWrapper.Type.NativeMethod:
-                        function = new SolNativeGlobalFunction(funcDefinition, DynamicReference.NullReference.Instance);
-                        break;
-                    case SolChunkWrapper.Type.NativeConstructor:
-                        throw new SolTypeRegistryException("Tried to make a native constructor the global function \"" + funcPair.Key + "\". Native constrcutors cannot be global functions.");
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
-                try {
-                    declareInVariables.Declare(funcPair.Key, new SolType(SolFunction.TYPE, false));
-                    declareInVariables.Assign(funcPair.Key, function);
-                } catch (SolVariableException ex) {
-                    throw new SolTypeRegistryException("Failed to register global function \"" + funcDefinition.Name + "\"", ex);
-                }
-            }
-            // Initialize global fields
-            foreach (KeyValuePair<string, SolFieldDefinition> fieldPair in TypeRegistry.GlobalFieldPairs) {
-                SolFieldDefinition fieldDefinition = fieldPair.Value;
-                IVariables declareInVariables = GetVariablesForModifier(fieldDefinition.AccessModifier);
-                switch (fieldDefinition.Initializer.FieldType) {
-                    case SolFieldInitializerWrapper.Type.ScriptField:
-                        SolExpression scriptInitializer = fieldDefinition.Initializer.GetScriptField();
-                        try {
-                            declareInVariables.Declare(fieldPair.Key, fieldDefinition.Type);
-                            declareInVariables.Assign(fieldPair.Key, scriptInitializer.Evaluate(context, LocalVariables));
-                        } catch (SolVariableException ex) {
-                            throw new SolTypeRegistryException("Failed to register global field \"" + fieldDefinition.Name + "\"", ex);
+            Exact,
+            ExactOrLower,
+            ExactOrLowerNoError,
+            Lower,
+            LowerNoError,
+            ExactOrHigher,
+            Higher
+        }
+
+        /// <exception cref="InvalidOperationException">Invalid state.</exception>
+        internal void AssertState(AssemblyState state, AssertMatch match, string message = "")
+        {
+            string str1 = null;
+            switch (match) {
+                case AssertMatch.Exact:
+                    if (state == State) {
+                        return;
+                    }
+                    break;
+                case AssertMatch.ExactOrLower:
+                    if ((int) State <= (int) state) {
+                        return;
+                    }
+                    str1 = "(or lower)";
+                    break;
+                case AssertMatch.ExactOrLowerNoError:
+                    if ((int) State <= (int) state) {
+                        if (State != AssemblyState.Error) {
+                            return;
                         }
-                        break;
-                    case SolFieldInitializerWrapper.Type.NativeField:
-                        FieldOrPropertyInfo nativeField = fieldDefinition.Initializer.GetNativeField();
-                        try {
-                            declareInVariables.DeclareNative(fieldPair.Key, fieldDefinition.Type, nativeField, DynamicReference.NullReference.Instance);
-                        } catch (SolVariableException ex) {
-                            throw new SolTypeRegistryException("Failed to register native global field \"" + fieldDefinition.Name + "\"", ex);
+                    }
+                    str1 = "(or lower)";
+                    break;
+                case AssertMatch.Lower:
+                    if ((int) State < (int) state) {
+                        return;
+                    }
+                    str1 = "(only lower)";
+                    break;
+                case AssertMatch.LowerNoError:
+                    if ((int) State < (int) state) {
+                        if (State != AssemblyState.Error) {
+                            return;
                         }
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
-            }
-            return this;
-        }
-
-        /// <summary>
-        ///     Gets the variables matching the given access modifier.
-        /// </summary>
-        private IVariables GetVariablesForModifier(SolAccessModifier modifier)
-        {
-            switch (modifier) {
-                case SolAccessModifier.None:
-                    return GlobalVariables;
-                case SolAccessModifier.Local:
-                    return LocalVariables;
-                case SolAccessModifier.Internal:
-                    return InternalVariables;
+                    }
+                    str1 = "(only lower)";
+                    break;
+                case AssertMatch.ExactOrHigher:
+                    if ((int) State >= (int) state) {
+                        return;
+                    }
+                    str1 = "(or higher)";
+                    break;
+                case AssertMatch.Higher:
+                    if ((int) State > (int) state) {
+                        return;
+                    }
+                    str1 = "(only higher)";
+                    break;
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    throw new ArgumentOutOfRangeException(nameof(match), match, null);
             }
+            throw new InvalidOperationException("Invalid state! Expected: " + state + (str1 != null ? " " + str1 : string.Empty) + ", but was: " + State + ". " + message);
+        }
+
+        #endregion
+
+        private readonly Dictionary<string, SolClassDefinition> m_ClassDefinitions = new Dictionary<string, SolClassDefinition>();
+        private readonly Dictionary<string, SolFieldDefinition> m_GlobalFields = new Dictionary<string, SolFieldDefinition>();
+        private readonly Dictionary<string, SolFunctionDefinition> m_GlobalFunctions = new Dictionary<string, SolFunctionDefinition>();
+        private readonly Dictionary<Type, SolClassDefinition> m_NativeClasses = new Dictionary<Type, SolClassDefinition>();
+        // A helper lookup containing a type/definition map of all singleton definitions.
+        private readonly Dictionary<string, SolClassDefinition> m_SingletonLookup = new Dictionary<string, SolClassDefinition>();
+
+        /// <summary>
+        ///     All global fields in key value pairs.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">Invalid state. </exception>
+        /// <remarks>Requires the <see cref="AssemblyState.GeneratedAll" /> state.</remarks>
+        /// <seealso cref="State" />
+        public IReadOnlyCollection<KeyValuePair<string, SolFieldDefinition>> GlobalFieldPairs {
+            get {
+                AssertState(AssemblyState.AllRegistered, AssertMatch.ExactOrHigher, "Cannot receive global field definitions if they aren't generated yet.");
+                return m_GlobalFields;
+            }
+        }
+
+        /// <summary>
+        ///     All global functions in key value pairs.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">Invalid state. </exception>
+        /// <remarks>Requires the <see cref="AssemblyState.GeneratedAll" /> state.</remarks>
+        /// <seealso cref="State" />
+        public IReadOnlyCollection<KeyValuePair<string, SolFunctionDefinition>> GlobalFunctionPairs {
+            get {
+                AssertState(AssemblyState.AllRegistered, AssertMatch.ExactOrHigher, "Cannot receive global function definitions if they aren't generated yet.");
+                return m_GlobalFunctions;
+            }
+        }
+
+        /// <summary>
+        ///     Tries to get a global function with the given name.
+        /// </summary>
+        /// <param name="name">The name of the function to find.</param>
+        /// <param name="definition">Outputs the definition. Only valid if the method returned true.</param>
+        /// <returns>true if the function could be found, false otherwise.</returns>
+        /// <exception cref="InvalidOperationException">Invalid state. </exception>
+        /// <remarks>Requires the <see cref="AssemblyState.GeneratedAll" /> state.</remarks>
+        /// <seealso cref="State" />
+        [ContractAnnotation("definition:null => false")]
+        public bool TryGetGlobalFunction(string name, out SolFunctionDefinition definition)
+        {
+            AssertState(AssemblyState.GeneratedAll, AssertMatch.ExactOrHigher, "Cannot receive global function definitions if they aren't generated yet.");
+            return m_GlobalFunctions.TryGetValue(name, out definition);
+        }
+
+        /// <summary>
+        ///     Tries to get a global field with the given name.
+        /// </summary>
+        /// <param name="name">The name of the field to find.</param>
+        /// <param name="definition">Outputs the definition. Only valid if the method returned true.</param>
+        /// <returns>true if the field could be found, false otherwise.</returns>
+        /// <exception cref="InvalidOperationException">Invalid state. </exception>
+        /// <remarks>Requires the <see cref="AssemblyState.GeneratedAll" /> state.</remarks>
+        /// <seealso cref="State" />
+        [ContractAnnotation("definition:null => false")]
+        public bool TryGetGlobalField(string name, out SolFieldDefinition definition)
+        {
+            AssertState(AssemblyState.GeneratedAll, AssertMatch.ExactOrHigher, "Cannot receive global field definitions if they aren't generated yet.");
+            return m_GlobalFields.TryGetValue(name, out definition);
+        }
+
+        /// <summary>
+        ///     Tries to get the class definition for the given native type.
+        /// </summary>
+        /// <param name="nativeType">The native type.</param>
+        /// <param name="definition">This out value contains the found class, or null.</param>
+        /// <returns>true if a class for the native type could be found, false otherwise.</returns>
+        /// <exception cref="InvalidOperationException">
+        ///     Invalid state.
+        /// </exception>
+        /// <remarks>Requires the <see cref="AssemblyState.GeneratedClassHulls" /> state.</remarks>
+        /// <seealso cref="State" />
+        [ContractAnnotation("definition:null => false")]
+        public bool TryGetClass(Type nativeType, [CanBeNull] out SolClassDefinition definition)
+        {
+            AssertState(AssemblyState.GeneratedClassHulls, AssertMatch.ExactOrHigher, "Cannot receive class definitions if they aren't generated yet.");
+            return m_NativeClasses.TryGetValue(nativeType, out definition);
+        }
+
+        /// <summary>
+        ///     Tries to get the class definition of the given name.<br /> Keep in mind that depending on the current
+        ///     <see cref="State" /> the obtained definition may only be skeleton. Check the documentation of the
+        ///     <see cref="AssemblyState" /> values for more info.
+        /// </summary>
+        /// <param name="className">The class name.</param>
+        /// <param name="definition">This out value contains the found class, or null.</param>
+        /// <returns>true if a class for the native type could be found, false otherwise.</returns>
+        /// <exception cref="InvalidOperationException">
+        ///     Invalid state.
+        /// </exception>
+        /// <remarks>Requires the <see cref="AssemblyState.GeneratedClassHulls" /> state.</remarks>
+        /// <seealso cref="State" />
+        [ContractAnnotation("definition:null => false")]
+        public bool TryGetClass(string className, [CanBeNull] out SolClassDefinition definition)
+        {
+            AssertState(AssemblyState.GeneratedClassHulls, AssertMatch.ExactOrHigher, "Cannot receive class definitions if they aren't generated yet.");
+            return m_ClassDefinitions.TryGetValue(className, out definition);
+        }
+
+        /// <summary>
+        ///     Registers a new class builder in the type registry.
+        /// </summary>
+        /// <param name="builder">The class builder.</param>
+        /// <exception cref="InvalidOperationException">Invalid state.</exception>
+        /// <exception cref="SolTypeRegistryException">
+        ///     Another class with the same <see cref="SolClassBuilder.Name" /> already
+        ///     exists.
+        /// </exception>
+        /// <remarks>Requires the <see cref="AssemblyState.Registry" /> state.</remarks>
+        /// <seealso cref="State" />
+        public void RegisterClassBuilder(SolClassBuilder builder)
+        {
+            AssertState(AssemblyState.Registry, AssertMatch.Exact, "Can only register class builders in registry state.");
+            try {
+                Builders.ClassBuilders.Add(builder.Name, builder);
+            } catch (ArgumentException ex) {
+                throw new SolTypeRegistryException("Another class with the name \"" + builder.Name + "\" already exists.", ex);
+            }
+        }
+
+        /// <summary>
+        ///     Registers multiple new class builders in the type registry.
+        /// </summary>
+        /// <param name="builders">The class builders.</param>
+        /// <exception cref="InvalidOperationException">Invalid state.</exception>
+        /// <seealso cref="State" />
+        /// <exception cref="SolTypeRegistryException">
+        ///     Another class with the same <see cref="SolClassBuilder.Name" /> already
+        ///     exists.
+        /// </exception>
+        /// <remarks>Only available in the <see cref="AssemblyState.Registry" /> state.</remarks>
+        /// <seealso cref="State" />
+        public void RegisterClassBuilders(IEnumerable<SolClassBuilder> builders)
+        {
+            AssertState(AssemblyState.Registry, AssertMatch.Exact, "Can only register class builders in registry state.");
+            foreach (SolClassBuilder builder in builders) {
+                RegisterClassBuilder(builder);
+            }
+        }
+
+        /// <summary>
+        ///     Checks if the given name is a singleton type and returns the singleton definition if it is.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <param name="definition">The singleton definition. Only valid if the method returned true.</param>
+        /// <returns>true if the class with the given name is a singleton, false if not, or no class with this name exists at all.</returns>
+        [ContractAnnotation("definition:null => false")]
+        public bool IsSingleton(string name, out SolClassDefinition definition)
+        {
+            return m_SingletonLookup.TryGetValue(name, out definition);
+        }
+
+        /// <exception cref="InvalidOperationException">Invalid state.</exception>
+        /// <exception cref="SolTypeRegistryException">An error occured while creating the instance.</exception>
+        private SolClass New_Impl(SolClassDefinition definition, ClassCreationOptions options, params SolValue[] constructorArguments)
+        {
+            AssertState(AssemblyState.GeneratedClassBodies, AssertMatch.ExactOrHigher, "Cannot create class instances without having generated the class bodies.");
+            if (!options.EnforceCreation && !definition.CanBeCreated()) {
+                throw new InvalidOperationException($"The class \"{definition.Type}\" cannot be instantiated.");
+            }
+            var annotations = new List<SolClass>();
+            SolClass instance = new SolClass(definition);
+            // The context is required to actually initialize the fields.
+            SolExecutionContext creationContext = options.CallingContext ?? new SolExecutionContext(this, definition.Type + "#" + instance.Id + " creation context");
+            SolClass.Inheritance activeInheritance = instance.InheritanceChain;
+            while (activeInheritance != null) {
+                // Create Annotations
+                if (options.CreateAnnotations) {
+                    foreach (SolAnnotationDefinition annotation in activeInheritance.Definition.Annotations) {
+                        var annotationArgs = new SolValue[annotation.Arguments.Length];
+                        for (int i = 0; i < annotationArgs.Length; i++) {
+                            annotationArgs[i] = annotation.Arguments[i].Evaluate(creationContext, activeInheritance.Variables);
+                        }
+                        try {
+                            SolClass annotationInstance = annotation.Definition.Assembly.New(annotation.Definition, AnnotationClassCreationOptions, annotationArgs);
+                            annotations.Add(annotationInstance);
+                        } catch (SolRuntimeException ex) {
+                            throw new SolTypeRegistryException(
+                                $"An error occured while initializing the annotation \"{annotation.Definition.Type}\" of class \"{instance.Type}\"(Inheritance Level: \"{activeInheritance.Definition.Type}\").",
+                                ex);
+                        }
+                    }
+                }
+                foreach (KeyValuePair<string, SolFieldDefinition> fieldPair in activeInheritance.Definition.FieldPairs) {
+                    SolFieldDefinition fieldDefinition = fieldPair.Value;
+                    ClassVariables variables;
+                    // Which variable context is this field declared in?
+                    switch (fieldDefinition.AccessModifier) {
+                        case SolAccessModifier.None:
+                            variables = instance.GlobalVariables;
+                            break;
+                        case SolAccessModifier.Local:
+                            variables = activeInheritance.Variables;
+                            break;
+                        case SolAccessModifier.Internal:
+                            variables = instance.InternalVariables;
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
+                    // Declare the field.
+                    bool wasDeclared = false;
+                    switch (fieldDefinition.Initializer.FieldType) {
+                        case SolFieldInitializerWrapper.Type.ScriptField:
+                            if (options.DeclareScriptFields) {
+                                variables.Declare(fieldDefinition.Name, fieldDefinition.Type);
+                                wasDeclared = true;
+                            }
+                            break;
+                        case SolFieldInitializerWrapper.Type.NativeField:
+                            if (options.DeclareNativeFields) {
+                                variables.DeclareNative(fieldDefinition.Name, fieldDefinition.Type, fieldDefinition.Initializer.GetNativeField(),
+                                    new DynamicReference.InheritanceNative(activeInheritance));
+                                wasDeclared = true;
+                            }
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
+                    // If the field was declared, let's carry on.
+                    // At this point not all fields have fully been declared, which is fine since field
+                    // initializers are not supposed/allowed to reference other members anyways.
+                    if (wasDeclared) {
+                        // Let's create the field annotations(If we actually have some to create).
+                        if (options.CreateFieldAnnotations && fieldDefinition.Annotations.Count > 0) {
+                            var fieldAnnotationInstances = new SolClass[fieldDefinition.Annotations.Count];
+                            for (int i = 0; i < fieldAnnotationInstances.Length; i++) {
+                                SolAnnotationDefinition fieldAnnotation = fieldDefinition.Annotations[i];
+                                var values = new SolValue[fieldAnnotation.Arguments.Length];
+                                for (int v = 0; v < values.Length; v++) {
+                                    values[v] = fieldAnnotation.Arguments[v].Evaluate(creationContext, activeInheritance.Variables);
+                                }
+                                fieldAnnotationInstances[i] = New(fieldAnnotation.Definition, AnnotationClassCreationOptions, values);
+                            }
+                            variables.AssignAnnotations(fieldDefinition.Name, fieldAnnotationInstances);
+                        }
+                        // Assign the script fields.
+                        if (options.AssignScriptFields && fieldDefinition.Initializer.FieldType == SolFieldInitializerWrapper.Type.ScriptField) {
+                            // Evaluate in the variables of the inheritance since the field initializer of e.g. a global field may still refer to a local field.
+                            try {
+                                variables.Assign(fieldDefinition.Name, fieldDefinition.Initializer.GetScriptField().Evaluate(creationContext, activeInheritance.Variables));
+                            } catch (SolVariableException ex) {
+                                throw new SolTypeRegistryException($"An error occured while initializing the field \"{fieldDefinition.Name}\" on class \"{definition.Type}\".", ex);
+                            }
+                        }
+                    }
+                }
+                // todo: function annotations? should they be lazily created?(that stuff really does not belong into variables though?!)
+                // or it is time to get rid of this stupid lazy function init stuff(but my sweet memory!)
+                activeInheritance = activeInheritance.BaseInheritance;
+            }
+            instance.AnnotationsArray = annotations.ToArray();
+            if (options.CallConstructor) {
+                try {
+                    instance.CallConstructor(creationContext, constructorArguments);
+                } catch (SolRuntimeException ex) {
+                    throw new SolTypeRegistryException($"An error occured while calling the constructor of class \"{definition.Type}\".", ex);
+                }
+            }
+            instance.IsInitialized = options.MarkAsInitialized;
+            return instance;
+        }
+
+        /// <summary>
+        ///     Creates a new class instance.
+        /// </summary>
+        /// <param name="name">The name of the class to instantiate.</param>
+        /// <param name="options">
+        ///     The options for the instance creation. If you are unsure about what this is, passing
+        ///     <see cref="ClassCreationOptions.Default()" /> is typically a good idea.
+        /// </param>
+        /// <param name="constructorArguments">The arguments for the constructor function call.</param>
+        /// <returns>The created class instance.</returns>
+        /// <exception cref="SolTypeRegistryException">An error occured while creating the instance.</exception>
+        /// <exception cref="InvalidOperationException"> The class definitions have not been generated yet. </exception>
+        /// <exception cref="InvalidOperationException"> No class with <paramref name="name" /> exists. </exception>
+        /// <remarks>Requires the <see cref="AssemblyState.GeneratedClassBodies" /> state.</remarks>
+        public SolClass New(string name, ClassCreationOptions options, params SolValue[] constructorArguments)
+        {
+            AssertState(AssemblyState.GeneratedClassBodies, AssertMatch.ExactOrHigher, "Cannot create class instances without having generated the class bodies.");
+            SolClassDefinition definition;
+            if (!m_ClassDefinitions.TryGetValue(name, out definition)) {
+                throw new InvalidOperationException($"The class \"{name}\" does not exist.");
+            }
+            return New(definition, options, constructorArguments);
+        }
+
+        /// <summary>
+        ///     Creates a new class instance.
+        /// </summary>
+        /// <param name="definition">The class definition to generate.</param>
+        /// <param name="options">
+        ///     The options for the instance creation. If you are unsure about what this is, passing
+        ///     <see cref="ClassCreationOptions.Default()" /> is typically a good idea.
+        /// </param>
+        /// <param name="constructorArguments">The arguments for the constructor function call.</param>
+        /// <exception cref="SolTypeRegistryException">An error occured while creating the instance.</exception>
+        /// <exception cref="InvalidOperationException"> The class definitions have not been generated yet. </exception>
+        /// <exception cref="InvalidOperationException"> The <paramref name="definition" /> belongs to a different assembly. </exception>
+        /// <remarks>Requires the <see cref="AssemblyState.GeneratedClassBodies" /> state.</remarks>
+        public SolClass New(SolClassDefinition definition, ClassCreationOptions options, params SolValue[] constructorArguments)
+        {
+            AssertState(AssemblyState.GeneratedClassBodies, AssertMatch.ExactOrHigher, "Cannot create class instances without having generated the class bodies.");
+            if (definition.Assembly != this) {
+                throw new InvalidOperationException($"Cannot create class \"{definition.Type}\"(Assembly: \"{definition.Assembly.Name}\") in Assembly \"{Name}\".");
+            }
+            SolClass instance = New_Impl(definition, options, constructorArguments);
+            return instance;
         }
     }
 }

@@ -18,7 +18,7 @@
         }
 
         /// <inheritdoc />
-        protected override AdditionalMemberInfo GetAddtionalMember(string name)
+        protected override AdditionalMemberInfo GetAdditionalMember(string name)
         {
             return null;
         }

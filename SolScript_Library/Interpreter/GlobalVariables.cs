@@ -22,10 +22,10 @@ namespace SolScript.Interpreter
 
         /// <inheritdoc />
         /// <exception cref="SolVariableException">An error occured.</exception>
-        protected override AdditionalMemberInfo GetAddtionalMember(string name)
+        protected override AdditionalMemberInfo GetAdditionalMember(string name)
         {
             SolClassDefinition definition;
-            if (Assembly.TypeRegistry.IsSingleton(name, out definition)) {
+            if (Assembly.IsSingleton(name, out definition)) {
                 // Singletons are created in two steps. First the instance is created and registered, then the ctor is being called.
                 // This is due to the reason that inside the ctor the singleton might try to refer to itself which would lead to
                 // infinite recursion.
@@ -33,7 +33,7 @@ namespace SolScript.Interpreter
                     delegate {
                         SolDebug.WriteLine("Creating \"" + definition.Type + "\" singleton for variable \"" + name + "\" ... ");
                         try {
-                            SolClass instance = Assembly.TypeRegistry.CreateInstance(definition, s_SingletonClassCreationOptions);
+                            SolClass instance = Assembly.New(definition, s_SingletonClassCreationOptions);
                             return instance;
                         } catch (SolTypeRegistryException ex) {
                             throw new SolVariableException("Failed to create singleton instance \"" + definition.Type + "\".", ex);

@@ -110,8 +110,8 @@ namespace SolScript.Interpreter.Types
         protected override string ToString_Impl(SolExecutionContext context)
         {
             SolClassDefinition.MetaFunctionLink link;
-            if (context != null && TryGetMetaFunction(SolMetaKey.Stringify, out link)) {
-                return SolMetaKey.Stringify.Cast(link.GetFunction(this).Call(context)).NotNull().Value;
+            if (context != null && TryGetMetaFunction(SolMetaKey.__to_string, out link)) {
+                return SolMetaKey.__to_string.Cast(link.GetFunction(this).Call(context)).NotNull().Value;
             }
             return "class#" + Id + "<" + Type + ">";
         }
@@ -121,8 +121,8 @@ namespace SolScript.Interpreter.Types
         public override SolNumber GetN(SolExecutionContext context)
         {
             SolClassDefinition.MetaFunctionLink link;
-            if (TryGetMetaFunction(SolMetaKey.GetN, out link)) {
-                return SolMetaKey.GetN.Cast(link.GetFunction(this).Call(context));
+            if (TryGetMetaFunction(SolMetaKey.__getn, out link)) {
+                return SolMetaKey.__getn.Cast(link.GetFunction(this).Call(context));
             }
             return base.GetN(context);
         }
@@ -139,8 +139,8 @@ namespace SolScript.Interpreter.Types
         public override bool IsEqual(SolExecutionContext context, SolValue other)
         {
             SolClassDefinition.MetaFunctionLink link;
-            if (TryGetMetaFunction(SolMetaKey.IsEqual, out link)) {
-                return SolMetaKey.IsEqual.Cast(link.GetFunction(this).Call(context, other)).NotNull().Value;
+            if (TryGetMetaFunction(SolMetaKey.__is_equal, out link)) {
+                return SolMetaKey.__is_equal.Cast(link.GetFunction(this).Call(context, other)).NotNull().Value;
             }
             SolClass otherType = other as SolClass;
             return otherType != null && Id == otherType.Id;
@@ -151,8 +151,8 @@ namespace SolScript.Interpreter.Types
         public override SolString Concatenate(SolExecutionContext context, SolValue other)
         {
             SolClassDefinition.MetaFunctionLink link;
-            if (TryGetMetaFunction(SolMetaKey.Concatenate, out link)) {
-                return SolMetaKey.Concatenate.Cast(link.GetFunction(this).Call(context, other));
+            if (TryGetMetaFunction(SolMetaKey.__concat, out link)) {
+                return SolMetaKey.__concat.Cast(link.GetFunction(this).Call(context, other));
             }
             return base.Concatenate(context, other);
         }
@@ -162,8 +162,8 @@ namespace SolScript.Interpreter.Types
         public override SolNumber Add(SolExecutionContext context, SolValue other)
         {
             SolClassDefinition.MetaFunctionLink link;
-            if (TryGetMetaFunction(SolMetaKey.Add, out link)) {
-                return SolMetaKey.Add.Cast(link.GetFunction(this).Call(context, other));
+            if (TryGetMetaFunction(SolMetaKey.__add, out link)) {
+                return SolMetaKey.__add.Cast(link.GetFunction(this).Call(context, other));
             }
             return base.Add(context, other);
         }
@@ -173,8 +173,8 @@ namespace SolScript.Interpreter.Types
         public override SolValue Subtract(SolExecutionContext context, SolValue other)
         {
             SolClassDefinition.MetaFunctionLink link;
-            if (TryGetMetaFunction(SolMetaKey.Subtract, out link)) {
-                return SolMetaKey.Subtract.Cast(link.GetFunction(this).Call(context, other));
+            if (TryGetMetaFunction(SolMetaKey.__sub, out link)) {
+                return SolMetaKey.__sub.Cast(link.GetFunction(this).Call(context, other));
             }
             return base.Subtract(context, other);
         }
@@ -184,8 +184,8 @@ namespace SolScript.Interpreter.Types
         public override SolValue Multiply(SolExecutionContext context, SolValue other)
         {
             SolClassDefinition.MetaFunctionLink link;
-            if (TryGetMetaFunction(SolMetaKey.Multiply, out link)) {
-                return SolMetaKey.Multiply.Cast(link.GetFunction(this).Call(context, other));
+            if (TryGetMetaFunction(SolMetaKey.__mul, out link)) {
+                return SolMetaKey.__mul.Cast(link.GetFunction(this).Call(context, other));
             }
             return base.Multiply(context, other);
         }
@@ -195,8 +195,8 @@ namespace SolScript.Interpreter.Types
         public override SolValue Divide(SolExecutionContext context, SolValue other)
         {
             SolClassDefinition.MetaFunctionLink link;
-            if (TryGetMetaFunction(SolMetaKey.Divide, out link)) {
-                return SolMetaKey.Divide.Cast(link.GetFunction(this).Call(context, other));
+            if (TryGetMetaFunction(SolMetaKey.__div, out link)) {
+                return SolMetaKey.__div.Cast(link.GetFunction(this).Call(context, other));
             }
             return base.Divide(context, other);
         }
@@ -206,8 +206,8 @@ namespace SolScript.Interpreter.Types
         public override SolValue Exponentiate(SolExecutionContext context, SolValue other)
         {
             SolClassDefinition.MetaFunctionLink link;
-            if (TryGetMetaFunction(SolMetaKey.Expotentiate, out link)) {
-                return SolMetaKey.Expotentiate.Cast(link.GetFunction(this).Call(context, other));
+            if (TryGetMetaFunction(SolMetaKey.__exp, out link)) {
+                return SolMetaKey.__exp.Cast(link.GetFunction(this).Call(context, other));
             }
             return base.Exponentiate(context, other);
         }
@@ -217,8 +217,8 @@ namespace SolScript.Interpreter.Types
         public override SolValue Modulo(SolExecutionContext context, SolValue other)
         {
             SolClassDefinition.MetaFunctionLink link;
-            if (TryGetMetaFunction(SolMetaKey.Modulo, out link)) {
-                return SolMetaKey.Modulo.Cast(link.GetFunction(this).Call(context, other));
+            if (TryGetMetaFunction(SolMetaKey.__mod, out link)) {
+                return SolMetaKey.__mod.Cast(link.GetFunction(this).Call(context, other));
             }
             return base.Modulo(context, other);
         }
@@ -228,8 +228,8 @@ namespace SolScript.Interpreter.Types
         public override IEnumerable<SolValue> Iterate(SolExecutionContext context)
         {
             SolClassDefinition.MetaFunctionLink link;
-            if (TryGetMetaFunction(SolMetaKey.Iterate, out link)) {
-                return SolMetaKey.Iterate.Cast(link.GetFunction(this).Call(context)).NotNull().Iterate(context);
+            if (TryGetMetaFunction(SolMetaKey.__iterate, out link)) {
+                return SolMetaKey.__iterate.Cast(link.GetFunction(this).Call(context)).NotNull().Iterate(context);
             }
             return base.Iterate(context);
         }
@@ -335,7 +335,7 @@ namespace SolScript.Interpreter.Types
             try {
                 SolClassDefinition.MetaFunctionLink link;
                 // If the constructor could not be found, we add a dummy function in order to have a stack trace.
-                ctorFunction = TryGetMetaFunction(SolMetaKey.Constructor, out link) ? link.GetFunction(this) : SolFunction.Dummy(Assembly);
+                ctorFunction = TryGetMetaFunction(SolMetaKey.__new, out link) ? link.GetFunction(this) : SolFunction.Dummy(Assembly);
             } catch (SolVariableException ex) {
                 throw new InvalidOperationException($"The constructor of \"{Type}\" was in an invalid state.", ex);
             }
@@ -346,8 +346,8 @@ namespace SolScript.Interpreter.Types
                 SolValue[] rawArgs = args;
                 try {
                     SolClassDefinition.MetaFunctionLink preLink;
-                    if (annotation.TryGetMetaFunction(SolMetaKey.AnnotationPreConstructor, out preLink)) {
-                        SolTable metaTable = SolMetaKey.AnnotationPreConstructor.Cast(preLink.GetFunction(annotation).Call(callingContext, new SolTable(args), new SolTable(rawArgs))).NotNull();
+                    if (annotation.TryGetMetaFunction(SolMetaKey.__a_pre_new, out preLink)) {
+                        SolTable metaTable = SolMetaKey.__a_pre_new.Cast(preLink.GetFunction(annotation).Call(callingContext, new SolTable(args), new SolTable(rawArgs))).NotNull();
                         SolValue metaNewArgsRaw;
                         if (metaTable.TryGet("new_args", out metaNewArgsRaw)) {
                             SolTable metaNewArgs = metaNewArgsRaw as SolTable;
@@ -372,7 +372,7 @@ namespace SolScript.Interpreter.Types
             foreach (SolClass annotation in AnnotationsArray) {
                 try {
                     SolClassDefinition.MetaFunctionLink postLink;
-                    if (annotation.TryGetMetaFunction(SolMetaKey.AnnotationPostConstructor, out postLink)) {
+                    if (annotation.TryGetMetaFunction(SolMetaKey.__a_post_new, out postLink)) {
                         postLink.GetFunction(annotation).Call(callingContext, new SolTable(args));
                     }
                 } catch (SolVariableException ex) {

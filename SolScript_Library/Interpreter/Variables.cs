@@ -7,8 +7,15 @@ using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter
 {
+    /// <summary>
+    ///     Standard <see cref="IVariables" /> implementation. Supports every basic operation, but nothing fancy aswell.
+    /// </summary>
     public class Variables : IVariables
     {
+        /// <summary>
+        ///     Creates a new <see cref="Variables" /> instance for the given <paramref name="assembly" />.
+        /// </summary>
+        /// <param name="assembly">The assembly.</param>
         public Variables([NotNull] SolAssembly assembly)
         {
             Assembly = assembly;
@@ -23,7 +30,7 @@ namespace SolScript.Interpreter
         /// <inheritdoc />
         /// <exception cref="ArgumentException" accessor="set">
         ///     The <paramref name="value" /> assembly differs from the
-        ///     <see cref="Assembly" /> of this context or is a cyclic referenece
+        ///     <see cref="Assembly" /> of this context or is a cyclic reference.
         /// </exception>
         public IVariables Parent {
             get { return m_ParentContext; }
@@ -32,7 +39,7 @@ namespace SolScript.Interpreter
                     throw new ArgumentException("Tried to set a cyclic reference to the Parent of a Variables class.", nameof(value));
                 }
                 if (value != null && value.Assembly != Assembly) {
-                    // todo: really? why should we not be able to parent contexts from different assemblies?
+                    // Other assemblies are not allowed since we may or may not have the classes of that assembly in our assembly.
                     throw new ArgumentException("Cannot parent variable context from different assemblies!", nameof(value));
                 }
                 m_ParentContext = value;
@@ -165,6 +172,9 @@ namespace SolScript.Interpreter
 
         #endregion
 
+        /// <summary>
+        /// Checks if this <see cref="Variables"/> at some point is parented to <paramref name="variables"/>(Or even is <paramref name="variables"/>).
+        /// </summary>
         internal bool IsCyclicReferenceTo(IVariables variables)
         {
             IVariables active = this;
@@ -307,10 +317,10 @@ namespace SolScript.Interpreter
                     foreach (SolClass annotation in Annotations) {
                         // Get Variable Annotation Function
                         SolClassDefinition.MetaFunctionLink link;
-                        if (annotation.TryGetMetaFunction(SolMetaKey.AnnotationGetVariable, out link)) {
+                        if (annotation.TryGetMetaFunction(SolMetaKey.__a_get_variable, out link)) {
                             SolTable table;
                             try {
-                                table = SolMetaKey.AnnotationGetVariable.Cast(link.GetFunction(annotation).Call(context, value, rawValue));
+                                table = SolMetaKey.__a_get_variable.Cast(link.GetFunction(annotation).Call(context, value, rawValue));
                             } catch (SolRuntimeException ex) {
                                 return new GetOperation(null, VariableState.FailedRuntimeError, ex);
                             }
@@ -347,10 +357,10 @@ namespace SolScript.Interpreter
                     foreach (SolClass annotation in Annotations) {
                         // Get Variable Annotation Function
                         SolClassDefinition.MetaFunctionLink link;
-                        if (annotation.TryGetMetaFunction(SolMetaKey.AnnotationSetVariable, out link)) {
+                        if (annotation.TryGetMetaFunction(SolMetaKey.__a_set_variable, out link)) {
                             SolTable table;
                             try {
-                                table = SolMetaKey.AnnotationSetVariable.Cast(link.GetFunction(annotation).Call(context, value, rawValue));
+                                table = SolMetaKey.__a_set_variable.Cast(link.GetFunction(annotation).Call(context, value, rawValue));
                             } catch (SolRuntimeException ex) {
                                 return new SetOperation(VariableState.FailedRuntimeError, ex);
                             }

@@ -120,7 +120,7 @@ namespace SolScript.Interpreter.Types
         /// <param name="assembly">The assembly this function belongs to.</param>
         /// <returns>The dummy function.</returns>
         public static SolFunction Dummy(SolAssembly assembly)
-            => new SolScriptLamdaFunction(assembly, SolSourceLocation.Native(), SolParameterInfo.Any, SolType.AnyNil, new SolChunk(assembly, null), null);
+            => new SolScriptLamdaFunction(assembly, SolSourceLocation.Native(), SolParameterInfo.Any, SolType.AnyNil, new SolChunk(assembly, SolSourceLocation.Native(),  null), null);
 
         /// <summary>
         ///     Creates a delegate you can use to call the function.

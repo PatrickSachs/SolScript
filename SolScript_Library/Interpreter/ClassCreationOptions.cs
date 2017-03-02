@@ -12,8 +12,6 @@ namespace SolScript.Interpreter
     /// </summary>
     public abstract class ClassCreationOptions
     {
-        // todo: hooks? callbacks? (ClassCreationOptions)
-
         /// <summary>
         ///     Should native fields be declared? Native fields do not need to be assigned since the native part of the class takes
         ///     care of that part. The declaration only informs SolScript about the existance of those fields.
@@ -32,7 +30,7 @@ namespace SolScript.Interpreter
         public abstract bool AssignScriptFields { get; }
 
         /// <summary>
-        ///     Sould be annotations on the class be created?
+        ///     Should be annotations on the class be created?
         /// </summary>
         public abstract bool CreateAnnotations { get; }
 

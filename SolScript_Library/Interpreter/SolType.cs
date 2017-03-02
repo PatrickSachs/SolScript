@@ -54,7 +54,7 @@ namespace SolScript.Interpreter
             }
             // The following checks only apply if the other type is a class definition.
             SolClassDefinition classDef;
-            if (assembly.TypeRegistry.TryGetClass(other, out classDef)) {
+            if (assembly.TryGetClass(other, out classDef)) {
                 // If we accept any class the other type is compatible.
                 if (Type == SolValue.CLASS_TYPE) {
                     return true;
@@ -103,7 +103,7 @@ namespace SolScript.Interpreter
             if (Type != type.Type) {
                 // If the types are not the same the values is not compatible unless it is a mixin of another @class.
                 SolClassDefinition classDef;
-                if (assembly.TypeRegistry.TryGetClass(type.Type, out classDef)) {
+                if (assembly.TryGetClass(type.Type, out classDef)) {
                     if (classDef.DoesExtendInHierarchy(type.Type)) {
                         return false;
                     }

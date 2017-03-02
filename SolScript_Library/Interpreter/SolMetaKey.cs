@@ -19,24 +19,6 @@ namespace SolScript.Interpreter
             Type = type;
         }
 
-        public static readonly SolMetaKey<SolNil> Constructor = new SolMetaKey<SolNil>("__new", true);
-        public static readonly SolMetaKey<SolString> Stringify = new SolMetaKey<SolString>("__to_string", false);
-        public static readonly SolMetaKey<SolNumber> GetN = new SolMetaKey<SolNumber>("__get_n", false);
-        public static readonly SolMetaKey<SolBool> IsEqual = new SolMetaKey<SolBool>("__is_equal", false);
-        public static readonly SolMetaKey<SolTable> Iterate = new SolMetaKey<SolTable>("__iterate", false);
-        public static readonly SolMetaKey<SolNumber> Modulo = new SolMetaKey<SolNumber>("__modulo", false);
-        public static readonly SolMetaKey<SolNumber> Expotentiate = new SolMetaKey<SolNumber>("__expotentiate", false);
-        public static readonly SolMetaKey<SolNumber> Divide = new SolMetaKey<SolNumber>("__divide", false);
-        public static readonly SolMetaKey<SolNumber> Add = new SolMetaKey<SolNumber>("__add", false);
-        public static readonly SolMetaKey<SolNumber> Subtract = new SolMetaKey<SolNumber>("__subtract", false);
-        public static readonly SolMetaKey<SolNumber> Multiply = new SolMetaKey<SolNumber>("__multiply", false);
-        public static readonly SolMetaKey<SolString> Concatenate = new SolMetaKey<SolString>("__concatenate", false);
-        public static readonly SolMetaKey<SolTable> AnnotationPreConstructor = new SolMetaKey<SolTable>("__a_pre_new", false);
-        public static readonly SolMetaKey<SolTable> AnnotationPostConstructor = new SolMetaKey<SolTable>("__a_post_new", false);
-        public static readonly SolMetaKey<SolTable> AnnotationGetVariable = new SolMetaKey<SolTable>("__a_get_variable", false);
-        public static readonly SolMetaKey<SolTable> AnnotationSetVariable = new SolMetaKey<SolTable>("__a_set_variable", false);
-        public static readonly SolMetaKey<SolTable> AnnotationCallFunction = new SolMetaKey<SolTable>("__a_call_function", false);
-
         /// <summary>
         ///     The name of the functions implementation the meta functions indexable by this key.
         /// </summary>
@@ -49,6 +31,7 @@ namespace SolScript.Interpreter
 
         #region Overrides
 
+        /// <inheritdoc />
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) {
@@ -63,6 +46,7 @@ namespace SolScript.Interpreter
             return Equals_Impl((SolMetaKey) obj);
         }
 
+        /// <inheritdoc />
         public override int GetHashCode()
         {
             unchecked {
@@ -72,6 +56,9 @@ namespace SolScript.Interpreter
 
         #endregion
 
+        /// <summary>
+        ///     Equality comparison implementation. Does not check for null.
+        /// </summary>
         protected virtual bool Equals_Impl(SolMetaKey other)
         {
             return Type.Equals(other.Type) && string.Equals(Name, other.Name);
@@ -89,6 +76,98 @@ namespace SolScript.Interpreter
             }
             return Equals_Impl(other);
         }
+
+        #region Meta Keys
+
+        // ReSharper disable InconsistentNaming
+        /// <summary>
+        ///     The constructor.
+        /// </summary>
+        public static readonly SolMetaKey<SolNil> __new = new SolMetaKey<SolNil>(nameof(__new), true);
+
+        /// <summary>
+        ///     Converts the class to a string.
+        /// </summary>
+        public static readonly SolMetaKey<SolString> __to_string = new SolMetaKey<SolString>(nameof(__to_string), false);
+
+        /// <summary>
+        ///     Counts the class.
+        /// </summary>
+        public static readonly SolMetaKey<SolNumber> __getn = new SolMetaKey<SolNumber>(nameof(__getn), false);
+
+        /// <summary>
+        ///     Checks if a class is equal to something.
+        /// </summary>
+        public static readonly SolMetaKey<SolBool> __is_equal = new SolMetaKey<SolBool>(nameof(__is_equal), false);
+
+        /// <summary>
+        ///     Iterates the class.
+        /// </summary>
+        public static readonly SolMetaKey<SolTable> __iterate = new SolMetaKey<SolTable>(nameof(__iterate), false);
+
+        /// <summary>
+        ///     Gets the modulo of a class and something else.
+        /// </summary>
+        public static readonly SolMetaKey<SolNumber> __mod = new SolMetaKey<SolNumber>(nameof(__mod), false);
+
+        /// <summary>
+        ///     Expotentiates a class by something.
+        /// </summary>
+        public static readonly SolMetaKey<SolNumber> __exp = new SolMetaKey<SolNumber>(nameof(__exp), false);
+
+        /// <summary>
+        ///     Divides a class by something.
+        /// </summary>
+        public static readonly SolMetaKey<SolNumber> __div = new SolMetaKey<SolNumber>(nameof(__div), false);
+
+        /// <summary>
+        ///     Adds something to a class.
+        /// </summary>
+        public static readonly SolMetaKey<SolNumber> __add = new SolMetaKey<SolNumber>(nameof(__add), false);
+
+        /// <summary>
+        ///     Subtracts something from a class.
+        /// </summary>
+        public static readonly SolMetaKey<SolNumber> __sub = new SolMetaKey<SolNumber>(nameof(__sub), false);
+
+        /// <summary>
+        ///     Multiplies a class by something.
+        /// </summary>
+        public static readonly SolMetaKey<SolNumber> __mul = new SolMetaKey<SolNumber>(nameof(__mul), false);
+
+        /// <summary>
+        ///     Concatenates something to a class.
+        /// </summary>
+        public static readonly SolMetaKey<SolString> __concat = new SolMetaKey<SolString>(nameof(__concat), false);
+
+        /// <summary>
+        ///     Called before the constructor.
+        /// </summary>
+        public static readonly SolMetaKey<SolTable> __a_pre_new = new SolMetaKey<SolTable>(nameof(__a_pre_new), false);
+
+        /// <summary>
+        ///     Called after the constructor.
+        /// </summary>
+        public static readonly SolMetaKey<SolTable> __a_post_new = new SolMetaKey<SolTable>(nameof(__a_post_new), false);
+
+        /// <summary>
+        ///     Called whenever the linked variable/field is received.
+        /// </summary>
+        public static readonly SolMetaKey<SolTable> __a_get_variable = new SolMetaKey<SolTable>(nameof(__a_get_variable), false);
+
+        /// <summary>
+        ///     Called whenever the linked variable/field is set.
+        /// </summary>
+        public static readonly SolMetaKey<SolTable> __a_set_variable = new SolMetaKey<SolTable>(nameof(__a_set_variable), false);
+
+        /// <summary>
+        ///     Called whenever the linked function is called.
+        /// </summary>
+        public static readonly SolMetaKey<SolTable> __a_call_function = new SolMetaKey<SolTable>(nameof(__a_call_function), false);
+
+        // ReSharper restore InconsistentNaming
+
+        #endregion
     }
 
     /// <inheritdoc cref="SolMetaKey" />
@@ -106,7 +185,7 @@ namespace SolScript.Interpreter
         [CanBeNull]
         public T Cast(SolValue value)
         {
-            // todo: the CanBeNull attribute seems to create more trouble that it worth. Maybe find other some way to ahnde null/nil.
+            // todo: the CanBeNull attribute seems to create more trouble that it worth. Maybe find other some way to handle null/nil.
             if (Type.CanBeNil && value == SolNil.Instance) {
                 return null;
             }

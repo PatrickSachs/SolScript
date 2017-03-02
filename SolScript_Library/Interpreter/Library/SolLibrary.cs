@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using JetBrains.Annotations;
 using SolScript.Interpreter.Builders;
+using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter.Library
 {
@@ -18,28 +19,79 @@ namespace SolScript.Interpreter.Library
             RegisterMethodPostProcessor(nameof(GetHashCode), NativeMethodPostProcessor.GetFailer());
             RegisterMethodPostProcessor(nameof(GetType), NativeMethodPostProcessor.GetFailer());
             RegisterMethodPostProcessor(nameof(Equals), NativeMethodPostProcessor.GetFailer());
-            RegisterMethodPostProcessor(nameof(ToString), NativeMethodPostProcessor.GetRenamerAndAccessorAndReturn(SolMetaKey.Stringify.Name, SolAccessModifier.Internal, SolMetaKey.Stringify.Type));
+            RegisterMethodPostProcessor(nameof(ToString), NativeMethodPostProcessor.GetRenamerAndAccessorAndReturn(SolMetaKey.__to_string.Name, SolAccessModifier.Internal, SolMetaKey.__to_string.Type));
             // Annotations
             NativeMethodPostProcessor internalPostProcessor = NativeMethodPostProcessor.GetAccessor(SolAccessModifier.Internal);
-            RegisterMethodPostProcessor(SolMetaKey.AnnotationGetVariable.Name, internalPostProcessor);
-            RegisterMethodPostProcessor(SolMetaKey.AnnotationSetVariable.Name, internalPostProcessor);
-            RegisterMethodPostProcessor(SolMetaKey.AnnotationCallFunction.Name, internalPostProcessor);
-            RegisterMethodPostProcessor(SolMetaKey.AnnotationPreConstructor.Name, internalPostProcessor);
-            RegisterMethodPostProcessor(SolMetaKey.AnnotationPostConstructor.Name, internalPostProcessor);
+            RegisterMethodPostProcessor(SolMetaKey.__a_get_variable.Name, internalPostProcessor);
+            RegisterMethodPostProcessor(SolMetaKey.__a_set_variable.Name, internalPostProcessor);
+            RegisterMethodPostProcessor(SolMetaKey.__a_call_function.Name, internalPostProcessor);
+            RegisterMethodPostProcessor(SolMetaKey.__a_pre_new.Name, internalPostProcessor);
+            RegisterMethodPostProcessor(SolMetaKey.__a_post_new.Name, internalPostProcessor);
             // todo: meta function post processors (detect operators).
             FallbackFieldPostProcessor = NativeFieldPostProcessor.GetDefault();
         }
 
-        internal const string STD_NAME = "std";
         private readonly Assembly[] m_Assemblies;
-        private readonly Dictionary<SolAssembly, AssemblyClassInfo> m_AssemblyClasses = new Dictionary<SolAssembly, AssemblyClassInfo>();
         private readonly Dictionary<string, NativeFieldPostProcessor> m_FieldPostProcessors = new Dictionary<string, NativeFieldPostProcessor>();
+        private readonly List<SolFieldBuilder> m_GlobalFieldBuilders = new List<SolFieldBuilder>();
+        private readonly List<SolFunctionBuilder> m_GlobalFunctions = new List<SolFunctionBuilder>();
         private readonly Dictionary<string, NativeMethodPostProcessor> m_MethodPostProcessors = new Dictionary<string, NativeMethodPostProcessor>();
+        private readonly Dictionary<Type, SolClassBuilder> m_NativeToBuilder = new Dictionary<Type, SolClassBuilder>();
+        private readonly Dictionary<string, SolClassBuilder> m_SolToBuilder = new Dictionary<string, SolClassBuilder>();
         private NativeFieldPostProcessor m_FallbackFieldPostProcessor;
         private NativeMethodPostProcessor m_FallbackMethodPostProcessor;
 
+        /// <summary>
+        ///     Have the builders of this library been created?
+        /// </summary>
+        public bool HasBeenCreated { get; private set; }
+
+        /// <summary>
+        ///     All classes in this library.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">The builders have not been created yet.</exception>
+        /// <seealso cref="HasBeenCreated" />
+        public IReadOnlyDictionary<string, SolClassBuilder> Classes {
+            get {
+                if (!HasBeenCreated) {
+                    throw new InvalidOperationException("Cannot obtain library " + Name + " class builders if they are not created yet.");
+                }
+                return m_SolToBuilder;
+            }
+        }
+
+        /// <summary>
+        ///     All global fields in this library.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">The builders have not been created yet.</exception>
+        /// <seealso cref="HasBeenCreated" />
+        public IReadOnlyList<SolFieldBuilder> GlobalFields {
+            get {
+                if (!HasBeenCreated) {
+                    throw new InvalidOperationException("Cannot obtain library " + Name + " field builders if they are not created yet.");
+                }
+                return m_GlobalFieldBuilders;
+            }
+        }
+
+        /// <summary>
+        ///     All global functions in this library.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">The builders have not been created yet.</exception>
+        /// <seealso cref="HasBeenCreated" />
+        public IReadOnlyList<SolFunctionBuilder> GlobalFunctions {
+            get {
+                if (!HasBeenCreated) {
+                    throw new InvalidOperationException("Cannot obtain library " + Name + " function builders if they are not created yet.");
+                }
+                return m_GlobalFunctions;
+            }
+        }
+
+        /// <summary>
+        ///     The name of the library.
+        /// </summary>
         public string Name { get; }
-        public static SolLibrary StandardLibrary { get; } = new SolLibrary(STD_NAME, typeof(SolAssembly).Assembly);
 
         /// <summary>
         ///     This fallback processor will be used in case there is no explicitly defined post processor the a method.
@@ -131,132 +183,85 @@ namespace SolScript.Interpreter.Library
         }
 
         /// <summary>
-        ///     Gets the class info for a certain assembly. The class info is used to store all of the assembly individual data of
-        ///     a Library. If the assembly does not have a class info yet, it will be created.
+        ///     Creates the library by creating all builders for the registered classes.
         /// </summary>
-        /// <param name="assembly">The assembly to get the class info of.</param>
-        /// <returns>The class info.</returns>
-        private AssemblyClassInfo GetAssemblyClassInfo(SolAssembly assembly)
+        /// <exception cref="InvalidOperationException">The library has already been created.</exception>
+        /// <seealso cref="HasBeenCreated" />
+        public void Create()
         {
-            AssemblyClassInfo info;
-            if (m_AssemblyClasses.TryGetValue(assembly, out info)) {
-                if (info.Assembly != assembly) {
-                    throw new InvalidOperationException("The registered internal assemblies do not match.");
-                }
-            } else {
-                info = new AssemblyClassInfo(assembly);
-                m_AssemblyClasses[assembly] = info;
-            }
-            return info;
-        }
-
-        /// <summary>
-        ///     Builds the "hulls" of the classes without any actual content. This is
-        ///     requires before building the actual contents of the library as types need
-        ///     to be resolved in a static manner(as opposed to dynamic for the script
-        ///     classes/functions). This is done to increase marshalling speed during
-        ///     runtime.
-        /// </summary>
-        /// <returns>
-        ///     A collection of class definitions containing: Their
-        ///     <see cref="ClassDef.ClrType" /> aswell as their <see cref="ClassDef.Mode" />
-        ///     and <see cref="ClassDef.Name" />.
-        /// </returns>
-        public IReadOnlyCollection<SolClassBuilder> BuildClassHulls(SolAssembly forAssembly /*, out SolGlobalsBuilder globalsBuilder*/)
-        {
-            AssemblyClassInfo classInfo = GetAssemblyClassInfo(forAssembly);
-            //globalsBuilder = classInfo.GlobalsBuilder;
-            if (classInfo.DidCreateClassDefinitions) {
-                return classInfo.Builders;
+            if (HasBeenCreated) {
+                throw new InvalidOperationException("The library " + Name + " has already been created.");
             }
             foreach (Assembly assembly in m_Assemblies) {
+                // === Create Builder Hulls
+                // Two steps needed to determine base classes.
                 foreach (Type type in assembly.GetTypes()) {
-                    //SolDebug.WriteLine(type.Name);
                     SolLibraryClassAttribute libraryClass = type.GetCustomAttribute<SolLibraryClassAttribute>();
                     if (libraryClass != null && libraryClass.LibraryName == Name) {
-                        SolDebug.WriteLine("Library " + Name + " got: " + type.Name);
                         string className = type.GetCustomAttribute<SolLibraryNameAttribute>()?.Name ?? type.Name;
+                        SolDebug.WriteLine("Library " + Name + " got: " + type.Name + " => " + className);
                         SolTypeMode classMode = libraryClass.Mode;
                         SolClassBuilder builder = new SolClassBuilder(className, classMode).SetNativeType(type);
-                        classInfo.AddBuilder(className, type, builder);
+                        m_SolToBuilder.Add(className, builder);
+                        m_NativeToBuilder.Add(type, builder);
                     }
                     SolGlobalAttribute globalClassAttribute = type.GetCustomAttribute<SolGlobalAttribute>();
                     if (globalClassAttribute != null && globalClassAttribute.Library == Name) {
                         SolDebug.WriteLine("Library " + Name + " scans global class: " + type.Name);
                         // todo: global native fields
-                        // todo: does this belong in build class hulls?
-                        // todo: investigate merging builder & definition
-                        // todo: ivestigate where the scanning should be done
-                        // todo: remove the work of having to scan the native stuff for types from the function impls(prolly belongs in type registry in case multiple libs are used)
                         foreach (MethodInfo method in type.GetMethods(BINDING_FLAGS)) {
                             SolGlobalAttribute globalMethodAttribute = method.GetCustomAttribute<SolGlobalAttribute>();
                             if (globalMethodAttribute != null && globalMethodAttribute.Library == Name) {
                                 SolDebug.WriteLine("  Found " + method.Name);
                                 SolFunctionBuilder solMethod;
-                                if (TryBuildMethod(forAssembly, method, out solMethod)) {
-                                    forAssembly.TypeRegistry.GlobalsBuilder.AddFunction(solMethod);
+                                if (TryBuildMethod(method, out solMethod)) {
+                                    m_GlobalFunctions.Add(solMethod);
                                 }
                             }
                         }
                     }
                 }
             }
-            classInfo.DidCreateClassDefinitions = true;
-            return classInfo.Builders;
+            // === Create Builder Bodies
+            foreach (SolClassBuilder builder in m_SolToBuilder.Values) {
+                // ReSharper disable LoopCanBeConvertedToQuery
+                foreach (ConstructorInfo constructor in builder.NativeType.GetConstructors(BINDING_FLAGS)) {
+                    SolFunctionBuilder solConstructor;
+                    if (TryBuildConstructor(constructor, out solConstructor)) {
+                        builder.AddFunction(solConstructor);
+                    }
+                }
+                if (builder.Functions.Count == 0) {
+                    throw new InvalidOperationException("The class " + builder.Name + " does not define a constructor. Make sure to expose at least one constructor.");
+                }
+                foreach (MethodInfo method in builder.NativeType.GetMethods(BINDING_FLAGS)) {
+                    SolFunctionBuilder solMethod;
+                    if (method.IsSpecialName) {
+                        continue;
+                    }
+                    if (TryBuildMethod(method, out solMethod)) {
+                        builder.AddFunction(solMethod);
+                    }
+                }
+                foreach (FieldOrPropertyInfo field in FieldOrPropertyInfo.Get(builder.NativeType)) {
+                    SolFieldBuilder solField;
+                    if (field.IsSpecialName) {
+                        continue;
+                    }
+                    if (TryBuildField(field, out solField)) {
+                        builder.AddField(solField);
+                    }
+                }
+                // ReSharper enable LoopCanBeConvertedToQuery
+                // todo: annotations for native types
+                Type baseType = builder.NativeType.BaseType;
+                SolClassBuilder baseTypeBuilder;
+                if (baseType != null && m_NativeToBuilder.TryGetValue(baseType, out baseTypeBuilder)) {
+                    builder.SetBaseClass(baseTypeBuilder.Name);
+                }
+            }
+            HasBeenCreated = true;
         }
-
-        #region Nested type: AssemblyClassInfo
-
-        /// <summary>
-        ///     A library is used universally between assemblies. Each of these data
-        ///     classes holds the data for one assembly.
-        /// </summary>
-        private class AssemblyClassInfo
-        {
-            public AssemblyClassInfo(SolAssembly assembly)
-            {
-                Assembly = assembly;
-                m_SolToBuilder = new Dictionary<string, SolClassBuilder>();
-                m_NativeToBuilder = new Dictionary<Type, SolClassBuilder>();
-                //GlobalsBuilder = new SolGlobalsBuilder();
-            }
-
-            public readonly SolAssembly Assembly;
-            private readonly Dictionary<Type, SolClassBuilder> m_NativeToBuilder;
-            private readonly Dictionary<string, SolClassBuilder> m_SolToBuilder;
-            //public readonly SolGlobalsBuilder GlobalsBuilder;
-            public bool DidCreateClassDefinitions;
-
-            public IReadOnlyCollection<SolClassBuilder> Builders => m_NativeToBuilder.Values;
-
-            public void AddBuilder(string solType, Type type, SolClassBuilder builder)
-            {
-                m_SolToBuilder.Add(solType, builder);
-                m_NativeToBuilder.Add(type, builder);
-            }
-
-            public SolClassBuilder GetBuilder(string solType)
-            {
-                return m_SolToBuilder[solType];
-            }
-
-            public SolClassBuilder GetBuilder(Type nativeType)
-            {
-                return m_NativeToBuilder[nativeType];
-            }
-
-            public bool TryGetBuilder(Type nativeType, out SolClassBuilder builder)
-            {
-                return m_NativeToBuilder.TryGetValue(nativeType, out builder);
-            }
-
-            public bool TryGetBuilder(string solType, out SolClassBuilder builder)
-            {
-                return m_SolToBuilder.TryGetValue(solType, out builder);
-            }
-        }
-
-        #endregion
 
         #region Nested type: NativeFieldPostProcessor
 
@@ -561,77 +566,8 @@ namespace SolScript.Interpreter.Library
 
         #endregion
 
-        // todo: ctor post processor
-        /// <summary>
-        ///     Builds the actual contents of the classes. This operation requires
-        ///     you to have built the class hulls beforehand.
-        /// </summary>
-        /// <returns>
-        ///     A collection of fully operable class definitions. Ideally you should
-        ///     never need to use the return value as they are the same references the the
-        ///     ones returned from <see cref="BuildClassHulls(SolAssembly)" />.
-        /// </returns>
-        /// <exception cref="InvalidOperationException">
-        ///     The class hulls have no been built
-        ///     yet.
-        ///     <br />
-        ///     See also: <seealso cref="BuildClassHulls(SolAssembly)" />
-        /// </exception>
-        public IReadOnlyCollection<SolClassBuilder> BuildClassBodies(SolAssembly forAssembly)
-        {
-            AssemblyClassInfo classInfo = GetAssemblyClassInfo(forAssembly);
-            if (!classInfo.DidCreateClassDefinitions) {
-                throw new InvalidOperationException("Tried to build class bodies without having built the class hulls. Make sure to call BuildClassHulls() before BuildClassBodies().");
-            }
-            foreach (SolClassBuilder builder in classInfo.Builders) {
-                if (builder.NativeType == null) {
-                    throw new InvalidOperationException(
-                        "The ClrType of a class inside a SolLibrary is null. Did you manually temper with the class definitions or was it overwritten by another library?");
-                }
-                // ReSharper disable LoopCanBeConvertedToQuery
-                foreach (ConstructorInfo constructor in builder.NativeType.GetConstructors(BINDING_FLAGS)) {
-                    SolFunctionBuilder solConstructor;
-                    if (TryBuildConstructor(forAssembly, constructor, out solConstructor)) {
-                        builder.AddFunction(solConstructor);
-                    }
-                }
-                if (builder.Functions.Count == 0) {
-                    throw new InvalidOperationException("The class " + builder.Name + " does not define a constructor. Make sure to expose at least one constructor.");
-                }
-                foreach (MethodInfo method in builder.NativeType.GetMethods(BINDING_FLAGS)) {
-                    SolFunctionBuilder solMethod;
-                    string str = method.Name;
-                    Attribute[] attr = method.GetCustomAttributes().ToArray();
-                    if (method.IsSpecialName) {
-                        continue;
-                    }
-                    if (TryBuildMethod(forAssembly, method, out solMethod)) {
-                        builder.AddFunction(solMethod);
-                    }
-                }
-                foreach (FieldOrPropertyInfo field in FieldOrPropertyInfo.Get(builder.NativeType)) {
-                    SolFieldBuilder solField;
-                    if (field.IsSpecialName)
-                    {
-                        continue;
-                    }
-                    if (TryBuildField(forAssembly, field, out solField)) {
-                        builder.AddField(solField);
-                    }
-                }
-                // ReSharper enable LoopCanBeConvertedToQuery
-                // todo: annotations
-                Type baseType = builder.NativeType.BaseType;
-                SolClassBuilder baseTypeBuilder;
-                if (baseType != null && classInfo.TryGetBuilder(baseType, out baseTypeBuilder)) {
-                    builder.Extends(baseTypeBuilder.Name);
-                }
-            }
-            return classInfo.Builders;
-        }
-
         [ContractAnnotation("solField:null => false")]
-        private bool TryBuildField(SolAssembly forAssembly, FieldOrPropertyInfo field, [CanBeNull] out SolFieldBuilder solField)
+        private bool TryBuildField(FieldOrPropertyInfo field, [CanBeNull] out SolFieldBuilder solField)
         {
             // todo: investigate if invisibility should truly take precendence over the post processor enforcing creation control over attributes. ("OverrideExplicitAttributes")
             SolLibraryVisibilityAttribute visibility = field.GetCustomAttributes<SolLibraryVisibilityAttribute>().FirstOrDefault(a => a.LibraryName == Name);
@@ -658,12 +594,9 @@ namespace SolScript.Interpreter.Library
                 access = field.GetCustomAttribute<SolLibraryAccessModifierAttribute>()?.AccessModifier ?? postProcessor.GetAccessModifier(field);
                 remappedType = field.GetCustomAttribute<SolContractAttribute>()?.GetSolType() ?? postProcessor.GetFieldType(field);
             }
-            solField = new SolFieldBuilder(name).MakeNativeField(field).SetAccessModifier(access);
-            if (remappedType.HasValue) {
-                solField.FieldNativeType(remappedType.Value);
-            } else {
-                solField.FieldType(SolMarshal.GetSolType(forAssembly, field.DataType));
-            }
+            solField = SolFieldBuilder.NewNativeField(name, field)
+                .SetAccessModifier(access)
+                .SetFieldType(remappedType.HasValue ? SolTypeBuilder.Fixed(remappedType.Value) : SolTypeBuilder.Native(field.DataType));
             // todo: annotations for native fields
             return true;
         }
@@ -671,12 +604,11 @@ namespace SolScript.Interpreter.Library
         /// <summary>
         ///     Tries to create the function builder for the given method.
         /// </summary>
-        /// <param name="forAssembly">The assembly to work in.</param>
         /// <param name="method">The method to create the builder for.</param>
         /// <param name="solMethod">The created builder. Only valid if the method returned true.</param>
         /// <returns>true if the builder could be created, false if not.</returns>
         [ContractAnnotation("solMethod:null => false")]
-        private bool TryBuildMethod(SolAssembly forAssembly, MethodInfo method, [CanBeNull] out SolFunctionBuilder solMethod)
+        private bool TryBuildMethod(MethodInfo method, [CanBeNull] out SolFunctionBuilder solMethod)
         {
             // todo: investigate if invisibility should truly take precendence over the post processor enforcing creation control over attributes. ("OverrideExplicitAttributes")
             SolLibraryVisibilityAttribute visibility = method.GetCustomAttributes<SolLibraryVisibilityAttribute>().FirstOrDefault(a => a.LibraryName == Name);
@@ -702,16 +634,24 @@ namespace SolScript.Interpreter.Library
                 access = method.GetCustomAttribute<SolLibraryAccessModifierAttribute>()?.AccessModifier ?? postProcessor.GetAccessModifier(method);
                 remappedReturn = method.GetCustomAttribute<SolContractAttribute>()?.GetSolType() ?? postProcessor.GetReturn(method);
             }
+            SolParameterBuilder[] parameters;
+            Type[] marshalTypes;
+            bool allowOptional;
+            bool sendContext;
+            InternalHelper.GetParameterBuilders(method.GetParameters(), out parameters, out marshalTypes, out allowOptional, out sendContext);
             // todo: annotations for native functions. if it has a native attribute that is an annotation add it here.
-            solMethod = new SolFunctionBuilder(name).MakeNativeFunction(method).SetAccessModifier(access);
-            if (remappedReturn.HasValue) {
-                solMethod.NativeReturns(remappedReturn.Value);
-            }
+            solMethod = SolFunctionBuilder.NewNativeFunction(name, method)
+                .SetAccessModifier(access)
+                .SetReturnType(remappedReturn.HasValue ? SolTypeBuilder.Fixed(remappedReturn.Value) : SolTypeBuilder.Native(method.ReturnType))
+                .SetParameters(parameters)
+                .SetNativeMarshalTypes(marshalTypes)
+                .SetAllowOptionalParameters(allowOptional)
+                .SetNativeSendContext(sendContext);
             return true;
         }
 
         [ContractAnnotation("solConstructor:null => false")]
-        private bool TryBuildConstructor(SolAssembly forAssembly, ConstructorInfo constructor, [CanBeNull] out SolFunctionBuilder solConstructor)
+        private bool TryBuildConstructor(ConstructorInfo constructor, [CanBeNull] out SolFunctionBuilder solConstructor)
         {
             // todo: flesh out ctors as well as functions
             // todo: annotations                    
@@ -722,9 +662,21 @@ namespace SolScript.Interpreter.Library
                 return false;
             }
             SolAccessModifier accessModifier = constructor.GetCustomAttribute<SolLibraryAccessModifierAttribute>()?.AccessModifier ?? SolAccessModifier.Internal;
-            solConstructor = new SolFunctionBuilder("__new").MakeNativeConstructor(constructor).SetAccessModifier(accessModifier);
+            SolParameterBuilder[] parameters;
+            Type[] marshalTypes;
+            bool allowOptional;
+            bool sendContext;
+            InternalHelper.GetParameterBuilders(constructor.GetParameters(), out parameters, out marshalTypes, out allowOptional, out sendContext);
+            solConstructor = SolFunctionBuilder.NewNativeConstructor(SolMetaKey.__new.Name, constructor)
+                .SetAccessModifier(accessModifier)
+                .SetReturnType(SolTypeBuilder.Fixed(new SolType(SolNil.TYPE, true)))
+                .SetParameters(parameters)
+                .SetNativeMarshalTypes(marshalTypes)
+                .SetAllowOptionalParameters(allowOptional)
+                .SetNativeSendContext(sendContext);
             return true;
         }
+
 
         private const BindingFlags BINDING_FLAGS = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static |
                                                    BindingFlags.Instance;

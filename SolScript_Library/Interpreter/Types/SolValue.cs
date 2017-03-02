@@ -58,37 +58,66 @@ namespace SolScript.Interpreter.Types
         /// <param name="type">The primitive type.</param>
         /// <returns>The primitive type name.</returns>
         /// <remarks>
-        ///     This does not support your own custom classes, only primite classes are supported(General rule of thumb:
-        ///     Everything that comes shipped with SolScript works).
+        ///     This does not support your own custom classes, only primitive classes are supported(General rule of thumb:
+        ///     Everything that extends the <see cref="SolValue"/> native class works).
         /// </remarks>
         /// <exception cref="InvalidOperationException">Not a valid primitive type.</exception>
         public static string PrimitiveTypeNameOf(Type type)
         {
+            string name;
+            if (!TryGetPrimitiveTypeNameOf(type, out name)) {
+                throw new InvalidOperationException("The native type \"" + type + "\" is not a legal primitive SolScript type.");
+            }
+            return name;
+        }
+
+        /// <summary>
+        ///     Gets the primitive type name of the given native SolScript type.
+        /// </summary>
+        /// <param name="type">The primitive type.</param>
+        /// <param name="name">The primitive type name. Only valid if the method returned true. </param>
+        /// <returns>true if the type represents a primitive type, false if not.</returns>
+        /// <remarks>
+        ///     This does not support your own custom classes, only primitive classes are supported(General rule of thumb:
+        ///     Everything that extends the <see cref="SolValue"/> native class works).
+        /// </remarks>
+        [ContractAnnotation("name:null => false")]
+        public static bool TryGetPrimitiveTypeNameOf(Type type, [CanBeNull] out string name)
+        {
             if (type == typeof(SolValue)) {
-                return ANY_TYPE;
+                name = ANY_TYPE;
+                return true;
             }
             if (type == typeof(SolClass)) {
-                return CLASS_TYPE;
+                name = CLASS_TYPE;
+                return true;
             }
             if (type == typeof(SolNil)) {
-                return SolNil.TYPE;
+                name = SolNil.TYPE;
+                return true;
             }
             if (type == typeof(SolNumber)) {
-                return SolNumber.TYPE;
+                name = SolNumber.TYPE;
+                return true;
             }
             if (type == typeof(SolBool)) {
-                return SolBool.TYPE;
+                name = SolBool.TYPE;
+                return true;
             }
             if (type == typeof(SolString)) {
-                return SolString.TYPE;
+                name = SolString.TYPE;
+                return true;
             }
             if (type == typeof(SolTable)) {
-                return SolTable.TYPE;
+                name = SolTable.TYPE;
+                return true;
             }
             if (type == typeof(SolFunction) || type.IsSubclassOf(typeof(SolFunction))) {
-                return SolFunction.TYPE;
+                name = SolFunction.TYPE;
+                return true;
             }
-            throw new InvalidOperationException("The native type \"" + type + "\" is not a legal primitive SolScript type.");
+            name = null;
+            return false;
         }
 
         /// <summary>

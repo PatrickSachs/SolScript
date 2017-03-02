@@ -27,7 +27,7 @@ namespace SolScript.Interpreter
             var annotations = new SolAnnotationDefinition[data.Count];
             for (int i = 0; i < annotations.Length; i++) {
                 SolClassDefinition annotationDefinition;
-                if (!Assembly.TypeRegistry.TryGetClass(data[i].Name, out annotationDefinition)) {
+                if (!Assembly.TryGetClass(data[i].Name, out annotationDefinition)) {
                     throw new SolMarshallingException(data[i].Name, "The annotation class used does not exist.");
                 }
                 annotations[i] = new SolAnnotationDefinition(data[i].Location, annotationDefinition, data[i].Arguments);

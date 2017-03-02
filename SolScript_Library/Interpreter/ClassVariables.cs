@@ -117,9 +117,10 @@ namespace SolScript.Interpreter
         /// <exception cref="SolVariableException"> The type does not match. </exception>
         public void Assign(string name, SolValue value)
         {
+            SolFunctionDefinition definition;
             if (Members.IsDeclared(name)) {
                 Members.Assign(name, value);
-            } else if (Definition.HasFunction(name, OnlyUseDeclaredFunctions)) {
+            } else if (Definition.TryGetFunction(name, OnlyUseDeclaredFunctions, out definition)) {
                 throw new SolVariableException("Cannot assign values to class function \"" + name + "\", they are immutable.");
             } else if (Parent != null) {
                 Parent.Assign(name, value);

@@ -67,11 +67,17 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Interpreter\Builders\SolTypeBuilder.cs" />
+    <Compile Include="Interpreter\Exceptions\SolCompilerException.cs" />
     <Compile Include="Interpreter\Expressions\Expression_Bool.cs" />
     <Compile Include="Interpreter\Expressions\Expression_Tertiary.cs" />
     <Compile Include="Interpreter\GlobalVariablesBase.cs" />
+    <Compile Include="Interpreter\SolMemberModifier.cs" />
+    <Compile Include="Interpreter\SolParameterBuilder.cs" />
+    <Compile Include="Interpreter\Types\Implementation\SolLamdaFunction.cs" />
+    <Compile Include="Interpreter\Types\Implementation\SolNativeLamdaFunction.cs" />
     <Compile Include="SolError.cs" />
-    <Compile Include="Compiler\SolScriptCompiler.cs" />
+    <Compile Include="Compiler\SolCompiler.cs" />
     <Compile Include="ErrorId.cs" />
     <Compile Include="Interpreter\SolAccessModifier.cs" />
     <Compile Include="Interpreter\Builders\IAnnotateableBuilder.cs" />
@@ -153,7 +159,6 @@
     <Compile Include="Interpreter\SolFieldDefinition.cs" />
     <Compile Include="Interpreter\Builders\SolFunctionBuilder.cs" />
     <Compile Include="Interpreter\SolFunctionDefinition.cs" />
-    <Compile Include="Interpreter\Builders\SolGlobalsBuilder.cs" />
     <Compile Include="Interpreter\Builders\SolConstructWithMembersBuilder.cs" />
     <Compile Include="Interpreter\SolSourceLocation.cs" />
     <Compile Include="Interpreter\SolStackFrame.cs" />
@@ -166,7 +171,6 @@
     <Compile Include="Interpreter\SolTypeMode.cs" />
     <Compile Include="Interpreter\Terminators.cs" />
     <Compile Include="Interpreter\DynamicReference.cs" />
-    <Compile Include="Interpreter\TypeRegistry.cs" />
     <Compile Include="Interpreter\Types\DefinedSolFunction.cs" />
     <Compile Include="Interpreter\Types\Implementation\SolClassFunction.cs" />
     <Compile Include="Interpreter\Types\Implementation\SolNativeClassConstructorFunction.cs" />
@@ -218,6 +222,7 @@
     <Compile Include="Parser\Terminals\SolScriptLongStringTerminal.cs" />
     <Compile Include="NamespaceDoc.cs" />
     <Compile Include="SolErrorCollection.cs" />
+    <Compile Include="TriValue.cs" />
     <Compile Include="ValueTypePair.cs" />
     <None Include="packages.config" />
   </ItemGroup>

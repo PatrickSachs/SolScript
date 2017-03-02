@@ -25,7 +25,8 @@ namespace SolScript.Interpreter.Builders
         /// </exception>
         public virtual SolConstructWithMembersBuilder AddField(SolFieldBuilder field, bool overwrite = false)
         {
-            if (!overwrite && FieldsLookup.ContainsKey(field.Name)) {
+            if (!overwrite && FieldsLookup.ContainsKey(field.Name))
+            {
                 throw new ArgumentException($"The field \"{field.Name}\" already exists, and overwrite it set to {false}!", nameof(field));
             }
             FieldsLookup[field.Name] = field;

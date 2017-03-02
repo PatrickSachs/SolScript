@@ -32,20 +32,16 @@ namespace SolScript.Interpreter
         {
             Name = builder.Name;
             AccessModifier = builder.AccessModifier;
+            MemberModifier = builder.MemberModifier;
+            Type = builder.FieldType.Get(assembly);
             AnnotationsFromData(builder.Annotations);
-            if (builder.IsNativeField) {
-                Initializer = new SolFieldInitializerWrapper(builder.NativeField);
-                if (builder.NativeReturnTypeHasBeenResolved) {
-                    Type = builder.Type;
-                } else {
-                    Type = InternalHelper.GetMemberReturnType(assembly, builder.NativeField);
-                    builder.FieldNativeType(Type);
-                }
-            } else {
-                Initializer = new SolFieldInitializerWrapper(builder.ScriptField);
-                Type = builder.Type;
-            }
+            Initializer = builder.IsNative ? new SolFieldInitializerWrapper(builder.NativeField) : new SolFieldInitializerWrapper(builder.ScriptField);
         }
+
+        /// <summary>
+        ///     The field's access modifier.
+        /// </summary>
+        public readonly SolAccessModifier AccessModifier;
 
         /// <summary>
         ///     The class this field was defined in. This is null for global fields.
@@ -59,9 +55,10 @@ namespace SolScript.Interpreter
         public readonly SolFieldInitializerWrapper Initializer;
 
         /// <summary>
-        ///     The field's access modifier.
+        ///     The member modifier specifying the type of field.
         /// </summary>
-        public readonly SolAccessModifier AccessModifier;
+        /// <seealso cref="SolMemberModifier" />
+        public readonly SolMemberModifier MemberModifier;
 
         /// <summary>
         ///     The name of the field.

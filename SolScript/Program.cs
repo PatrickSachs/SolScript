@@ -101,8 +101,12 @@ namespace SolScript
                     string entryRaw = Console.ReadLine()?.Trim().ToLower();
                     try {
                         if (entryRaw == "0" || entryRaw == "class") {
-                            SolAssembly script = SolAssembly.FromDirectory(new SolAssemblyOptions("Command Line Assembly"), dirRaw);
-                            script.IncludeLibrary(std.GetLibrary()).IncludeLibrary(os.GetLibrary()).Create();
+                            SolAssembly script = SolAssembly.FromDirectory(new SolAssemblyOptions("Command Line Assembly"), dirRaw)
+                                    .IncludeLibrary(std.GetLibrary())
+                                    .IncludeLibrary(os.GetLibrary())
+                                    .FinalizeRegistry()
+                                    .GenerateDefinitions()
+                                    .Create();
                             if (script.Errors.Count > 0) {
                                 bool isDone = false;
                                 Console.WriteLine("================== ERRORS ==================");
@@ -118,11 +122,15 @@ namespace SolScript
                                     goto Done;
                                 }
                             }
-                            script.TypeRegistry.CreateInstance("Main", new ClassCreationOptions.Customizable().SetCallingContext(new SolExecutionContext(script, "Command Line Interpreter")),
+                            script.New("Main", new ClassCreationOptions.Customizable().SetCallingContext(new SolExecutionContext(script, "Command Line Interpreter")),
                                 SolString.ValueOf("Hello from the command line :)"), new SolNumber(42));
                         } else if (entryRaw == "1" || entryRaw == "function") {
-                            SolAssembly script = SolAssembly.FromDirectory(new SolAssemblyOptions("Command Line Assembly"), dirRaw);
-                            script.IncludeLibrary(std.GetLibrary()).IncludeLibrary(os.GetLibrary()).Create();
+                            SolAssembly script = SolAssembly.FromDirectory(new SolAssemblyOptions("Command Line Assembly"), dirRaw)
+                                    .IncludeLibrary(std.GetLibrary())
+                                    .IncludeLibrary(os.GetLibrary())
+                                    .FinalizeRegistry()
+                                    .GenerateDefinitions()
+                                    .Create();
                             if (script.Errors.Count > 0) {
                                 bool isDone = false;
                                 Console.WriteLine("================== ERRORS ==================");
@@ -169,7 +177,7 @@ namespace SolScript
                     goto Hello;
                 }
                 case 4: {
-                    ChooseFile:
+                    /*ChooseFile:
                     Console.WriteLine("Please enter the source assembly (Absolute or relative path to this executable)");
                     Console.Write(" > ");
                     string fileRaw = (Console.ReadLine() ?? string.Empty) + ".sol_a1";
@@ -178,7 +186,8 @@ namespace SolScript
                         goto ChooseFile;
                     }
                     SolAssembly script = SolAssembly.FromFile(new SolAssemblyOptions("Command Line Assembly"), fileRaw).IncludeLibrary(SolLibrary.StandardLibrary).Create();
-                    script.TypeRegistry.CreateInstance("Main", ClassCreationOptions.Default(), SolString.ValueOf("Hello from the command line :)"), new SolNumber(42));
+                    script.New("Main", ClassCreationOptions.Default(), SolString.ValueOf("Hello from the command line :)"), new SolNumber(42));*/
+                    Console.WriteLine("Not supported as of now. Sorry! :(");
                     Console.WriteLine("\n === Script execution finished ... Press any key to return to the main menu.");
                     Console.ReadKey(true);
                     goto Hello;

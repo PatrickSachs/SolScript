@@ -176,7 +176,7 @@ namespace SolScript.Interpreter
         /// <exception cref="SolVariableException">An error occured.</exception>
         private SolValue GetAndRegisterAdditional(string name)
         {
-            AdditionalMemberInfo additional = GetAddtionalMember(name);
+            AdditionalMemberInfo additional = GetAdditionalMember(name);
             if (additional != null) {
                 Members.Declare(name, additional.Type);
                 SolValue value = additional.Creator();
@@ -197,7 +197,7 @@ namespace SolScript.Interpreter
         ///     method(if not null) will be registered in the <see cref="Members" /> variables.
         /// </returns>
         /// <exception cref="SolVariableException">An error occured.</exception>
-        protected abstract AdditionalMemberInfo GetAddtionalMember(string name);
+        protected abstract AdditionalMemberInfo GetAdditionalMember(string name);
 
         /// <summary>
         ///     Gets the parent variables of these global variables.

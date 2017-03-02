@@ -8,7 +8,7 @@ using SolScript.Interpreter.Types;
 namespace SolScript.Libraries.std
 {
     // ReSharper disable InconsistentNaming
-    [SolLibraryClass(SolLibrary.STD_NAME, SolTypeMode.Singleton)]
+    [SolLibraryClass(std.NAME, SolTypeMode.Singleton)]
     [SolLibraryName("Reflect")]
     [PublicAPI]
     public class std_Reflect
@@ -63,7 +63,7 @@ namespace SolScript.Libraries.std
                 SolString functionName = (SolString) functionRaw;
                 function = null;
                 if (onClass.Type == SolNil.TYPE) {
-                    if (!context.Assembly.TypeRegistry.TryGetGlobalFunction(functionName.Value, out definition)) {
+                    if (!context.Assembly.TryGetGlobalFunction(functionName.Value, out definition)) {
                         throw new SolRuntimeException(context, "No global function with the name \"" + functionName + "\" exists.");
                     }
                 } else {
@@ -148,7 +148,7 @@ namespace SolScript.Libraries.std
                     throw new SolRuntimeException(context, "The class \"" + onClass.Type + "\" does not have a field with the name \"" + fieldName + "\".");
                 }
             } else {
-                if (!context.Assembly.TypeRegistry.TryGetGlobalField(fieldName.Value, out definition)) {
+                if (!context.Assembly.TryGetGlobalField(fieldName.Value, out definition)) {
                     throw new SolRuntimeException(context, "No global field with the name \"" + fieldName + "\" exists.");
                 }
             }
@@ -176,7 +176,7 @@ namespace SolScript.Libraries.std
             if (value.Type == SolString.TYPE) {
                 SolClassDefinition definition;
                 SolString type = (SolString) value;
-                if (!context.Assembly.TypeRegistry.TryGetClass(type.Value, out definition)) {
+                if (!context.Assembly.TryGetClass(type.Value, out definition)) {
                     throw new SolRuntimeException(context, "Cannot get class info for type \"" + type.Value + "\". No class with this name exists.");
                 }
                 return definition;

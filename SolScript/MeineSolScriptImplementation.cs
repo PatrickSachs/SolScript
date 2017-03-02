@@ -16,6 +16,8 @@ namespace MyApplication
             // Creates an assembly from the given code strings and includes the standard-library.
             SolAssembly solScript = SolAssembly.FromStrings(new SolAssemblyOptions("Demo Assembly"), "function say_hello() print('Hello World!') end")
                 .IncludeLibrary(std.GetLibrary())
+                .FinalizeRegistry()
+                .GenerateDefinitions()
                 .Create();
             // Gets the say_hello function & calls it.
             SolFunction sayHello = (SolFunction) solScript.GlobalVariables.Get("say_hello");

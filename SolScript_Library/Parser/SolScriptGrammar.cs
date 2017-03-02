@@ -79,6 +79,7 @@ namespace SolScript.Parser {
             KeyTerm SINGLETON = Keyword("singleton");
             KeyTerm ABSTRACT = Keyword("abstract");
             KeyTerm SEALED = Keyword("sealed");
+            KeyTerm OVERRIDE = Keyword("override");
             // =======================================
             // === KEYWORDS
             KeyTerm NIL = Keyword("nil");
@@ -170,6 +171,7 @@ namespace SolScript.Parser {
             NonTerminal IdentifierPlusList = new NonTerminal("IdentifierPlusList");
             // Misc
             NonTerminal ClassModifier_opt = new NonTerminal("ClassModifier_opt");
+            NonTerminal MemberModifier_opt = new NonTerminal("MemberModifier_opt");
             NonTerminal AccessModifier_opt = new NonTerminal("AccessModifier_opt");
             NonTerminal Annotation = new NonTerminal("Annotation");
             NonTerminal Annotation_opt = new NonTerminal("Annotation_opt");
@@ -178,7 +180,7 @@ namespace SolScript.Parser {
             Root = new NonTerminal("ROOT");
 
             #endregion
-            // todo: tertiary expression for: (a ? b : c)
+            // todo: proper tertiary expression for: (a ? b : c)
             #region Grammar Rules
             RootElement_trans.Rule = FieldWithAccess
                 | FunctionWithAccess
@@ -190,6 +192,11 @@ namespace SolScript.Parser {
                 Empty
                 | INTERNAL
                 | LOCAL
+                ;
+            MemberModifier_opt.Rule =
+                Empty
+                | ABSTRACT
+                | OVERRIDE
                 ;
             ClassModifier_opt.Rule = 
                 Empty 
@@ -226,14 +233,14 @@ namespace SolScript.Parser {
                 | FunctionWithAccess
                 ;
             FieldWithAccess.Rule =
-                AnnotationList + AccessModifier_opt + _identifier + TypeRef_opt + Assignment_opt
+                AnnotationList + AccessModifier_opt + MemberModifier_opt + _identifier + TypeRef_opt + Assignment_opt
+                ;
+            FunctionWithAccess.Rule =
+                AnnotationList + AccessModifier_opt + MemberModifier_opt + FUNCTION + _identifier + FunctionParameters + TypeRef_opt + FunctionBody
                 ;
             Assignment_opt.Rule =
                 EQ + Expression
                 | Empty
-                ;
-            FunctionWithAccess.Rule =
-                AnnotationList + AccessModifier_opt + FUNCTION + _identifier + FunctionParameters + TypeRef_opt + FunctionBody
                 ;
             AnnotationList.Rule =
                 MakeStarRule(AnnotationList, Annotation)

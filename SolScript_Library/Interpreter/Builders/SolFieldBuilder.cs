@@ -1,32 +1,61 @@
 ﻿using System.Collections.Generic;
-using SolScript.Interpreter;
 using SolScript.Interpreter.Expressions;
 
 namespace SolScript.Interpreter.Builders
 {
-    public sealed class SolFieldBuilder : SolBuilderBase, IAnnotateableBuilder
+    /// <summary>
+    ///     The <see cref="SolFieldBuilder" /> is used to create assembly independent, unvalidated fields which can be inserted
+    ///     into an assembly to generate a proper <see cref="SolFieldDefinition" /> from.
+    /// </summary>
+    public sealed class SolFieldBuilder : SolBuilderBase, IAnnotateableBuilder, ISourceLocateable
     {
-        public SolFieldBuilder(string name)
+        private SolFieldBuilder(string name)
         {
             Name = name;
         }
 
+        // The annotations on this field.
         private readonly List<SolAnnotationData> m_Annotations = new List<SolAnnotationData>();
 
-        public string Name { get; set; }
-        public SolType Type { get; set; }
-        public bool IsNativeField { get; private set; }
-        public FieldOrPropertyInfo NativeField { get; private set; }
-        public SolExpression ScriptField { get; private set; }
-        public SolAccessModifier AccessModifier { get; set; }
-        public bool NativeReturnTypeHasBeenResolved { get; private set; }
-        public SolSourceLocation Location { get; set; }
+        /// <summary>
+        ///     The name of this field.
+        /// </summary>
+        public string Name { get; private set; }
 
-        public SolFieldBuilder AtLocation(SolSourceLocation location)
-        {
-            Location = location;
-            return this;
-        }
+        /// <summary>
+        ///     The unresolved type of this field.
+        /// </summary>
+        public SolTypeBuilder FieldType { get; private set; }
+
+        /// <summary>
+        ///     The native backing field of this type. Only valid if <see cref="IsNative" /> is true.
+        /// </summary>
+        public FieldOrPropertyInfo NativeField { get; private set; }
+
+        /// <summary>
+        ///     The expression used to initialize the field. Only valid if <see cref="IsNative" /> is false.
+        /// </summary>
+        public SolExpression ScriptField { get; private set; }
+
+        /// <summary>
+        ///     The member modifier of this field.
+        /// </summary>
+        public SolMemberModifier MemberModifier { get; set; }
+
+        /// <summary>
+        ///     The access modifier of this field.
+        /// </summary>
+        public SolAccessModifier AccessModifier { get; set; }
+
+        /// <summary>
+        ///     The location in source code.
+        /// </summary>
+        public SolSourceLocation Location { get; private set; }
+
+        /// <summary>
+        ///     Is this field native?
+        /// </summary>
+        public bool IsNative { get; private set; }
 
         #region IAnnotateableBuilder Members
 
@@ -53,54 +82,60 @@ namespace SolScript.Interpreter.Builders
             m_Annotations.AddRange(annotations);
             return this;
         }
-        
-        #endregion
 
+        #endregion
+        
+        /// <inheritdoc cref="MemberModifier"/>
+        public SolFieldBuilder SetMemberModifier(SolMemberModifier modifier)
+        {
+            MemberModifier = modifier;
+            return this;
+        }
+
+        /// <inheritdoc cref="AccessModifier"/>
         public SolFieldBuilder SetAccessModifier(SolAccessModifier modifier)
         {
             AccessModifier = modifier;
             return this;
         }
 
-        public SolFieldBuilder FieldNativeType(SolType type)
+        /// <inheritdoc cref="FieldType"/>
+        public SolFieldBuilder SetFieldType(SolTypeBuilder type)
         {
-            NativeReturnTypeHasBeenResolved = true;
-            return FieldType(type);
-        }
-
-        public SolFieldBuilder FieldType(SolType type)
-        {
-            Type = type;
+            FieldType = type;
             return this;
         }
 
         /// <summary>
-        ///     Transforms this field into a native field.
-        ///     <br />
-        ///     Warning: This will remove all annotations and custom field creators!
-        ///     <br />
-        ///     Warning: Make sure the class instance this field is added to actually
-        ///     proplery supports native fields of this type!
+        ///     Creates a new field builder for a native field.
         /// </summary>
+        /// <param name="name">The field name.</param>
         /// <param name="field"> The native field. </param>
-        public SolFieldBuilder MakeNativeField(FieldOrPropertyInfo field)
+        /// <returns>The field builder.</returns>
+        public static SolFieldBuilder NewNativeField(string name, FieldOrPropertyInfo field)
         {
-            IsNativeField = true;
-            NativeField = field;
-            ScriptField = null;
-            Location = SolSourceLocation.Native();
-            if (!NativeReturnTypeHasBeenResolved) {
-                Type = default(SolType);
-            }
-            return this;
+            SolFieldBuilder builder = new SolFieldBuilder(name);
+            builder.IsNative = true;
+            builder.NativeField = field;
+            builder.ScriptField = null;
+            builder.Location = SolSourceLocation.Native();
+            return builder;
         }
 
-        public SolFieldBuilder MakeScriptField(SolExpression expression)
+        /// <summary>
+        ///     Creates a new field builder for a script field.
+        /// </summary>
+        /// <param name="name">The field name.</param>
+        /// <param name="expression">The field initializer.</param>
+        /// <returns>The field builder.</returns>
+        public static SolFieldBuilder NewScriptField(string name, SolExpression expression)
         {
-            IsNativeField = false;
-            ScriptField = expression;
-            NativeField = null;
-            return this;
+            SolFieldBuilder builder = new SolFieldBuilder(name);
+            builder.IsNative = false;
+            builder.NativeField = null;
+            builder.ScriptField = expression;
+            builder.Location = expression.Location;
+            return builder;
         }
     }
 }

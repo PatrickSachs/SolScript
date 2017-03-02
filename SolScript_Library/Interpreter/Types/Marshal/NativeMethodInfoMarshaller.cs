@@ -5,6 +5,10 @@ using SolScript.Interpreter.Types.Implementation;
 
 namespace SolScript.Interpreter.Types.Marshal
 {
+    /// <summary>
+    ///     This marshaller converts <see cref="MethodInfo" /> objects to <see cref="SolNativeLamdaFunction" />s.
+    /// </summary>
+    /// <remarks>They can only be invoked on null references.</remarks>
     public class NativeMethodInfoMarshaller : ISolNativeMarshaller
     {
         #region ISolNativeMarshaller Members
@@ -22,7 +26,7 @@ namespace SolScript.Interpreter.Types.Marshal
         /// <exception cref="SolMarshallingException">No matching SolType for a parameter type.</exception>
         public SolValue Marshal(SolAssembly assembly, object value, Type type)
         {
-            return new SolNativeLamdaFunction(assembly, (MethodInfo) value, DynamicReference.NullReference.Instance);
+            return SolNativeLamdaFunction.CreateFrom(assembly, (MethodInfo) value, DynamicReference.NullReference.Instance);
         }
 
         /// <inheritdoc />

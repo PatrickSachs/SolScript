@@ -1,15 +1,15 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using JetBrains.Annotations;
 using SolScript.Interpreter.Builders;
 using SolScript.Interpreter.Exceptions;
-using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter
 {
     /// <summary>
     ///     The function definition class is used by the Type Registry to save metadata about a function and to allow for a
     ///     two-step creation of functions.<br />
-    ///     A function definion may or may not be for a class or global function.<br />
+    ///     A function definition may or may not be for a class or global function.<br />
     /// </summary>
     public sealed class SolFunctionDefinition : SolAnnotateableDefinitionBase
     {
@@ -35,36 +35,18 @@ namespace SolScript.Interpreter
         {
             Name = builder.Name;
             AccessModifier = builder.AccessModifier;
+            MemberModifier = builder.MemberModifier;
             AnnotationsFromData(builder.Annotations);
+            ReturnType = builder.ReturnType.Get(assembly);
+            var parameters = new SolParameter[builder.Parameters.Count];
+            for (int i = 0; i < parameters.Length; i++) {
+                parameters[i] = builder.Parameters[i].Get(assembly);
+            }
             if (builder.IsNative) {
-                if (builder.NativeMethod != null) {
-                    // Native Method
-                    if (builder.NativeReturnTypeHasBeenResolved) {
-                        // If the native type has already been resolved, just set it.
-                        // Note: I am fully aware that the type should only need to be resolved once and caching
-                        // it is thus theoretically useless. However, there are some ways to "fake-resolve" the
-                        // return type earlier(e.g. ToString() would resolve to string?, but a fake-resolver changes
-                        // this to string! in order to be compatible with SolScripts __to_string() meta-method).
-                        ReturnType = builder.ReturnType;
-                    } else {
-                        // The return type cannot be fully determined in the library since other libraries may
-                        // be required in order for the return type to be resolved.
-                        ReturnType = InternalHelper.GetMemberReturnType(assembly, builder.NativeMethod);
-                        builder.NativeReturns(ReturnType);
-                    }
-                    Chunk = new SolChunkWrapper(builder.NativeMethod);
-                    ParameterInfo = InternalHelper.GetParameterInfo(assembly, builder.NativeMethod.GetParameters());
-                    
-                } else {
-                    // Native Constructor
-                    ReturnType = new SolType(SolNil.TYPE, true);
-                    Chunk = new SolChunkWrapper(builder.NativeConstructor);
-                    ParameterInfo = InternalHelper.GetParameterInfo(assembly, builder.NativeConstructor.GetParameters());
-                }
+                ParameterInfo = new SolParameterInfo.Native(parameters, builder.NativeMarshalTypes.ToArray(), builder.AllowOptionalParameters, builder.NativeSendContext);
+                Chunk = builder.NativeMethod != null ? new SolChunkWrapper(builder.NativeMethod) : new SolChunkWrapper(builder.NativeConstructor);
             } else {
-                // Script Chunk
-                ReturnType = builder.ReturnType;
-                ParameterInfo = new SolParameterInfo(builder.ScriptParameters, builder.ScriptAllowOptionalParameters);
+                ParameterInfo = new SolParameterInfo(parameters, builder.AllowOptionalParameters);
                 Chunk = new SolChunkWrapper(builder.ScriptChunk);
             }
         }
@@ -80,11 +62,17 @@ namespace SolScript.Interpreter
         /// </summary>
         public readonly SolChunkWrapper Chunk;
 
-        // todo: possibly class function definiton class?
+        // todo: possibly class function definition class?
         /// <summary>
         ///     The class this definition was defined in. If the function is a global function this value is null.
         /// </summary>
         [CanBeNull] public readonly SolClassDefinition DefinedIn;
+
+        /// <summary>
+        ///     The member modifier specifying the type of function.
+        /// </summary>
+        /// <seealso cref="SolMemberModifier" />
+        public readonly SolMemberModifier MemberModifier;
 
         /// <summary>
         ///     The name of this function.
@@ -92,14 +80,14 @@ namespace SolScript.Interpreter
         public readonly string Name;
 
         /// <summary>
-        ///     The return type of the function.
-        /// </summary>
-        public readonly SolType ReturnType;
-
-        /// <summary>
         ///     Information about parameters of the function.
         /// </summary>
         public readonly SolParameterInfo ParameterInfo;
+
+        /// <summary>
+        ///     The return type of the function.
+        /// </summary>
+        public readonly SolType ReturnType;
 
         /// <inheritdoc />
         public override IReadOnlyList<SolAnnotationDefinition> Annotations { get; protected set; }

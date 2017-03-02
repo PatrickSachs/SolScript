@@ -185,7 +185,7 @@ namespace SolScript.Interpreter
                     return typeof(Dictionary<object, object>);
                 default: {
                     SolClassDefinition definition;
-                    if (assembly.TypeRegistry.TryGetClass(type, out definition)) {
+                    if (assembly.TryGetClass(type, out definition)) {
                         if (definition.NativeType != null) {
                             return definition.NativeType;
                         }
@@ -256,12 +256,12 @@ namespace SolScript.Interpreter
                 SolClass solClass = cache.GetReference(value);
                 if (solClass == null) {
                     SolClassDefinition classDef;
-                    if (!assembly.TypeRegistry.TryGetClass(type, out classDef)) {
+                    if (!assembly.TryGetClass(type, out classDef)) {
                         throw new SolMarshallingException($"Cannot marshal native type \"{type}\" to SolScript: This type does not have a SolClass representing it.");
                     }
                     // todo: investigate if this order(native obj being assigned later) will cause problems (annotations specifically)
                     try {
-                        solClass = assembly.TypeRegistry.CreateInstance(classDef, NativeClassCreationOptions);
+                        solClass = assembly.New(classDef, NativeClassCreationOptions);
                     } catch (SolTypeRegistryException ex) {
                         throw new SolMarshallingException(
                             $"Cannot marshal native type \"{type}\" to SolScript: A error occured while creating its representing class instance of type \"" + classDef.Type + "\".", ex);
@@ -293,7 +293,7 @@ namespace SolScript.Interpreter
             }
             if (type.IsClass) {
                 SolClassDefinition classDef;
-                if (assembly.TypeRegistry.TryGetClass(type, out classDef)) {
+                if (assembly.TryGetClass(type, out classDef)) {
                     return new SolType(classDef.Type, true);
                 }
             }
