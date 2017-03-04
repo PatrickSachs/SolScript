@@ -5,8 +5,20 @@ using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter.Statements
 {
+    /// <summary>
+    ///     This statement declares a variable in the active chunk and optionally assigns an inital value to it.<br />
+    ///     <a href="https://patrick-sachs.de/content/solscript/wiki/doku.php?id=spec:statement_variables">Wiki page</a>
+    /// </summary>
     public class Statement_DeclareVar : SolStatement
     {
+        /// <summary>
+        ///     Creates a new statement.
+        /// </summary>
+        /// <param name="assembly">The assembly.</param>
+        /// <param name="location">The source code location.</param>
+        /// <param name="name">The variable name.</param>
+        /// <param name="type">The variable type.</param>
+        /// <param name="valueGetter">The optional inital value. (null if none)</param>
         public Statement_DeclareVar([NotNull] SolAssembly assembly, SolSourceLocation location, string name, SolType type, [CanBeNull] SolExpression valueGetter)
             : base(assembly, location)
         {
@@ -15,8 +27,19 @@ namespace SolScript.Interpreter.Statements
             ValueGetter = valueGetter;
         }
 
+        /// <summary>
+        ///     The variable name.
+        /// </summary>
         public readonly string Name;
+
+        /// <summary>
+        ///     The variable type.
+        /// </summary>
         public readonly SolType Type;
+
+        /// <summary>
+        ///     The optional inital value. (null if none)
+        /// </summary>
         [CanBeNull] public readonly SolExpression ValueGetter;
 
         #region Overrides

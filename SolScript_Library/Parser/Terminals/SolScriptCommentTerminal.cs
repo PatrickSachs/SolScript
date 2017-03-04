@@ -4,15 +4,7 @@ using Irony.Parsing;
 
 namespace SolScript.Parser.Terminals
 {
-    /// <summary>
-    /// From Lua 5.1 Reference Manual...
-    /// A comment starts with a double hyphen (--) anywhere outside a string. If the text immediately 
-    /// after -- is not an opening long bracket, the comment is a short comment, which runs until the 
-    /// end of the line. Otherwise, it is a long comment, which runs until the corresponding closing 
-    /// long bracket. Long comments are frequently used to disable code temporarily.
-    /// </summary>
-    /// <seealso cref="http://www.lua.org/manual/5.1/manual.html#2.1"/>
-    class SolScriptCommentTerminal : Terminal
+    internal class SolScriptCommentTerminal : Terminal
     {
         public SolScriptCommentTerminal(string name)
             : base(name, TokenCategory.Comment)
@@ -34,7 +26,7 @@ namespace SolScript.Parser.Terminals
                 this.EditorInfo = new TokenEditorInfo(TokenType.Comment, TokenColor.Comment, TokenTriggers.None);
             }
         }
-
+        
         public override Token TryMatch(ParsingContext context, ISourceStream source)
         {
             Token result;
@@ -73,17 +65,11 @@ namespace SolScript.Parser.Terminals
 
         private bool BeginMatch(ParsingContext context, ISourceStream source, ref byte commentLevel)
         {
-            //Check starting symbol
-            if (!source.MatchSymbol(START_SYMBOL))
+            if (source.MatchSymbol("/*")) {
+                commentLevel = 1;
+            } else if (!source.MatchSymbol("//")) {
+                commentLevel = 0;
                 return false;
-
-            //Found starting --, now determine whether this is a long comment.
-            string text = source.Text.Substring(source.PreviewPosition + START_SYMBOL.Length);
-            var match = Regex.Match(text, @"/\*");
-            //var match = Regex.Match(text, @"^\[(=*)\[");
-            if (match.Value != string.Empty)
-            {
-                commentLevel = (byte)(match.Groups[1].Value.Length + 1);
             }
 
             //Increment position of comment so we don't rescan the same text.

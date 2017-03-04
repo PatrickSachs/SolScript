@@ -100,7 +100,7 @@ namespace SolScript.Libraries.lang
             builder.Append("[");
             builder.Append(context.CurrentLocation);
             builder.Append("] : ");
-            builder.Append(InternalHelper.JoinToString(",", values));
+            builder.Append(InternalHelper.JoinToString(",", values, value => value.ToString(context)));
             Console.WriteLine(builder.ToString());
         }
 
@@ -119,13 +119,14 @@ namespace SolScript.Libraries.lang
         /// <summary>
         ///     Converts a value to its string representation.
         /// </summary>
+        /// <param name="context"></param>
         /// <param name="value">The value to convert.</param>
         /// <returns>The string representation of the given <paramref name="value" />.</returns>
         [SolGlobal(lang.NAME)]
         [SolContract(SolString.TYPE, false)]
-        public static SolString to_string([SolContract(SolValue.ANY_TYPE, true)] SolValue value)
+        public static SolString to_string(SolExecutionContext context, [SolContract(SolValue.ANY_TYPE, true)] SolValue value)
         {
-            return value.ToString();
+            return value.ToString(context);
         }
     }
 }

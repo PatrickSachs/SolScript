@@ -3,13 +3,29 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 
-namespace SolScript {
-    public static class SolDebug {
+namespace SolScript
+{
+    /// <summary>
+    ///     The <see cref="SolDebug" />  class is used to internal debugging purposes.
+    /// </summary>
+    internal static class SolDebug
+    {
+        /// <summary>
+        ///     By how many characters should the message be indented?
+        /// </summary>
         public static int Indent { get; set; } = 30;
 
+        /// <summary>
+        ///     Writes a line to the console and debug output.
+        /// </summary>
+        /// <param name="message">The message.</param>
+        /// <param name="caller">Do not set - The caller file name.</param>
+        /// <param name="member">Do not set - The caller member name.</param>
+        /// <remarks>Only included in <c>DEBUG</c> builds.</remarks>
         [Conditional("DEBUG")]
         public static void WriteLine(string message, [CallerFilePath] string caller = "?",
-            [CallerMemberName] string member = "?") {
+            [CallerMemberName] string member = "?")
+        {
             string file = Path.GetFileNameWithoutExtension(caller) ?? "?";
             string prefix = file + "." + member + "()";
             int indent = Indent - prefix.Length;

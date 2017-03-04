@@ -30,7 +30,7 @@ namespace SolScript.Interpreter.Statements
             foreach (ParseTreeNode rootedNode in tree.Root.ChildNodes) {
                 switch (rootedNode.Term.Name) {
                     case "FunctionWithAccess": {
-                        SolFunctionBuilder functionBuilder = GetFunctionWithAccess(rootedNode, delegate {});
+                        SolFunctionBuilder functionBuilder = GetFunctionWithAccess(rootedNode, delegate { });
                         globals.AddFunction(functionBuilder);
                         break;
                     }
@@ -409,7 +409,7 @@ namespace SolScript.Interpreter.Statements
                     }
                 }
             }
-            return new SolChunk(Assembly, new SolSourceLocation(ActiveFile, node.Span.Location),  returnValue, GetStatements(node.ChildNodes[0]));
+            return new SolChunk(Assembly, new SolSourceLocation(ActiveFile, node.Span.Location), returnValue, GetStatements(node.ChildNodes[0]));
         }
 
         public SolExpression[] GetExpressions(ParseTreeNode node)
@@ -523,9 +523,18 @@ namespace SolScript.Interpreter.Statements
                 case "_string": {
                     string text;
                     try {
-                        text = expressionNode.Token.ValueString.UnEscape();
+                        text = expressionNode.Token.ValueString/*.UnEscape()*/;
                     } catch (ArgumentException ex) {
                         throw new SolInterpreterException(new SolSourceLocation(ActiveFile, expressionNode.Span.Location), "Failed to parse string: " + ex.Message, ex);
+                    }
+                    return new Expression_String(Assembly, new SolSourceLocation(ActiveFile, expressionNode.Span.Location), text);
+                } // _string
+                case "_long_string": {
+                    string text;
+                    try {
+                        text = expressionNode.Token.ValueString;
+                    } catch (ArgumentException ex) {
+                        throw new SolInterpreterException(new SolSourceLocation(ActiveFile, expressionNode.Span.Location), "Failed to parse long string: " + ex.Message, ex);
                     }
                     return new Expression_String(Assembly, new SolSourceLocation(ActiveFile, expressionNode.Span.Location), text);
                 } // _string
@@ -644,7 +653,7 @@ namespace SolScript.Interpreter.Statements
                     SolParameterBuilder[] parameters = GetParameters(expressionNode.ChildNodes[1], out allowOptional);
                     SolType type = GetTypeRef(expressionNode.ChildNodes[2]);
                     SolChunk chunk = GetChunk(expressionNode.ChildNodes[3].ChildNodes[0]);
-                    return new Expression_CreateFunc(Assembly, new SolSourceLocation(ActiveFile, expressionNode.Span.Location), 
+                    return new Expression_CreateFunc(Assembly, new SolSourceLocation(ActiveFile, expressionNode.Span.Location),
                         chunk, type, allowOptional, parameters.Select(p => p.Get(Assembly)).ToArray());
                 }
                 case "Expression_TableConstructor": {

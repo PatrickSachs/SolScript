@@ -35,25 +35,12 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Ionic.Zip">
-      <HintPath>..\packages\DotNetZip\Ionic.Zip.dll</HintPath>
-    </Reference>
-    <Reference Include="Irony">
-      <HintPath>..\..\..\..\7BiT Studios\LuaIrony\Irony.dll</HintPath>
-    </Reference>
-    <Reference Include="Irony.Interpreter">
-      <HintPath>..\..\..\..\7BiT Studios\LuaIrony\Irony.Interpreter.dll</HintPath>
-    </Reference>
-    <Reference Include="JetBrains.Annotations, Version=10.1.5.0, Culture=neutral, PublicKeyToken=1010a0d8d6380325, processorArchitecture=MSIL">
-      <HintPath>..\packages\JetBrains.Annotations.10.1.5\lib\net\JetBrains.Annotations.dll</HintPath>
+    <Reference Include="Irony, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ca48ace7223ead47, processorArchitecture=MSIL">
+      <HintPath>..\packages\Irony.0.9.1\lib\net40\Irony.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="LINQPad, Version=1.0.0.0, Culture=neutral, PublicKeyToken=21353812cd2a2db5, processorArchitecture=MSIL">
-      <HintPath>..\packages\LINQPad.4.51.3\lib\net40\LINQPad.exe</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="Newtonsoft.Json, Version=9.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.9.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+    <Reference Include="JetBrains.Annotations, Version=10.3.0.0, Culture=neutral, PublicKeyToken=1010a0d8d6380325, processorArchitecture=MSIL">
+      <HintPath>..\packages\JetBrains.Annotations.10.3.0\lib\net\JetBrains.Annotations.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
@@ -211,7 +198,6 @@
     <Compile Include="Parser\Literals\SolScriptStringLiteral.cs" />
     <Compile Include="Interpreter\Statements\Statement_CallInstanceFunction.cs" />
     <Compile Include="Interpreter\Statements\SolStatement.cs" />
-    <Compile Include="Reader\SolAssemblyReader.cs" />
     <Compile Include="SolDebug.cs" />
     <Compile Include="Interpreter\SolExecutionContext.cs" />
     <Compile Include="Interpreter\SolMarshal.cs" />
@@ -222,8 +208,6 @@
     <Compile Include="Parser\Terminals\SolScriptLongStringTerminal.cs" />
     <Compile Include="NamespaceDoc.cs" />
     <Compile Include="SolErrorCollection.cs" />
-    <Compile Include="TriValue.cs" />
-    <Compile Include="ValueTypePair.cs" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

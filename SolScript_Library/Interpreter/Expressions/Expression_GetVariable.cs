@@ -35,6 +35,7 @@ namespace SolScript.Interpreter.Expressions
             }
         }
 
+        /// <inheritdoc />
         protected override string ToString_Impl()
         {
             return Source.ToString();

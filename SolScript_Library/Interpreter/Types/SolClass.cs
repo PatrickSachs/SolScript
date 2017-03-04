@@ -11,7 +11,7 @@ namespace SolScript.Interpreter.Types
     ///     This class represents a class in SolScript. If you wish to create you own classes have a look at the
     ///     <see cref="SolLibraryClassAttribute" /> attribute.<br />
     ///     Classes can be instantiated using the
-    ///     <see cref="TypeRegistry.CreateInstance(string, ClassCreationOptions, SolValue[])" /> method.
+    ///     <see cref="SolAssembly.New(string, ClassCreationOptions, SolValue[])" /> method.
     /// </summary>
     public sealed class SolClass : SolValue, IValueIndexable
     {
@@ -37,9 +37,7 @@ namespace SolScript.Interpreter.Types
 
         internal SolClass[] AnnotationsArray;
 
-        public IReadOnlyList<SolClass> Annotations => AnnotationsArray;
-
-        // todo: investigate if this wont cause problems. A class may be in a different assembly that the one it was declared in.
+        public IReadOnlyList<SolClass> Annotations => AnnotationsArray;  
         public SolAssembly Assembly => InheritanceChain.Definition.Assembly;
         public SolTypeMode TypeMode => InheritanceChain.Definition.TypeMode;
         public override bool IsClass => true;
@@ -109,9 +107,14 @@ namespace SolScript.Interpreter.Types
         /// <exception cref="SolRuntimeException">An error occured while calling this function.</exception>
         protected override string ToString_Impl(SolExecutionContext context)
         {
-            SolClassDefinition.MetaFunctionLink link;
-            if (context != null && TryGetMetaFunction(SolMetaKey.__to_string, out link)) {
-                return SolMetaKey.__to_string.Cast(link.GetFunction(this).Call(context)).NotNull().Value;
+            context = context ?? new SolExecutionContext(Assembly, SolMetaKey.__to_string.Name + " native call");
+            try {
+                SolClassDefinition.MetaFunctionLink link;
+                if (TryGetMetaFunction(SolMetaKey.__to_string, out link)) {
+                    return SolMetaKey.__to_string.Cast(link.GetFunction(this).Call(context)).NotNull().Value;
+                }
+            } catch (SolVariableException ex) {
+                throw new SolRuntimeException(context, "Failed to resolve the " + SolMetaKey.__to_string.Name + " meta function.", ex);
             }
             return "class#" + Id + "<" + Type + ">";
         }

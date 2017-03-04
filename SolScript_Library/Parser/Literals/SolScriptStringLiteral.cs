@@ -1,7 +1,7 @@
 ﻿using Irony.Parsing;
 
 namespace SolScript.Parser.Literals {
-    public class SolScriptStringLiteral : StringLiteral {
+    internal class SolScriptStringLiteral : StringLiteral {
         public SolScriptStringLiteral(string name)
             : base(name) {
             AddStartEnd("'", StringOptions.AllowsAllEscapes);
@@ -9,15 +9,22 @@ namespace SolScript.Parser.Literals {
         }
 
         protected override bool ReadBody(ISourceStream source, CompoundTokenDetails details) {
-            /*int nlPos = source.Text.IndexOf('\n', source.PreviewPosition);
-            if (source.Text[nlPos - 1] == '\\')
-                details.Flags += (short) StringOptions.AllowsLineBreak;*/
-                
+            int nlPos = source.Text.IndexOf('\n', source.PreviewPosition);
+            char prev = source.Text[nlPos - 1];
+            if (prev == '\r') {
+                // hi im windows.
+                prev = source.Text[nlPos - 2];
+            }
+            if (prev == '\\') {
+                details.Flags += (short) StringOptions.AllowsLineBreak;
+            }
             return base.ReadBody(source, details);
         }
 
         protected override string HandleSpecialEscape(string segment, CompoundTokenDetails details) {
-            if (string.IsNullOrEmpty(segment)) return string.Empty;
+            if (string.IsNullOrEmpty(segment)) {
+                return string.Empty;
+            }
             char first = segment[0];
             switch (first) {
                 case 'a':

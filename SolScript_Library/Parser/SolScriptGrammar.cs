@@ -1,13 +1,13 @@
 ﻿using System;
-using Irony.Interpreter.Ast;
 using Irony.Parsing;
+using SolScript.Parser.Literals;
 using SolScript.Parser.Terminals;
 
 // ReSharper disable InconsistentNaming
 
 namespace SolScript.Parser {
-    [Language("SolScript", "0.1", "A truly stellar programming language.")]
-    public class SolScriptGrammar : Grammar {
+    [Language("SolScript", "0.1", "A truly stellar scripting language.")]
+    internal class SolScriptGrammar : Grammar {
         public SolScriptGrammar() :
             base(true) {
             #region Terminals
@@ -92,7 +92,7 @@ namespace SolScript.Parser {
             
             // =======================================
             // === MISC
-            NonTerminal ChunkEnd = new NonTerminal("ChunkEnd");
+            NonTerminal ChunkEnd_opt = new NonTerminal("ChunkEnd");
             NonTerminal ClassDefinition = new NonTerminal("ClassDefinition");
             NonTerminal ClassDefinition_BodyMember_trans = new NonTerminal("ClassDefinition_BodyMember_trans");
             NonTerminal FunctionWithAccess = new NonTerminal("FunctionWithAccess");
@@ -155,7 +155,6 @@ namespace SolScript.Parser {
             NonTerminal Chunk = new NonTerminal("Chunk");
             NonTerminal Function_Name = new NonTerminal("Function_Name");
             NonTerminal VariableList = new NonTerminal("VariableList");
-            NonTerminal NameList = new NonTerminal("name list");
             NonTerminal ExpressionList = new NonTerminal("ExpressionList");
             NonTerminal Expression_CreateFunc = new NonTerminal("Expression_CreateFunc");
             NonTerminal FunctionBody = new NonTerminal("FunctionBody");
@@ -256,12 +255,12 @@ namespace SolScript.Parser {
             StatementList.Rule =
                 MakeStarRule(StatementList, Statement)
                 ;
-            ChunkEnd.Rule =
+            ChunkEnd_opt.Rule =
                 Empty
                 | LastStatement
                 ;
             Chunk.Rule =
-                StatementList + ChunkEnd
+                StatementList + ChunkEnd_opt
                 ;
             Statement_DeclareVar.Rule =
                 VAR + _identifier + TypeRef_opt + EQ + Expression
@@ -335,9 +334,6 @@ namespace SolScript.Parser {
                 ;
             VariableList.Rule =
                 MakePlusRule(VariableList, ToTerm(","), Expression_GetVariable)
-                ;
-            NameList.Rule =
-                MakePlusRule(NameList, ToTerm(","), _identifier)
                 ;
             ExpressionList.Rule =
                 MakeStarRule(ExpressionList, ToTerm(","), Expression)
@@ -551,9 +547,10 @@ namespace SolScript.Parser {
 
         protected static StringLiteral CreateSolString(string name) {
             //return new SolScriptStringLiteral(name);
-            var strLit = new StringLiteral(name);
-            strLit.AddStartEnd("'", "'", StringOptions.AllowsDoubledQuote | StringOptions.NoEscapes);
-            strLit.AddStartEnd("\"", "\"", StringOptions.NoEscapes);
+            var strLit = new SolScriptStringLiteral(name);
+            /*strLit.AddStartEnd("'", "'", StringOptions.AllowsDoubledQuote);
+            strLit.AddStartEnd("\"", "\"", StringOptions.None);
+            strLit.EscapeChar = '\\';*/
             return strLit;
         }
     }
