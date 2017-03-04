@@ -2,6 +2,7 @@
 using JetBrains.Annotations;
 using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Types;
+using SolScript.Utility;
 
 namespace SolScript.Interpreter.Statements {
     public class Statement_While : SolStatement {

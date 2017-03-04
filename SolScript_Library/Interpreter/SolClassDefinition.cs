@@ -4,6 +4,7 @@ using System.Linq;
 using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
+using SolScript.Utility;
 
 namespace SolScript.Interpreter
 {
@@ -16,16 +17,16 @@ namespace SolScript.Interpreter
             TypeMode = typeMode;
         }
 
-        private readonly Dictionary<string, SolFieldDefinition> m_Fields = new Dictionary<string, SolFieldDefinition>();
-        private readonly Dictionary<string, SolFunctionDefinition> m_Functions = new Dictionary<string, SolFunctionDefinition>();
+        private readonly Utility.Dictionary<string, SolFieldDefinition> m_Fields = new Utility.Dictionary<string, SolFieldDefinition>();
+        private readonly Utility.Dictionary<string, SolFunctionDefinition> m_Functions = new Utility.Dictionary<string, SolFunctionDefinition>();
         public readonly string Type;
         public readonly SolTypeMode TypeMode;
         public SolClassDefinition BaseClass;
 
         // Lazily generated
-        private Dictionary<SolMetaKey, MetaFunctionLink> l_MetaFunctions;
+        private System.Collections.Generic.Dictionary<SolMetaKey, MetaFunctionLink> l_MetaFunctions;
 
-        private SolAnnotationDefinition[] m_Annotations;
+        private Array<SolAnnotationDefinition> m_Annotations;
 
         public Type NativeType;
 
@@ -34,7 +35,7 @@ namespace SolScript.Interpreter
         /// <inheritdoc />
         public override IReadOnlyList<SolAnnotationDefinition> Annotations {
             get { return m_Annotations; }
-            protected set { m_Annotations = value.ToArray(); }
+            protected set { m_Annotations = new Array<SolAnnotationDefinition>(value.ToArray()); }
         }
 
         public IReadOnlyCollection<SolFieldDefinition> Fields => m_Fields.Values;
@@ -79,7 +80,7 @@ namespace SolScript.Interpreter
         internal void SetAnnotations(params SolAnnotationDefinition[] annotations)
         {
             Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassHulls, SolAssembly.AssertMatch.Exact, "Class annotations can only be set during the generation of class bodies.");
-            m_Annotations = annotations;
+            m_Annotations = new Array<SolAnnotationDefinition>(annotations);
         }
 
         /// <summary>Creates the meta function lookup for the class definition.</summary>
@@ -89,7 +90,7 @@ namespace SolScript.Interpreter
         private void BuildMetaFunctions()
         {
             Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher, "Class meta functions can only be built once the class bodies have been generated.");
-            l_MetaFunctions = new Dictionary<SolMetaKey, MetaFunctionLink>();
+            l_MetaFunctions = new System.Collections.Generic.Dictionary<SolMetaKey, MetaFunctionLink>();
             FindAndRegisterMetaFunction(SolMetaKey.__new);
             FindAndRegisterMetaFunction(SolMetaKey.__to_string);
             FindAndRegisterMetaFunction(SolMetaKey.__getn);

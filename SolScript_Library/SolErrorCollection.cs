@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using SolScript.Utility;
 
 namespace SolScript
 {
@@ -15,7 +16,7 @@ namespace SolScript
         /// <param name="errors">The errors.</param>
         public SolErrorCollection(IEnumerable<SolError> errors)
         {
-            m_Errors = new List<SolError>(errors);
+            m_Errors = new System.Collections.Generic.List<SolError>(errors);
         }
 
         /// <inheritdoc cref="SolErrorCollection(IEnumerable{SolError})" />
@@ -23,10 +24,10 @@ namespace SolScript
 
         private SolErrorCollection()
         {
-            m_Errors = new List<SolError>();
+            m_Errors = new System.Collections.Generic.List<SolError>();
         }
 
-        private readonly List<SolError> m_Errors;
+        private readonly System.Collections.Generic.List<SolError> m_Errors;
 
         /// <summary>
         ///     Are warnings treated as errors by this collection?
@@ -87,6 +88,12 @@ namespace SolScript
 
         /// <inheritdoc />
         public SolError this[int index] => m_Errors[index];
+
+        /// <inheritdoc />
+        public bool Contains(SolError item)
+        {
+            return m_Errors.Contains(item);
+        }
 
         #endregion
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Reflection;
 using System.Runtime.Serialization;
+using SolScript.Utility;
 
 namespace SolScript.Interpreter.Exceptions
 {

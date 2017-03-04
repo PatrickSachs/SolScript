@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
-using NesterovskyBros.Utils;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
 using SolScript.Interpreter.Types.Marshal;
@@ -321,16 +321,19 @@ namespace SolScript.Interpreter
             public AssemblyCache([NotNull] SolAssembly assembly)
             {
                 Assembly = assembly;
-                m_NativeToSol = new WeakTable<object, SolClass>();
+                m_NativeToSol = new ConditionalWeakTable<object, SolClass>();
             }
 
             [NotNull] public readonly SolAssembly Assembly;
 
-            private readonly WeakTable<object, SolClass> m_NativeToSol;
+            private readonly ConditionalWeakTable<object, SolClass> m_NativeToSol;
 
-            public bool StoreReference([NotNull] object value, [NotNull] SolClass solClass)
+            public void StoreReference([NotNull] object value, [NotNull] SolClass solClass)
             {
-                return m_NativeToSol.TryAdd(value, solClass);
+                // todo: determine if conditional weak table doesnt cause issues
+                // there was a reson why it was swapped for a third party one after all. (i assume. though sometimes i do things that just dont make sense...)
+                // note to self: keep in mind to document this kinda stuff....
+                m_NativeToSol.Add(value, solClass);
             }
 
             [CanBeNull]

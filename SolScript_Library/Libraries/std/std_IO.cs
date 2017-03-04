@@ -6,6 +6,7 @@ using SolScript.Interpreter;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Library;
 using SolScript.Interpreter.Types;
+using SolScript.Utility;
 
 // ReSharper disable InconsistentNaming
 

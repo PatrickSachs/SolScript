@@ -16,6 +16,7 @@ using SolScript.Interpreter.Types;
 using SolScript.Interpreter.Types.Implementation;
 using SolScript.Libraries.lang;
 using SolScript.Parser;
+using SolScript.Utility;
 
 namespace SolScript.Interpreter
 {
@@ -88,14 +89,26 @@ namespace SolScript.Interpreter
 
         // The Irony Grammar rules used for SolScript.
         private static readonly SolScriptGrammar s_Grammar = new SolScriptGrammar();
+
+        private static readonly ClassCreationOptions AnnotationClassCreationOptions = new ClassCreationOptions.Customizable().SetEnforceCreation(true);
+
+        private readonly Utility.Dictionary<string, SolClassDefinition> m_ClassDefinitions = new Utility.Dictionary<string, SolClassDefinition>();
         // The compiler used to validate and compile the assembly.
         private readonly SolCompiler m_Compiler;
         // Errors can be added here.
         private readonly SolErrorCollection.Adder m_ErrorAdder;
+        private readonly Utility.Dictionary<string, SolFieldDefinition> m_GlobalFields = new Utility.Dictionary<string, SolFieldDefinition>();
+        private readonly Utility.Dictionary<string, SolFunctionDefinition> m_GlobalFunctions = new Utility.Dictionary<string, SolFunctionDefinition>();
         // All libraries registered in this Assembly.
-        private readonly List<SolLibrary> m_Libraries = new List<SolLibrary>();
+        private readonly Utility.List<SolLibrary> m_Libraries = new Utility.List<SolLibrary>();
+        private readonly Utility.Dictionary<Type, SolClassDefinition> m_NativeClasses = new Utility.Dictionary<Type, SolClassDefinition>();
         // The options for creating this assembly.
         private readonly SolAssemblyOptions m_Options;
+        // A helper lookup containing a type/definition map of all singleton definitions.
+        private readonly Utility.Dictionary<string, SolClassDefinition> m_SingletonLookup = new Utility.Dictionary<string, SolClassDefinition>();
+
+        // The lazy builders. Only available until everything has been parsed.
+        private BuildersContainer l_builders;
         // The lazy statement factory.
         private StatementFactory l_factory;
         // The statement factory is used for parsing raw source files.
@@ -134,6 +147,41 @@ namespace SolScript.Interpreter
         /// </summary>
         /// <seealso cref="AssemblyState" />
         public AssemblyState State { get; private set; }
+
+        /// <exception cref="InvalidOperationException">Invalid state.</exception>
+        /// <remarks>Only available in states lower than <see cref="AssemblyState.GeneratedAll" />.</remarks>
+        private BuildersContainer Builders {
+            get {
+                AssertState(AssemblyState.GeneratedAll, AssertMatch.LowerNoError, "Can only access builders until everything has been fully interpreted.");
+                return l_builders;
+            }
+        }
+
+        /// <summary>
+        ///     All global fields in key value pairs.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">Invalid state. </exception>
+        /// <remarks>Requires the <see cref="AssemblyState.GeneratedAll" /> state.</remarks>
+        /// <seealso cref="State" />
+        public IReadOnlyCollection<KeyValuePair<string, SolFieldDefinition>> GlobalFieldPairs {
+            get {
+                AssertState(AssemblyState.AllRegistered, AssertMatch.ExactOrHigher, "Cannot receive global field definitions if they aren't generated yet.");
+                return m_GlobalFields;
+            }
+        }
+
+        /// <summary>
+        ///     All global functions in key value pairs.
+        /// </summary>
+        /// <exception cref="InvalidOperationException">Invalid state. </exception>
+        /// <remarks>Requires the <see cref="AssemblyState.GeneratedAll" /> state.</remarks>
+        /// <seealso cref="State" />
+        public IReadOnlyCollection<KeyValuePair<string, SolFunctionDefinition>> GlobalFunctionPairs {
+            get {
+                AssertState(AssemblyState.AllRegistered, AssertMatch.ExactOrHigher, "Cannot receive global function definitions if they aren't generated yet.");
+                return m_GlobalFunctions;
+            }
+        }
 
         /// <summary>
         ///     Inclused a <see cref="SolLibrary" /> which will be included in the library upon creation.
@@ -289,8 +337,7 @@ namespace SolScript.Interpreter
             // Validate
             SolDebug.WriteLine("Validating ...");
             foreach (SolClassDefinition definition in m_ClassDefinitions.Values) {
-                try
-                {
+                try {
                     SolDebug.WriteLine("   ... Class " + definition.Type);
                     m_Compiler.ValidateClass(definition);
                 } catch (SolCompilerException ex) {
@@ -300,8 +347,7 @@ namespace SolScript.Interpreter
                 }
             }
             foreach (SolFunctionDefinition definition in m_GlobalFunctions.Values) {
-                try
-                {
+                try {
                     SolDebug.WriteLine("   ... Global Function " + definition.Name);
                     m_Compiler.ValidateFunction(definition);
                 } catch (SolCompilerException ex) {
@@ -402,293 +448,6 @@ namespace SolScript.Interpreter
                     return InternalVariables;
                 default:
                     throw new ArgumentOutOfRangeException();
-            }
-        }
-
-        #region From XYZ
-
-        /// <summary>
-        ///     Creates a new <see cref="SolAssembly" /> from the parsed contents of the given directory.
-        /// </summary>
-        /// <param name="sourceDir">The directory to scan for source files.</param>
-        /// <param name="options">
-        ///     The options for creating this assembly. - The options will be cloned in the assembly and further
-        ///     changes to the options will thus have no effect.
-        /// </param>
-        /// <returns>
-        ///     The assembly which can directly be created(<see cref="Create" />) or first have some libraries included(
-        ///     <see cref="IncludeLibrary" />).
-        /// </returns>
-        /// <exception cref="DirectoryNotFoundException">The directory (or a file) does not exist.</exception>
-        /// <exception cref="IOException">An IO exception occured while trying to read the files.</exception>
-        /// <exception cref="UnauthorizedAccessException">Cannot access a file within the directory or the directory itself.</exception>
-        public static SolAssembly FromDirectory(SolAssemblyOptions options, string sourceDir)
-        {
-            if (!Directory.Exists(sourceDir)) {
-                throw new DirectoryNotFoundException("The directory \"" + sourceDir + "\" does not exist.");
-            }
-#if DEBUG
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
-            try {
-#endif
-                SolDebug.WriteLine("Creating Parser ...");
-                Irony.Parsing.Parser parser = new Irony.Parsing.Parser(s_Grammar);
-                SolDebug.WriteLine("Loading Trees ...");
-                var trees = new List<ParseTree>(100);
-                string[] files;
-                try {
-                    files = Directory.GetFiles(sourceDir, options.SourceFilePattern);
-                } catch (DirectoryNotFoundException ex) {
-                    throw new DirectoryNotFoundException(
-                        "The directory \"" + sourceDir + "\" does not exist. However a previous check indicated that the directory exists. Do you have other threads messing with the directory?",
-                        ex);
-                }
-                foreach (string dir in files) {
-                    ParseTree tree;
-                    try {
-                        tree = parser.Parse(File.ReadAllText(dir), dir);
-                    } catch (FileNotFoundException ex) {
-                        throw new DirectoryNotFoundException(
-                            "The file \"" + dir + "\" does not exist. However the OS told us about the existence of this file. Do you have other threads messing with the file?", ex);
-                    } catch (SecurityException ex) {
-                        throw new UnauthorizedAccessException("Cannot access file \"" + dir + "\".", ex);
-                    }
-                    trees.Add(tree);
-                    SolDebug.WriteLine("  ... Loaded " + dir);
-                }
-                SolAssembly a = FromTrees(trees, options);
-                return a;
-#if DEBUG
-            } finally {
-                stopwatch.Stop();
-                SolDebug.WriteLine("StopWatch: " + stopwatch.ElapsedMilliseconds);
-            }
-#endif
-        }
-
-        /// <summary>
-        ///     Creates an <see cref="SolAssembly" /> from the given code strings.
-        /// </summary>
-        /// <param name="strings">The code strings.</param>
-        /// <param name="options">
-        ///     The options for creating this assembly. - The options will be cloned in the assembly and further
-        ///     changes to the options will thus have no effect.
-        /// </param>
-        /// <returns>
-        ///     The assembly which can directly be created(<see cref="Create" />) or first have some libraries included(
-        ///     <see cref="IncludeLibrary" />).
-        /// </returns>
-        /// <exception cref="SolInterpreterException">An error occured while interpreting the syntax tree.</exception>
-        public static SolAssembly FromStrings(SolAssemblyOptions options, params string[] strings)
-        {
-#if DEBUG
-            Stopwatch stopwatch = new Stopwatch();
-            stopwatch.Start();
-            try {
-#endif
-                SolDebug.WriteLine("Creating Parser ...");
-                Irony.Parsing.Parser parser = new Irony.Parsing.Parser(s_Grammar);
-                var trees = new List<ParseTree>(strings.Length);
-                SolDebug.WriteLine("Loading Trees ...");
-                foreach (string s in strings) {
-                    ParseTree tree = parser.Parse(s);
-                    trees.Add(tree);
-                    SolDebug.WriteLine("  ... Loaded " + s);
-                }
-                SolAssembly a = FromTrees(trees, options);
-                return a;
-#if DEBUG
-            } finally {
-                stopwatch.Stop();
-                SolDebug.WriteLine("StopWatch: " + stopwatch.ElapsedMilliseconds);
-            }
-#endif
-        }
-
-        /// <summary>
-        ///     Builds the assembly from the irony parse trees.
-        /// </summary>
-        private static SolAssembly FromTrees(IEnumerable<ParseTree> trees, SolAssemblyOptions options)
-        {
-            SolDebug.WriteLine("Building Trees ...");
-            SolAssembly script = new SolAssembly(options) {
-                l_builders = new BuildersContainer(),
-                State = AssemblyState.Registry
-            };
-            StatementFactory factory = script.Factory;
-            foreach (ParseTree tree in trees) {
-                SolDebug.WriteLine("  ... Checking tree " + tree.FileName);
-                foreach (LogMessage message in tree.ParserMessages) {
-                    switch (message.Level) {
-                        case ErrorLevel.Info:
-                        case ErrorLevel.Warning:
-                            script.m_ErrorAdder.Add(new SolError(new SolSourceLocation(tree.FileName, message.Location), ErrorId.SyntaxError, message.Message, true));
-                            // Parse all trees even if we have errors. This allows easier debugging for the user if there are errors
-                            // spread accross multiple files.
-                            continue;
-                        case ErrorLevel.Error:
-                            script.m_ErrorAdder.Add(new SolError(new SolSourceLocation(tree.FileName, message.Location), ErrorId.SyntaxError, message.Message));
-                            // Parse all trees even if we have errors. This allows easier debugging for the user if there are errors
-                            // spread accross multiple files.
-                            continue;
-                        default:
-                            throw new ArgumentOutOfRangeException();
-                    }
-                }
-            }
-            if (!script.Errors.HasErrors) {
-                foreach (ParseTree tree in trees) {
-                    SolDebug.WriteLine("  ... Building File " + tree.FileName);
-                    IReadOnlyCollection<SolClassBuilder> classBuilders;
-                    try {
-                        factory.InterpretTree(tree, script.Builders, out classBuilders);
-                    } catch (SolInterpreterException ex) {
-                        script.m_ErrorAdder.Add(new SolError(ex.Location, ErrorId.InterpreterError, ex.Message, false, ex));
-                        // Parse all trees even if we have errors. This allows easier debugging for the user if there are errors
-                        // spread accross multiple files.
-                        continue;
-                    }
-                    foreach (SolClassBuilder typeDef in classBuilders) {
-                        script.RegisterClassBuilder(typeDef);
-                        SolDebug.WriteLine("    ... Type " + typeDef.Name);
-                    }
-                }
-            } else {
-                script.m_ErrorAdder.Add(new SolError(SolSourceLocation.Native(), ErrorId.InternalSecurityMeasure, "Not interpreting the syntax trees since one or more of them had errors.", true));
-            }
-            if (script.Errors.HasErrors) {
-                script.State = AssemblyState.Error;
-            }
-            return script;
-        }
-
-        #endregion
-        
-        private static readonly ClassCreationOptions AnnotationClassCreationOptions = new ClassCreationOptions.Customizable().SetEnforceCreation(true);
-
-        /// <summary>
-        ///     A data container to encapsulate builders. This allows us to easily null the builders out once they are no longer
-        ///     needed, saving us memory.
-        /// </summary>
-        private sealed class BuildersContainer : SolConstructWithMembersBuilder.Generic<BuildersContainer>
-        {
-            public readonly Dictionary<string, SolClassBuilder> ClassBuilders = new Dictionary<string, SolClassBuilder>();
-        }
-
-        // The lazy builders. Only available until everything has been parsed.
-        private BuildersContainer l_builders;
-
-        /// <exception cref="InvalidOperationException">Invalid state.</exception>
-        /// <remarks>Only available in states lower than <see cref="AssemblyState.GeneratedAll" />.</remarks>
-        private BuildersContainer Builders {
-            get {
-                AssertState(AssemblyState.GeneratedAll, AssertMatch.LowerNoError, "Can only access builders until everything has been fully interpreted.");
-                return l_builders;
-            }
-        }
-
-        #region Assertion
-
-        internal enum AssertMatch
-        {
-            Exact,
-            ExactOrLower,
-            ExactOrLowerNoError,
-            Lower,
-            LowerNoError,
-            ExactOrHigher,
-            Higher
-        }
-
-        /// <exception cref="InvalidOperationException">Invalid state.</exception>
-        internal void AssertState(AssemblyState state, AssertMatch match, string message = "")
-        {
-            string str1 = null;
-            switch (match) {
-                case AssertMatch.Exact:
-                    if (state == State) {
-                        return;
-                    }
-                    break;
-                case AssertMatch.ExactOrLower:
-                    if ((int) State <= (int) state) {
-                        return;
-                    }
-                    str1 = "(or lower)";
-                    break;
-                case AssertMatch.ExactOrLowerNoError:
-                    if ((int) State <= (int) state) {
-                        if (State != AssemblyState.Error) {
-                            return;
-                        }
-                    }
-                    str1 = "(or lower)";
-                    break;
-                case AssertMatch.Lower:
-                    if ((int) State < (int) state) {
-                        return;
-                    }
-                    str1 = "(only lower)";
-                    break;
-                case AssertMatch.LowerNoError:
-                    if ((int) State < (int) state) {
-                        if (State != AssemblyState.Error) {
-                            return;
-                        }
-                    }
-                    str1 = "(only lower)";
-                    break;
-                case AssertMatch.ExactOrHigher:
-                    if ((int) State >= (int) state) {
-                        return;
-                    }
-                    str1 = "(or higher)";
-                    break;
-                case AssertMatch.Higher:
-                    if ((int) State > (int) state) {
-                        return;
-                    }
-                    str1 = "(only higher)";
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(match), match, null);
-            }
-            throw new InvalidOperationException("Invalid state! Expected: " + state + (str1 != null ? " " + str1 : string.Empty) + ", but was: " + State + ". " + message);
-        }
-
-        #endregion
-
-        private readonly Dictionary<string, SolClassDefinition> m_ClassDefinitions = new Dictionary<string, SolClassDefinition>();
-        private readonly Dictionary<string, SolFieldDefinition> m_GlobalFields = new Dictionary<string, SolFieldDefinition>();
-        private readonly Dictionary<string, SolFunctionDefinition> m_GlobalFunctions = new Dictionary<string, SolFunctionDefinition>();
-        private readonly Dictionary<Type, SolClassDefinition> m_NativeClasses = new Dictionary<Type, SolClassDefinition>();
-        // A helper lookup containing a type/definition map of all singleton definitions.
-        private readonly Dictionary<string, SolClassDefinition> m_SingletonLookup = new Dictionary<string, SolClassDefinition>();
-
-        /// <summary>
-        ///     All global fields in key value pairs.
-        /// </summary>
-        /// <exception cref="InvalidOperationException">Invalid state. </exception>
-        /// <remarks>Requires the <see cref="AssemblyState.GeneratedAll" /> state.</remarks>
-        /// <seealso cref="State" />
-        public IReadOnlyCollection<KeyValuePair<string, SolFieldDefinition>> GlobalFieldPairs {
-            get {
-                AssertState(AssemblyState.AllRegistered, AssertMatch.ExactOrHigher, "Cannot receive global field definitions if they aren't generated yet.");
-                return m_GlobalFields;
-            }
-        }
-
-        /// <summary>
-        ///     All global functions in key value pairs.
-        /// </summary>
-        /// <exception cref="InvalidOperationException">Invalid state. </exception>
-        /// <remarks>Requires the <see cref="AssemblyState.GeneratedAll" /> state.</remarks>
-        /// <seealso cref="State" />
-        public IReadOnlyCollection<KeyValuePair<string, SolFunctionDefinition>> GlobalFunctionPairs {
-            get {
-                AssertState(AssemblyState.AllRegistered, AssertMatch.ExactOrHigher, "Cannot receive global function definitions if they aren't generated yet.");
-                return m_GlobalFunctions;
             }
         }
 
@@ -823,7 +582,7 @@ namespace SolScript.Interpreter
             if (!options.EnforceCreation && !definition.CanBeCreated()) {
                 throw new InvalidOperationException($"The class \"{definition.Type}\" cannot be instantiated.");
             }
-            var annotations = new List<SolClass>();
+            var annotations = new Utility.List<SolClass>();
             SolClass instance = new SolClass(definition);
             // The context is required to actually initialize the fields.
             SolExecutionContext creationContext = options.CallingContext ?? new SolExecutionContext(this, definition.Type + "#" + instance.Id + " creation context");
@@ -914,7 +673,7 @@ namespace SolScript.Interpreter
                 // or it is time to get rid of this stupid lazy function init stuff(but my sweet memory!)
                 activeInheritance = activeInheritance.BaseInheritance;
             }
-            instance.AnnotationsArray = annotations.ToArray();
+            instance.AnnotationsArray = new Array<SolClass>(annotations.ToArray());
             if (options.CallConstructor) {
                 try {
                     instance.CallConstructor(creationContext, constructorArguments);
@@ -972,5 +731,249 @@ namespace SolScript.Interpreter
             SolClass instance = New_Impl(definition, options, constructorArguments);
             return instance;
         }
+
+        #region Nested type: BuildersContainer
+
+        /// <summary>
+        ///     A data container to encapsulate builders. This allows us to easily null the builders out once they are no longer
+        ///     needed, saving us memory.
+        /// </summary>
+        private sealed class BuildersContainer : SolConstructWithMembersBuilder.Generic<BuildersContainer>
+        {
+            public readonly Utility.Dictionary<string, SolClassBuilder> ClassBuilders = new Utility.Dictionary<string, SolClassBuilder>();
+        }
+
+        #endregion
+
+        #region From XYZ
+
+        /// <summary>
+        ///     Creates a new <see cref="SolAssembly" /> from the parsed contents of the given directory.
+        /// </summary>
+        /// <param name="sourceDir">The directory to scan for source files.</param>
+        /// <param name="options">
+        ///     The options for creating this assembly. - The options will be cloned in the assembly and further
+        ///     changes to the options will thus have no effect.
+        /// </param>
+        /// <returns>
+        ///     The assembly which can directly be created(<see cref="Create" />) or first have some libraries included(
+        ///     <see cref="IncludeLibrary" />).
+        /// </returns>
+        /// <exception cref="DirectoryNotFoundException">The directory (or a file) does not exist.</exception>
+        /// <exception cref="IOException">An IO exception occured while trying to read the files.</exception>
+        /// <exception cref="UnauthorizedAccessException">Cannot access a file within the directory or the directory itself.</exception>
+        public static SolAssembly FromDirectory(SolAssemblyOptions options, string sourceDir)
+        {
+            if (!Directory.Exists(sourceDir)) {
+                throw new DirectoryNotFoundException("The directory \"" + sourceDir + "\" does not exist.");
+            }
+#if DEBUG
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+            try {
+#endif
+            SolDebug.WriteLine("Creating Parser ...");
+            Irony.Parsing.Parser parser = new Irony.Parsing.Parser(s_Grammar);
+            SolDebug.WriteLine("Loading Trees ...");
+            var trees = new Utility.List<ParseTree>();
+            string[] files;
+            try {
+                files = Directory.GetFiles(sourceDir, options.SourceFilePattern);
+            } catch (DirectoryNotFoundException ex) {
+                throw new DirectoryNotFoundException(
+                    "The directory \"" + sourceDir + "\" does not exist. However a previous check indicated that the directory exists. Do you have other threads messing with the directory?",
+                    ex);
+            }
+            foreach (string dir in files) {
+                ParseTree tree;
+                try {
+                    tree = parser.Parse(File.ReadAllText(dir), dir);
+                } catch (FileNotFoundException ex) {
+                    throw new DirectoryNotFoundException(
+                        "The file \"" + dir + "\" does not exist. However the OS told us about the existence of this file. Do you have other threads messing with the file?", ex);
+                } catch (SecurityException ex) {
+                    throw new UnauthorizedAccessException("Cannot access file \"" + dir + "\".", ex);
+                }
+                trees.Add(tree);
+                SolDebug.WriteLine("  ... Loaded " + dir);
+            }
+            SolAssembly a = FromTrees(trees, options);
+            return a;
+#if DEBUG
+            } finally {
+                stopwatch.Stop();
+                SolDebug.WriteLine("StopWatch: " + stopwatch.ElapsedMilliseconds);
+            }
+#endif
+        }
+
+        /// <summary>
+        ///     Creates an <see cref="SolAssembly" /> from the given code strings.
+        /// </summary>
+        /// <param name="strings">The code strings.</param>
+        /// <param name="options">
+        ///     The options for creating this assembly. - The options will be cloned in the assembly and further
+        ///     changes to the options will thus have no effect.
+        /// </param>
+        /// <returns>
+        ///     The assembly which can directly be created(<see cref="Create" />) or first have some libraries included(
+        ///     <see cref="IncludeLibrary" />).
+        /// </returns>
+        /// <exception cref="SolInterpreterException">An error occured while interpreting the syntax tree.</exception>
+        public static SolAssembly FromStrings(SolAssemblyOptions options, params string[] strings)
+        {
+#if DEBUG
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+            try {
+#endif
+            SolDebug.WriteLine("Creating Parser ...");
+            Irony.Parsing.Parser parser = new Irony.Parsing.Parser(s_Grammar);
+            var trees = new Utility.List<ParseTree>(strings.Length);
+            SolDebug.WriteLine("Loading Trees ...");
+            foreach (string s in strings) {
+                ParseTree tree = parser.Parse(s);
+                trees.Add(tree);
+                SolDebug.WriteLine("  ... Loaded " + s);
+            }
+            SolAssembly a = FromTrees(trees, options);
+            return a;
+#if DEBUG
+            } finally {
+                stopwatch.Stop();
+                SolDebug.WriteLine("StopWatch: " + stopwatch.ElapsedMilliseconds);
+            }
+#endif
+        }
+
+        /// <summary>
+        ///     Builds the assembly from the irony parse trees.
+        /// </summary>
+        private static SolAssembly FromTrees(IEnumerable<ParseTree> trees, SolAssemblyOptions options)
+        {
+            SolDebug.WriteLine("Building Trees ...");
+            SolAssembly script = new SolAssembly(options) {
+                l_builders = new BuildersContainer(),
+                State = AssemblyState.Registry
+            };
+            StatementFactory factory = script.Factory;
+            foreach (ParseTree tree in trees) {
+                SolDebug.WriteLine("  ... Checking tree " + tree.FileName);
+                foreach (LogMessage message in tree.ParserMessages) {
+                    switch (message.Level) {
+                        case ErrorLevel.Info:
+                        case ErrorLevel.Warning:
+                            script.m_ErrorAdder.Add(new SolError(new SolSourceLocation(tree.FileName, message.Location), ErrorId.SyntaxError, message.Message, true));
+                            // Parse all trees even if we have errors. This allows easier debugging for the user if there are errors
+                            // spread accross multiple files.
+                            continue;
+                        case ErrorLevel.Error:
+                            script.m_ErrorAdder.Add(new SolError(new SolSourceLocation(tree.FileName, message.Location), ErrorId.SyntaxError, message.Message));
+                            // Parse all trees even if we have errors. This allows easier debugging for the user if there are errors
+                            // spread accross multiple files.
+                            continue;
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
+                }
+            }
+            if (!script.Errors.HasErrors) {
+                foreach (ParseTree tree in trees) {
+                    SolDebug.WriteLine("  ... Building File " + tree.FileName);
+                    IReadOnlyList<SolClassBuilder> classBuilders;
+                    try {
+                        factory.InterpretTree(tree, script.Builders, out classBuilders);
+                    } catch (SolInterpreterException ex) {
+                        script.m_ErrorAdder.Add(new SolError(ex.Location, ErrorId.InterpreterError, ex.Message, false, ex));
+                        // Parse all trees even if we have errors. This allows easier debugging for the user if there are errors
+                        // spread accross multiple files.
+                        continue;
+                    }
+                    foreach (SolClassBuilder typeDef in classBuilders) {
+                        script.RegisterClassBuilder(typeDef);
+                        SolDebug.WriteLine("    ... Type " + typeDef.Name);
+                    }
+                }
+            } else {
+                script.m_ErrorAdder.Add(new SolError(SolSourceLocation.Native(), ErrorId.InternalSecurityMeasure, "Not interpreting the syntax trees since one or more of them had errors.", true));
+            }
+            if (script.Errors.HasErrors) {
+                script.State = AssemblyState.Error;
+            }
+            return script;
+        }
+
+        #endregion
+
+        #region Assertion
+
+        internal enum AssertMatch
+        {
+            Exact,
+            ExactOrLower,
+            ExactOrLowerNoError,
+            Lower,
+            LowerNoError,
+            ExactOrHigher,
+            Higher
+        }
+
+        /// <exception cref="InvalidOperationException">Invalid state.</exception>
+        internal void AssertState(AssemblyState state, AssertMatch match, string message = "")
+        {
+            string str1 = null;
+            switch (match) {
+                case AssertMatch.Exact:
+                    if (state == State) {
+                        return;
+                    }
+                    break;
+                case AssertMatch.ExactOrLower:
+                    if ((int) State <= (int) state) {
+                        return;
+                    }
+                    str1 = "(or lower)";
+                    break;
+                case AssertMatch.ExactOrLowerNoError:
+                    if ((int) State <= (int) state) {
+                        if (State != AssemblyState.Error) {
+                            return;
+                        }
+                    }
+                    str1 = "(or lower)";
+                    break;
+                case AssertMatch.Lower:
+                    if ((int) State < (int) state) {
+                        return;
+                    }
+                    str1 = "(only lower)";
+                    break;
+                case AssertMatch.LowerNoError:
+                    if ((int) State < (int) state) {
+                        if (State != AssemblyState.Error) {
+                            return;
+                        }
+                    }
+                    str1 = "(only lower)";
+                    break;
+                case AssertMatch.ExactOrHigher:
+                    if ((int) State >= (int) state) {
+                        return;
+                    }
+                    str1 = "(or higher)";
+                    break;
+                case AssertMatch.Higher:
+                    if ((int) State > (int) state) {
+                        return;
+                    }
+                    str1 = "(only higher)";
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(match), match, null);
+            }
+            throw new InvalidOperationException("Invalid state! Expected: " + state + (str1 != null ? " " + str1 : string.Empty) + ", but was: " + State + ". " + message);
+        }
+
+        #endregion
     }
 }

@@ -542,7 +542,7 @@ namespace SolScript.StandardLibraries.std
         /// <exception cref="IOException">An I/O error occurs. </exception>
         /// <exception cref="NotSupportedException">The stream does not support reading. </exception>
         /// <exception cref="ObjectDisposedException">Methods were called after the stream was closed. </exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         private void WriteByte(byte data)
         {
             m_Stream.WriteByte(data);
@@ -551,7 +551,7 @@ namespace SolScript.StandardLibraries.std
         /// <exception cref="IOException">An I/O error occurs. </exception>
         /// <exception cref="NotSupportedException">The stream does not support reading. </exception>
         /// <exception cref="ObjectDisposedException">Methods were called after the stream was closed. </exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         private void WriteUInt32(uint data)
         {
             WriteBytes(BitConverter.GetBytes(data));
@@ -560,7 +560,7 @@ namespace SolScript.StandardLibraries.std
         /// <exception cref="IOException">An I/O error occurs. </exception>
         /// <exception cref="NotSupportedException">The stream does not support reading. </exception>
         /// <exception cref="ObjectDisposedException">Method was called after the stream was closed. </exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         private void WriteBytes(byte[] bytes)
         {
             m_Stream.Write(bytes, 0, bytes.Length);
@@ -573,7 +573,7 @@ namespace SolScript.StandardLibraries.std
         /// <exception cref="IOException">An I/O error occurs. </exception>
         /// <exception cref="NotSupportedException">The stream does not support reading. </exception>
         /// <exception cref="ObjectDisposedException">Methods were called after the stream was closed. </exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         private bool ReadBool()
         {
             return m_Stream.ReadByte() != 0;
@@ -582,7 +582,7 @@ namespace SolScript.StandardLibraries.std
         /// <exception cref="IOException">An I/O error occurs. </exception>
         /// <exception cref="NotSupportedException">The stream does not support reading. </exception>
         /// <exception cref="ObjectDisposedException">Methods were called after the stream was closed. </exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         private byte ReadByte()
         {
             return (byte) m_Stream.ReadByte();
@@ -591,7 +591,7 @@ namespace SolScript.StandardLibraries.std
         /// <exception cref="IOException">An I/O error occurs. </exception>
         /// <exception cref="NotSupportedException">The stream does not support reading. </exception>
         /// <exception cref="ObjectDisposedException">Methods were called after the stream was closed. </exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         private double ReadDouble()
         {
             return BitConverter.ToDouble(ReadBytes(8), 0);
@@ -600,7 +600,7 @@ namespace SolScript.StandardLibraries.std
         /// <exception cref="IOException">An I/O error occurs. </exception>
         /// <exception cref="NotSupportedException">The stream does not support reading. </exception>
         /// <exception cref="ObjectDisposedException">Methods were called after the stream was closed. </exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         private uint ReadUInt32()
         {
             return BitConverter.ToUInt32(ReadBytes(4), 0);
@@ -609,7 +609,7 @@ namespace SolScript.StandardLibraries.std
         /// <exception cref="IOException">An I/O error occurs. </exception>
         /// <exception cref="NotSupportedException">The stream does not support reading. </exception>
         /// <exception cref="ObjectDisposedException">Methods were called after the stream was closed. </exception>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         private char ReadChar()
         {
             return BitConverter.ToChar(ReadBytes(2), 0);

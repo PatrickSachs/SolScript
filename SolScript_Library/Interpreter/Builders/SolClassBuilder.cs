@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using SolScript.Utility;
 
 namespace SolScript.Interpreter.Builders
 {
@@ -19,7 +20,7 @@ namespace SolScript.Interpreter.Builders
         }
 
         // All annotations on this class.
-        private readonly List<SolAnnotationData> m_Annotations = new List<SolAnnotationData>();
+        private readonly Utility.List<SolAnnotationData> m_Annotations = new Utility.List<SolAnnotationData>();
 
         /// <summary>
         ///     The name of the base class(= the class this one extends).

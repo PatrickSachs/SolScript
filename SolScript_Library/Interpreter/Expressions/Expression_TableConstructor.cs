@@ -4,6 +4,7 @@ using System.Text;
 using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
+using SolScript.Utility;
 
 namespace SolScript.Interpreter.Expressions
 {
@@ -22,12 +23,12 @@ namespace SolScript.Interpreter.Expressions
             if (keys.Length != values.Length) {
                 throw new ArgumentException($"Not the same amount of keys({keys.Length}) and values({values.Length}) has been passed.", nameof(keys));
             }
-            m_Keys = keys;
-            m_Values = values;
+            m_Keys = new Array<SolExpression>(keys);
+            m_Values = new Array<SolExpression>(values);
         }
 
-        private readonly SolExpression[] m_Keys;
-        private readonly SolExpression[] m_Values;
+        private readonly Array<SolExpression> m_Keys;
+        private readonly Array<SolExpression> m_Values;
 
         /// <summary>
         ///     A read-only collection of all keys in this constructor. The matching value can be found in the

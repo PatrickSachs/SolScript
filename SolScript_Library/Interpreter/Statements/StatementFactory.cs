@@ -6,6 +6,7 @@ using SolScript.Interpreter.Builders;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Types;
+using SolScript.Utility;
 
 namespace SolScript.Interpreter.Statements
 {
@@ -22,10 +23,10 @@ namespace SolScript.Interpreter.Statements
         public string ActiveFile { get; set; }
 
         /// <exception cref="SolInterpreterException">An error occured.</exception>
-        public void InterpretTree(ParseTree tree, SolConstructWithMembersBuilder globals, out IReadOnlyCollection<SolClassBuilder> classes)
+        public void InterpretTree(ParseTree tree, SolConstructWithMembersBuilder globals, out IReadOnlyList<SolClassBuilder> classes)
         {
             ActiveFile = tree.FileName;
-            var classesList = new List<SolClassBuilder>();
+            var classesList = new Utility.List<SolClassBuilder>();
             classes = classesList;
             foreach (ParseTreeNode rootedNode in tree.Root.ChildNodes) {
                 switch (rootedNode.Term.Name) {
@@ -54,7 +55,7 @@ namespace SolScript.Interpreter.Statements
             ParseTreeNode parametersListNode = node.ChildNodes[0];
             if (parametersListNode.ChildNodes.Count == 0) {
                 allowOptional = false;
-                return Array.Empty<SolParameterBuilder>();
+                return EmptyArray<SolParameterBuilder>.Value;
             }
             // Tree for args:
             // - ParameterList
@@ -67,7 +68,7 @@ namespace SolScript.Interpreter.Statements
                 parametersListNode.ChildNodes.FindChildByName("ExplicitParameterList");
             allowOptional = optionalNode != null;
             return explicitNode == null
-                ? Array.Empty<SolParameterBuilder>()
+                ? EmptyArray<SolParameterBuilder>.Value
                 : GetExplicitParameters(explicitNode);
         }
 
@@ -298,7 +299,7 @@ namespace SolScript.Interpreter.Statements
             }
             foreach (ParseTreeNode annotationNode in node.ChildNodes) {
                 string name = annotationNode.ChildNodes[1].Token.Text;
-                SolExpression[] expressions = annotationNode.ChildNodes.Count == 3 ? GetExpressions(annotationNode.ChildNodes[2]) : Array.Empty<SolExpression>();
+                SolExpression[] expressions = annotationNode.ChildNodes.Count == 3 ? GetExpressions(annotationNode.ChildNodes[2]) : EmptyArray<SolExpression>.Value;
                 builder.AddAnnotation(new SolAnnotationData(new SolSourceLocation(ActiveFile, node.Span.Location), name, expressions));
             }
         }
@@ -784,51 +785,11 @@ namespace SolScript.Interpreter.Statements
                     return new Statement_AssignVar(Assembly, new SolSourceLocation(ActiveFile, statementNode.Span.Location), variable, expression);
                 } // Statement_DeclareVar
                 case "Statement_CallFunction": {
-                    /* Statement_CallFunction = Expression + Arguments_trans; */
-                    /*SolString functionName;
-                SolExpression classGetter;
-                ParseTreeNode indexVariableNode = statementNode.ChildNodes[0];
-                {
-                    ParseTreeNode classGetterNode = indexVariableNode.ChildNodes[0];
-                    ParseTreeNode functionGetterNode = indexVariableNode.ChildNodes[1];
-                    classGetter = GetExpression(classGetterNode);
-                    switch (functionGetterNode.Term.Name) {
-                        case "_identifier": {
-                            functionName = new SolString(functionGetterNode.Token.Text);
-                            break;
-                        }
-                        case "Expression": {
-                            // once dynmic indexising is implemented, this will be duplictae code with GetVariableAssignmentTarget()
-                            throw new NotImplementedException("As of now classes cannot be dynamically indexed. Sorry, maybe in the next version :) - This will be a meta call.");
-                        }
-                        default: {
-                            throw new SolInterpreterException(new SolSourceLocation(ActiveFile, functionGetterNode.Span.Location),
-                                "Invalid class instance function getter node id \"" + functionGetterNode.Term.Name + "\".");
-                        }
-                    }
-                }*/
                     SolExpression expression = GetExpression(statementNode.ChildNodes[0]);
-                    SolExpression[] arguments = statementNode.ChildNodes[1].ChildNodes.Count != 0 ? GetExpressions(statementNode.ChildNodes[1]) : Array.Empty<SolExpression>();
+                    SolExpression[] arguments = statementNode.ChildNodes[1].ChildNodes.Count != 0 ? GetExpressions(statementNode.ChildNodes[1]) : EmptyArray<SolExpression>.Value;
                     MetaItem meta = m_MetaStack.Count != 0 ? m_MetaStack.Peek() : null;
                     return new Statement_CallInstanceFunction(Assembly, new SolSourceLocation(ActiveFile, statementNode.Span.Location), meta?.ActiveClass.Name, expression, arguments);
                 } // Statement_CallInstanceFunction
-                /*case "Statement_CallFunctionCompilerResolveRef": {
-                    // Statement_CallFunctionCompilerResolveRef.Rule = _identifier + Arguments_trans; 
-                    // Step 1: determine context
-                    //  case 1: in class -> use class internals
-                    //  case 2: not in class -> use assembly globals todo: proper "out of class" support for stuff
-                    MetaItem meta = m_MetaStack.Count != 0 ? m_MetaStack.Peek() : null;
-                    string functionName = statementNode.ChildNodes[0].Token.Text;
-                    SolExpression[] arguments = GetExpressions(statementNode.ChildNodes[1]);
-                    if (meta != null)
-                        {
-                            Expression_GetVariable.SourceRef source = new Expression_GetVariable.NamedVariable("self");
-                        return new Statement_CallInstanceFunction(Assembly, new SolSourceLocation(ActiveFile, statementNode.Span.Location), meta.ActiveClass.Name,
-                            new Expression_GetVariable(Assembly, new SolSourceLocation(ActiveFile, statementNode.Span.Location), source, meta.ActiveClass.Name),
-                            new SolString(functionName), arguments);
-                    }
-                    return new Statement_CallGlobalFunctionFromGlobalContext(Assembly, new SolSourceLocation(ActiveFile, statementNode.Span.Location), functionName, arguments);
-                } // Statement_CallFunctionCompilerResolveRef*/
                 case "Statement_For": {
                     // Statement_For
                     //  - "for"

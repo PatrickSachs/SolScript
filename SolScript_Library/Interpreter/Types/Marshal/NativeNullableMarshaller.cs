@@ -27,8 +27,8 @@ namespace SolScript.Interpreter.Types.Marshal
         /// <exception cref="SolMarshallingException">Failed to marshal the wrapped value.</exception>
         public SolValue Marshal(SolAssembly assembly, object value, Type type)
         {
-            if ((bool)type.GetProperty("HasValue", BindingFlags.Public | BindingFlags.Instance).GetValue(value)) {
-                object wrapped = type.GetProperty("Value", BindingFlags.Public | BindingFlags.Instance).GetValue(value);
+            if ((bool)type.GetProperty("HasValue", BindingFlags.Public | BindingFlags.Instance).GetValue(value, null)) {
+                object wrapped = type.GetProperty("Value", BindingFlags.Public | BindingFlags.Instance).GetValue(value, null);
                 Type dataType = Nullable.GetUnderlyingType(type);
                 return SolMarshal.MarshalFromNative(assembly, dataType, wrapped);
             }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Reflection;
 using SolScript.Interpreter.Exceptions;
+using SolScript.Utility;
 
 namespace SolScript.Interpreter.Types.Implementation
 {

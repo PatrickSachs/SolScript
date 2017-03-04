@@ -3,6 +3,7 @@ using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
 using SolScript.Interpreter.Types.Implementation;
+using SolScript.Utility;
 
 namespace SolScript.Interpreter
 {

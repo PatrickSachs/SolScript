@@ -2,19 +2,18 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using Irony.Parsing;
 using JetBrains.Annotations;
+using SolScript.Interpreter;
 using SolScript.Interpreter.Builders;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Library;
 using SolScript.Interpreter.Types;
 
-namespace SolScript.Interpreter
+namespace SolScript.Utility
 {
     /// <summary>
     ///     This class contains several helper methods for SolScript. These methods are not directly related to SolScript(or
@@ -62,14 +61,11 @@ namespace SolScript.Interpreter
             typeof(Action<,,,,,,,,,,,,,,,>)
         };
 
-        internal static readonly SolParameterInfo.Native EmptyNativeParameterInfo = new SolParameterInfo.Native(Array.Empty<SolParameter>(), Array.Empty<Type>(), false, false);
-
         /// <summary>
         ///     Checks if a <see cref="SolValue" /> is <see cref="SolNil" /> or null.
         /// </summary>
         /// <param name="value">The <see cref="SolValue" /> to check.</param>
         /// <returns>true if the see <see cref="SolValue" /> is <see cref="SolNil" />, false if not.</returns>
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNil([CanBeNull] this SolValue value)
         {
             return value == null || value.Type == SolNil.TYPE;
@@ -207,7 +203,6 @@ namespace SolScript.Interpreter
         /// <returns>The joined string.</returns>
         /// <seealso cref="JoinToString{T}(string,System.Collections.Generic.IEnumerable{T}, Func{T,string})" />
         [DebuggerStepThrough]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static string JoinToString<T>(string separator, IEnumerable<T> array)
         {
             return string.Join(separator, array);
@@ -389,7 +384,6 @@ namespace SolScript.Interpreter
         }
 
         [CanBeNull]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ParseTreeNode FindChildByName(this ParseTreeNodeList @this, string name)
         {
             return @this.Find(p => p.Term.Name == name);
@@ -422,21 +416,18 @@ namespace SolScript.Interpreter
         }
 
         [DebuggerStepThrough]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool DidReturn(Terminators terminators)
         {
             return (terminators & Terminators.Return) == Terminators.Return;
         }
 
         [DebuggerStepThrough]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool DidBreak(Terminators terminators)
         {
             return (terminators & Terminators.Break) == Terminators.Break;
         }
 
         [DebuggerStepThrough]
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static bool DidContinue(Terminators terminators)
         {
             return (terminators & Terminators.Continue) == Terminators.Continue;
@@ -685,6 +676,62 @@ namespace SolScript.Interpreter
             return number;
         }
 
+        /// <inheritdoc cref="MemberInfo.GetCustomAttributes(Type, bool)" />
+        /// <exception cref="TypeLoadException">A custom attribute type cannot be loaded. </exception>
+        /// <exception cref="InvalidOperationException">
+        ///     This member belongs to a type that is loaded into the reflection-only
+        ///     context. See How to: Load Assemblies into the Reflection-Only Context.
+        /// </exception>
+        public static T[] GetCustomAttributes<T>(this MemberInfo member, bool inherit = true) where T : Attribute
+        {
+            object[] attr = member.GetCustomAttributes(typeof(T), inherit);
+            if (attr.Length == 0) {
+                return EmptyArray<T>.Value;
+            }
+            return (T[]) attr;
+        }
+
+        /// <inheritdoc cref="ParameterInfo.GetCustomAttributes(Type, bool)" />
+        /// <exception cref="TypeLoadException">A custom attribute type cannot be loaded. </exception>
+        /// <exception cref="ArgumentException">The type must be a type provided by the underlying runtime system.</exception>
+        public static T[] GetCustomAttributes<T>(this ParameterInfo member, bool inherit = true) where T : Attribute
+        {
+            object[] attr = member.GetCustomAttributes(typeof(T), inherit);
+            if (attr.Length == 0) {
+                return EmptyArray<T>.Value;
+            }
+            return (T[]) attr;
+        }
+
+        /// <inheritdoc cref="MemberInfo.GetCustomAttributes(Type, bool)" />
+        /// <exception cref="TypeLoadException">A custom attribute type cannot be loaded. </exception>
+        /// <exception cref="InvalidOperationException">
+        ///     This member belongs to a type that is loaded into the reflection-only
+        ///     context. See How to: Load Assemblies into the Reflection-Only Context.
+        /// </exception>
+        [CanBeNull]
+        public static T GetCustomAttribute<T>(this MemberInfo member, bool inherit = true) where T : Attribute
+        {
+            T[] attr = GetCustomAttributes<T>(member, inherit);
+            if (attr.Length == 0) {
+                return null;
+            }
+            return attr[0];
+        }
+
+        /// <inheritdoc cref="ParameterInfo.GetCustomAttributes(Type, bool)" />
+        /// <exception cref="TypeLoadException">A custom attribute type cannot be loaded. </exception>
+        /// <exception cref="ArgumentException">The type must be a type provided by the underlying runtime system.</exception>
+        [CanBeNull]
+        public static T GetCustomAttribute<T>(this ParameterInfo member, bool inherit = true) where T : Attribute
+        {
+            T[] attr = GetCustomAttributes<T>(member, inherit);
+            if (attr.Length == 0) {
+                return null;
+            }
+            return attr[0];
+        }
+
         /// <summary>
         ///     Gets the type of a member info. This method respects the the contracts of said member info.
         /// </summary>
@@ -724,12 +771,12 @@ namespace SolScript.Interpreter
             }
             return SolMarshal.GetSolType(assembly, member.DataType);
         }
+
         internal static void GetParameterBuilders(ParameterInfo[] parameterInfo, out SolParameterBuilder[] builders, out Type[] marshalTypes, out bool allowOptional, out bool sendContext)
         {
-            if (parameterInfo.Length == 0)
-            {
-                builders = Array.Empty<SolParameterBuilder>();
-                marshalTypes = Array.Empty<Type>();
+            if (parameterInfo.Length == 0) {
+                builders = EmptyArray<SolParameterBuilder>.Value;
+                marshalTypes = EmptyArray<Type>.Value;
                 allowOptional = false;
                 sendContext = false;
                 return;
@@ -740,21 +787,18 @@ namespace SolScript.Interpreter
             int offsetStart = 0;
             int offsetEnd = 0;
             sendContext = false;
-            if (parameterInfo[0].ParameterType == typeof(SolExecutionContext))
-            {
+            if (parameterInfo[0].ParameterType == typeof(SolExecutionContext)) {
                 sendContext = true;
                 offsetStart++;
             }
-            if (parameterInfo[parameterInfo.Length - 1].GetCustomAttribute<ParamArrayAttribute>() != null)
-            {
+            if (parameterInfo[parameterInfo.Length - 1].GetCustomAttribute<ParamArrayAttribute>() != null) {
                 ParameterInfo paramsParameter = parameterInfo[parameterInfo.Length - 1];
                 allowOptionalType = paramsParameter.ParameterType.GetElementType();
                 offsetEnd++;
             }
             builders = new SolParameterBuilder[parameterInfo.Length - offsetStart - offsetEnd];
             marshalTypes = new Type[builders.Length + (allowOptionalType != null ? 1 : 0)];
-            for (int i = offsetStart; i < parameterInfo.Length - offsetEnd; i++)
-            {
+            for (int i = offsetStart; i < parameterInfo.Length - offsetEnd; i++) {
                 // i is the index in the parameter info array.
                 ParameterInfo activeParameter = parameterInfo[i];
                 SolContractAttribute customContract = activeParameter.GetCustomAttribute<SolContractAttribute>();
@@ -765,8 +809,7 @@ namespace SolScript.Interpreter
                 );
                 marshalTypes[i - offsetStart] = activeParameter.ParameterType;
             }
-            if (allowOptionalType != null)
-            {
+            if (allowOptionalType != null) {
                 marshalTypes[marshalTypes.Length - 1] = allowOptionalType;
             }
             allowOptional = allowOptionalType != null;

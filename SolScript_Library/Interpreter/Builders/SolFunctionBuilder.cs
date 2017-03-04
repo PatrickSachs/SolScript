@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 using SolScript.Interpreter.Expressions;
+using SolScript.Utility;
 
 namespace SolScript.Interpreter.Builders
 {
@@ -17,11 +18,11 @@ namespace SolScript.Interpreter.Builders
             Name = name;
         }
 
-        private readonly List<SolAnnotationData> m_Annotations = new List<SolAnnotationData>();
-        private readonly List<SolParameterBuilder> m_Parameters = new List<SolParameterBuilder>();
+        private readonly Utility.List<SolAnnotationData> m_Annotations = new Utility.List<SolAnnotationData>();
+        private readonly Utility.List<SolParameterBuilder> m_Parameters = new Utility.List<SolParameterBuilder>();
         // The list for native marshal types. Instance created by the static methods for native functions
         // to avoid the creation of unnecessary lists.
-        private List<Type> l_NativeMarshalTypes;
+        private Utility.List<Type> l_NativeMarshalTypes;
 
         /// <summary>
         ///     The name of this function?
@@ -86,7 +87,7 @@ namespace SolScript.Interpreter.Builders
         public IReadOnlyList<Type> NativeMarshalTypes {
             get {
                 if (!IsNative) {
-                    return Array.Empty<Type>();
+                    return EmptyReadOnlyList<Type>.Value;
                 }
                 return l_NativeMarshalTypes;
             }
@@ -202,7 +203,7 @@ namespace SolScript.Interpreter.Builders
             builder.NativeConstructor = null;
             builder.ScriptChunk = null;
             builder.Location = SolSourceLocation.Native();
-            builder.l_NativeMarshalTypes = new List<Type>();
+            builder.l_NativeMarshalTypes = new Utility.List<Type>();
             return builder;
         }
 
@@ -214,7 +215,7 @@ namespace SolScript.Interpreter.Builders
             builder.NativeConstructor = constructor;
             builder.ScriptChunk = null;
             builder.Location = SolSourceLocation.Native();
-            builder.l_NativeMarshalTypes = new List<Type>();
+            builder.l_NativeMarshalTypes = new Utility.List<Type>();
             return builder;
         }
 

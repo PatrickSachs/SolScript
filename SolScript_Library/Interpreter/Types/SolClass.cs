@@ -4,6 +4,7 @@ using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Library;
 using SolScript.Interpreter.Types.Interfaces;
+using SolScript.Utility;
 
 namespace SolScript.Interpreter.Types
 {
@@ -35,7 +36,7 @@ namespace SolScript.Interpreter.Types
         internal readonly Inheritance InheritanceChain;
         public readonly ClassInternalVariables InternalVariables;
 
-        internal SolClass[] AnnotationsArray;
+        internal Array<SolClass> AnnotationsArray;
 
         public IReadOnlyList<SolClass> Annotations => AnnotationsArray;  
         public SolAssembly Assembly => InheritanceChain.Definition.Assembly;

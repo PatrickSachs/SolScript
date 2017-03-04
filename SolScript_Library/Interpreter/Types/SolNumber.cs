@@ -2,6 +2,7 @@
 using System.Globalization;
 using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
+using SolScript.Utility;
 
 namespace SolScript.Interpreter.Types
 {

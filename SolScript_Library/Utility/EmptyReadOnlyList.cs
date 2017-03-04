@@ -1,0 +1,14 @@
+namespace SolScript.Utility
+{
+    /// <summary>
+    ///     Useful in number of places that return an empty list to avoid unnecessary memory allocation.
+    /// </summary>
+    /// <typeparam name="T">The list type.</typeparam>
+    internal static class EmptyReadOnlyList<T>
+    {
+        /// <summary>
+        ///     The list instance.
+        /// </summary>
+        public static readonly IReadOnlyList<T> Value = new List<T>();
+    }
+}

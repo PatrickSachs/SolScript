@@ -4,6 +4,7 @@ using System.Reflection;
 using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
+using SolScript.Utility;
 
 namespace SolScript.Interpreter
 {
@@ -21,7 +22,7 @@ namespace SolScript.Interpreter
             Assembly = assembly;
         }
 
-        private readonly Dictionary<string, ValueInfo> m_Variables = new Dictionary<string, ValueInfo>();
+        private readonly System.Collections.Generic.Dictionary<string, ValueInfo> m_Variables = new System.Collections.Generic.Dictionary<string, ValueInfo>();
 
         [CanBeNull] private IVariables m_ParentContext;
 

@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using SolScript.Interpreter;
 using SolScript.Interpreter.Exceptions;
+using SolScript.Utility;
 
 namespace SolScript.Compiler
 {
@@ -32,8 +33,8 @@ namespace SolScript.Compiler
         public void ValidateClass(SolClassDefinition definition)
         {
             Stack<SolClassDefinition> inheritanceChain = definition.GetInheritanceReversed();
-            var names = new Dictionary<string, SolFunctionDefinition>();
-            var abstracts = new Dictionary<string, SolFunctionDefinition>();
+            var names = new System.Collections.Generic.Dictionary<string, SolFunctionDefinition>();
+            var abstracts = new System.Collections.Generic.Dictionary<string, SolFunctionDefinition>();
             while (inheritanceChain.Count != 0) {
                 SolClassDefinition current = inheritanceChain.Pop();
                 var thisNames = new HashSet<string>();

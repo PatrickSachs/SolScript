@@ -4,6 +4,7 @@ using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Types;
 using SolScript.Interpreter.Types.Implementation;
 using SolScript.Interpreter.Types.Interfaces;
+using SolScript.Utility;
 
 namespace SolScript.Interpreter.Statements
 {

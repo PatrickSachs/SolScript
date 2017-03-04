@@ -5,6 +5,7 @@ using System.Text;
 using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types.Interfaces;
+using SolScript.Utility;
 
 namespace SolScript.Interpreter.Types
 {
@@ -13,6 +14,15 @@ namespace SolScript.Interpreter.Types
         public SolTable()
         {
             m_Id = s_NextId++;
+        }
+
+        public SolTable(params SolValue[] array) : this()
+        {
+            for (int i = 0; i < array.Length; i++)
+            {
+                m_Table[new SolNumber(i)] = array[i];
+            }
+            m_N = array.Length;
         }
 
         public SolTable(IReadOnlyList<SolValue> array) : this()
@@ -30,7 +40,7 @@ namespace SolScript.Interpreter.Types
         private static readonly SolString s_IteratorKey = SolString.ValueOf("key").Intern();
         private static readonly SolString s_IteratorValue = SolString.ValueOf("value").Intern();
         private readonly uint m_Id;
-        private readonly Dictionary<SolValue, SolValue> m_Table = new Dictionary<SolValue, SolValue>();
+        private readonly Utility.Dictionary<SolValue, SolValue> m_Table = new Utility.Dictionary<SolValue, SolValue>();
         private int m_N;
         public override string Type => TYPE;
 
@@ -127,7 +137,7 @@ namespace SolScript.Interpreter.Types
                         Type[] genericTypes = interfce.GetGenericArguments();
                         Type keyType = genericTypes[0];
                         Type valueType = genericTypes[1];
-                        Type genericDictionaryType = typeof(Dictionary<,>).MakeGenericType(keyType, valueType);
+                        Type genericDictionaryType = typeof(System.Collections.Generic.Dictionary<,>).MakeGenericType(keyType, valueType);
                         object dicionaryObj = InternalHelper.SandboxCreateObject<SolMarshallingException>(genericDictionaryType, new object[0], null);
                         IDictionary dictionary = (IDictionary) dicionaryObj;
                         foreach (KeyValuePair<SolValue, SolValue> pair in m_Table) {

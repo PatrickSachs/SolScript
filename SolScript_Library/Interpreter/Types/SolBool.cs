@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
+using SolScript.Utility;
 
 namespace SolScript.Interpreter.Types
 {
@@ -110,7 +111,7 @@ namespace SolScript.Interpreter.Types
 
         #endregion
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        
         [DebuggerStepThrough]
         public static SolBool ValueOf(bool value)
         {

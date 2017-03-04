@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using SolScript.Interpreter.Exceptions;
+using SolScript.Utility;
 
 namespace SolScript.Interpreter
 {
@@ -24,7 +25,7 @@ namespace SolScript.Interpreter
         /// <exception cref="SolMarshallingException">An annotation class does not exist.</exception>
         protected void AnnotationsFromData(IReadOnlyList<SolAnnotationData> data)
         {
-            var annotations = new SolAnnotationDefinition[data.Count];
+            var annotations = new Array<SolAnnotationDefinition>(data.Count);
             for (int i = 0; i < annotations.Length; i++) {
                 SolClassDefinition annotationDefinition;
                 if (!Assembly.TryGetClass(data[i].Name, out annotationDefinition)) {

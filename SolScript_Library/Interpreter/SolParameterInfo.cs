@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
+using SolScript.Utility;
 
 namespace SolScript.Interpreter
 {
@@ -21,18 +22,19 @@ namespace SolScript.Interpreter
         public SolParameterInfo(SolParameter[] parameters, bool allowOptional)
         {
             AllowOptional = allowOptional;
-            m_Parameters = parameters;
+            m_Parameters = new Array<SolParameter>(parameters);
         }
 
         /// <summary>
         ///     Allows any value to be passed to this <see cref="SolParameterInfo" />.
         /// </summary>
-        public static readonly SolParameterInfo Any = new SolParameterInfo(Array.Empty<SolParameter>(), true);
+        public static readonly SolParameterInfo Any = new SolParameterInfo(EmptyArray<SolParameter>.Value, true);
 
-        private readonly SolParameter[] m_Parameters;
+        // The parameter array.
+        private readonly Array<SolParameter> m_Parameters;
 
         /// <summary>
-        ///     Are optinal additional("args") arguments allowed?
+        ///     Are optional additional("args") arguments allowed?
         /// </summary>
         public bool AllowOptional { get; }
 
@@ -46,7 +48,7 @@ namespace SolScript.Interpreter
         /// <summary>
         ///     Access the parameter at index <see cref="index" />.
         /// </summary>
-        /// <param name="index">The paramter index.</param>
+        /// <param name="index">The parameter index.</param>
         /// <returns>The parameter.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The index is out of range.</exception>
         /// <seealso cref="Count" />
@@ -59,16 +61,22 @@ namespace SolScript.Interpreter
             }
         }
 
+        /// <inheritdoc />
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
         }
 
+        /// <inheritdoc />
         public IEnumerator<SolParameter> GetEnumerator()
         {
-            foreach (SolParameter parameter in m_Parameters) {
-                yield return parameter;
-            }
+            return m_Parameters.GetEnumerator();
+        }
+
+        /// <inheritdoc />
+        public bool Contains(SolParameter item)
+        {
+            return m_Parameters.Contains(item);
         }
 
         #endregion
@@ -102,21 +110,21 @@ namespace SolScript.Interpreter
         ///     Creates an array from this parameter info class.
         /// </summary>
         /// <remarks>A clone of the parameters array.</remarks>
-        public SolParameter[] ToArray() => (SolParameter[]) m_Parameters.Clone();
+        public Array<SolParameter> ToArray() => m_Parameters.Clone();
 
         /// <summary>
         ///     Verifies if the passed arguments are fitting for the parameters defined in this parameter info.
         /// </summary>
         /// <param name="assembly">The assembly to use for type lookups and checks.</param>
         /// <param name="arguments">The arguments.</param>
-        /// <returns>The arguments more fitting for calling the function. Arguments length has bene adjusted to match the expected parameter count.</returns>
+        /// <returns>
+        ///     The arguments more fitting for calling the function. Arguments length has bene adjusted to match the expected
+        ///     parameter count.
+        /// </returns>
         /// <exception cref="SolVariableException">The parameters do not fit.</exception>
         public SolValue[] VerifyArguments(SolAssembly assembly, SolValue[] arguments)
         {
-            /*if (!AllowOptional && Count != arguments.Length) {
-                throw new SolVariableException($"Invalid parameter count. Expected {Count}, got {arguments.Length}.");
-            }*/
-            SolValue[] newArguments = new SolValue[Count > arguments.Length ? Count : arguments.Length];
+            var newArguments = new SolValue[Count > arguments.Length ? Count : arguments.Length];
             for (int i = 0; i < Count; i++) {
                 // First go through every declared parameter and see if the types are compatible.
                 if (i < arguments.Length) {
@@ -149,6 +157,15 @@ namespace SolScript.Interpreter
             return newArguments;
         }
 
+        /// <summary>
+        ///     Checks if this parameter info class is equal to another one.
+        /// </summary>
+        /// <param name="other">The other parameter info class.</param>
+        /// <returns>true if both are equal, false if not.</returns>
+        /// <remarks>
+        ///     Two parameter infos are considered equal if all parameters are the same, and they treat optional parameters in
+        ///     the same way.
+        /// </remarks>
         public bool Equals([CanBeNull] SolParameterInfo other)
         {
             if (ReferenceEquals(null, other)) {
@@ -160,6 +177,7 @@ namespace SolScript.Interpreter
             return Equals_Impl(other);
         }
 
+        // Equals implementation. Does not check for null.
         private bool Equals_Impl(SolParameterInfo other)
         {
             return Equals(m_Parameters, other.m_Parameters) && AllowOptional == other.AllowOptional;
