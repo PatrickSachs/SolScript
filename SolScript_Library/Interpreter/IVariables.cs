@@ -1,10 +1,10 @@
 ﻿using JetBrains.Annotations;
-using SolScript.Interpreter;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter
 {
+
     #region VariableState enum
 
     public enum VariableState
@@ -19,7 +19,7 @@ namespace SolScript.Interpreter
     }
 
     #endregion
-    
+
     /// <summary> Interface all variable lookups must implement. </summary>
     public interface IVariables
     {
@@ -27,9 +27,9 @@ namespace SolScript.Interpreter
         [NotNull]
         SolAssembly Assembly { get; }
 
-        /// <summary> The parent variables of these variables. </summary>
+        /*/// <summary> The parent variables of these variables. </summary>
         [CanBeNull]
-        IVariables Parent { get; set; }
+        IVariables Parent { get; set; }*/
 
         /// <summary> Gets the value assigned to the given name. </summary>
         /// <param name="name"> The name of the variable. </param>
@@ -58,7 +58,7 @@ namespace SolScript.Interpreter
         ///     A variable with this name has already been declared.
         /// </exception>
         void Declare([NotNull] string name, SolType type);
-        
+
         /// <summary> Declares a native variable. </summary>
         /// <param name="name"> The name of the variable. </param>
         /// <param name="type">
@@ -79,8 +79,7 @@ namespace SolScript.Interpreter
 
         /// <summary> Assigns a value to the variable with the given name. </summary>
         /// <exception cref="SolVariableException">
-        ///     Np variable with this name has been
-        ///     decalred.
+        ///     No variable with this name has been declared.
         /// </exception>
         /// <exception cref="SolVariableException"> The type does not match. </exception>
         void Assign([NotNull] string name, [NotNull] SolValue value);

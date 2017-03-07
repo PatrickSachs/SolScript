@@ -5,7 +5,7 @@ using System.Collections.Generic;
 namespace SolScript.Utility
 {
     /// <summary>
-    ///     Wraps an <see cref="Array" /> in a <see cref="IReadOnlyList{T}" />
+    ///     Wraps an <see cref="Array" /> in an <see cref="IReadOnlyList{T}" />
     /// </summary>
     /// <typeparam name="T">The array type.</typeparam>
     public class Array<T> : IReadOnlyList<T>, ICloneable

@@ -33,7 +33,7 @@ namespace SolScript.Interpreter.Types.Implementation
                 return 12 + (int) Id;
             }
         }
-
+        
         /// <inheritdoc />
         /// <exception cref="SolRuntimeException">A runtime error occured while calling the function.</exception>
         /// <exception cref="InvalidOperationException">A critical internal error occured. Execution may have to be halted.</exception>

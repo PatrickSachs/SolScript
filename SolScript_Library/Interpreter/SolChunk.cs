@@ -1,54 +1,92 @@
-﻿using System.Text;
-using JetBrains.Annotations;
+﻿using JetBrains.Annotations;
 using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Statements;
 using SolScript.Interpreter.Types;
+using SolScript.Utility;
 
-namespace SolScript.Interpreter {
-    public class SolChunk : ISourceLocateable {
-        public SolChunk(SolAssembly assembly, SolSourceLocation location, [CanBeNull]  TerminatingSolExpression returnExpression, params SolStatement[] statements) {
+namespace SolScript.Interpreter
+{
+    /// <summary>
+    ///     A chunk is a series of statements running in their own variable context. Blocks are typically used as the body of
+    ///     functions or generally inside isolated blocks such as iterator bodies.
+    /// </summary>
+    public class SolChunk : ISourceLocateable
+    {
+        /// <summary>
+        ///     Creates a new chunk.
+        /// </summary>
+        /// <param name="assembly">The assembly.</param>
+        /// <param name="location">The source location.</param>
+        /// <param name="returnExpression">The optional return/break/continue expression.</param>
+        /// <param name="statements">The statements in this chunk.</param>
+        public SolChunk(SolAssembly assembly, SolSourceLocation location, [CanBeNull] TerminatingSolExpression returnExpression, params SolStatement[] statements)
+        {
             Assembly = assembly;
-            Id = ++s_LastId;
+            Id = s_NextId++;
             ReturnExpression = returnExpression;
-            Statements = statements;
+            m_Statements = new Array<SolStatement>(statements);
             Location = location;
         }
 
-        private static int s_LastId = -1;
-        public readonly SolAssembly Assembly;
-        public readonly int Id;
+        // The id of the next chunk.
+        private static uint s_NextId;
 
+        /// <summary>
+        ///     The assembly.
+        /// </summary>
+        public readonly SolAssembly Assembly;
+
+        /// <summary>
+        ///     The id of this chunk.
+        /// </summary>
+        public readonly uint Id;
+
+        // The statement array.
+        private readonly Array<SolStatement> m_Statements;
+
+        /// <summary>
+        ///     The optional return/continue/break expression.
+        /// </summary>
         [CanBeNull] public readonly TerminatingSolExpression ReturnExpression;
 
-        public readonly SolStatement[] Statements;
+        /// <summary>
+        ///     The statements in this chunk.
+        /// </summary>
+        public IReadOnlyList<SolStatement> Statements => m_Statements;
+
+        #region ISourceLocateable Members
+
+        /// <inheritdoc />
+        public SolSourceLocation Location { get; }
+
+        #endregion
 
         #region Overrides
 
-        public override int GetHashCode() {
-            return 30 + Id;
+        /// <inheritdoc />
+        public override int GetHashCode()
+        {
+            return 30 + (int) Id;
         }
 
-        public override string ToString() {
-            return ToString(0);
+        /// <inheritdoc />
+        public override string ToString()
+        {
+            return "Chunk#" + Id;
         }
 
         #endregion
 
-        public string ToString(int indent) {
-            string indentStr = new string(' ', indent);
-            StringBuilder builder = new StringBuilder();
-            foreach (SolStatement statement in Statements) {
-                builder.AppendLine(indentStr + statement);
-            }
-            if (ReturnExpression != null) {
-                builder.Append(indentStr + "return ");
-                builder.AppendLine(ReturnExpression.ToString());
-            }
-            return builder.ToString();
-        }
-
-        public SolValue Execute(SolExecutionContext context, IVariables variables, out Terminators terminators) {
-            foreach (SolStatement statement in Statements) {
+        /// <summary>
+        ///     Executes the statements in this block one by one.
+        /// </summary>
+        /// <param name="context">The current content.</param>
+        /// <param name="variables">The variables this chunk should be executed in.</param>
+        /// <param name="terminators">The terminators produced by this chunk execution.</param>
+        /// <returns>The return value(or nil if no return statement).</returns>
+        public SolValue Execute(SolExecutionContext context, IVariables variables, out Terminators terminators)
+        {
+            foreach (SolStatement statement in m_Statements) {
                 SolValue value = statement.Execute(context, variables, out terminators);
                 // If either return, break, or continue occured we break out of the current chunk.
                 if (terminators != Terminators.None) {
@@ -62,8 +100,5 @@ namespace SolScript.Interpreter {
             terminators = Terminators.None;
             return SolNil.Instance;
         }
-
-        /// <inheritdoc />
-        public SolSourceLocation Location { get; }
     }
 }

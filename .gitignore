@@ -25,6 +25,10 @@ sandcastle/
 youtube/
 SolScript_IDE/
 YouTube Demo/
+[Ss]ol[Ss]cript/[Bb]in/
+[Ss]ol[Ss]cript/[Oo]bj/
+[Ss]ol[Ss]cript_[Ll]ibrary/[Bb]in/
+[Ss]ol[Ss]cript_[Ll]ibrary/[Oo]bj/
 
 # Visual Studio 2015 cache/options directory
 .vs/

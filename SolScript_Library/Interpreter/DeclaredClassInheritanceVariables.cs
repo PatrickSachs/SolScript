@@ -1,5 +1,4 @@
 ﻿using System;
-using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
 using SolScript.Interpreter.Types.Implementation;
@@ -7,26 +6,29 @@ using SolScript.Utility;
 
 namespace SolScript.Interpreter
 {
-    public abstract class ClassVariables : IVariables
+    /// <summary>
+    ///     Base class for the variables declared at each inheritance level of a class.
+    /// </summary>
+    public abstract class DeclaredClassInheritanceVariables : IVariables
     {
-        protected ClassVariables(SolAssembly assembly)
+        internal SolClass.Inheritance Inheritance { get;  }
+
+        // No 3rd party impls.
+        internal DeclaredClassInheritanceVariables(SolClass.Inheritance inheritance)
         {
-            Members = new Variables(assembly);
+            Inheritance = inheritance;
+            Members = new Variables(inheritance.Definition.Assembly);
         }
 
+        /// <summary>
+        ///     The members.
+        /// </summary>
         protected readonly Variables Members;
-
-        public abstract SolClassDefinition Definition { get; }
 
         #region IVariables Members
 
         /// <summary> The assembly this variable lookup belongs to. </summary>
-        public SolAssembly Assembly => Definition.Assembly;
-
-        public IVariables Parent {
-            get { return GetParent(); }
-            set { throw new NotSupportedException("Cannot change the parent of class variables."); }
-        }
+        public SolAssembly Assembly => Inheritance.Definition.Assembly;
 
         /// <summary> Gets the value assigned to the given name. </summary>
         /// <param name="name"> The name of the variable. </param>
@@ -50,8 +52,7 @@ namespace SolScript.Interpreter
         public VariableState TryGet(string name, out SolValue value)
         {
             VariableState membersState = Members.TryGet(name, out value);
-            if (membersState != VariableState.FailedNotDeclared)
-            {
+            if (membersState != VariableState.FailedNotDeclared) {
                 // Not declared variables can be functions or parent variables
                 // since functions are create lazily.
                 return membersState;
@@ -60,9 +61,9 @@ namespace SolScript.Interpreter
             if (value != null) {
                 return VariableState.Success;
             }
-            if (Parent != null) {
+            /*if (Parent != null) {
                 return Parent.TryGet(name, out value);
-            }
+            }*/
             return VariableState.FailedNotDeclared;
         }
 
@@ -76,8 +77,7 @@ namespace SolScript.Interpreter
         ///     type can be assigned.
         /// </param>
         /// <exception cref="SolVariableException">
-        ///     A variable with this name has already
-        ///     been declared.
+        ///     A variable with this name has already been declared.
         /// </exception>
         public void Declare(string name, SolType type)
         {
@@ -121,10 +121,8 @@ namespace SolScript.Interpreter
             SolFunctionDefinition definition;
             if (Members.IsDeclared(name)) {
                 Members.Assign(name, value);
-            } else if (Definition.TryGetFunction(name, OnlyUseDeclaredFunctions, out definition)) {
+            } else if (Inheritance.Definition.TryGetFunction(name, true, out definition) && ValidateFunctionDefinition(definition)) {
                 throw new SolVariableException("Cannot assign values to class function \"" + name + "\", they are immutable.");
-            } else if (Parent != null) {
-                Parent.Assign(name, value);
             } else {
                 throw new SolVariableException("Cannot assign value to variable \"" + name + "\", not variable with this name has been declared.");
             }
@@ -137,19 +135,11 @@ namespace SolScript.Interpreter
                 return true;
             }
             SolFunctionDefinition definition;
-            if (Definition.TryGetFunction(name, OnlyUseDeclaredFunctions, out definition) && ValidateFunctionDefinition(definition)) {
+            if (Inheritance.Definition.TryGetFunction(name, true, out definition) && ValidateFunctionDefinition(definition)) {
                 return true;
-            }
-            if (Parent != null) {
-                return Parent.IsDeclared(name);
             }
             return false;
         }
-
-        /// <summary>
-        /// If this is true only functions declared in the the <see cref="Definition"/> directly will be used for the functions of this <see cref="ClassVariables"/> instance.
-        /// </summary>
-        protected abstract bool OnlyUseDeclaredFunctions { get; }
 
         /// <summary>
         ///     Is a variable with this name assigned(Also returns false if the
@@ -161,11 +151,8 @@ namespace SolScript.Interpreter
                 return true;
             }
             SolFunctionDefinition definition;
-            if (Definition.TryGetFunction(name, OnlyUseDeclaredFunctions, out definition) && ValidateFunctionDefinition(definition)) {
+            if (Inheritance.Definition.TryGetFunction(name, true, out definition) && ValidateFunctionDefinition(definition)) {
                 return true;
-            }
-            if (Parent != null) {
-                return Parent.IsAssigned(name);
             }
             return false;
         }
@@ -185,22 +172,22 @@ namespace SolScript.Interpreter
         public SolFunction AttemptFunctionCreation(string name)
         {
             SolFunctionDefinition functionDefinition;
-            if (Definition.TryGetFunction(name, OnlyUseDeclaredFunctions, out functionDefinition) && ValidateFunctionDefinition(functionDefinition)) {
+            if (Inheritance.Definition.TryGetFunction(name, true, out functionDefinition) && ValidateFunctionDefinition(functionDefinition)) {
                 SolFunction function;
                 switch (functionDefinition.Chunk.ChunkType) {
                     case SolChunkWrapper.Type.ScriptChunk:
-                        function = new SolScriptClassFunction(GetInstance(), functionDefinition);
+                        function = new SolScriptClassFunction(Inheritance.Instance, functionDefinition);
                         break;
                     case SolChunkWrapper.Type.NativeMethod:
-                        function = new SolNativeClassMemberFunction(GetInstance(), functionDefinition);
+                        function = new SolNativeClassMemberFunction(Inheritance.Instance, functionDefinition);
                         break;
                     case SolChunkWrapper.Type.NativeConstructor:
-                        function = new SolNativeClassConstructorFunction(GetInstance(), functionDefinition);
+                        function = new SolNativeClassConstructorFunction(Inheritance.Instance, functionDefinition);
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
-                SolDebug.WriteLine("Created function instance '" + name + " for class '" + GetInstance() + " :: " + function);
+                SolDebug.WriteLine("Created function instance '" + name + "' for class '" + Inheritance.Instance.Type + "' - " + function + " [level: " + GetType().Name + "]");
                 // ReSharper disable once ExceptionNotDocumented
                 // "function!" is always compatible with functions.
                 Members.SetValue(name, function, new SolType(SolFunction.TYPE, false));
@@ -209,11 +196,12 @@ namespace SolScript.Interpreter
             return null;
         }
 
-        protected abstract SolClass GetInstance();
-
+        /// <summary>
+        ///     Validates if an obtained function definitions is applicable of to this variable source. Do not rely on the internal
+        ///     state. It is possible that some definitions will be validated multiple times.
+        /// </summary>
+        /// <param name="definition">The definition.</param>
+        /// <returns>true if it is applicable, flase if not.</returns>
         protected abstract bool ValidateFunctionDefinition(SolFunctionDefinition definition);
-
-        [CanBeNull]
-        protected abstract IVariables GetParent();
     }
 }

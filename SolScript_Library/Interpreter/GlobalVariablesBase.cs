@@ -37,7 +37,6 @@ namespace SolScript.Interpreter
         /// <exception cref="NotSupportedException" accessor="set">Cannot change the parent of global variables.</exception>
         public IVariables Parent {
             get { return GetParent(); }
-            set { throw new NotSupportedException("Cannot change the parent of global variables."); }
         }
 
         /// <summary> Gets the value assigned to the given name. </summary>

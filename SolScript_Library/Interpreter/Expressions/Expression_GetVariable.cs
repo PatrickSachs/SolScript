@@ -84,8 +84,14 @@ namespace SolScript.Interpreter.Expressions
                     if (keyString == null) {
                         throw new SolVariableException($"Tried to index a class with a \"{key.Type}\" value.");
                     }
+                    // 1 Inheritance could be found -> We can access locals! An inheritance can be found if the
+                    //   get expression was declared inside the class.
+                    // 2 Not found -> Only global access.
+                    // Kind of funny how this little null coalescing operator handles the "deciding part" of access rights.
                     SolClass.Inheritance inheritance = LinkedExpression.WrittenInClass != null ? solClass.FindInheritance(LinkedExpression.WrittenInClass) : null;
-                    return inheritance?.Variables.Get(keyString.Value) ?? solClass.GlobalVariables.Get(keyString.Value);
+                    SolValue value = inheritance?.GetVariables(SolAccessModifier.Local, SolClass.Inheritance.Mode.All).Get(keyString.Value) 
+                        ?? solClass.InheritanceChain.GetVariables(SolAccessModifier.None, SolClass.Inheritance.Mode.All).Get(keyString.Value);
+                    return value;
                 }
                 IValueIndexable indexable = indexableRaw as IValueIndexable;
                 if (indexable != null) {
@@ -95,6 +101,7 @@ namespace SolScript.Interpreter.Expressions
                 throw new SolVariableException("Tried to index a \"" + indexableRaw.Type + "\" value.");
             }
 
+            /// <inheritdoc />
             public override string ToString()
             {
                 return $"{IndexableGetter}[{KeyGetter}]";

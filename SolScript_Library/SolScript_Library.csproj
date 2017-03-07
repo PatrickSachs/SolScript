@@ -60,6 +60,8 @@
     <Compile Include="Interpreter\GlobalVariablesBase.cs" />
     <Compile Include="Interpreter\SolMemberModifier.cs" />
     <Compile Include="Interpreter\SolParameterBuilder.cs" />
+    <Compile Include="Interpreter\Statements\Statement_Base.cs" />
+    <Compile Include="Interpreter\Statements\Statement_Self.cs" />
     <Compile Include="Interpreter\Types\Implementation\SolLamdaFunction.cs" />
     <Compile Include="Interpreter\Types\Implementation\SolNativeLamdaFunction.cs" />
     <Compile Include="SolError.cs" />
@@ -94,10 +96,10 @@
     <Compile Include="Interpreter\Types\Marshal\NativeVoidMarshaller.cs" />
     <Compile Include="Interpreter\Variables.cs" />
     <Compile Include="Interpreter\ClassCreationOptions.cs" />
-    <Compile Include="Interpreter\ClassGlobalVariables.cs" />
-    <Compile Include="Interpreter\ClassInheritanceVariables.cs" />
-    <Compile Include="Interpreter\ClassInternalVariables.cs" />
-    <Compile Include="Interpreter\ClassVariables.cs" />
+    <Compile Include="Interpreter\DeclaredGlobalClassInheritanceVariables.cs" />
+    <Compile Include="Interpreter\DeclaredLocalClassInheritanceVariables.cs" />
+    <Compile Include="Interpreter\DeclaredInternalClassInheritanceVariables.cs" />
+    <Compile Include="Interpreter\DeclaredClassInheritanceVariables.cs" />
     <Compile Include="Interpreter\Exceptions\SolInterpreterException.cs" />
     <Compile Include="Interpreter\Exceptions\SolRuntimeException.cs" />
     <Compile Include="Interpreter\Exceptions\SolTypeRegistryException.cs" />

@@ -18,7 +18,7 @@ namespace SolScript.Interpreter.Types
 
         /// <summary>
         ///     The "any" type constraint may be used to allow any <see cref="SolValue" /> to a field/parameter/etc. It is
-        ///     implictly applied if no type is specified.
+        ///     implicitly applied if no type is specified.
         /// </summary>
         public const string ANY_TYPE = "any";
 

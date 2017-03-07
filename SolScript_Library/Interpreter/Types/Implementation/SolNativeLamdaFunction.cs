@@ -31,6 +31,14 @@ namespace SolScript.Interpreter.Types.Implementation
         #region Overrides
 
         /// <inheritdoc />
+        protected override SolClass GetClassInstance(out bool isCurrent, out bool resetOnExit)
+        {
+            isCurrent = false;
+            resetOnExit = false;
+            return null;
+        }
+
+        /// <inheritdoc />
         /// <exception cref="SolRuntimeException">A runtime error occured.</exception>
         /// <exception cref="InvalidOperationException">A critical internal error occured.</exception>
         protected override SolValue Call_Impl(SolExecutionContext context, params SolValue[] args)

@@ -38,6 +38,7 @@ namespace SolScript.Interpreter.Statements {
             return SolNil.Instance;
         }
 
+        /// <inheritdoc />
         protected override string ToString_Impl() {
             return $"Statement_While(Condition={Condition}, Chunk={Chunk})";
         }

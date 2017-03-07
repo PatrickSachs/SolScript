@@ -103,6 +103,7 @@ namespace SolScript
                             SolAssembly script = SolAssembly.FromDirectory(new SolAssemblyOptions("Command Line Assembly"), dirRaw)
                                 .IncludeLibrary(std.GetLibrary())
                                 .IncludeLibrary(os.GetLibrary())
+                                //.IncludeLibrary(test.test.GetLibrary())
                                 .FinalizeRegistry()
                                 .GenerateDefinitions()
                                 .Create();
@@ -127,6 +128,7 @@ namespace SolScript
                             SolAssembly script = SolAssembly.FromDirectory(new SolAssemblyOptions("Command Line Assembly"), dirRaw)
                                 .IncludeLibrary(std.GetLibrary())
                                 .IncludeLibrary(os.GetLibrary())
+                                //.IncludeLibrary(test.test.GetLibrary())
                                 .FinalizeRegistry()
                                 .GenerateDefinitions()
                                 .Create();

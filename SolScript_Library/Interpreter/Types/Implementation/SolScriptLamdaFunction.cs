@@ -35,6 +35,14 @@ namespace SolScript.Interpreter.Types.Implementation
         #region Overrides
 
         /// <inheritdoc />
+        protected override SolClass GetClassInstance(out bool isCurrent, out bool resetOnExit)
+        {
+            isCurrent = false;
+            resetOnExit = false;
+            return null;
+        }
+
+        /// <inheritdoc />
         protected override string ToString_Impl(SolExecutionContext context)
         {
             return $"function#{Id}<lamda>";

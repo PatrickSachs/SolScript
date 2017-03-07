@@ -13,16 +13,19 @@ namespace SolScript.Interpreter.Builders
     /// </summary>
     public sealed class SolFunctionBuilder : SolBuilderBase, IAnnotateableBuilder, ISourceLocateable
     {
+        // Creates the builder and assigns the name.
         private SolFunctionBuilder(string name)
         {
             Name = name;
         }
 
+        // The annotations on this builder.
         private readonly Utility.List<SolAnnotationData> m_Annotations = new Utility.List<SolAnnotationData>();
+        // The function parameters.
         private readonly Utility.List<SolParameterBuilder> m_Parameters = new Utility.List<SolParameterBuilder>();
         // The list for native marshal types. Instance created by the static methods for native functions
         // to avoid the creation of unnecessary lists.
-        private Utility.List<Type> l_NativeMarshalTypes;
+        private Utility.List<Type> l_native_marshal_types;
 
         /// <summary>
         ///     The name of this function?
@@ -82,67 +85,16 @@ namespace SolScript.Interpreter.Builders
         public ConstructorInfo NativeConstructor { get; private set; }
 
         /// <summary>
-        /// The types SolValues will be marshalled to if calling the native method/ctor. Only valid if <see cref="IsNative"/> is true.
+        ///     The types SolValues will be marshalled to if calling the native method/ctor. Only valid if <see cref="IsNative" />
+        ///     is true.
         /// </summary>
         public IReadOnlyList<Type> NativeMarshalTypes {
             get {
                 if (!IsNative) {
                     return EmptyReadOnlyList<Type>.Value;
                 }
-                return l_NativeMarshalTypes;
+                return l_native_marshal_types;
             }
-        }
-
-        /// <inheritdoc cref="NativeMarshalTypes" />
-        /// <exception cref="InvalidOperationException">The function is not a native function.</exception>
-        /// <seealso cref="IsNative"/>
-        public SolFunctionBuilder AddNativeMarshalType(Type type)
-        {
-            if (!IsNative)
-            {
-                throw new InvalidOperationException("Only native functions can have native marshal types.");
-            }
-            l_NativeMarshalTypes.Add(type);
-            return this;
-        }
-
-        /// <inheritdoc cref="NativeMarshalTypes" />
-        /// <exception cref="InvalidOperationException">The function is not a native function.</exception>
-        /// <seealso cref="IsNative"/>
-        public SolFunctionBuilder ClearNativeMarshalTypes()
-        {
-            if (!IsNative)
-            {
-                throw new InvalidOperationException("Only native functions can have native marshal types.");
-            }
-            l_NativeMarshalTypes.Clear();
-            return this;
-        }
-
-        /// <inheritdoc cref="NativeMarshalTypes" />
-        /// <exception cref="InvalidOperationException">The function is not a native function.</exception>
-        /// <seealso cref="IsNative"/>
-        public SolFunctionBuilder AddNativeMarshalTypes(params Type[] types)
-        {
-            if (!IsNative)
-            {
-                throw new InvalidOperationException("Only native functions can have native marshal types.");
-            }
-            l_NativeMarshalTypes.AddRange(types);
-            return this;
-        }
-        /// <inheritdoc cref="NativeMarshalTypes" />
-        /// <exception cref="InvalidOperationException">The function is not a native function.</exception>
-        /// <seealso cref="IsNative"/>
-        public SolFunctionBuilder SetNativeMarshalTypes(params Type[] types)
-        {
-            if (!IsNative)
-            {
-                throw new InvalidOperationException("Only native functions can have native marshal types.");
-            }
-            l_NativeMarshalTypes.Clear();
-            l_NativeMarshalTypes.AddRange(types);
-            return this;
         }
 
         #region IAnnotateableBuilder Members
@@ -181,6 +133,55 @@ namespace SolScript.Interpreter.Builders
 
         #endregion
 
+        /// <inheritdoc cref="NativeMarshalTypes" />
+        /// <exception cref="InvalidOperationException">The function is not a native function.</exception>
+        /// <seealso cref="IsNative" />
+        public SolFunctionBuilder AddNativeMarshalType(Type type)
+        {
+            if (!IsNative) {
+                throw new InvalidOperationException("Only native functions can have native marshal types.");
+            }
+            l_native_marshal_types.Add(type);
+            return this;
+        }
+
+        /// <inheritdoc cref="NativeMarshalTypes" />
+        /// <exception cref="InvalidOperationException">The function is not a native function.</exception>
+        /// <seealso cref="IsNative" />
+        public SolFunctionBuilder ClearNativeMarshalTypes()
+        {
+            if (!IsNative) {
+                throw new InvalidOperationException("Only native functions can have native marshal types.");
+            }
+            l_native_marshal_types.Clear();
+            return this;
+        }
+
+        /// <inheritdoc cref="NativeMarshalTypes" />
+        /// <exception cref="InvalidOperationException">The function is not a native function.</exception>
+        /// <seealso cref="IsNative" />
+        public SolFunctionBuilder AddNativeMarshalTypes(params Type[] types)
+        {
+            if (!IsNative) {
+                throw new InvalidOperationException("Only native functions can have native marshal types.");
+            }
+            l_native_marshal_types.AddRange(types);
+            return this;
+        }
+
+        /// <inheritdoc cref="NativeMarshalTypes" />
+        /// <exception cref="InvalidOperationException">The function is not a native function.</exception>
+        /// <seealso cref="IsNative" />
+        public SolFunctionBuilder SetNativeMarshalTypes(params Type[] types)
+        {
+            if (!IsNative) {
+                throw new InvalidOperationException("Only native functions can have native marshal types.");
+            }
+            l_native_marshal_types.Clear();
+            l_native_marshal_types.AddRange(types);
+            return this;
+        }
+
         /// <inheritdoc cref="MemberModifier" />
         public SolFunctionBuilder SetMemberModifier(SolMemberModifier modifier)
         {
@@ -195,6 +196,12 @@ namespace SolScript.Interpreter.Builders
             return this;
         }
 
+        /// <summary>
+        ///     Creates a new function builder for the given native method.
+        /// </summary>
+        /// <param name="name">The function name.</param>
+        /// <param name="method">The native method.</param>
+        /// <returns>The builder.</returns>
         public static SolFunctionBuilder NewNativeFunction(string name, MethodInfo method)
         {
             SolFunctionBuilder builder = new SolFunctionBuilder(name);
@@ -203,10 +210,16 @@ namespace SolScript.Interpreter.Builders
             builder.NativeConstructor = null;
             builder.ScriptChunk = null;
             builder.Location = SolSourceLocation.Native();
-            builder.l_NativeMarshalTypes = new Utility.List<Type>();
+            builder.l_native_marshal_types = new Utility.List<Type>();
             return builder;
         }
 
+        /// <summary>
+        ///     Creates a new function builder for the given native constructor.
+        /// </summary>
+        /// <param name="name">The function name.</param>
+        /// <param name="constructor">The native constructor.</param>
+        /// <returns>The builder.</returns>
         public static SolFunctionBuilder NewNativeConstructor(string name, ConstructorInfo constructor)
         {
             SolFunctionBuilder builder = new SolFunctionBuilder(name);
@@ -215,18 +228,33 @@ namespace SolScript.Interpreter.Builders
             builder.NativeConstructor = constructor;
             builder.ScriptChunk = null;
             builder.Location = SolSourceLocation.Native();
-            builder.l_NativeMarshalTypes = new Utility.List<Type>();
+            builder.l_native_marshal_types = new Utility.List<Type>();
             return builder;
         }
 
+        /// <inheritdoc cref="NewScriptFunction(string,SolChunk,SolSourceLocation)" />
+        /// <param name="name">The function name.</param>
+        /// <param name="chunk">The chunk.</param>
         public static SolFunctionBuilder NewScriptFunction(string name, SolChunk chunk)
+        {
+            return NewScriptFunction(name, chunk, chunk.Location);
+        }
+
+        /// <summary>
+        ///     Creates a new function builder for the given script chunk.
+        /// </summary>
+        /// <param name="name">The function name.</param>
+        /// <param name="chunk">The chunk.</param>
+        /// <param name="location">The source location this function is at.</param>
+        /// <returns>The builder.</returns>
+        public static SolFunctionBuilder NewScriptFunction(string name, SolChunk chunk, SolSourceLocation location)
         {
             SolFunctionBuilder builder = new SolFunctionBuilder(name);
             builder.IsNative = false;
             builder.NativeMethod = null;
             builder.NativeConstructor = null;
             builder.ScriptChunk = chunk;
-            builder.Location = chunk.Location;
+            builder.Location = location;
             return builder;
         }
 

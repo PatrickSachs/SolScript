@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Security;
+using System.Windows.Forms;
 using Irony;
 using Irony.Parsing;
 using JetBrains.Annotations;
@@ -339,7 +340,7 @@ namespace SolScript.Interpreter
             foreach (SolClassDefinition definition in m_ClassDefinitions.Values) {
                 try {
                     SolDebug.WriteLine("   ... Class " + definition.Type);
-                    m_Compiler.ValidateClass(definition);
+                    //m_Compiler.ValidateClass(definition);
                 } catch (SolCompilerException ex) {
                     // todo: compiler error source location.
                     m_ErrorAdder.Add(new SolError(SolSourceLocation.Native(), ErrorId.CompilerError, ex.Message, false, ex));
@@ -349,7 +350,7 @@ namespace SolScript.Interpreter
             foreach (SolFunctionDefinition definition in m_GlobalFunctions.Values) {
                 try {
                     SolDebug.WriteLine("   ... Global Function " + definition.Name);
-                    m_Compiler.ValidateFunction(definition);
+                    //m_Compiler.ValidateFunction(definition);
                 } catch (SolCompilerException ex) {
                     // todo: compiler error source location.
                     m_ErrorAdder.Add(new SolError(SolSourceLocation.Native(), ErrorId.CompilerError, ex.Message, false, ex));
@@ -587,13 +588,14 @@ namespace SolScript.Interpreter
             // The context is required to actually initialize the fields.
             SolExecutionContext creationContext = options.CallingContext ?? new SolExecutionContext(this, definition.Type + "#" + instance.Id + " creation context");
             SolClass.Inheritance activeInheritance = instance.InheritanceChain;
+            // todo this needs to start at the base type in order for field inits to work? or does it not matter since field inits should not depend on members?!
             while (activeInheritance != null) {
                 // Create Annotations
                 if (options.CreateAnnotations) {
                     foreach (SolAnnotationDefinition annotation in activeInheritance.Definition.Annotations) {
                         var annotationArgs = new SolValue[annotation.Arguments.Length];
                         for (int i = 0; i < annotationArgs.Length; i++) {
-                            annotationArgs[i] = annotation.Arguments[i].Evaluate(creationContext, activeInheritance.Variables);
+                            annotationArgs[i] = annotation.Arguments[i].Evaluate(creationContext, activeInheritance.GetVariables(SolAccessModifier.Local, SolClass.Inheritance.Mode.All));
                         }
                         try {
                             SolClass annotationInstance = annotation.Definition.Assembly.New(annotation.Definition, AnnotationClassCreationOptions, annotationArgs);
@@ -607,21 +609,8 @@ namespace SolScript.Interpreter
                 }
                 foreach (KeyValuePair<string, SolFieldDefinition> fieldPair in activeInheritance.Definition.FieldPairs) {
                     SolFieldDefinition fieldDefinition = fieldPair.Value;
-                    ClassVariables variables;
+                    IVariables variables = activeInheritance.GetVariables(fieldDefinition.AccessModifier, SolClass.Inheritance.Mode.Declarations);
                     // Which variable context is this field declared in?
-                    switch (fieldDefinition.AccessModifier) {
-                        case SolAccessModifier.None:
-                            variables = instance.GlobalVariables;
-                            break;
-                        case SolAccessModifier.Local:
-                            variables = activeInheritance.Variables;
-                            break;
-                        case SolAccessModifier.Internal:
-                            variables = instance.InternalVariables;
-                            break;
-                        default:
-                            throw new ArgumentOutOfRangeException();
-                    }
                     // Declare the field.
                     bool wasDeclared = false;
                     switch (fieldDefinition.Initializer.FieldType) {
@@ -645,6 +634,8 @@ namespace SolScript.Interpreter
                     // At this point not all fields have fully been declared, which is fine since field
                     // initializers are not supposed/allowed to reference other members anyways.
                     if (wasDeclared) {
+                        // Annotations and fields are initialized using local access.
+                        IVariables localUsage = activeInheritance.GetVariables(SolAccessModifier.Local, SolClass.Inheritance.Mode.All);
                         // Let's create the field annotations(If we actually have some to create).
                         if (options.CreateFieldAnnotations && fieldDefinition.Annotations.Count > 0) {
                             var fieldAnnotationInstances = new SolClass[fieldDefinition.Annotations.Count];
@@ -652,7 +643,7 @@ namespace SolScript.Interpreter
                                 SolAnnotationDefinition fieldAnnotation = fieldDefinition.Annotations[i];
                                 var values = new SolValue[fieldAnnotation.Arguments.Length];
                                 for (int v = 0; v < values.Length; v++) {
-                                    values[v] = fieldAnnotation.Arguments[v].Evaluate(creationContext, activeInheritance.Variables);
+                                    values[v] = fieldAnnotation.Arguments[v].Evaluate(creationContext, localUsage);
                                 }
                                 fieldAnnotationInstances[i] = New(fieldAnnotation.Definition, AnnotationClassCreationOptions, values);
                             }
@@ -662,7 +653,7 @@ namespace SolScript.Interpreter
                         if (options.AssignScriptFields && fieldDefinition.Initializer.FieldType == SolFieldInitializerWrapper.Type.ScriptField) {
                             // Evaluate in the variables of the inheritance since the field initializer of e.g. a global field may still refer to a local field.
                             try {
-                                variables.Assign(fieldDefinition.Name, fieldDefinition.Initializer.GetScriptField().Evaluate(creationContext, activeInheritance.Variables));
+                                variables.Assign(fieldDefinition.Name, fieldDefinition.Initializer.GetScriptField().Evaluate(creationContext, localUsage));
                             } catch (SolVariableException ex) {
                                 throw new SolTypeRegistryException($"An error occured while initializing the field \"{fieldDefinition.Name}\" on class \"{definition.Type}\".", ex);
                             }

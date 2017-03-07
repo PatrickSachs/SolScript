@@ -281,7 +281,7 @@ namespace SolScript.Interpreter.Statements
                 allowOptional = optionalNode != null;
                 parameters = explicitNode == null ? new SolParameterBuilder[0] : GetExplicitParameters(explicitNode);
             }
-            SolFunctionBuilder functionBuilder = SolFunctionBuilder.NewScriptFunction(funcName, chunk)
+            SolFunctionBuilder functionBuilder = SolFunctionBuilder.NewScriptFunction(funcName, chunk, new SolSourceLocation(ActiveFile, node.Span.Location))
                 .SetAccessModifier(accessModifier)
                 .SetMemberModifier(memberModifier)
                 .SetParameters(parameters)
@@ -524,7 +524,7 @@ namespace SolScript.Interpreter.Statements
                 case "_string": {
                     string text;
                     try {
-                        text = expressionNode.Token.ValueString/*.UnEscape()*/;
+                        text = expressionNode.Token.ValueString /*.UnEscape()*/;
                     } catch (ArgumentException ex) {
                         throw new SolInterpreterException(new SolSourceLocation(ActiveFile, expressionNode.Span.Location), "Failed to parse string: " + ex.Message, ex);
                     }
@@ -874,12 +874,56 @@ namespace SolScript.Interpreter.Statements
                     SolExpression[] expressions = GetExpressions(statementNode.ChildNodes[2]);
                     return new Statement_New(Assembly, new SolSourceLocation(ActiveFile, statementNode.Span.Location), typeName, expressions);
                 } // Statement_New
-                /*case "Statement_Continue": {
-                    return Statement_Continue.Instance;
-                }
-                case "Statement_Break": {
-                    return StB
-                }*/
+                case "Statement_Self": {
+                    // 0: "base"
+                    // 1: _identifier/Expression
+                    MetaItem meta;
+                    try {
+                        meta = m_MetaStack.Peek();
+                    } catch (InvalidOperationException ex) {
+                        throw new SolInterpreterException(new SolSourceLocation(ActiveFile, statementNode.Span.Location), "Can only use self keywords inside classes.", ex);
+                    }
+                    SolExpression expression;
+                    switch (statementNode.ChildNodes[1].Term.Name) {
+                        case "_identifier": {
+                            expression = new Expression_String(Assembly, new SolSourceLocation(ActiveFile, statementNode.ChildNodes[1].Span.Location), statementNode.ChildNodes[1].Token.ValueString);
+                            break;
+                        }
+                        case "Expression": {
+                            expression = GetExpression(statementNode.ChildNodes[1]);
+                            break;
+                        }
+                        default: {
+                            throw new SolInterpreterException(new SolSourceLocation(ActiveFile, statementNode.ChildNodes[1].Span.Location), "Invalid self accessor: " + statementNode.ChildNodes[1].Term.Name);
+                        }
+                    }
+                    return new Statement_Self(Assembly, new SolSourceLocation(ActiveFile, statementNode.Span.Location), meta.ActiveClass.Name, expression);
+                } // Statement_Self
+                case "Statement_Base": {
+                    // 0: "base"
+                    // 1: _identifier/Expression
+                    MetaItem meta;
+                    try {
+                        meta = m_MetaStack.Peek();
+                    } catch (InvalidOperationException ex) {
+                        throw new SolInterpreterException(new SolSourceLocation(ActiveFile, statementNode.Span.Location), "Can only use base keywords inside classes.", ex);
+                    }
+                    SolExpression expression;
+                    switch (statementNode.ChildNodes[1].Term.Name) {
+                        case "_identifier": {
+                            expression = new Expression_String(Assembly, new SolSourceLocation(ActiveFile, statementNode.ChildNodes[1].Span.Location), statementNode.ChildNodes[1].Token.ValueString);
+                            break;
+                        }
+                        case "Expression": {
+                            expression = GetExpression(statementNode.ChildNodes[1]);
+                            break;
+                        }
+                        default: {
+                            throw new SolInterpreterException(new SolSourceLocation(ActiveFile, statementNode.ChildNodes[1].Span.Location), "Invalid base accessor: " + statementNode.ChildNodes[1].Term.Name);
+                        }
+                    }
+                    return new Statement_Base(Assembly, new SolSourceLocation(ActiveFile, statementNode.Span.Location), meta.ActiveClass.Name, expression);
+                } // Statement_Base
                 default: {
                     throw new SolInterpreterException(new SolSourceLocation(ActiveFile, statementNode.Span.Location), "Invalid statement node id \"" + statementNode.Term.Name + "\".");
                 } // default

@@ -178,12 +178,12 @@ namespace SolScript.Interpreter
         /// </summary>
         internal bool IsCyclicReferenceTo(IVariables variables)
         {
-            IVariables active = this;
+            Variables active = this;
             while (active != null) {
                 if (active == variables) {
                     return true;
                 }
-                active = active.Parent;
+                active = active.Parent as Variables;          
             }
             return false;
         }

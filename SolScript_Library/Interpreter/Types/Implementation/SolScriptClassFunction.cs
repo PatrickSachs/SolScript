@@ -1,5 +1,4 @@
-﻿using System;
-using SolScript.Interpreter.Exceptions;
+﻿using SolScript.Interpreter.Exceptions;
 using SolScript.Utility;
 
 namespace SolScript.Interpreter.Types.Implementation
@@ -21,14 +20,7 @@ namespace SolScript.Interpreter.Types.Implementation
         }
 
         /// <inheritdoc />
-        public override SolAssembly Assembly {
-            get {
-                if (Definition.DefinedIn != null) {
-                    return Definition.DefinedIn.Assembly;
-                }
-                throw new InvalidOperationException("Could not get the defining class of a class function.");
-            }
-        }
+        public override SolAssembly Assembly => Definition.DefinedIn.NotNull().Assembly;
 
         /// <inheritdoc />
         public override SolFunctionDefinition Definition { get; }
@@ -44,7 +36,7 @@ namespace SolScript.Interpreter.Types.Implementation
         {
             SolClass.Inheritance inheritance = ClassInstance.FindInheritance(Definition.DefinedIn).NotNull();
             Variables varContext = new Variables(Assembly) {
-                Parent = inheritance.Variables // todo: orginally this was parented to the internal variables? was this a mistake or does it mave a reason?
+                Parent = inheritance.GetVariables(SolAccessModifier.Local, SolClass.Inheritance.Mode.All)
             };
             try {
                 InsertParameters(varContext, args);
