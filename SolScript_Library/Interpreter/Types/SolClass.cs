@@ -416,12 +416,9 @@ namespace SolScript.Interpreter.Types
                 All = 0,
 
                 /// <summary>
-                ///     Only the variables of the base elements of this class will be regarded.
+                ///     Only the variables of the base elements of this class will be regarded. If no base class exists this will simply
+                ///     contain the global assembly variables.
                 /// </summary>
-                /// <remarks>
-                ///     Keep in mind that retrieving this will always work, but actually getting a variable from the obtained
-                ///     <see cref="IVariables" /> will thrown an exception if no base class exists.
-                /// </remarks>
                 Base = All + 3,
 
                 /// <summary>
@@ -658,6 +655,11 @@ namespace SolScript.Interpreter.Types
                         return theBase;
                     }
                 }
+
+                /// <summary>
+                ///     Checks if this inheritance has a base class.
+                /// </summary>
+                protected bool HasDirectBase => VarInheritance.BaseInheritance != null;
             }
 
             #endregion
@@ -675,28 +677,36 @@ namespace SolScript.Interpreter.Types
                 /// <exception cref="SolVariableException">
                 ///     A variable with this name has already been declared.
                 /// </exception>
-                /// <exception cref="SolVariableException">No base class exists.</exception>
                 public override void Declare(string name, SolType type)
                 {
-                    BaseInheritance.m_DeclaredGlobalVariables.Declare(name, type);
+                    if (HasDirectBase) {
+                        BaseInheritance.m_DeclaredGlobalVariables.Declare(name, type);
+                    } else {
+                        Assembly.GlobalVariables.Declare(name, type);
+                    }
                 }
 
                 /// <inheritdoc />
                 /// <exception cref="SolVariableException">Another variable with the same name is already declared.</exception>
-                /// <exception cref="SolVariableException">No base class exists.</exception>
                 public override void DeclareNative(string name, SolType type, FieldOrPropertyInfo field, DynamicReference fieldReference)
                 {
-                    BaseInheritance.m_DeclaredGlobalVariables.DeclareNative(name, type, field, fieldReference);
+                    if (HasDirectBase) {
+                        BaseInheritance.m_DeclaredGlobalVariables.DeclareNative(name, type, field, fieldReference);
+                    } else {
+                        Assembly.GlobalVariables.DeclareNative(name, type, field, fieldReference);
+                    }
                 }
 
                 /// <inheritdoc />
-                /// <exception cref="SolVariableException">No base class exists.</exception>
+                /// <exception cref="SolVariableException">An error occured.</exception>
                 protected override IEnumerable<IVariables> GetVariableSources()
                 {
-                    Inheritance active = BaseInheritance;
-                    while (active != null) {
-                        yield return active.m_DeclaredGlobalVariables;
-                        active = active.BaseInheritance;
+                    if (HasDirectBase) {
+                        Inheritance active = BaseInheritance;
+                        while (active != null) {
+                            yield return active.m_DeclaredGlobalVariables;
+                            active = active.BaseInheritance;
+                        }
                     }
                     yield return Assembly.GlobalVariables;
                 }
@@ -719,29 +729,37 @@ namespace SolScript.Interpreter.Types
                 /// <exception cref="SolVariableException">
                 ///     A variable with this name has already been declared.
                 /// </exception>
-                /// <exception cref="SolVariableException">No base class exists.</exception>
                 public override void Declare(string name, SolType type)
                 {
-                    BaseInheritance.m_DeclaredInternalVariables.Declare(name, type);
+                    if (HasDirectBase) {
+                        BaseInheritance.m_DeclaredInternalVariables.Declare(name, type);
+                    } else {
+                        Assembly.GlobalVariables.Declare(name, type);
+                    }
                 }
 
                 /// <inheritdoc />
                 /// <exception cref="SolVariableException">Another variable with the same name is already declared.</exception>
-                /// <exception cref="SolVariableException">No base class exists.</exception>
                 public override void DeclareNative(string name, SolType type, FieldOrPropertyInfo field, DynamicReference fieldReference)
                 {
-                    BaseInheritance.m_DeclaredInternalVariables.DeclareNative(name, type, field, fieldReference);
+                    if (HasDirectBase) {
+                        BaseInheritance.m_DeclaredInternalVariables.DeclareNative(name, type, field, fieldReference);
+                    } else {
+                        Assembly.GlobalVariables.DeclareNative(name, type, field, fieldReference);
+                    }
                 }
 
                 /// <inheritdoc />
-                /// <exception cref="SolVariableException">No base class exists.</exception>
+                /// <exception cref="SolVariableException">An error occured.</exception>
                 protected override IEnumerable<IVariables> GetVariableSources()
                 {
-                    Inheritance active = BaseInheritance;
-                    while (active != null) {
-                        yield return active.m_DeclaredInternalVariables;
-                        yield return active.m_DeclaredGlobalVariables;
-                        active = active.BaseInheritance;
+                    if (HasDirectBase) {
+                        Inheritance active = BaseInheritance;
+                        while (active != null) {
+                            yield return active.m_DeclaredInternalVariables;
+                            yield return active.m_DeclaredGlobalVariables;
+                            active = active.BaseInheritance;
+                        }
                     }
                     yield return Assembly.GlobalVariables;
                 }
@@ -764,30 +782,38 @@ namespace SolScript.Interpreter.Types
                 /// <exception cref="SolVariableException">
                 ///     A variable with this name has already been declared.
                 /// </exception>
-                /// <exception cref="SolVariableException">No base class exists.</exception>
                 public override void Declare(string name, SolType type)
                 {
-                    BaseInheritance.m_DeclaredInternalVariables.Declare(name, type);
+                    if (HasDirectBase) {
+                        BaseInheritance.m_DeclaredLocalVariables.Declare(name, type);
+                    } else {
+                        Assembly.GlobalVariables.Declare(name, type);
+                    }
                 }
 
                 /// <inheritdoc />
                 /// <exception cref="SolVariableException">Another variable with the same name is already declared.</exception>
-                /// <exception cref="SolVariableException">No base class exists.</exception>
                 public override void DeclareNative(string name, SolType type, FieldOrPropertyInfo field, DynamicReference fieldReference)
                 {
-                    BaseInheritance.m_DeclaredInternalVariables.DeclareNative(name, type, field, fieldReference);
+                    if (HasDirectBase) {
+                        BaseInheritance.m_DeclaredLocalVariables.DeclareNative(name, type, field, fieldReference);
+                    } else {
+                        Assembly.GlobalVariables.DeclareNative(name, type, field, fieldReference);
+                    }
                 }
 
                 /// <inheritdoc />
-                /// <exception cref="SolVariableException">No base class exists.</exception>
+                /// <exception cref="SolVariableException">An error occured.</exception>
                 protected override IEnumerable<IVariables> GetVariableSources()
                 {
-                    Inheritance active = BaseInheritance;
-                    yield return active.m_DeclaredLocalVariables;
-                    while (active != null) {
-                        yield return active.m_DeclaredInternalVariables;
-                        yield return active.m_DeclaredGlobalVariables;
-                        active = active.BaseInheritance;
+                    if (HasDirectBase) {
+                        Inheritance active = BaseInheritance;
+                        yield return active.m_DeclaredLocalVariables;
+                        while (active != null) {
+                            yield return active.m_DeclaredInternalVariables;
+                            yield return active.m_DeclaredGlobalVariables;
+                            active = active.BaseInheritance;
+                        }
                     }
                     yield return Assembly.GlobalVariables;
                 }
@@ -876,7 +902,7 @@ namespace SolScript.Interpreter.Types
                         source.AssignAnnotations(name, annotations);
                     }
                 }
-                throw new SolVariableException("Tired to assign annotations to class field \"" + name + "\". No such field exists.");
+                throw new SolVariableException("Tried to assign annotations to class field \"" + name + "\". No such field exists.");
             }
 
             /// <inheritdoc />
@@ -890,7 +916,7 @@ namespace SolScript.Interpreter.Types
                         return source.Assign(name, value);
                     }
                 }
-                throw new SolVariableException("Tired to assign class field \"" + name + "\". No such field exists.");
+                throw new SolVariableException("Tried to assign class field \"" + name + "\". No such field exists.");
             }
 
             /// <inheritdoc />

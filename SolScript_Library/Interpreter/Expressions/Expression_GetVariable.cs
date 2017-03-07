@@ -1,22 +1,41 @@
-﻿using SolScript.Interpreter.Exceptions;
+﻿using System;
+using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
 using SolScript.Interpreter.Types.Interfaces;
 
 namespace SolScript.Interpreter.Expressions
 {
+    /// <summary>
+    ///     This expression is used to get a variable.
+    /// </summary>
     public class Expression_GetVariable : SolExpression, IWrittenInClass
     {
+        /// <summary>
+        ///     Creates the expression.
+        /// </summary>
+        /// <param name="assembly">The assembly.</param>
+        /// <param name="location">The location in code.</param>
+        /// <param name="source">The source used to actually get the variable.</param>
+        /// <param name="writtenInClass">The class name this expression was written in.</param>
+        /// <exception cref="InvalidOperationException">The variable source is already linked to another expression.</exception>
         public Expression_GetVariable(SolAssembly assembly, SolSourceLocation location, SourceRef source, string writtenInClass) : base(assembly, location)
         {
+            if (source.LinkedExpression != null && source.LinkedExpression != this) {
+                throw new InvalidOperationException("The variable source is already linked to another expression - " + source.LinkedExpression);
+            }
             Source = source;
             Source.LinkedExpression = this;
             WrittenInClass = writtenInClass;
         }
 
+        /// <summary>
+        ///     The source used to actually get the variable.
+        /// </summary>
         public readonly SourceRef Source;
 
         #region IWrittenInClass Members
 
+        /// <inheritdoc />
         public string WrittenInClass { get; }
 
         #endregion
@@ -51,6 +70,11 @@ namespace SolScript.Interpreter.Expressions
         /// </summary>
         public class IndexedVariable : SourceRef
         {
+            /// <summary>
+            ///     Creates a new indexed variable.
+            /// </summary>
+            /// <param name="indexableGetter">The expression used to get the value that should be indexed.</param>
+            /// <param name="keyGetter">The expression used to get the value that should be used as indexer.</param>
             public IndexedVariable(SolExpression indexableGetter, SolExpression keyGetter)
             {
                 KeyGetter = keyGetter;
@@ -89,8 +113,8 @@ namespace SolScript.Interpreter.Expressions
                     // 2 Not found -> Only global access.
                     // Kind of funny how this little null coalescing operator handles the "deciding part" of access rights.
                     SolClass.Inheritance inheritance = LinkedExpression.WrittenInClass != null ? solClass.FindInheritance(LinkedExpression.WrittenInClass) : null;
-                    SolValue value = inheritance?.GetVariables(SolAccessModifier.Local, SolClass.Inheritance.Mode.All).Get(keyString.Value) 
-                        ?? solClass.InheritanceChain.GetVariables(SolAccessModifier.None, SolClass.Inheritance.Mode.All).Get(keyString.Value);
+                    SolValue value = inheritance?.GetVariables(SolAccessModifier.Local, SolClass.Inheritance.Mode.All).Get(keyString.Value)
+                                     ?? solClass.InheritanceChain.GetVariables(SolAccessModifier.None, SolClass.Inheritance.Mode.All).Get(keyString.Value);
                     return value;
                 }
                 IValueIndexable indexable = indexableRaw as IValueIndexable;
@@ -119,12 +143,15 @@ namespace SolScript.Interpreter.Expressions
         /// </summary>
         public class NamedVariable : SourceRef
         {
+            /// <summary>
+            ///     Creates a new named variable.
+            /// </summary>
+            /// <param name="name">The variable name.</param>
             public NamedVariable(string name)
             {
                 Name = name;
             }
-
-
+            
             /// <summary>
             ///     The name of this variable.
             /// </summary>
@@ -142,6 +169,7 @@ namespace SolScript.Interpreter.Expressions
                 return parentVariables.Get(Name);
             }
 
+            /// <inheritdoc />
             public override string ToString()
             {
                 return Name;
@@ -159,7 +187,10 @@ namespace SolScript.Interpreter.Expressions
         /// </summary>
         public abstract class SourceRef
         {
-            public Expression_GetVariable LinkedExpression;
+            /// <summary>
+            ///     The expression source variable source is assigned to(Updated automatically).
+            /// </summary>
+            public Expression_GetVariable LinkedExpression { get; internal set; }
 
             /// <summary>
             ///     Gets the value.

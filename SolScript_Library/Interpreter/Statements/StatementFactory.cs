@@ -782,7 +782,8 @@ namespace SolScript.Interpreter.Statements
                     ParseTreeNode expressionNode = statementNode.ChildNodes[1];
                     Statement_AssignVar.TargetRef variable = GetVariableAssignmentTarget(variableNode);
                     SolExpression expression = GetExpression(expressionNode);
-                    return new Statement_AssignVar(Assembly, new SolSourceLocation(ActiveFile, statementNode.Span.Location), variable, expression);
+                    MetaItem meta = m_MetaStack.Count != 0 ? m_MetaStack.Peek() : null;
+                    return new Statement_AssignVar(Assembly, new SolSourceLocation(ActiveFile, statementNode.Span.Location), variable, expression, meta?.ActiveClass.Name);
                 } // Statement_DeclareVar
                 case "Statement_CallFunction": {
                     SolExpression expression = GetExpression(statementNode.ChildNodes[0]);
@@ -875,29 +876,14 @@ namespace SolScript.Interpreter.Statements
                     return new Statement_New(Assembly, new SolSourceLocation(ActiveFile, statementNode.Span.Location), typeName, expressions);
                 } // Statement_New
                 case "Statement_Self": {
-                    // 0: "base"
-                    // 1: _identifier/Expression
+                    // 0: "self"
                     MetaItem meta;
                     try {
                         meta = m_MetaStack.Peek();
                     } catch (InvalidOperationException ex) {
                         throw new SolInterpreterException(new SolSourceLocation(ActiveFile, statementNode.Span.Location), "Can only use self keywords inside classes.", ex);
                     }
-                    SolExpression expression;
-                    switch (statementNode.ChildNodes[1].Term.Name) {
-                        case "_identifier": {
-                            expression = new Expression_String(Assembly, new SolSourceLocation(ActiveFile, statementNode.ChildNodes[1].Span.Location), statementNode.ChildNodes[1].Token.ValueString);
-                            break;
-                        }
-                        case "Expression": {
-                            expression = GetExpression(statementNode.ChildNodes[1]);
-                            break;
-                        }
-                        default: {
-                            throw new SolInterpreterException(new SolSourceLocation(ActiveFile, statementNode.ChildNodes[1].Span.Location), "Invalid self accessor: " + statementNode.ChildNodes[1].Term.Name);
-                        }
-                    }
-                    return new Statement_Self(Assembly, new SolSourceLocation(ActiveFile, statementNode.Span.Location), meta.ActiveClass.Name, expression);
+                    return new Statement_Self(Assembly, new SolSourceLocation(ActiveFile, statementNode.Span.Location), meta.ActiveClass.Name);
                 } // Statement_Self
                 case "Statement_Base": {
                     // 0: "base"
@@ -919,7 +905,8 @@ namespace SolScript.Interpreter.Statements
                             break;
                         }
                         default: {
-                            throw new SolInterpreterException(new SolSourceLocation(ActiveFile, statementNode.ChildNodes[1].Span.Location), "Invalid base accessor: " + statementNode.ChildNodes[1].Term.Name);
+                            throw new SolInterpreterException(new SolSourceLocation(ActiveFile, statementNode.ChildNodes[1].Span.Location),
+                                "Invalid base accessor: " + statementNode.ChildNodes[1].Term.Name);
                         }
                     }
                     return new Statement_Base(Assembly, new SolSourceLocation(ActiveFile, statementNode.Span.Location), meta.ActiveClass.Name, expression);

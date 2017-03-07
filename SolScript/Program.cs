@@ -10,6 +10,10 @@ using SolScript.Libraries.std;
 
 namespace SolScript
 {
+    /// <summary>
+    ///     The command line interpreter is VERY BADLY DONE and NOT FINAL. It is more of a SolScript test application than
+    ///     anything else.
+    /// </summary>
     public class Program
     {
         private static void Main(string[] args)
@@ -100,13 +104,10 @@ namespace SolScript
                     string entryRaw = Console.ReadLine()?.Trim().ToLower();
                     try {
                         if (entryRaw == "0" || entryRaw == "class") {
-                            SolAssembly script = SolAssembly.FromDirectory(new SolAssemblyOptions("Command Line Assembly"), dirRaw)
-                                .IncludeLibrary(std.GetLibrary())
-                                .IncludeLibrary(os.GetLibrary())
-                                //.IncludeLibrary(test.test.GetLibrary())
-                                .FinalizeRegistry()
-                                .GenerateDefinitions()
-                                .Create();
+                            SolAssembly script = null;
+                            try {
+                                CreateAssembly(dirRaw, out script);
+                            } catch (SolInterpreterException) {}
                             if (script.Errors.Count > 0) {
                                 bool isDone = false;
                                 Console.WriteLine("================== ERRORS ==================");
@@ -125,13 +126,10 @@ namespace SolScript
                             script.New("Main", new ClassCreationOptions.Customizable().SetCallingContext(new SolExecutionContext(script, "Command Line Interpreter")),
                                 SolString.ValueOf("Hello from the command line :)"), new SolNumber(42));
                         } else if (entryRaw == "1" || entryRaw == "function") {
-                            SolAssembly script = SolAssembly.FromDirectory(new SolAssemblyOptions("Command Line Assembly"), dirRaw)
-                                .IncludeLibrary(std.GetLibrary())
-                                .IncludeLibrary(os.GetLibrary())
-                                //.IncludeLibrary(test.test.GetLibrary())
-                                .FinalizeRegistry()
-                                .GenerateDefinitions()
-                                .Create();
+                            SolAssembly script = null;
+                            try {
+                                CreateAssembly(dirRaw, out script);
+                            } catch (SolInterpreterException) {}
                             if (script.Errors.Count > 0) {
                                 bool isDone = false;
                                 Console.WriteLine("================== ERRORS ==================");
@@ -201,6 +199,29 @@ namespace SolScript
                     Console.ReadKey(true);
                     goto Hello;
                 }
+            }
+        }
+
+        /// <exception cref="SolInterpreterException">Catch this and then check the error property.</exception>
+        private static void CreateAssembly(string dir, out SolAssembly script)
+        {
+            script = SolAssembly.FromDirectory(new SolAssemblyOptions("Command Line Assembly"), dir);
+            CheckForError(script);
+            script.IncludeLibrary(std.GetLibrary())
+                .IncludeLibrary(os.GetLibrary());
+            script.FinalizeRegistry();
+            CheckForError(script);
+            script.GenerateDefinitions();
+            CheckForError(script);
+            script.Create();
+            CheckForError(script);
+        }
+
+        /// <exception cref="SolInterpreterException">Catch this and then check the error property.</exception>
+        private static void CheckForError(SolAssembly assembly)
+        {
+            if (assembly.State == SolAssembly.AssemblyState.Error) {
+                throw new SolInterpreterException(SolSourceLocation.Native(), "_error");
             }
         }
 

@@ -340,7 +340,7 @@ namespace SolScript.Interpreter
             foreach (SolClassDefinition definition in m_ClassDefinitions.Values) {
                 try {
                     SolDebug.WriteLine("   ... Class " + definition.Type);
-                    //m_Compiler.ValidateClass(definition);
+                    m_Compiler.ValidateClass(definition);
                 } catch (SolCompilerException ex) {
                     // todo: compiler error source location.
                     m_ErrorAdder.Add(new SolError(SolSourceLocation.Native(), ErrorId.CompilerError, ex.Message, false, ex));
@@ -350,7 +350,7 @@ namespace SolScript.Interpreter
             foreach (SolFunctionDefinition definition in m_GlobalFunctions.Values) {
                 try {
                     SolDebug.WriteLine("   ... Global Function " + definition.Name);
-                    //m_Compiler.ValidateFunction(definition);
+                    m_Compiler.ValidateFunction(definition);
                 } catch (SolCompilerException ex) {
                     // todo: compiler error source location.
                     m_ErrorAdder.Add(new SolError(SolSourceLocation.Native(), ErrorId.CompilerError, ex.Message, false, ex));

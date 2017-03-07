@@ -321,8 +321,7 @@ namespace SolScript.Parser {
                 | BASE + DOT + _identifier
                 ;
             Statement_Self.Rule =
-                SELF + "[" + Expression + "]"
-                | SELF + DOT + _identifier
+                SELF
                 ;
             Statement.Rule =
                 Statement_AssignVar
