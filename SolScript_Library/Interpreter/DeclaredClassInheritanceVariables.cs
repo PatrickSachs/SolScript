@@ -101,6 +101,7 @@ namespace SolScript.Interpreter
         /// <summary> Assigns annotations to a given variable. </summary>
         /// <param name="name"> The name of the variable. </param>
         /// <param name="annotations"> The annotations to assign to the variable. </param>
+        /// <exception cref="SolVariableException">Could not assign the annotations.</exception>
         public void AssignAnnotations(string name, params SolClass[] annotations)
         {
             if (!IsDeclared(name)) {
@@ -112,20 +113,19 @@ namespace SolScript.Interpreter
 
         /// <summary> Assigns a value to the variable with the giv en name. </summary>
         /// <exception cref="SolVariableException">
-        ///     Np variable with this name has been
-        ///     decalred.
+        ///     No variable with this name has been declared.
         /// </exception>
         /// <exception cref="SolVariableException"> The type does not match. </exception>
-        public void Assign(string name, SolValue value)
+        public SolValue Assign(string name, SolValue value)
         {
             SolFunctionDefinition definition;
             if (Members.IsDeclared(name)) {
-                Members.Assign(name, value);
-            } else if (Inheritance.Definition.TryGetFunction(name, true, out definition) && ValidateFunctionDefinition(definition)) {
-                throw new SolVariableException("Cannot assign values to class function \"" + name + "\", they are immutable.");
-            } else {
-                throw new SolVariableException("Cannot assign value to variable \"" + name + "\", not variable with this name has been declared.");
+                return Members.Assign(name, value);
             }
+            if (Inheritance.Definition.TryGetFunction(name, true, out definition) && ValidateFunctionDefinition(definition)) {
+                throw new SolVariableException("Cannot assign values to class function \"" + name + "\", they are immutable.");
+            }
+            throw new SolVariableException("Cannot assign value to variable \"" + name + "\", not variable with this name has been declared.");
         }
 
         /// <summary> Is a variable with this name declared? </summary>

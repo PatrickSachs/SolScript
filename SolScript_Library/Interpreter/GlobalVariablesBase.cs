@@ -23,21 +23,18 @@ namespace SolScript.Interpreter
         /// <summary>
         ///     The member variables.
         /// </summary>
-        // todo: the variable wrapper introduced quite a lot of overhead. simplify this.
         protected readonly Variables Members;
-
-        #region IVariables Members
-
-        /// <summary> The assembly this variable lookup belongs to. </summary>
-        public SolAssembly Assembly => Members.Assembly;
 
         /// <summary>
         ///     The parent context. (read-only for <see cref="GlobalVariablesBase" />).
         /// </summary>
         /// <exception cref="NotSupportedException" accessor="set">Cannot change the parent of global variables.</exception>
-        public IVariables Parent {
-            get { return GetParent(); }
-        }
+        public IVariables Parent => GetParent();
+
+        #region IVariables Members
+
+        /// <summary> The assembly this variable lookup belongs to. </summary>
+        public SolAssembly Assembly => Members.Assembly;
 
         /// <summary> Gets the value assigned to the given name. </summary>
         /// <param name="name"> The name of the variable. </param>
@@ -116,34 +113,33 @@ namespace SolScript.Interpreter
         public void AssignAnnotations(string name, params SolClass[] annotations)
         {
             if (!IsDeclared(name) && GetAndRegisterAdditional(name) == null) {
-                throw new SolVariableException("Cannot assign annotations to gloval variable \"" + name + "\". No variable with this name has been declared.");
+                throw new SolVariableException("Cannot assign annotations to global variable \"" + name + "\". No variable with this name has been declared.");
             }
             Members.AssignAnnotations(name, annotations);
         }
 
         /// <summary> Assigns a value to the variable with the giv en name. </summary>
         /// <exception cref="SolVariableException">
-        ///     Np variable with this name has been
+        ///     No variable with this name has been
         ///     decalred.
         /// </exception>
         /// <exception cref="SolVariableException"> The type does not match. </exception>
-        public void Assign(string name, SolValue value)
+        public SolValue Assign(string name, SolValue value)
         {
             if (Members.IsDeclared(name) || GetAndRegisterAdditional(name) != null) {
-                Members.Assign(name, value);
+                return Members.Assign(name, value);
             }
-            else if (Parent != null) {
-                Parent.Assign(name, value);
-            } else {
-                throw new SolVariableException("Cannot assign value to variable \"" + name + "\", no variable with this name has been declared.");
+            if (Parent != null) {
+                return Parent.Assign(name, value);
             }
+            throw new SolVariableException("Cannot assign value to variable \"" + name + "\", no variable with this name has been declared.");
         }
 
         /// <summary> Is a variable with this name declared? </summary>
         /// <exception cref="SolVariableException">An error occured.</exception>
         public bool IsDeclared(string name)
         {
-            if (Members.IsDeclared(name)||GetAndRegisterAdditional(name) != null) {
+            if (Members.IsDeclared(name) || GetAndRegisterAdditional(name) != null) {
                 return true;
             }
             if (Parent != null) {
@@ -171,7 +167,7 @@ namespace SolScript.Interpreter
         #endregion
 
         /// <summary>
-        /// Checks if an additional member with the given name exists. If it does the method creates and registers it.
+        ///     Checks if an additional member with the given name exists. If it does the method creates and registers it.
         /// </summary>
         /// <exception cref="SolVariableException">An error occured.</exception>
         private SolValue GetAndRegisterAdditional(string name)
@@ -188,7 +184,7 @@ namespace SolScript.Interpreter
         }
 
         /// <summary>
-        ///     Addtional member retievement method. If no member with the given <paramref name="name" /> could be found in the
+        ///     Additional member retrievement method. If no member with the given <paramref name="name" /> could be found in the
         ///     <see cref="Members" /> variables this method will be called.
         /// </summary>
         /// <param name="name">The name of the member to get.</param>
@@ -205,6 +201,7 @@ namespace SolScript.Interpreter
         /// <returns>The parent variables.</returns>
         [CanBeNull]
         protected abstract IVariables GetParent();
+
         #region Nested type: AdditionalMemberInfo
 
         /// <summary>

@@ -401,15 +401,38 @@ namespace SolScript.Interpreter.Types
         {
             #region Mode enum
 
+            /// <summary>
+            ///     The <see cref="Mode" /> enum is used to retrieve <see cref="IVariables" /> for a certain variable mode using
+            ///     <see cref="Inheritance.GetVariables" />.
+            /// </summary>
+            /// <remarks>Be cautious when using the ordinal values of this enum as if does not follow the typical 0, 1, 2 pattern!</remarks>
             public enum Mode
             {
+                /// <summary>
+                ///     The variables of all inheritance elements of this class will be regarded. In some cases(such as for
+                ///     <see cref="SolAccessModifier.Local" /> access) the inheritance element on which the variables are received from
+                ///     might take precedence.
+                /// </summary>
                 All = 0,
-                Base = 3,
-                Declarations = 6
+
+                /// <summary>
+                ///     Only the variables of the base elements of this class will be regarded.
+                /// </summary>
+                /// <remarks>
+                ///     Keep in mind that retrieving this will always work, but actually getting a variable from the obtained
+                ///     <see cref="IVariables" /> will thrown an exception if no base class exists.
+                /// </remarks>
+                Base = All + 3,
+
+                /// <summary>
+                ///     Only the variables directly declared in this inheritance element and given access modifier will be obtained.
+                /// </summary>
+                Declarations = Base + 3
             }
 
             #endregion
 
+            // Creates the ... creators. Yay.
             static Inheritance()
             {
                 s_Creators[(int) Mode.All + (int) SolAccessModifier.None] = i => new All_Globals(i);
@@ -418,13 +441,7 @@ namespace SolScript.Interpreter.Types
                 s_Creators[(int) Mode.Base + (int) SolAccessModifier.None] = i => new Base_Globals(i);
                 s_Creators[(int) Mode.Base + (int) SolAccessModifier.Internal] = i => new Base_Internals(i);
                 s_Creators[(int) Mode.Base + (int) SolAccessModifier.Local] = i => new Base_Locals(i);
-                s_Creators[(int) Mode.Declarations + (int) SolAccessModifier.None] = i => i.m_DeclaredGlobalVariables;
-                s_Creators[(int) Mode.Declarations + (int) SolAccessModifier.Internal] = i => i.m_DeclaredInternalVariables;
-                s_Creators[(int) Mode.Declarations + (int) SolAccessModifier.Local] = i => i.m_DeclaredLocalVariables;
             }
-
-            // The globals and internals are separated for each inheritance level in 
-            // order to be able to access the base variables.
 
             /// <summary>
             ///     Creates a new <see cref="Inheritance" /> object.
@@ -437,6 +454,8 @@ namespace SolScript.Interpreter.Types
             /// <param name="baseInheritance">The base inheritance(The inheritance this one extends).</param>
             public Inheritance(SolClass instance, SolClassDefinition definition, [CanBeNull] Inheritance baseInheritance)
             {
+                // The globals and internals are separated for each inheritance level in 
+                // order to be able to access the base variables.
                 Instance = instance;
                 BaseInheritance = baseInheritance;
                 Definition = definition;
@@ -445,7 +464,7 @@ namespace SolScript.Interpreter.Types
                 m_DeclaredGlobalVariables = new DeclaredGlobalClassInheritanceVariables(this);
             }
 
-            private static readonly Func<Inheritance, IVariables>[] s_Creators = new Func<Inheritance, IVariables>[9];
+            private static readonly Func<Inheritance, IVariables>[] s_Creators = new Func<Inheritance, IVariables>[6];
 
             /// <summary>
             ///     The base inheritance(The inheritance this one extends).
@@ -463,19 +482,12 @@ namespace SolScript.Interpreter.Types
             public readonly SolClass Instance;
 
             // Indexing works by (int)Mode + (int)AccessModifier
-            private readonly IVariables[] l_variables = new IVariables[9];
+            private readonly IVariables[] l_variables = new IVariables[6];
+            // The global variables declared at this inheritance level.
             private readonly DeclaredGlobalClassInheritanceVariables m_DeclaredGlobalVariables;
+            // The internal variables declared at this inheritance level.
             private readonly DeclaredInternalClassInheritanceVariables m_DeclaredInternalVariables;
-
-            /// <summary>
-            ///     The local variables of this inheritance level. Uses the class global variables as parent.
-            /// </summary>
-            /// <remarks>
-            ///     Each inheritance link has their own variables representing the non-global variables. These variables have the class
-            ///     internal variables as parent, thus accessing globals and internals if no local exists.<br />
-            ///     Furthermore new variables will be declared in the local scope, while still having the ability to set values to
-            ///     global ones.
-            /// </remarks>
+            // The local variables declared at this inheritance level.
             private readonly DeclaredLocalClassInheritanceVariables m_DeclaredLocalVariables;
 
             /// <summary>
@@ -486,11 +498,16 @@ namespace SolScript.Interpreter.Types
             public IVariables GetVariables(SolAccessModifier access, Mode mode)
             {
                 int index = (int) access + (int) mode;
-                IVariables variables = l_variables[index];
-                if (variables == null) {
-                    variables = l_variables[index] = s_Creators[index](this);
+                switch (index) {
+                    case (int) SolAccessModifier.None + (int) Mode.Declarations:
+                        return m_DeclaredGlobalVariables;
+                    case (int) SolAccessModifier.Local + (int) Mode.Declarations:
+                        return m_DeclaredLocalVariables;
+                    case (int) SolAccessModifier.Internal + (int) Mode.Declarations:
+                        return m_DeclaredInternalVariables;
+                    default:
+                        return l_variables[index] ?? (l_variables[index] = s_Creators[index](this));
                 }
-                return variables;
             }
 
             #region Nested type: All_Globals
@@ -611,8 +628,7 @@ namespace SolScript.Interpreter.Types
                 {
                     yield return VarInheritance.m_DeclaredLocalVariables;
                     Inheritance active = VarInheritance.Instance.InheritanceChain;
-                    while (active != null)
-                    {
+                    while (active != null) {
                         yield return active.m_DeclaredGlobalVariables;
                         yield return active.m_DeclaredInternalVariables;
                         active = active.BaseInheritance;
@@ -867,11 +883,11 @@ namespace SolScript.Interpreter.Types
             /// <exception cref="SolVariableException">
             ///     No variable with this name has been declared.
             /// </exception>
-            public virtual void Assign(string name, SolValue value)
+            public virtual SolValue Assign(string name, SolValue value)
             {
                 foreach (IVariables source in GetVariableSources()) {
                     if (source.IsDeclared(name)) {
-                        source.Assign(name, value);
+                        return source.Assign(name, value);
                     }
                 }
                 throw new SolVariableException("Tired to assign class field \"" + name + "\". No such field exists.");

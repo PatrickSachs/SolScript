@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
@@ -9,9 +10,11 @@ using SolScript.Utility;
 namespace SolScript.Interpreter
 {
     /// <summary>
-    ///     Standard <see cref="IVariables" /> implementation. Supports every basic operation, but nothing fancy aswell.
+    ///     Standard <see cref="IVariables" /> implementation. Supports every basic operation. Most
+    ///     other <see cref="IVariables" /> implementations are wrappers around this implementation.<br />Has support for
+    ///     parenting the variables.
     /// </summary>
-    public class Variables : IVariables
+    public sealed class Variables : IVariables
     {
         /// <summary>
         ///     Creates a new <see cref="Variables" /> instance for the given <paramref name="assembly" />.
@@ -22,11 +25,9 @@ namespace SolScript.Interpreter
             Assembly = assembly;
         }
 
-        private readonly System.Collections.Generic.Dictionary<string, ValueInfo> m_Variables = new System.Collections.Generic.Dictionary<string, ValueInfo>();
+        private readonly Utility.Dictionary<string, Base> m_Variables = new Utility.Dictionary<string, Base>();
 
         [CanBeNull] private IVariables m_ParentContext;
-
-        #region IVariables Members
 
         /// <inheritdoc />
         /// <exception cref="ArgumentException" accessor="set">
@@ -47,6 +48,8 @@ namespace SolScript.Interpreter
             }
         }
 
+        #region IVariables Members
+
         /// <summary> The assembly this variable lookup belongs to. </summary>
         public SolAssembly Assembly { get; }
 
@@ -57,9 +60,9 @@ namespace SolScript.Interpreter
         /// </exception>
         public SolValue Get(string name)
         {
-            ValueInfo valueInfo;
+            Base valueInfo;
             if (m_Variables.TryGetValue(name, out valueInfo)) {
-                ValueInfo.GetOperation operation = valueInfo.TryGetValue(Assembly, false);
+                VarOperation operation = valueInfo.TryGetValue();
                 if (operation.State != VariableState.Success) {
                     throw InternalHelper.CreateVariableGetException(name, operation.State, operation.Exception);
                 }
@@ -79,9 +82,9 @@ namespace SolScript.Interpreter
         /// <param name="value"> A pointer to where the variable should be saved. </param>
         public VariableState TryGet(string name, out SolValue value)
         {
-            ValueInfo valueInfo;
+            Base valueInfo;
             if (m_Variables.TryGetValue(name, out valueInfo)) {
-                ValueInfo.GetOperation operation = valueInfo.TryGetValue(Assembly, false);
+                VarOperation operation = valueInfo.TryGetValue();
                 value = operation.Value;
                 return operation.State;
             }
@@ -99,7 +102,7 @@ namespace SolScript.Interpreter
             if (m_Variables.ContainsKey(name)) {
                 throw new SolVariableException("Tried to declare variable \"" + name + "\", but it already existed.");
             }
-            m_Variables[name] = new ValueInfo(name, null, type);
+            m_Variables[name] = new Script(Assembly, name, type);
         }
 
         /// <inheritdoc />
@@ -109,15 +112,27 @@ namespace SolScript.Interpreter
             if (m_Variables.ContainsKey(name)) {
                 throw new SolVariableException("Tried to declare variable \"" + name + "\", but it already existed.");
             }
-            m_Variables[name] = new ValueInfo(name, field, fieldReference, type);
+            m_Variables[name] = new Native(Assembly, name, type, field, fieldReference);
         }
 
         /// <summary> Assigns annotations to a given variable. </summary>
         /// <param name="name"> The name of the variable. </param>
         /// <param name="annotations"> The annotations to assign to the variable. </param>
+        /// <exception cref="SolVariableException">Could not assign the annotations.</exception>
         public void AssignAnnotations(string name, params SolClass[] annotations)
         {
-            m_Variables[name].Annotations = annotations;
+            Base valueInfo;
+            if (m_Variables.TryGetValue(name, out valueInfo)) {
+                try {
+                    valueInfo.AssignAnnotations(annotations);
+                } catch (InvalidOperationException ex) {
+                    throw new SolVariableException($"Cannot assign annotations to variable \"{name}\".", ex);
+                }
+            } else if (Parent != null) {
+                Parent.AssignAnnotations(name, annotations);
+            } else {
+                throw new SolVariableException($"Cannot assign annotations to variable \"{name}\" - No variable with the given name has been declared.");
+            }
         }
 
         /// <summary>
@@ -128,19 +143,20 @@ namespace SolScript.Interpreter
         /// <param name="name"> The variable name </param>
         /// <param name="value"> The value </param>
         /// <exception cref="SolVariableException">Could not assign the value.</exception>
-        public void Assign(string name, SolValue value)
+        public SolValue Assign(string name, SolValue value)
         {
-            ValueInfo valueInfo;
+            Base valueInfo;
             if (m_Variables.TryGetValue(name, out valueInfo)) {
-                ValueInfo.SetOperation operation = valueInfo.TryAssignValue(Assembly, value);
-                if (operation.State != VariableState.Success) {
+                VarOperation operation = valueInfo.TryAssignValue(value);
+                if (operation.Value == null || operation.State != VariableState.Success) {
                     throw InternalHelper.CreateVariableSetException(name, operation.State, operation.Exception);
                 }
-            } else if (Parent != null) {
-                Parent.Assign(name, value);
-            } else {
-                throw new SolVariableException($"Cannot assign variable '{name}' - No variable with the given name has been declared.");
+                return operation.Value;
             }
+            if (Parent != null) {
+                return Parent.Assign(name, value);
+            }
+            throw new SolVariableException($"Cannot assign variable '{name}' - No variable with the given name has been declared.");
         }
 
         /// <summary> Is a variable with this name declared? </summary>
@@ -161,7 +177,7 @@ namespace SolScript.Interpreter
         /// </summary>
         public bool IsAssigned(string name)
         {
-            ValueInfo info;
+            Base info;
             if (m_Variables.TryGetValue(name, out info)) {
                 return info.IsAssigned();
             }
@@ -174,7 +190,8 @@ namespace SolScript.Interpreter
         #endregion
 
         /// <summary>
-        /// Checks if this <see cref="Variables"/> at some point is parented to <paramref name="variables"/>(Or even is <paramref name="variables"/>).
+        ///     Checks if this <see cref="Variables" /> at some point is parented to <paramref name="variables" />(Or even is
+        ///     <paramref name="variables" />).
         /// </summary>
         internal bool IsCyclicReferenceTo(IVariables variables)
         {
@@ -183,27 +200,16 @@ namespace SolScript.Interpreter
                 if (active == variables) {
                     return true;
                 }
-                active = active.Parent as Variables;          
+                active = active.Parent as Variables;
             }
             return false;
-        }
-
-        /// <summary>
-        ///     Directly indexes the variables and returns the raw value of the value. If you aren't 100% sure of what this method
-        ///     does and what the possible implications are - don't use it.
-        /// </summary>
-        /// <exception cref="KeyNotFoundException">Falls through from the underlying dictionary.</exception>
-        /// <remarks>Warning: Only works with script variables. Native accessors are IGNORED.</remarks>
-        internal SolValue DirectRawGet(string key)
-        {
-            return m_Variables[key].RawValue;
         }
 
         /// <summary>
         ///     This method forcibly sets a value in this VarContext, overriding the
         ///     previously existing value(if any) regardless of its type and possible type
         ///     compatibility. It is discouraged the use this method in unexpected
-        ///     cirumstances since a variable seemingly randomly changing its type will
+        ///     circumstances since a variable seemingly randomly changing its type will
         ///     catch a lot of users offguard and may lead to bugs. This method can only
         ///     fail in the inital types are not compatible.
         /// </summary>
@@ -216,262 +222,372 @@ namespace SolScript.Interpreter
             if (!type.IsCompatible(Assembly, value.Type)) {
                 throw new SolVariableException("Cannot set variable '" + name + "' of type '" + type + "' to a value of type '" + value.Type + "'. - The types are not compatible.");
             }
-            m_Variables[name] = new ValueInfo(name, value, type);
+            try {
+                m_Variables[name] = new Script(Assembly, name, type, value);
+            } catch (ArgumentException ex) {
+                throw new SolVariableException("Could not set field \"" + name + "\".", ex);
+            }
         }
 
-        #region Nested type: ValueInfo
+        #region Nested type: Base
 
-        private class ValueInfo
+        /// <summary>
+        ///     Base class for variable wrappers.
+        /// </summary>
+        private abstract class Base
         {
-            public ValueInfo(string name, [CanBeNull] SolValue value, SolType assignedType)
+            /// <summary>
+            ///     Creates the wrapper.
+            /// </summary>
+            /// <param name="assembly">The assembly of this variable.</param>
+            /// <param name="name">The name of this variable.</param>
+            /// <param name="type">The declared type.</param>
+            protected Base(SolAssembly assembly, string name, SolType type)
             {
+                Assembly = assembly;
                 Name = name;
-                RawValue = value;
-                AssignedType = assignedType;
+                Type = type;
             }
 
-            public ValueInfo(string name, [NotNull] FieldOrPropertyInfo field, [NotNull] DynamicReference fieldReference, SolType assignedType)
+            // Lazy annotations.
+            [CanBeNull] private Array<SolClass> l_annotations;
+
+            /// <summary>
+            ///     The assembly of this variable.
+            /// </summary>
+            public SolAssembly Assembly { get; }
+
+            /// <summary>
+            ///     The name of this variable.
+            /// </summary>
+            public string Name { get; }
+
+            /// <summary>
+            ///     The declared type of this variable.
+            /// </summary>
+            public SolType Type { get; }
+
+            /// <summary>
+            ///     The annotations on this variable.
+            /// </summary>
+            public IReadOnlyList<SolClass> Annotations => l_annotations ?? EmptyReadOnlyList<SolClass>.Value;
+
+            /// <summary>
+            ///     Does this variable wrapper have annotations? Only wrappers without annotations can be assigned new variables.
+            /// </summary>
+            public bool HasAnnotations => l_annotations != null;
+
+            /// <summary>
+            ///     Assigns annotations to this variable wrapper.
+            /// </summary>
+            /// <param name="annotations">The annotations.</param>
+            /// <exception cref="InvalidOperationException">Annotations have already been assigned.</exception>
+            /// <exception cref="InvalidOperationException">One or more classes are not annotations.</exception>
+            /// <seealso cref="HasAnnotations" />
+            public void AssignAnnotations(params SolClass[] annotations)
             {
-                Name = name;
-                m_Field = field;
-                m_FieldReference = fieldReference;
-                AssignedType = assignedType;
-            }
-
-            /// <summary>
-            ///     The native backing field of this field.
-            /// </summary>
-            [CanBeNull] private readonly FieldOrPropertyInfo m_Field;
-
-            /// <summary>
-            ///     The native reference of this field. Only valid if <see cref="m_Field" /> is not null.
-            /// </summary>
-            [CanBeNull] private readonly DynamicReference m_FieldReference;
-
-            /// <summary>
-            ///     The name of this field.
-            /// </summary>
-            public readonly string Name;
-
-            /// <summary>
-            ///     All annotations of this field. Can be null or empty if no annotations are assigned.
-            /// </summary>
-            [CanBeNull] public SolClass[] Annotations;
-
-            /// <summary>
-            ///     The type of this field.
-            /// </summary>
-            public SolType AssignedType;
-
-            /// <summary>
-            ///     The raw <see cref="SolValue" />. This value may very well be null in case the field is actually a native field.
-            /// </summary>
-            [CanBeNull] internal SolValue RawValue;
-
-            public bool IsAssigned()
-            {
-                if (m_Field != null) {
-                    // Native Fields are always assigned.
-                    return true;
+                if (HasAnnotations) {
+                    throw new InvalidOperationException("Annotations have already been assigned to variable \"" + Name + "\".");
                 }
-                return RawValue != null;
+                foreach (SolClass annotation in annotations) {
+                    if (annotation.TypeMode != SolTypeMode.Annotation) {
+                        throw new InvalidOperationException("Tried to assign class \"" + annotation.Type + "\" to variable \"" + Name + "\" as annotations. The class is not an annotation.");
+                    }
+                }
+                l_annotations = new Array<SolClass>(annotations);
+            }
+
+            /// <summary>
+            ///     Checks if a value has been assigned to this variable.
+            /// </summary>
+            /// <returns>true if a value has been assigned, false if not.</returns>
+            public abstract bool IsAssigned();
+
+            /// <inheritdoc cref="TryGetValue" />
+            protected abstract VarOperation TryGetValue_Impl();
+
+            /// <inheritdoc cref="TryAssignValue" />
+            protected abstract VarOperation TryAssignValue_Impl(SolValue value);
+
+            /// <inheritdoc cref="AssignAnnotations(SolScript.Interpreter.Types.SolClass[])" />
+            /// <exception cref="InvalidOperationException">Annotations have already been assigned.</exception>
+            /// <exception cref="InvalidOperationException">One or more classes are not annotations.</exception>
+            public void AssignAnnotations(IEnumerable<SolClass> annotations)
+            {
+                AssignAnnotations(annotations.ToArray());
+            }
+
+            /// <summary>
+            ///     Tries to assign the given value to this wrapper.
+            /// </summary>
+            /// <param name="value">The value to assign.</param>
+            /// <returns>Information about the success of the operation.</returns>
+            public VarOperation TryAssignValue(SolValue value)
+            {
+                if (!Type.IsCompatible(Assembly, value.Type)) {
+                    return new VarOperation(null, VariableState.FailedTypeMismatch,
+                        new SolVariableException("The type \"" + Type + "\" of variable \"" + Name + "\" is not compatible with the given value of type \"" + value.Type + "\"."));
+                }
+                if (HasAnnotations) {
+                    SolExecutionContext context = new SolExecutionContext(Assembly, $"Variable \"{Name}\" setter annotation resolver");
+                    SolValue rawValue = value;
+                    foreach (SolClass annotation in Annotations) {
+                        try {
+                            // Get Variable Annotation Function
+                            SolClassDefinition.MetaFunctionLink link;
+                            if (annotation.TryGetMetaFunction(SolMetaKey.__a_set_variable, out link)) {
+                                SolTable table;
+                                try {
+                                    table = SolMetaKey.__a_set_variable.Cast(link.GetFunction(annotation).Call(context, value, rawValue)).NotNull();
+                                } catch (SolRuntimeException ex) {
+                                    return new VarOperation(null, VariableState.FailedRuntimeError, ex);
+                                }
+                                SolValue metaOverride;
+                                if (table.TryGet("override", out metaOverride)) {
+                                    if (!Type.IsCompatible(Assembly, metaOverride.Type)) {
+                                        return new VarOperation(null, VariableState.FailedTypeMismatch,
+                                            new SolVariableException("The annotation \"" + annotation.Type + "\" tried to override the value set to the variable \"" + Name +
+                                                                     "\" with a value of type \"" +
+                                                                     metaOverride.Type + "\". The type is not compatible with the variable type \"" + Type + "\"."));
+                                    }
+                                    value = metaOverride;
+                                }
+                            }
+                        } catch (SolVariableException ex) {
+                            return new VarOperation(null, VariableState.FailedNativeException, ex);
+                        }
+                    }
+                }
+                return TryAssignValue_Impl(value);
             }
 
             /// <summary>
             ///     Tried to get the current value from this value info.
             /// </summary>
-            /// <param name="assembly">The assembly to use.</param>
-            /// <param name="enforce">Should this be enfored? (what does that event mean?)</param>
             /// <returns>Information about the success of the get operation.</returns>
-            public GetOperation TryGetValue(SolAssembly assembly, bool enforce)
+            public VarOperation TryGetValue()
             {
-                SolValue value;
-                if (m_Field != null) {
-                    DynamicReference.GetState referenceState;
-                    object reference = m_FieldReference.NotNull().GetReference(out referenceState);
-                    if (referenceState != DynamicReference.GetState.Retrieved) {
-                        return new GetOperation(null, VariableState.FailedCouldNotResolveNativeReference, null);
-                    }
-                    object clrValue;
-                    try {
-                        clrValue = m_Field.GetValue(reference);
-                    } catch (Exception ex) {
-                        if (ex is TargetException || ex is TargetParameterCountException || ex is MethodAccessException || ex is TargetInvocationException
-                            || ex is FieldAccessException || ex is NotSupportedException || ex is ArgumentException) {
-                            return new GetOperation(null, VariableState.FailedNativeException, ex);
-                        }
-                        // ReSharper disable once ExceptionNotDocumented
-                        // It shoudn't ever throw anything else, but let's make sure, just in case.
-                        throw;
-                    }
-                    try {
-                        value = SolMarshal.MarshalFromNative(assembly, m_Field.DataType, clrValue);
-                    } catch (SolMarshallingException ex) {
-                        return new GetOperation(null, VariableState.FailedNativeException, ex);
-                    }
-                } else {
-                    value = RawValue;
+                VarOperation result = TryGetValue_Impl();
+                if (result.State != VariableState.Success) {
+                    return result;
                 }
-                if (!enforce && Annotations != null) {
-                    SolValue rawValue = value;
-                    SolExecutionContext context = new SolExecutionContext(assembly, $"\"{Name}\" field-getter");
+                if (HasAnnotations) {
+                    SolValue value = result.Value;
+                    SolExecutionContext context = new SolExecutionContext(Assembly, $"Variable \"{Name}\" getter annotation resolver");
                     foreach (SolClass annotation in Annotations) {
                         // Get Variable Annotation Function
-                        SolClassDefinition.MetaFunctionLink link;
-                        if (annotation.TryGetMetaFunction(SolMetaKey.__a_get_variable, out link)) {
-                            SolTable table;
-                            try {
-                                table = SolMetaKey.__a_get_variable.Cast(link.GetFunction(annotation).Call(context, value, rawValue));
-                            } catch (SolRuntimeException ex) {
-                                return new GetOperation(null, VariableState.FailedRuntimeError, ex);
-                            }
-                            SolValue metaOverride;
-                            if (table.TryGet("override", out metaOverride)) {
-                                if (!AssignedType.IsCompatible(assembly, metaOverride.Type)) {
-                                    return new GetOperation(value, VariableState.FailedTypeMismatch, null);
+                        try {
+                            SolClassDefinition.MetaFunctionLink link;
+                            if (annotation.TryGetMetaFunction(SolMetaKey.__a_get_variable, out link)) {
+                                SolTable table;
+                                try {
+                                    table = SolMetaKey.__a_get_variable.Cast(link.GetFunction(annotation).Call(context, value, result.Value)).NotNull();
+                                } catch (SolRuntimeException ex) {
+                                    return new VarOperation(null, VariableState.FailedRuntimeError, ex);
                                 }
-                                value = metaOverride;
+                                SolValue metaOverride;
+                                if (table.TryGet("override", out metaOverride)) {
+                                    if (!Type.IsCompatible(Assembly, metaOverride.Type)) {
+                                        return new VarOperation(value, VariableState.FailedTypeMismatch, null);
+                                    }
+                                    value = metaOverride;
+                                }
                             }
+                        } catch (SolVariableException ex) {
+                            return new VarOperation(value, VariableState.FailedNativeException, ex);
                         }
                     }
+                    if (!ReferenceEquals(value, result.Value)) {
+                        return new VarOperation(value, VariableState.Success, null);
+                    }
                 }
-                return new GetOperation(value, value != null ? VariableState.Success : VariableState.FailedNotAssigned, null);
+                return result;
+            }
+        }
+
+        #endregion
+
+        #region Nested type: Native
+
+        /// <summary>
+        ///     This wrapper is used for native variables.
+        /// </summary>
+        private class Native : Base
+        {
+            /// <inheritdoc />
+            public Native(SolAssembly assembly, string name, SolType type, FieldOrPropertyInfo field, DynamicReference reference) : base(assembly, name, type)
+            {
+                m_Field = field;
+                m_Reference = reference;
             }
 
-            /// <summary>
-            ///     Tries to assign the given value to this field. Keep in mind that even though this method is labeled as "Try" it can
-            ///     still throw an exception if e.g. an annotation raised an error.
-            /// </summary>
-            /// <param name="assembly">The assembly to use for type lookups.</param>
-            /// <param name="value">The value to aassign.</param>
-            /// <param name="ignoreAnnotations">Should annotations be ignored?</param>
-            /// <returns>Information about the success of the operation.</returns>
-            public SetOperation TryAssignValue(SolAssembly assembly, SolValue value, bool ignoreAnnotations = false)
+            private readonly FieldOrPropertyInfo m_Field;
+            private readonly DynamicReference m_Reference;
+
+            #region Overrides
+
+            /// <inheritdoc />
+            public override bool IsAssigned()
             {
-                if (!AssignedType.IsCompatible(assembly, value.Type)) {
-                    return new SetOperation(VariableState.FailedTypeMismatch,
-                        new SolVariableException("The field type \"" + AssignedType + "\" of field \"" + Name + "\" is not compatible with the given value of type \"" + value.Type + "\"."));
-                }
-                if (!ignoreAnnotations && Annotations != null) {
-                    SolExecutionContext context = new SolExecutionContext(assembly, $"\"{Name}\" field-setter");
-                    SolValue rawValue = value;
-                    foreach (SolClass annotation in Annotations) {
-                        // Get Variable Annotation Function
-                        SolClassDefinition.MetaFunctionLink link;
-                        if (annotation.TryGetMetaFunction(SolMetaKey.__a_set_variable, out link)) {
-                            SolTable table;
-                            try {
-                                table = SolMetaKey.__a_set_variable.Cast(link.GetFunction(annotation).Call(context, value, rawValue));
-                            } catch (SolRuntimeException ex) {
-                                return new SetOperation(VariableState.FailedRuntimeError, ex);
-                            }
-                            SolValue metaOverride;
-                            if (table.TryGet("override", out metaOverride)) {
-                                if (!AssignedType.IsCompatible(assembly, metaOverride.Type)) {
-                                    return new SetOperation(VariableState.FailedTypeMismatch,
-                                        new SolVariableException("The annotation \"" + annotation.Type + "\" tried to override the value set to the field \"" + Name + "\" with a value of type \"" +
-                                                                 metaOverride.Type +
-                                                                 "\". Is type is not compatible with the field type \"" + AssignedType + "\"."));
-                                }
-                                value = metaOverride;
-                            }
-                        }
-                    }
-                }
-                if (m_Field != null) {
-                    DynamicReference.GetState referenceState;
-                    object reference = m_FieldReference.NotNull().GetReference(out referenceState);
-                    if (referenceState != DynamicReference.GetState.Retrieved) {
-                        return new SetOperation(VariableState.FailedCouldNotResolveNativeReference, null);
-                    }
-                    object clrValue = SolMarshal.MarshalFromSol(value, m_Field.DataType);
-                    try {
-                        m_Field.SetValue(reference, clrValue);
-                    } catch (Exception ex) {
-                        if (ex is TargetException || ex is TargetParameterCountException || ex is MethodAccessException || ex is TargetInvocationException
-                            || ex is FieldAccessException || ex is NotSupportedException || ex is ArgumentException) {
-                            return new SetOperation(VariableState.FailedNativeException, ex);
-                        }
-                        // ReSharper disable once ExceptionNotDocumented
-                        // It shoudn't ever throw anything else, but let's make sure, just in case.
-                        throw;
-                    }
-                    return new SetOperation(VariableState.Success, null);
-                }
-                RawValue = value;
-                return new SetOperation(VariableState.Success, null);
+                // Native FIELDS/PROPERTIES are always assigned.
+                return true;
             }
 
-            #region Nested type: BaseOperation
-
-            /// <summary>
-            ///     Base class for value operation classes.
-            /// </summary>
-            public abstract class BaseOperation
+            /// <inheritdoc />
+            protected override VarOperation TryGetValue_Impl()
             {
-                /// <inheritdoc />
-                protected BaseOperation(VariableState state, [CanBeNull] Exception exception)
-                {
+                DynamicReference.GetState referenceState;
+                object reference = m_Reference.GetReference(out referenceState);
+                if (referenceState != DynamicReference.GetState.Retrieved) {
+                    return new VarOperation(null, VariableState.FailedCouldNotResolveNativeReference, null);
+                }
+                object nativeValue;
+                try {
+                    nativeValue = m_Field.GetValue(reference);
+                } catch (TargetException ex) {
+                    return new VarOperation(null, VariableState.FailedNativeException, ex);
+                } catch (NotSupportedException ex) {
+                    return new VarOperation(null, VariableState.FailedNativeException, ex);
+                } catch (FieldAccessException ex) {
+                    return new VarOperation(null, VariableState.FailedNativeException, ex);
+                } catch (TargetParameterCountException ex) {
+                    return new VarOperation(null, VariableState.FailedNativeException, ex);
+                } catch (ArgumentException ex) {
+                    return new VarOperation(null, VariableState.FailedNativeException, ex);
+                } catch (MethodAccessException ex) {
+                    return new VarOperation(null, VariableState.FailedNativeException, ex);
+                } catch (TargetInvocationException ex) {
+                    // We only need the inner exception if an error occured in a property getter.
+                    return new VarOperation(null, VariableState.FailedNativeException, ex.InnerException);
+                }
+                try {
+                    SolValue value = SolMarshal.MarshalFromNative(Assembly, m_Field.DataType, nativeValue);
+                    return new VarOperation(value, VariableState.Success, null);
+                } catch (SolMarshallingException ex) {
+                    return new VarOperation(null, VariableState.FailedTypeMismatch, ex);
+                }
+            }
+
+            /// <inheritdoc />
+            protected override VarOperation TryAssignValue_Impl(SolValue value)
+            {
+                DynamicReference.GetState referenceState;
+                object reference = m_Reference.GetReference(out referenceState);
+                if (referenceState != DynamicReference.GetState.Retrieved) {
+                    return new VarOperation(null, VariableState.FailedCouldNotResolveNativeReference, null);
+                }
+                object nativeValue;
+                try {
+                    nativeValue = SolMarshal.MarshalFromSol(value, m_Field.DataType);
+                } catch (SolMarshallingException ex) {
+                    return new VarOperation(null, VariableState.FailedTypeMismatch, ex);
+                }
+                try {
+                    m_Field.SetValue(reference, nativeValue);
+                } catch (FieldAccessException ex) {
+                    return new VarOperation(null, VariableState.FailedNativeException, ex);
+                } catch (TargetParameterCountException ex) {
+                    return new VarOperation(null, VariableState.FailedNativeException, ex);
+                } catch (MethodAccessException ex) {
+                    return new VarOperation(null, VariableState.FailedNativeException, ex);
+                } catch (TargetException ex) {
+                    return new VarOperation(null, VariableState.FailedNativeException, ex);
+                } catch (ArgumentException ex) {
+                    return new VarOperation(null, VariableState.FailedNativeException, ex);
+                } catch (TargetInvocationException ex) {
+                    // We only need the inner exception if an error occured in a property setter.
+                    return new VarOperation(null, VariableState.FailedNativeException, ex.InnerException);
+                }
+                return new VarOperation(value, VariableState.Success, null);
+            }
+
+            #endregion
+        }
+
+        #endregion
+
+        #region Nested type: Script
+
+        /// <summary>
+        ///     This wrapper is used for script variables.
+        /// </summary>
+        private class Script : Base
+        {
+            /// <inheritdoc />
+            /// <exception cref="ArgumentException">The initial value is not compatible.</exception>
+            public Script(SolAssembly assembly, string name, SolType type, SolValue start = null) : base(assembly, name, type)
+            {
+                if (start == null) {
+                    return;
+                }
+                if (!Type.IsCompatible(Assembly, start.Type)) {
+                    throw new ArgumentException("The initial value of type \"" + start.Type + "\" is not compatible with the type \"" + Type + "\" of field \"" + Name + "\".", nameof(start));
+                }
+                m_AssignedValue = start;
+            }
+
+            [CanBeNull] private SolValue m_AssignedValue;
+
+            #region Overrides
+
+            /// <inheritdoc />
+            public override bool IsAssigned()
+            {
+                return m_AssignedValue != null;
+            }
+
+            /// <inheritdoc />
+            protected override VarOperation TryGetValue_Impl()
+            {
+                return new VarOperation(m_AssignedValue, VariableState.Success, null);
+            }
+
+            /// <inheritdoc />
+            protected override VarOperation TryAssignValue_Impl(SolValue value)
+            {
+                m_AssignedValue = value;
+                return new VarOperation(m_AssignedValue, VariableState.Success, null);
+            }
+
+            #endregion
+        }
+
+        #endregion
+
+        #region Nested type: VarOperation
+
+        /// <summary>
+        ///     Base class for value operation classes.
+        /// </summary>
+        private class VarOperation
+        {
+            /// <inheritdoc />
+            public VarOperation([CanBeNull] SolValue value, VariableState state, [CanBeNull] Exception exception)
+            {
 #if DEBUG
-                    if ((state == VariableState.FailedNativeException || state == VariableState.FailedRuntimeError) && exception == null) {
-                        throw new InvalidOperationException("(state == VariableState.FailedNativeException || state == VariableState.FailedRuntimeError) && exception == null");
-                    }
+                if ((state == VariableState.FailedNativeException || state == VariableState.FailedRuntimeError) && exception == null) {
+                    throw new InvalidOperationException("(state == VariableState.FailedNativeException || state == VariableState.FailedRuntimeError) && exception == null");
+                }
 #endif
-                    State = state;
-                    Exception = exception;
-                }
-
-                /// <summary>
-                ///     The exception that triggered a possible failure.
-                /// </summary>
-                [CanBeNull] public readonly Exception Exception;
-
-                /// <summary>
-                ///     The state of the operation.
-                /// </summary>
-                public readonly VariableState State;
+                Value = value;
+                State = state;
+                Exception = exception;
             }
-
-            #endregion
-
-            #region Nested type: GetOperation
 
             /// <summary>
-            ///     Contains information about the success of a value get operation.
+            ///     The exception that triggered a possible failure.
             /// </summary>
-            public sealed class GetOperation : BaseOperation
-            {
-                /// <summary>
-                ///     Creates a new value get info.
-                /// </summary>
-                /// <param name="state">The state the operation resulted in.</param>
-                /// <param name="value">The value the operation created.</param>
-                /// <param name="exception">The exception that lead to a possible failure.</param>
-                public GetOperation([CanBeNull] SolValue value, VariableState state, [CanBeNull] Exception exception) : base(state, exception)
-                {
-                    Value = value;
-                }
-
-                /// <summary>
-                ///     The <see cref="SolValue" /> produced by this operation.
-                /// </summary>
-                [CanBeNull] public readonly SolValue Value;
-            }
-
-            #endregion
-
-            #region Nested type: SetOperation
+            [CanBeNull] public readonly Exception Exception;
 
             /// <summary>
-            ///     Contains information about the success of a value set operation.
+            ///     The state of the operation.
             /// </summary>
-            public class SetOperation : BaseOperation
-            {
-                /// <inheritdoc />
-                public SetOperation(VariableState state, [CanBeNull] Exception exception) : base(state, exception) {}
-            }
+            public readonly VariableState State;
 
-            #endregion
+            /// <summary>
+            ///     The <see cref="SolValue" /> produced by this operation.
+            /// </summary>
+            [CanBeNull] public readonly SolValue Value;
         }
 
         #endregion

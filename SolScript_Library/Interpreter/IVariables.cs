@@ -75,6 +75,7 @@ namespace SolScript.Interpreter
         /// <summary> Assigns annotations to a given variable. </summary>
         /// <param name="name"> The name of the variable. </param>
         /// <param name="annotations"> The annotations to assign to the variable. </param>
+        /// <exception cref="SolVariableException">Failed to assign the annotations.</exception>
         void AssignAnnotations([NotNull] string name, [ItemNotNull] params SolClass[] annotations);
 
         /// <summary> Assigns a value to the variable with the given name. </summary>
@@ -82,7 +83,7 @@ namespace SolScript.Interpreter
         ///     No variable with this name has been declared.
         /// </exception>
         /// <exception cref="SolVariableException"> The type does not match. </exception>
-        void Assign([NotNull] string name, [NotNull] SolValue value);
+        SolValue Assign([NotNull] string name, [NotNull] SolValue value);
 
         /// <summary> Is a variable with this name declared? </summary>
         bool IsDeclared([NotNull] string name);
