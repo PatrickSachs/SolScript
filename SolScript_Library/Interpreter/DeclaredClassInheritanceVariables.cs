@@ -38,7 +38,7 @@ namespace SolScript.Interpreter
             SolValue value;
             VariableState result = TryGet(name, out value);
             if (result != VariableState.Success) {
-                throw InternalHelper.CreateVariableGetException(name, result, null);
+                throw InternalHelper.CreateVariableGetException(name, result, null, Inheritance.Definition.Location);
             }
             return value.NotNull();
         }
@@ -123,9 +123,9 @@ namespace SolScript.Interpreter
                 return Members.Assign(name, value);
             }
             if (Inheritance.Definition.TryGetFunction(name, true, out definition) && ValidateFunctionDefinition(definition)) {
-                throw new SolVariableException("Cannot assign values to class function \"" + name + "\", they are immutable.");
+                throw new SolVariableException( Inheritance.Definition.Location,"Cannot assign values to class function \"" + name + "\", they are immutable.");
             }
-            throw new SolVariableException("Cannot assign value to variable \"" + name + "\", not variable with this name has been declared.");
+            throw new SolVariableException(Inheritance.Definition.Location, "Cannot assign value to variable \"" + name + "\", not variable with this name has been declared.");
         }
 
         /// <summary> Is a variable with this name declared? </summary>

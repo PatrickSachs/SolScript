@@ -131,14 +131,14 @@ namespace SolScript.Interpreter
                     // The parameter has still been passed.
                     SolValue arg = arguments[i];
                     if (!m_Parameters[i].Type.IsCompatible(assembly, arg.Type)) {
-                        throw new SolVariableException(
+                        throw new SolVariableException(SolSourceLocation.Native(), 
                             $"Parameter \"{m_Parameters[i].Name}\" expected a value of type \"{m_Parameters[i].Type}\", but recceived a value of the incompatible type \"{arg.Type}\".");
                     }
                     newArguments[i] = arg;
                 } else {
                     // The parameter has no longer been passed and will thus be treated as nil.
                     if (!m_Parameters[i].Type.CanBeNil) {
-                        throw new SolVariableException(
+                        throw new SolVariableException(SolSourceLocation.Native(), 
                             $"Parameter \"{m_Parameters[i].Name}\" expected a value of type \"{m_Parameters[i].Type}\", but did not recceive a value at all. No implicit nil value can be passed since the parameter does not accept nil values.");
                     }
                     newArguments[i] = SolNil.Instance;
@@ -148,7 +148,7 @@ namespace SolScript.Interpreter
                 // Once we are done check for argument overlength.
                 if (!AllowOptional) {
                     // Additional arguments are not allowed.
-                    throw new SolVariableException("Tried to pass " + (arguments.Length - Count) + " optional arguments although optional arguments are not allowed.");
+                    throw new SolVariableException(SolSourceLocation.Native(), "Tried to pass " + (arguments.Length - Count) + " optional arguments although optional arguments are not allowed.");
                 }
                 for (int i = Count; i < arguments.Length; i++) {
                     newArguments[i] = arguments[i];

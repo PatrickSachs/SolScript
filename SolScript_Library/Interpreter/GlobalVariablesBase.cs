@@ -44,7 +44,7 @@ namespace SolScript.Interpreter
             SolValue value;
             VariableState state = TryGet(name, out value);
             if (state != VariableState.Success) {
-                throw InternalHelper.CreateVariableGetException(name, state, null);
+                throw InternalHelper.CreateVariableGetException(name, state, null, SolSourceLocation.Native());
             }
             return value.NotNull();
         }
@@ -113,7 +113,7 @@ namespace SolScript.Interpreter
         public void AssignAnnotations(string name, params SolClass[] annotations)
         {
             if (!IsDeclared(name) && GetAndRegisterAdditional(name) == null) {
-                throw new SolVariableException("Cannot assign annotations to global variable \"" + name + "\". No variable with this name has been declared.");
+                throw new SolVariableException(SolSourceLocation.Native(), "Cannot assign annotations to global variable \"" + name + "\". No variable with this name has been declared.");
             }
             Members.AssignAnnotations(name, annotations);
         }
@@ -132,7 +132,7 @@ namespace SolScript.Interpreter
             if (Parent != null) {
                 return Parent.Assign(name, value);
             }
-            throw new SolVariableException("Cannot assign value to variable \"" + name + "\", no variable with this name has been declared.");
+            throw new SolVariableException(SolSourceLocation.Native(), "Cannot assign value to variable \"" + name + "\", no variable with this name has been declared.");
         }
 
         /// <summary> Is a variable with this name declared? </summary>

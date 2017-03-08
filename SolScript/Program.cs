@@ -148,7 +148,7 @@ namespace SolScript
                             SolValue main = script.GlobalVariables.Get("main");
                             SolFunction mainFunction = main as SolFunction;
                             if (mainFunction == null) {
-                                throw new SolVariableException("No main() function exists.");
+                                throw new SolVariableException(SolSourceLocation.Native(), "No main() function exists.");
                             }
                             SolValue returnValue = mainFunction.Call(new SolExecutionContext(script, "Command Line Interpreter"));
                             Console.WriteLine("main() returned: " + returnValue);
@@ -158,11 +158,15 @@ namespace SolScript
                         }
                     } catch (SolException ex) {
                         Console.ForegroundColor = ConsoleColor.Yellow;
-                        Console.WriteLine("   A runtime error occured!");
+                        Console.WriteLine("   A runtime error occured! - " + ex.GetType().Name);
                         Console.WriteLine(" ================================================");
-                        Console.ForegroundColor = ConsoleColor.White;
+                        Console.ForegroundColor = ConsoleColor.White;   
                         StringBuilder builder = new StringBuilder();
-                        SolException.UnwindExceptionStack(ex, builder);
+                        if (ex is SolRuntimeException) {
+                            builder.AppendLine(ex.Message);
+                        } else {
+                            SolException.UnwindExceptionStack(ex, builder);
+                        }
                         Console.WriteLine(builder.ToString());
                         Console.ForegroundColor = ConsoleColor.Yellow;
                         Console.WriteLine(" ================================================");

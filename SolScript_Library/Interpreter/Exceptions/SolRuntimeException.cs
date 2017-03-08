@@ -9,18 +9,59 @@ namespace SolScript.Interpreter.Exceptions
     [Serializable]
     public class SolRuntimeException : SolException
     {
-        protected SolRuntimeException() {}
+        /// <summary>
+        ///     Creates a new runtime exception.
+        /// </summary>
+        /// <param name="context">The context. - Required for generating the stack trace.</param>
+        /// <param name="message">The exception message.</param>
+        public SolRuntimeException(SolExecutionContext context, string message) : base(context.CurrentLocation, $"{message}\nStack Trace:\n{context.GenerateStackTrace()}")
+        {
+            RawNoStackTrace = message;
+        }
 
-        public SolRuntimeException(SolExecutionContext context, string message) : base($"{context.CurrentLocation} : {message}\nStack Trace:\n{context.GenerateStackTrace()}") {}
+        /// <inheritdoc />
+        /// <exception cref="SerializationException">
+        ///     The class name is null or <see cref="P:System.Exception.HResult" /> is zero
+        ///     (0).
+        /// </exception>
+        /// <exception cref="InvalidCastException">A value cannot be converted to a required type. </exception>
+        protected SolRuntimeException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+            RawNoStackTrace = info.GetString(NO_STACK);
+        }
 
-        protected SolRuntimeException(SerializationInfo info, StreamingContext context) : base(info, context) {}
-
+        /// <summary>
+        ///     Creates a new runtime exception and wraps an exception.
+        /// </summary>
+        /// <param name="context">The context. - Required for generating the stack trace.</param>
+        /// <param name="message">The exception message.</param>
+        /// <param name="inner">The wrapped exception.</param>
         public SolRuntimeException(SolExecutionContext context, string message, Exception inner) : base(
-            $"{context.CurrentLocation} : {message}\nStack Trace:\n{context.GenerateStackTrace(inner)}", inner) {}
+            context.CurrentLocation, $"{message}\nStack Trace:\n{context.GenerateStackTrace(inner)}", inner) {}
+
+        private const string NO_STACK = "SolRuntimeException.RawNoStackTrace";
+
+        /// <summary>
+        ///     The exception message without stack trace or file location.
+        /// </summary>
+        public string RawNoStackTrace { get; }
+
+        #region Overrides
+
+        /// <inheritdoc />
+        /// <exception cref="SerializationException">A value has already been associated with a name. </exception>
+        public override void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            base.GetObjectData(info, context);
+            info.AddValue(NO_STACK, RawNoStackTrace);
+        }
+
+        #endregion
 
         internal static SolRuntimeException InvalidFunctionCallParameters(SolExecutionContext context, Exception inner)
         {
+            // todo: streamline exception creation.
             return new SolRuntimeException(context, "Invalid function call parameters.", inner);
         }
     }
-}
+} 

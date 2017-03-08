@@ -236,7 +236,7 @@ namespace SolScript.Interpreter.Types
             return SolString.ValueOf(ToString() + other);
         }
 
-        public virtual SolValue And(SolExecutionContext context, SolValue other)
+        /*public virtual SolValue And(SolExecutionContext context, SolValue other)
         {
             throw new SolRuntimeException(context, $"{Type} does not support and!");
         }
@@ -244,7 +244,7 @@ namespace SolScript.Interpreter.Types
         public virtual SolValue Or(SolExecutionContext context, SolValue other)
         {
             throw new SolRuntimeException(context, $"{Type} does not support or!");
-        }
+        }*/
 
         public virtual SolValue Not(SolExecutionContext context)
         {

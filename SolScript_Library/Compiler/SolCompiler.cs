@@ -43,14 +43,14 @@ namespace SolScript.Compiler
                     // Every function name may only exist once for each inheritance level.
                     if (thisNames.Contains(function.Name)) {
                         // todo: support function overloading(? desired ?). (possibly declare functions in a higher "unreachable" context and rename them matching to their param names?)
-                        throw new SolCompilerException("The function \"" + FuncStr(function) + "\" exists twice within its class. Function overloading is currently not supported.");
+                        throw new SolCompilerException(function.Location, "The function \"" + FuncStr(function) + "\" exists twice within its class. Function overloading is currently not supported.");
                     }
                     thisNames.Add(function.Name);
                     // If another function with the same name already exists we can only
                     // continue if this one overrides the other one.
                     if (names.ContainsKey(function.Name)) {
                         if (function.MemberModifier != SolMemberModifier.Override) {
-                            throw new SolCompilerException("The function \"" + FuncStr(function) + "\" hides a member declared at a lower level but does not have the override member modifier.");
+                            throw new SolCompilerException(function.Location, "The function \"" + FuncStr(function) + "\" hides a member declared at a lower level but does not have the override member modifier.");
                         }
                     }
                     // Ensure overriding is done right.
@@ -61,10 +61,10 @@ namespace SolScript.Compiler
                         // access context to actually override.
                         SolFunctionDefinition overrides;
                         if (!names.TryGetValue(function.Name, out overrides)) {
-                            throw new SolCompilerException("The function \"" + FuncStr(function) + "\" tried to override a function that does not exist.");
+                            throw new SolCompilerException(function.Location, "The function \"" + FuncStr(function) + "\" tried to override a function that does not exist.");
                         }
                         if (function.AccessModifier != overrides.AccessModifier) {
-                            throw new SolCompilerException("The function \"" + FuncStr(function) + "\" tried to override a " + overrides.AccessModifier + " function, but was " +
+                            throw new SolCompilerException(function.Location, "The function \"" + FuncStr(function) + "\" tried to override a " + overrides.AccessModifier + " function, but was " +
                                                            function.AccessModifier + " itself. Only functions with the same access modifier can override another.");
                         }
                         abstracts.Remove(function.Name);
@@ -78,7 +78,7 @@ namespace SolScript.Compiler
             }
             // Non abstract class need to implement all abstract functions.
             if (definition.TypeMode != SolTypeMode.Abstract && abstracts.Count != 0) {
-                throw new SolCompilerException("The non-abstract class \"" + definition.Type + "\" has " + abstracts.Count +
+                throw new SolCompilerException(definition.Location, "The non-abstract class \"" + definition.Type + "\" has " + abstracts.Count +
                                                " unimplemented abstract function(s). Non-abstract classes need to implement all abstract functions. Function(s): " +
                                                InternalHelper.JoinToString(", ", abstracts.Values, FuncStr));
             }
@@ -97,18 +97,18 @@ namespace SolScript.Compiler
             if (definition.AccessModifier == SolAccessModifier.Local) {
                 // Local function
                 if (definition.MemberModifier != SolMemberModifier.None) {
-                    throw new SolCompilerException("The function \"" + FuncStr(definition) + "\" has local access and thus cannot have the " + definition.MemberModifier + " member modifier.");
+                    throw new SolCompilerException(definition.Location, "The function \"" + FuncStr(definition) + "\" has local access and thus cannot have the " + definition.MemberModifier + " member modifier.");
                 }
             } else {
                 // Internal / Public function
                 if (definition.DefinedIn == null) {
                     // Global functions
                     if (definition.MemberModifier != SolMemberModifier.None) {
-                        throw new SolCompilerException("The function \"" + FuncStr(definition) + "\" is a global function and thus cannot have the " + definition.MemberModifier + " member modifier.");
+                        throw new SolCompilerException(definition.Location, "The function \"" + FuncStr(definition) + "\" is a global function and thus cannot have the " + definition.MemberModifier + " member modifier.");
                     }
                 } else {
                     if (definition.MemberModifier == SolMemberModifier.Abstract && definition.DefinedIn.TypeMode != SolTypeMode.Abstract) {
-                        throw new SolCompilerException("The function \"" + FuncStr(definition) +
+                        throw new SolCompilerException(definition.Location, "The function \"" + FuncStr(definition) +
                                                        "\" is abstract, but was declared in a non abstract class. Only abstract classes can contain abstract functions.");
                     }
                 }

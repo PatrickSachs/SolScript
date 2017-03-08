@@ -465,7 +465,7 @@ namespace SolScript.Interpreter.Statements
                     break;
                 }
                 case "%": {
-                    operation = Expression_Binary.Modulus.Instance;
+                    operation = Expression_Binary.Modulo.Instance;
                     break;
                 }
                 case "..": {

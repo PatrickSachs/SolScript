@@ -18,15 +18,10 @@ namespace SolScript.Interpreter.Exceptions
     public class SolRuntimeNativeException : SolException
     {
         /// <summary>
-        ///     Creates a new <see cref="SolRuntimeNativeException" />.
-        /// </summary>
-        protected SolRuntimeNativeException() {}
-
-        /// <summary>
         ///     Creates a new <see cref="SolRuntimeNativeException" /> with an exception <paramref name="message" />.
         /// </summary>
         /// <param name="message">The message.</param>
-        public SolRuntimeNativeException(string message) : base(message) {}
+        public SolRuntimeNativeException(string message) : base(SolSourceLocation.Native(), message) {}
 
         /// <summary>
         ///     Deserializes a <see cref="SolRuntimeNativeException" />.
@@ -38,6 +33,7 @@ namespace SolScript.Interpreter.Exceptions
         ///     (0).
         /// </exception>
         /// <exception cref="ArgumentNullException">The <paramref name="info" /> parameter is null. </exception>
+        /// <exception cref="InvalidCastException">A value cannot be converted to a required type. </exception>
         protected SolRuntimeNativeException(SerializationInfo info, StreamingContext context) : base(info, context) {}
 
         /// <summary>
@@ -46,6 +42,6 @@ namespace SolScript.Interpreter.Exceptions
         /// </summary>
         /// <param name="message">The message.</param>
         /// <param name="inner">The wrapped exception.</param>
-        public SolRuntimeNativeException(string message, Exception inner) : base(message, inner) {}
+        public SolRuntimeNativeException(string message, Exception inner) : base(SolSourceLocation.Native(), message, inner) {}
     }
 }

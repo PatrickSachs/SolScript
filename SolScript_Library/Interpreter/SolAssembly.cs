@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Security;
-using System.Windows.Forms;
 using Irony;
 using Irony.Parsing;
 using JetBrains.Annotations;
@@ -112,51 +111,12 @@ namespace SolScript.Interpreter
         private BuildersContainer l_builders;
         // The lazy statement factory.
         private StatementFactory l_factory;
-        // The statement factory is used for parsing raw source files.
-        private StatementFactory Factory => l_factory ?? (l_factory = new StatementFactory(this));
-
-        /// <summary>
-        ///     The global variables of an assembly are exposed to everything. Other assemblies, classes and other globals can
-        ///     access them.
-        /// </summary>
-        public IVariables GlobalVariables { get; private set; }
-
-        /// <summary>
-        ///     The local variables of an assembly can only be accessed from other global variables and functions.
-        /// </summary>
-        public IVariables LocalVariables { get; private set; }
-
-        /// <summary>
-        ///     todo: figure out what internal globals should be used for or if they should be allowed at all.
-        /// </summary>
-        public IVariables InternalVariables { get; private set; }
-
-        /// <summary>
-        ///     A descriptive name of this assembly(e.g. "Enemy AI Logic"). The name will be used during debugging and error
-        ///     output.
-        /// </summary>
-        public string Name => m_Options.Name;
 
         /// <summary>
         ///     Contains the errors raised during the creation of the assembly.<br /> Runtime errors are NOT added to this error
         ///     collection. They are thrown as a <see cref="SolRuntimeException" /> instead.
         /// </summary>
         public SolErrorCollection Errors { get; }
-
-        /// <summary>
-        ///     The current state of this assembly. Some methods may only work in a certain state.
-        /// </summary>
-        /// <seealso cref="AssemblyState" />
-        public AssemblyState State { get; private set; }
-
-        /// <exception cref="InvalidOperationException">Invalid state.</exception>
-        /// <remarks>Only available in states lower than <see cref="AssemblyState.GeneratedAll" />.</remarks>
-        private BuildersContainer Builders {
-            get {
-                AssertState(AssemblyState.GeneratedAll, AssertMatch.LowerNoError, "Can only access builders until everything has been fully interpreted.");
-                return l_builders;
-            }
-        }
 
         /// <summary>
         ///     All global fields in key value pairs.
@@ -183,6 +143,46 @@ namespace SolScript.Interpreter
                 return m_GlobalFunctions;
             }
         }
+
+        /// <summary>
+        ///     A descriptive name of this assembly(e.g. "Enemy AI Logic"). The name will be used during debugging and error
+        ///     output.
+        /// </summary>
+        public string Name => m_Options.Name;
+
+        /// <summary>
+        ///     The global variables of an assembly are exposed to everything. Other assemblies, classes and other globals can
+        ///     access them.
+        /// </summary>
+        public IVariables GlobalVariables { get; private set; }
+
+        /// <summary>
+        ///     todo: figure out what internal globals should be used for or if they should be allowed at all.
+        /// </summary>
+        public IVariables InternalVariables { get; private set; }
+
+        /// <summary>
+        ///     The local variables of an assembly can only be accessed from other global variables and functions.
+        /// </summary>
+        public IVariables LocalVariables { get; private set; }
+
+        /// <summary>
+        ///     The current state of this assembly. Some methods may only work in a certain state.
+        /// </summary>
+        /// <seealso cref="AssemblyState" />
+        public AssemblyState State { get; private set; }
+
+        /// <exception cref="InvalidOperationException">Invalid state.</exception>
+        /// <remarks>Only available in states lower than <see cref="AssemblyState.GeneratedAll" />.</remarks>
+        private BuildersContainer Builders {
+            get {
+                AssertState(AssemblyState.GeneratedAll, AssertMatch.LowerNoError, "Can only access builders until everything has been fully interpreted.");
+                return l_builders;
+            }
+        }
+
+        // The statement factory is used for parsing raw source files.
+        private StatementFactory Factory => l_factory ?? (l_factory = new StatementFactory(this));
 
         /// <summary>
         ///     Inclused a <see cref="SolLibrary" /> which will be included in the library upon creation.
@@ -228,8 +228,7 @@ namespace SolScript.Interpreter
                         Builders.AddFunction(function);
                     }
                 } catch (SolTypeRegistryException ex) {
-                    // todo: type registry exception location
-                    m_ErrorAdder.Add(new SolError(SolSourceLocation.Native(), ErrorId.ClassRegistry, ex.Message, false, ex));
+                    m_ErrorAdder.Add(new SolError(ex.Location, ErrorId.ClassRegistry, ex.Message, false, ex));
                     hadError = true;
                 }
             }
@@ -299,7 +298,7 @@ namespace SolScript.Interpreter
                     def.AnnotationsArray = InternalHelper.AnnotationsFromData(this, builder.Annotations);
                 } catch (SolMarshallingException ex) {
                     m_ErrorAdder.Add(new SolError(builder.Location, ErrorId.InvalidAnnotationType,
-                            "Failed to create an annotation definition for class \"" + def.Type + "\": " + ex.Message, false, ex));
+                        "Failed to create an annotation definition for class \"" + def.Type + "\": " + ex.Message, false, ex));
                     hadError = true;
                 }
                 // We cannot validate the class at this point since the base class may not be built yet.
@@ -332,8 +331,7 @@ namespace SolScript.Interpreter
                     SolDebug.WriteLine("   ... Class " + definition.Type);
                     m_Compiler.ValidateClass(definition);
                 } catch (SolCompilerException ex) {
-                    // todo: compiler error source location.
-                    m_ErrorAdder.Add(new SolError(SolSourceLocation.Native(), ErrorId.CompilerError, ex.Message, false, ex));
+                    m_ErrorAdder.Add(new SolError(ex.Location, ErrorId.CompilerError, ex.Message, false, ex));
                     hadError = true;
                 }
             }
@@ -342,8 +340,7 @@ namespace SolScript.Interpreter
                     SolDebug.WriteLine("   ... Global Function " + definition.Name);
                     m_Compiler.ValidateFunction(definition);
                 } catch (SolCompilerException ex) {
-                    // todo: compiler error source location.
-                    m_ErrorAdder.Add(new SolError(SolSourceLocation.Native(), ErrorId.CompilerError, ex.Message, false, ex));
+                    m_ErrorAdder.Add(new SolError(ex.Location, ErrorId.CompilerError, ex.Message, false, ex));
                     hadError = true;
                 }
             }
@@ -385,7 +382,8 @@ namespace SolScript.Interpreter
                         function = new SolNativeGlobalFunction(funcDefinition, DynamicReference.NullReference.Instance);
                         break;
                     case SolChunkWrapper.Type.NativeConstructor:
-                        throw new SolTypeRegistryException("Tried to make a native constructor the global function \"" + funcPair.Key + "\". Native constructors cannot be global functions.");
+                        throw new SolTypeRegistryException(funcDefinition.Location,
+                            "Tried to make a native constructor the global function \"" + funcPair.Key + "\". Native constructors cannot be global functions.");
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
@@ -393,7 +391,7 @@ namespace SolScript.Interpreter
                     declareInVariables.Declare(funcPair.Key, new SolType(SolFunction.TYPE, false));
                     declareInVariables.Assign(funcPair.Key, function);
                 } catch (SolVariableException ex) {
-                    throw new SolTypeRegistryException("Failed to register global function \"" + funcDefinition.Name + "\"", ex);
+                    throw new SolTypeRegistryException(funcDefinition.Location, "Failed to register global function \"" + funcDefinition.Name + "\"", ex);
                 }
             }
             // Initialize global fields
@@ -407,7 +405,7 @@ namespace SolScript.Interpreter
                             declareInVariables.Declare(fieldPair.Key, fieldDefinition.Type);
                             declareInVariables.Assign(fieldPair.Key, scriptInitializer.Evaluate(context, LocalVariables));
                         } catch (SolVariableException ex) {
-                            throw new SolTypeRegistryException("Failed to register global field \"" + fieldDefinition.Name + "\"", ex);
+                            throw new SolTypeRegistryException(fieldDefinition.Location, "Failed to register global field \"" + fieldDefinition.Name + "\"", ex);
                         }
                         break;
                     case SolFieldInitializerWrapper.Type.NativeField:
@@ -415,7 +413,7 @@ namespace SolScript.Interpreter
                         try {
                             declareInVariables.DeclareNative(fieldPair.Key, fieldDefinition.Type, nativeField, DynamicReference.NullReference.Instance);
                         } catch (SolVariableException ex) {
-                            throw new SolTypeRegistryException("Failed to register native global field \"" + fieldDefinition.Name + "\"", ex);
+                            throw new SolTypeRegistryException(fieldDefinition.Location, "Failed to register native global field \"" + fieldDefinition.Name + "\"", ex);
                         }
                         break;
                     default:
@@ -529,7 +527,7 @@ namespace SolScript.Interpreter
             try {
                 Builders.ClassBuilders.Add(builder.Name, builder);
             } catch (ArgumentException ex) {
-                throw new SolTypeRegistryException("Another class with the name \"" + builder.Name + "\" already exists.", ex);
+                throw new SolTypeRegistryException(builder.Location, "Another class with the name \"" + builder.Name + "\" already exists.", ex);
             }
         }
 
@@ -591,7 +589,7 @@ namespace SolScript.Interpreter
                             SolClass annotationInstance = annotation.Definition.Assembly.New(annotation.Definition, AnnotationClassCreationOptions, annotationArgs);
                             annotations.Add(annotationInstance);
                         } catch (SolRuntimeException ex) {
-                            throw new SolTypeRegistryException(
+                            throw new SolTypeRegistryException(annotation.Definition.Location,
                                 $"An error occured while initializing the annotation \"{annotation.Definition.Type}\" of class \"{instance.Type}\"(Inheritance Level: \"{activeInheritance.Definition.Type}\").",
                                 ex);
                         }
@@ -645,7 +643,8 @@ namespace SolScript.Interpreter
                             try {
                                 variables.Assign(fieldDefinition.Name, fieldDefinition.Initializer.GetScriptField().Evaluate(creationContext, localUsage));
                             } catch (SolVariableException ex) {
-                                throw new SolTypeRegistryException($"An error occured while initializing the field \"{fieldDefinition.Name}\" on class \"{definition.Type}\".", ex);
+                                throw new SolTypeRegistryException(fieldDefinition.Location, $"An error occured while initializing the field \"{fieldDefinition.Name}\" on class \"{definition.Type}\".",
+                                    ex);
                             }
                         }
                     }
@@ -659,7 +658,7 @@ namespace SolScript.Interpreter
                 try {
                     instance.CallConstructor(creationContext, constructorArguments);
                 } catch (SolRuntimeException ex) {
-                    throw new SolTypeRegistryException($"An error occured while calling the constructor of class \"{definition.Type}\".", ex);
+                    throw new SolTypeRegistryException(definition.Location, $"An error occured while calling the constructor of class \"{definition.Type}\".", ex);
                 }
             }
             instance.IsInitialized = options.MarkAsInitialized;
@@ -753,33 +752,33 @@ namespace SolScript.Interpreter
             stopwatch.Start();
             try {
 #endif
-            SolDebug.WriteLine("Creating Parser ...");
-            Irony.Parsing.Parser parser = new Irony.Parsing.Parser(s_Grammar);
-            SolDebug.WriteLine("Loading Trees ...");
-            var trees = new Utility.List<ParseTree>();
-            string[] files;
-            try {
-                files = Directory.GetFiles(sourceDir, options.SourceFilePattern);
-            } catch (DirectoryNotFoundException ex) {
-                throw new DirectoryNotFoundException(
-                    "The directory \"" + sourceDir + "\" does not exist. However a previous check indicated that the directory exists. Do you have other threads messing with the directory?",
-                    ex);
-            }
-            foreach (string dir in files) {
-                ParseTree tree;
+                SolDebug.WriteLine("Creating Parser ...");
+                Irony.Parsing.Parser parser = new Irony.Parsing.Parser(s_Grammar);
+                SolDebug.WriteLine("Loading Trees ...");
+                var trees = new Utility.List<ParseTree>();
+                string[] files;
                 try {
-                    tree = parser.Parse(File.ReadAllText(dir), dir);
-                } catch (FileNotFoundException ex) {
+                    files = Directory.GetFiles(sourceDir, options.SourceFilePattern);
+                } catch (DirectoryNotFoundException ex) {
                     throw new DirectoryNotFoundException(
-                        "The file \"" + dir + "\" does not exist. However the OS told us about the existence of this file. Do you have other threads messing with the file?", ex);
-                } catch (SecurityException ex) {
-                    throw new UnauthorizedAccessException("Cannot access file \"" + dir + "\".", ex);
+                        "The directory \"" + sourceDir + "\" does not exist. However a previous check indicated that the directory exists. Do you have other threads messing with the directory?",
+                        ex);
                 }
-                trees.Add(tree);
-                SolDebug.WriteLine("  ... Loaded " + dir);
-            }
-            SolAssembly a = FromTrees(trees, options);
-            return a;
+                foreach (string dir in files) {
+                    ParseTree tree;
+                    try {
+                        tree = parser.Parse(File.ReadAllText(dir), dir);
+                    } catch (FileNotFoundException ex) {
+                        throw new DirectoryNotFoundException(
+                            "The file \"" + dir + "\" does not exist. However the OS told us about the existence of this file. Do you have other threads messing with the file?", ex);
+                    } catch (SecurityException ex) {
+                        throw new UnauthorizedAccessException("Cannot access file \"" + dir + "\".", ex);
+                    }
+                    trees.Add(tree);
+                    SolDebug.WriteLine("  ... Loaded " + dir);
+                }
+                SolAssembly a = FromTrees(trees, options);
+                return a;
 #if DEBUG
             } finally {
                 stopwatch.Stop();
@@ -808,17 +807,17 @@ namespace SolScript.Interpreter
             stopwatch.Start();
             try {
 #endif
-            SolDebug.WriteLine("Creating Parser ...");
-            Irony.Parsing.Parser parser = new Irony.Parsing.Parser(s_Grammar);
-            var trees = new Utility.List<ParseTree>(strings.Length);
-            SolDebug.WriteLine("Loading Trees ...");
-            foreach (string s in strings) {
-                ParseTree tree = parser.Parse(s);
-                trees.Add(tree);
-                SolDebug.WriteLine("  ... Loaded " + s);
-            }
-            SolAssembly a = FromTrees(trees, options);
-            return a;
+                SolDebug.WriteLine("Creating Parser ...");
+                Irony.Parsing.Parser parser = new Irony.Parsing.Parser(s_Grammar);
+                var trees = new Utility.List<ParseTree>(strings.Length);
+                SolDebug.WriteLine("Loading Trees ...");
+                foreach (string s in strings) {
+                    ParseTree tree = parser.Parse(s);
+                    trees.Add(tree);
+                    SolDebug.WriteLine("  ... Loaded " + s);
+                }
+                SolAssembly a = FromTrees(trees, options);
+                return a;
 #if DEBUG
             } finally {
                 stopwatch.Stop();

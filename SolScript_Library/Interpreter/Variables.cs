@@ -64,14 +64,14 @@ namespace SolScript.Interpreter
             if (m_Variables.TryGetValue(name, out valueInfo)) {
                 VarOperation operation = valueInfo.TryGetValue();
                 if (operation.State != VariableState.Success) {
-                    throw InternalHelper.CreateVariableGetException(name, operation.State, operation.Exception);
+                    throw InternalHelper.CreateVariableGetException(name, operation.State, operation.Exception, SolSourceLocation.Native());
                 }
                 return operation.Value.NotNull();
             }
             if (Parent != null) {
                 return Parent.Get(name);
             }
-            throw new SolVariableException($"Cannot get the value of variable '{name}' - The variable has not been declared.");
+            throw new SolVariableException(SolSourceLocation.Native(), $"Cannot get the value of variable '{name}' - The variable has not been declared.");
         }
 
         /// <summary>
@@ -100,7 +100,7 @@ namespace SolScript.Interpreter
         public void Declare(string name, SolType type)
         {
             if (m_Variables.ContainsKey(name)) {
-                throw new SolVariableException("Tried to declare variable \"" + name + "\", but it already existed.");
+                throw new SolVariableException(SolSourceLocation.Native(), "Tried to declare variable \"" + name + "\", but it already existed.");
             }
             m_Variables[name] = new Script(Assembly, name, type);
         }
@@ -110,7 +110,7 @@ namespace SolScript.Interpreter
         public void DeclareNative(string name, SolType type, FieldOrPropertyInfo field, DynamicReference fieldReference)
         {
             if (m_Variables.ContainsKey(name)) {
-                throw new SolVariableException("Tried to declare variable \"" + name + "\", but it already existed.");
+                throw new SolVariableException(SolSourceLocation.Native(), "Tried to declare variable \"" + name + "\", but it already existed.");
             }
             m_Variables[name] = new Native(Assembly, name, type, field, fieldReference);
         }
@@ -126,12 +126,12 @@ namespace SolScript.Interpreter
                 try {
                     valueInfo.AssignAnnotations(annotations);
                 } catch (InvalidOperationException ex) {
-                    throw new SolVariableException($"Cannot assign annotations to variable \"{name}\".", ex);
+                    throw new SolVariableException(SolSourceLocation.Native(), $"Cannot assign annotations to variable \"{name}\".", ex);
                 }
             } else if (Parent != null) {
                 Parent.AssignAnnotations(name, annotations);
             } else {
-                throw new SolVariableException($"Cannot assign annotations to variable \"{name}\" - No variable with the given name has been declared.");
+                throw new SolVariableException(SolSourceLocation.Native(), $"Cannot assign annotations to variable \"{name}\" - No variable with the given name has been declared.");
             }
         }
 
@@ -149,14 +149,14 @@ namespace SolScript.Interpreter
             if (m_Variables.TryGetValue(name, out valueInfo)) {
                 VarOperation operation = valueInfo.TryAssignValue(value);
                 if (operation.Value == null || operation.State != VariableState.Success) {
-                    throw InternalHelper.CreateVariableSetException(name, operation.State, operation.Exception);
+                    throw InternalHelper.CreateVariableSetException(name, operation.State, operation.Exception, SolSourceLocation.Native());
                 }
                 return operation.Value;
             }
             if (Parent != null) {
                 return Parent.Assign(name, value);
             }
-            throw new SolVariableException($"Cannot assign variable '{name}' - No variable with the given name has been declared.");
+            throw new SolVariableException(SolSourceLocation.Native(), $"Cannot assign variable '{name}' - No variable with the given name has been declared.");
         }
 
         /// <summary> Is a variable with this name declared? </summary>
@@ -220,12 +220,12 @@ namespace SolScript.Interpreter
         public void SetValue([NotNull] string name, [NotNull] SolValue value, SolType type)
         {
             if (!type.IsCompatible(Assembly, value.Type)) {
-                throw new SolVariableException("Cannot set variable '" + name + "' of type '" + type + "' to a value of type '" + value.Type + "'. - The types are not compatible.");
+                throw new SolVariableException(SolSourceLocation.Native(), "Cannot set variable '" + name + "' of type '" + type + "' to a value of type '" + value.Type + "'. - The types are not compatible.");
             }
             try {
                 m_Variables[name] = new Script(Assembly, name, type, value);
             } catch (ArgumentException ex) {
-                throw new SolVariableException("Could not set field \"" + name + "\".", ex);
+                throw new SolVariableException(SolSourceLocation.Native(), "Could not set variable \"" + name + "\".", ex);
             }
         }
 
@@ -326,7 +326,7 @@ namespace SolScript.Interpreter
             {
                 if (!Type.IsCompatible(Assembly, value.Type)) {
                     return new VarOperation(null, VariableState.FailedTypeMismatch,
-                        new SolVariableException("The type \"" + Type + "\" of variable \"" + Name + "\" is not compatible with the given value of type \"" + value.Type + "\"."));
+                        new SolVariableException(SolSourceLocation.Native(), "The type \"" + Type + "\" of variable \"" + Name + "\" is not compatible with the given value of type \"" + value.Type + "\"."));
                 }
                 if (HasAnnotations) {
                     SolExecutionContext context = new SolExecutionContext(Assembly, $"Variable \"{Name}\" setter annotation resolver");
@@ -346,9 +346,8 @@ namespace SolScript.Interpreter
                                 if (table.TryGet("override", out metaOverride)) {
                                     if (!Type.IsCompatible(Assembly, metaOverride.Type)) {
                                         return new VarOperation(null, VariableState.FailedTypeMismatch,
-                                            new SolVariableException("The annotation \"" + annotation.Type + "\" tried to override the value set to the variable \"" + Name +
-                                                                     "\" with a value of type \"" +
-                                                                     metaOverride.Type + "\". The type is not compatible with the variable type \"" + Type + "\"."));
+                                            new SolVariableException(SolSourceLocation.Native(), "The annotation \"" + annotation.Type + "\" tried to override the value set to the variable \"" + Name +
+                                                                     "\" with a value of type \"" + metaOverride.Type + "\". The type is not compatible with the variable type \"" + Type + "\"."));
                                     }
                                     value = metaOverride;
                                 }

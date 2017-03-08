@@ -9,12 +9,18 @@ namespace SolScript.Interpreter.Exceptions
     [Serializable]
     public class SolVariableException : SolException
     {
-        public SolVariableException() {}
+        /// <inheritdoc />
+        public SolVariableException(SolSourceLocation location, string message) : base(location, message) {}
 
-        public SolVariableException(string message) : base(message) {}
+        /// <inheritdoc />
+        public SolVariableException(SolSourceLocation location, string message, Exception inner) : base(location, message, inner) {}
 
-        public SolVariableException(string message, Exception inner) : base(message, inner) {}
-
+        /// <inheritdoc />
+        /// <exception cref="SerializationException">
+        ///     The class name is null or <see cref="P:System.Exception.HResult" /> is zero
+        ///     (0).
+        /// </exception>
+        /// <exception cref="InvalidCastException">A value cannot be converted to a required type. </exception>
         protected SolVariableException(
             SerializationInfo info,
             StreamingContext context) : base(info, context) {}

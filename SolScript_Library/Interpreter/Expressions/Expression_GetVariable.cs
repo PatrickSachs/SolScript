@@ -106,7 +106,7 @@ namespace SolScript.Interpreter.Expressions
                 if (solClass != null) {
                     SolString keyString = key as SolString;
                     if (keyString == null) {
-                        throw new SolVariableException($"Tried to index a class with a \"{key.Type}\" value.");
+                        throw new SolVariableException(KeyGetter.Location, $"Tried to index a class with a \"{key.Type}\" value.");
                     }
                     // 1 Inheritance could be found -> We can access locals! An inheritance can be found if the
                     //   get expression was declared inside the class.
@@ -122,7 +122,7 @@ namespace SolScript.Interpreter.Expressions
                     SolValue value = indexable[key];
                     return value;
                 }
-                throw new SolVariableException("Tried to index a \"" + indexableRaw.Type + "\" value.");
+                throw new SolVariableException(IndexableGetter.Location, "Tried to index a \"" + indexableRaw.Type + "\" value.");
             }
 
             /// <inheritdoc />

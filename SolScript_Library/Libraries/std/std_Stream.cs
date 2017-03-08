@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Globalization;
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Text;
 using JetBrains.Annotations;
 using SolScript.Interpreter;
@@ -40,12 +39,16 @@ namespace SolScript.Libraries.std
             }
         }
 
+        /// <summary>
+        ///     The type name is "Stream".
+        /// </summary>
         [SolLibraryVisibility(std.NAME, false)] public const string TYPE = "Stream";
+
         // Theses bytes represent the OS-specific line break sequence.
         private static readonly byte[] NewLineBytes = Encoding.Default.GetBytes(Environment.NewLine);
-        // The underyling native stream. Every std_Stream has an underlying native stream.
+        // The underlying native stream. Every std_Stream has an underlying native stream.
         private readonly Stream m_Stream;
-
+        // The reader used to ... read the stream.
         private StreamReader m_Reader;
 
         /// <summary>
@@ -199,8 +202,9 @@ namespace SolScript.Libraries.std
                     break;
                 }
                 default: {
-                    throw new SolVariableException("Cannot write a \"" + data.Type + "\" value. Only primites of type \"" + SolString.TYPE + "\", \"" + SolNumber.TYPE + "\" and \"" + SolBool.TYPE +
-                                                   "\" can directly be written to a stream.");
+                    throw new SolVariableException(SolSourceLocation.Native(),
+                        "Cannot write a \"" + data.Type + "\" value. Only primitives of type \"" + SolString.TYPE + "\", \"" + SolNumber.TYPE + "\" and \"" + SolBool.TYPE +
+                        "\" can directly be written to a stream.");
                 }
             }
             byte[] bytes = Encoding.Default.GetBytes(dataString.Value);
@@ -456,7 +460,6 @@ namespace SolScript.Libraries.std
         /// <exception cref="IOException">An I/O error occurs. </exception>
         /// <exception cref="NotSupportedException">The stream does not support reading. </exception>
         /// <exception cref="ObjectDisposedException">Methods were called after the stream was closed. </exception>
-        
         private void WriteByte(byte data)
         {
             m_Stream.WriteByte(data);
@@ -465,7 +468,6 @@ namespace SolScript.Libraries.std
         /// <exception cref="IOException">An I/O error occurs. </exception>
         /// <exception cref="NotSupportedException">The stream does not support reading. </exception>
         /// <exception cref="ObjectDisposedException">Methods were called after the stream was closed. </exception>
-        
         private void WriteUInt32(uint data)
         {
             WriteBytes(BitConverter.GetBytes(data));
@@ -474,7 +476,6 @@ namespace SolScript.Libraries.std
         /// <exception cref="IOException">An I/O error occurs. </exception>
         /// <exception cref="NotSupportedException">The stream does not support reading. </exception>
         /// <exception cref="ObjectDisposedException">Method was called after the stream was closed. </exception>
-        
         private void WriteBytes(byte[] bytes)
         {
             m_Stream.Write(bytes, 0, bytes.Length);
@@ -487,7 +488,6 @@ namespace SolScript.Libraries.std
         /// <exception cref="IOException">An I/O error occurs. </exception>
         /// <exception cref="NotSupportedException">The stream does not support reading. </exception>
         /// <exception cref="ObjectDisposedException">Methods were called after the stream was closed. </exception>
-        
         private bool ReadBool()
         {
             return m_Stream.ReadByte() != 0;
@@ -496,7 +496,6 @@ namespace SolScript.Libraries.std
         /// <exception cref="IOException">An I/O error occurs. </exception>
         /// <exception cref="NotSupportedException">The stream does not support reading. </exception>
         /// <exception cref="ObjectDisposedException">Methods were called after the stream was closed. </exception>
-        
         private byte ReadByte()
         {
             return (byte) m_Stream.ReadByte();
@@ -505,7 +504,6 @@ namespace SolScript.Libraries.std
         /// <exception cref="IOException">An I/O error occurs. </exception>
         /// <exception cref="NotSupportedException">The stream does not support reading. </exception>
         /// <exception cref="ObjectDisposedException">Methods were called after the stream was closed. </exception>
-        
         private double ReadDouble()
         {
             return BitConverter.ToDouble(ReadBytes(8), 0);
@@ -514,7 +512,6 @@ namespace SolScript.Libraries.std
         /// <exception cref="IOException">An I/O error occurs. </exception>
         /// <exception cref="NotSupportedException">The stream does not support reading. </exception>
         /// <exception cref="ObjectDisposedException">Methods were called after the stream was closed. </exception>
-        
         private uint ReadUInt32()
         {
             return BitConverter.ToUInt32(ReadBytes(4), 0);
@@ -523,7 +520,6 @@ namespace SolScript.Libraries.std
         /// <exception cref="IOException">An I/O error occurs. </exception>
         /// <exception cref="NotSupportedException">The stream does not support reading. </exception>
         /// <exception cref="ObjectDisposedException">Methods were called after the stream was closed. </exception>
-        
         private char ReadChar()
         {
             return BitConverter.ToChar(ReadBytes(2), 0);

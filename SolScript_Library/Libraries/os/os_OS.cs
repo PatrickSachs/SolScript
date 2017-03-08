@@ -124,15 +124,15 @@ namespace SolScript.Libraries.os
             SolValue month;
             SolValue day;
             if (!table.TryGet((SolValue) Str_year, out year)) {
-                throw new SolVariableException("No year is defined. A date-table at least requires a year, month and day field.");
+                throw new SolVariableException(SolSourceLocation.Native(), "No year is defined. A date-table at least requires a year, month and day field.");
             }
             int yearInt = MakeInteger(year, "Invalid year type. {0}");
             if (!table.TryGet((SolValue) Str_month, out month)) {
-                throw new SolVariableException("No month is defined. A date-table at least requires a year, month and day field.");
+                throw new SolVariableException(SolSourceLocation.Native(), "No month is defined. A date-table at least requires a year, month and day field.");
             }
             int monthInt = MakeInteger(month, "Invalid month type. {0}");
             if (!table.TryGet((SolValue) Str_day, out day)) {
-                throw new SolVariableException("No day is defined. A date-table at least requires a year, month and day field.");
+                throw new SolVariableException(SolSourceLocation.Native(), "No day is defined. A date-table at least requires a year, month and day field.");
             }
             int dayInt = MakeInteger(day, "Invalid day type. {0}");
             SolValue hour = table.GetIfDefined((SolValue) Str_hour);
@@ -141,7 +141,7 @@ namespace SolScript.Libraries.os
             SolValue millisecond = table.GetIfDefined((SolValue) Str_milliecond);
             if (hour == null && minute == null && second == null) {
                 if (millisecond != null) {
-                    throw new SolVariableException("Cannot specify a millisecond if hour, minute and second are not specified.");
+                    throw new SolVariableException(SolSourceLocation.Native(), "Cannot specify a millisecond if hour, minute and second are not specified.");
                 }
                 return new DateTime(yearInt, monthInt, dayInt);
             }
@@ -174,7 +174,7 @@ namespace SolScript.Libraries.os
                 }
                 builder.Append(" second");
             }
-            throw new SolVariableException(builder.ToString());
+            throw new SolVariableException(SolSourceLocation.Native(), builder.ToString());
         }
 
         /// <exception cref="SolVariableException">Invalid type/not an integer.</exception>
@@ -183,7 +183,7 @@ namespace SolScript.Libraries.os
             SolNumber number = AssertTypeAndCast<SolNumber>(value, SolNumber.TYPE, error);
             int integer;
             if (!InternalHelper.NumberToInteger(number, out integer)) {
-                throw new SolVariableException(string.Format(error, "The number must be an integer, but contained a decimal part."));
+                throw new SolVariableException(SolSourceLocation.Native(), string.Format(error, "The number must be an integer, but contained a decimal part."));
             }
             return integer;
         }
@@ -192,10 +192,10 @@ namespace SolScript.Libraries.os
         private static T AssertTypeAndCast<T>(SolValue value, string type, string error) where T : SolValue
         {
             if (value == null) {
-                throw new SolVariableException(string.Format(error, "The internal value is null."));
+                throw new SolVariableException(SolSourceLocation.Native(), string.Format(error, "The internal value is null."));
             }
             if (value.Type != type) {
-                throw new SolVariableException(string.Format(error, "The value is of type \"" + value.Type + "\", but was expected to be of type \"" + type + "\"."));
+                throw new SolVariableException(SolSourceLocation.Native(), string.Format(error, "The value is of type \"" + value.Type + "\", but was expected to be of type \"" + type + "\"."));
             }
             return (T) value;
         }

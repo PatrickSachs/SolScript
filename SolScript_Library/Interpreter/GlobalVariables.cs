@@ -36,7 +36,7 @@ namespace SolScript.Interpreter
                             SolClass instance = Assembly.New(definition, s_SingletonClassCreationOptions);
                             return instance;
                         } catch (SolTypeRegistryException ex) {
-                            throw new SolVariableException("Failed to create singleton instance \"" + definition.Type + "\".", ex);
+                            throw new SolVariableException(definition.Location, "An error occured while creating the \"" + definition.Type + "\" singleton instance. (Phase 1)", ex);
                         }
                     },
                     delegate(SolValue value) {
@@ -44,7 +44,7 @@ namespace SolScript.Interpreter
                         try {
                             instance.CallConstructor(new SolExecutionContext(Assembly, "Singleton \"" + definition.Type + "\" creation context"));
                         } catch (SolRuntimeException ex) {
-                            throw new SolVariableException("An error occured while creating the \"" + definition.Type + "\" singleton instance.", ex);
+                            throw new SolVariableException(definition.Location, "An error occured while creating the \"" + definition.Type + "\" singleton instance. (Phase 2)", ex);
                         }
                         instance.IsInitialized = true;
                     }

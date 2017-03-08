@@ -9,12 +9,19 @@ namespace SolScript.Interpreter.Exceptions
     [Serializable]
     public class SolTypeRegistryException : SolException
     {
-        protected SolTypeRegistryException() {}
+        /// <inheritdoc />
+        public SolTypeRegistryException(SolSourceLocation location, string message) : base(location, message) {}
 
-        public SolTypeRegistryException(string message) : base(message) {}
-
+        /// <inheritdoc />
+        /// <exception cref="SerializationException">
+        ///     The class name is null or <see cref="P:System.Exception.HResult" /> is zero
+        ///     (0).
+        /// </exception>
+        /// <exception cref="ArgumentNullException">The <paramref name="info" /> parameter is null. </exception>
+        /// <exception cref="InvalidCastException">A value cannot be converted to a required type. </exception>
         protected SolTypeRegistryException(SerializationInfo info, StreamingContext context) : base(info, context) {}
 
-        public SolTypeRegistryException(string message, Exception inner) : base(message, inner) {}
+        /// <inheritdoc />
+        public SolTypeRegistryException(SolSourceLocation location, string message, Exception inner) : base(location, message, inner) {}
     }
 }

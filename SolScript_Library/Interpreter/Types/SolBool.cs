@@ -80,27 +80,9 @@ namespace SolScript.Interpreter.Types
             return !Value;
         }
 
-        public override SolValue And(SolExecutionContext context, SolValue other)
-        {
-            SolBool otherBool = other as SolBool;
-            if (otherBool == null) {
-                throw new SolRuntimeException(context, "Cannot combine a bool and a " + other.Type + " via and.");
-            }
-            return new SolBool(Value && otherBool.Value);
-        }
-
         public override SolValue Not(SolExecutionContext context)
         {
             return ValueOf(!Value);
-        }
-
-        public override SolValue Or(SolExecutionContext context, SolValue other)
-        {
-            SolBool otherBool = other as SolBool;
-            if (otherBool == null) {
-                throw new SolRuntimeException(context, "Cannot or switch a bool and a " + other.Type + " via and.");
-            }
-            return new SolBool(Value || otherBool.Value);
         }
 
         public override bool Equals(object other)

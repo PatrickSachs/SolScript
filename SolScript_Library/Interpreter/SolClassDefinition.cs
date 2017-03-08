@@ -221,10 +221,10 @@ namespace SolScript.Interpreter
             SolFunctionDefinition definition;
             if (TryGetFunction(meta.Name, false, out definition)) {
                 if (definition.AccessModifier != SolAccessModifier.Local && definition.AccessModifier != SolAccessModifier.Internal) {
-                    throw new SolVariableException($"The meta function \"{meta.Name}\" of class \"{Type}\" must either be local or internal.");
+                    throw new SolVariableException(definition.Location, $"The meta function \"{meta.Name}\" of class \"{Type}\" must either be local or internal.");
                 }
                 if (!meta.Type.IsCompatible(Assembly, definition.ReturnType)) {
-                    throw new SolVariableException(
+                    throw new SolVariableException(definition.Location,
                         $"The return type \"{definition.ReturnType}\" of meta function \"{meta.Name}\" in class \"{Type}\" is not compatible with the required return type \"{meta.Type}\"");
                 }
                 l_meta_functions.Add(meta, new MetaFunctionLink(meta, definition));
@@ -507,12 +507,12 @@ namespace SolScript.Interpreter
             {
                 SolClass.Inheritance inheritance = instance.FindInheritance(Definition.DefinedIn);
                 if (inheritance == null) {
-                    throw new SolVariableException($"Could not find the class \"{instance.Type}\" in the inheritance chain of class \"{Definition.DefinedIn.NotNull().Type}\".");
+                    throw new SolVariableException(Definition.Location, $"Could not find the class \"{instance.Type}\" in the inheritance chain of class \"{Definition.DefinedIn.NotNull().Type}\".");
                 }
                 SolValue value = inheritance.GetVariables(Definition.AccessModifier, SolClass.Inheritance.Mode.Declarations).Get(Meta.Name);
                 SolFunction function = value as SolFunction;
                 if (function == null) {
-                    throw new SolVariableException("Tried to get meta function \"" + Meta.Name + "\" from a \"" + instance.Type + "\" instance. Expected a function value, received a \"" + value.Type +
+                    throw new SolVariableException(Definition.Location, "Tried to get meta function \"" + Meta.Name + "\" from a \"" + instance.Type + "\" instance. Expected a function value, received a \"" + value.Type +
                                                    "\" value.");
                 }
                 return function;
