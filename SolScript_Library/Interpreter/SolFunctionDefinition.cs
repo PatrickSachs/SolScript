@@ -31,13 +31,13 @@ namespace SolScript.Interpreter
         /// </summary>
         /// <param name="assembly">The assembly to use for type lookups and register the definition to.</param>
         /// <param name="builder">The function builder.</param>
-        /// <exception cref="SolMarshallingException">No matching SolType for the return type of the native builder.</exception>
+        /// <exception cref="SolMarshallingException">No matching SolType for the return type of the native builder/Invalid annotations.</exception>
         public SolFunctionDefinition(SolAssembly assembly, SolFunctionBuilder builder) : base(assembly, builder.Location)
         {
             Name = builder.Name;
             AccessModifier = builder.AccessModifier;
             MemberModifier = builder.MemberModifier;
-            AnnotationsFromData(builder.Annotations);
+            Annotations = InternalHelper.AnnotationsFromData(assembly, builder.Annotations);
             ReturnType = builder.ReturnType.Get(assembly);
             var parameters = new SolParameter[builder.Parameters.Count];
             for (int i = 0; i < parameters.Length; i++) {
@@ -91,6 +91,6 @@ namespace SolScript.Interpreter
         public readonly SolType ReturnType;
 
         /// <inheritdoc />
-        public override IReadOnlyList<SolAnnotationDefinition> Annotations { get; protected set; }
+        public override IReadOnlyList<SolAnnotationDefinition> Annotations { get; }
     }
 }

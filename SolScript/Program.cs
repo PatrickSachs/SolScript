@@ -207,8 +207,10 @@ namespace SolScript
         {
             script = SolAssembly.FromDirectory(new SolAssemblyOptions("Command Line Assembly"), dir);
             CheckForError(script);
-            script.IncludeLibrary(std.GetLibrary())
-                .IncludeLibrary(os.GetLibrary());
+            script
+                .IncludeLibrary(std.GetLibrary())
+                .IncludeLibrary(os.GetLibrary())
+                .IncludeLibrary(test.test.GetLibrary());
             script.FinalizeRegistry();
             CheckForError(script);
             script.GenerateDefinitions();

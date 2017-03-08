@@ -295,26 +295,16 @@ namespace SolScript.Interpreter
                         hadError = true;
                     }
                 }
-                var annotations = new SolAnnotationDefinition[builder.Annotations.Count];
-                for (int i = 0; i < builder.Annotations.Count; i++) {
-                    SolAnnotationData builderAnnotation = builder.Annotations[i];
-                    SolClassDefinition annotationClass;
-                    if (!TryGetClass(builderAnnotation.Name, out annotationClass)) {
-                        m_ErrorAdder.Add(new SolError(builderAnnotation.Location, ErrorId.InvalidAnnotationType,
-                            "Could not find class \"" + builderAnnotation.Name + "\" which was required for an annotation on class \"" + def.Type + "\"."));
-                        hadError = true;
-                    }
-                    if (annotationClass.NotNull().TypeMode != SolTypeMode.Annotation) {
-                        m_ErrorAdder.Add(new SolError(builderAnnotation.Location, ErrorId.InvalidAnnotationType,
-                            "The class \"" + builderAnnotation.Name + "\" which was used as an annotation on class \"" + def.Type + "\" is no annotation."));
-                        hadError = true;
-                    }
-                    annotations[i] = new SolAnnotationDefinition(builderAnnotation.Location, annotationClass, builderAnnotation.Arguments);
+                try {
+                    def.AnnotationsArray = InternalHelper.AnnotationsFromData(this, builder.Annotations);
+                } catch (SolMarshallingException ex) {
+                    m_ErrorAdder.Add(new SolError(builder.Location, ErrorId.InvalidAnnotationType,
+                            "Failed to create an annotation definition for class \"" + def.Type + "\": " + ex.Message, false, ex));
+                    hadError = true;
                 }
-                def.SetAnnotations(annotations);
-                // We cannot validate the class since the base class may not be built yet.
+                // We cannot validate the class at this point since the base class may not be built yet.
             }
-            State = AssemblyState.GeneratedClassHulls;
+            State = AssemblyState.GeneratedClassBodies;
             foreach (SolFieldBuilder globalFieldBuilder in Builders.Fields) {
                 try {
                     SolFieldDefinition fieldDefinition = new SolFieldDefinition(this, globalFieldBuilder);
@@ -607,7 +597,7 @@ namespace SolScript.Interpreter
                         }
                     }
                 }
-                foreach (KeyValuePair<string, SolFieldDefinition> fieldPair in activeInheritance.Definition.FieldPairs) {
+                foreach (KeyValuePair<string, SolFieldDefinition> fieldPair in activeInheritance.Definition.FieldLookup) {
                     SolFieldDefinition fieldDefinition = fieldPair.Value;
                     IVariables variables = activeInheritance.GetVariables(fieldDefinition.AccessModifier, SolClass.Inheritance.Mode.Declarations);
                     // Which variable context is this field declared in?

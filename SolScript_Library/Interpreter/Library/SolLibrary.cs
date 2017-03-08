@@ -223,11 +223,20 @@ namespace SolScript.Interpreter.Library
                 }
             }
             // === Create Builder Bodies
-            foreach (SolClassBuilder builder in m_SolToBuilder.Values) {
-                // ReSharper disable LoopCanBeConvertedToQuery
+            foreach (SolClassBuilder builder in m_SolToBuilder.Values)
+            {
+                Type baseType = builder.NativeType.BaseType;
+                SolClassBuilder baseTypeBuilder;
+                if (baseType != null && m_NativeToBuilder.TryGetValue(baseType, out baseTypeBuilder))
+                {
+                    builder.SetBaseClass(baseTypeBuilder.Name);
+                }
                 foreach (ConstructorInfo constructor in builder.NativeType.GetConstructors(BINDING_FLAGS)) {
                     SolFunctionBuilder solConstructor;
                     if (TryBuildConstructor(constructor, out solConstructor)) {
+                        if (builder.BaseClass != null) {
+                            solConstructor.SetMemberModifier(SolMemberModifier.Override);
+                        }
                         builder.AddFunction(solConstructor);
                     }
                 }
@@ -235,11 +244,12 @@ namespace SolScript.Interpreter.Library
                     throw new InvalidOperationException("The class " + builder.Name + " does not define a constructor. Make sure to expose at least one constructor.");
                 }
                 foreach (MethodInfo method in builder.NativeType.GetMethods(BINDING_FLAGS)) {
-                    SolFunctionBuilder solMethod;
                     if (method.IsSpecialName) {
                         continue;
                     }
-                    if (TryBuildMethod(method, out solMethod)) {
+                    SolFunctionBuilder solMethod;
+                    if (TryBuildMethod(method, out solMethod))
+                    {
                         builder.AddFunction(solMethod);
                     }
                 }
@@ -252,13 +262,7 @@ namespace SolScript.Interpreter.Library
                         builder.AddField(solField);
                     }
                 }
-                // ReSharper enable LoopCanBeConvertedToQuery
                 // todo: annotations for native types
-                Type baseType = builder.NativeType.BaseType;
-                SolClassBuilder baseTypeBuilder;
-                if (baseType != null && m_NativeToBuilder.TryGetValue(baseType, out baseTypeBuilder)) {
-                    builder.SetBaseClass(baseTypeBuilder.Name);
-                }
             }
             HasBeenCreated = true;
         }
@@ -640,19 +644,32 @@ namespace SolScript.Interpreter.Library
             bool sendContext;
             InternalHelper.GetParameterBuilders(method.GetParameters(), out parameters, out marshalTypes, out allowOptional, out sendContext);
             // todo: annotations for native functions. if it has a native attribute that is an annotation add it here.
+            // Member Mods are set here since need access to the type and the inheritance data.
+            SolMemberModifier memberModifier = method.IsAbstract ? SolMemberModifier.Abstract : method.IsOverride() ? SolMemberModifier.Override : SolMemberModifier.None;
+            if (memberModifier == SolMemberModifier.Override) {
+                SolClassBuilder definition;
+                if (!m_NativeToBuilder.TryGetValue(method.GetBaseDefinition().DeclaringType.NotNull(), out definition)) {
+                    // If we got here it means that the NATIVE method is an override. But it is not an override
+                    // in SolScript since it overrides a method declared in a class that is not part of SoScriot.
+                    memberModifier = SolMemberModifier.None;
+                    SolDebug.WriteLine("Changed member mod of " + method.Name + " from native " + method.DeclaringType + " from override to none.");
+                }
+            }
             solMethod = SolFunctionBuilder.NewNativeFunction(name, method)
                 .SetAccessModifier(access)
                 .SetReturnType(remappedReturn.HasValue ? SolTypeBuilder.Fixed(remappedReturn.Value) : SolTypeBuilder.Native(method.ReturnType))
                 .SetParameters(parameters)
                 .SetNativeMarshalTypes(marshalTypes)
                 .SetAllowOptionalParameters(allowOptional)
-                .SetNativeSendContext(sendContext);
+                .SetNativeSendContext(sendContext)
+                .SetMemberModifier(memberModifier);
             return true;
         }
 
         [ContractAnnotation("solConstructor:null => false")]
         private bool TryBuildConstructor(ConstructorInfo constructor, [CanBeNull] out SolFunctionBuilder solConstructor)
         {
+            // todo: ctors are marked as abstract or override later on since we need to know if they have a base class. this should be done here but cant.
             // todo: flesh out ctors as well as functions
             // todo: annotations                    
             SolLibraryVisibilityAttribute visibility = constructor.GetCustomAttributes<SolLibraryVisibilityAttribute>().FirstOrDefault(a => a.LibraryName == Name);
@@ -679,6 +696,6 @@ namespace SolScript.Interpreter.Library
 
 
         private const BindingFlags BINDING_FLAGS = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static |
-                                                   BindingFlags.Instance;
+                                                   BindingFlags.Instance | BindingFlags.DeclaredOnly;
     }
 }

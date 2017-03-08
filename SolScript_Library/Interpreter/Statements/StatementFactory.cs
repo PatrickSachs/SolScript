@@ -300,7 +300,7 @@ namespace SolScript.Interpreter.Statements
             foreach (ParseTreeNode annotationNode in node.ChildNodes) {
                 string name = annotationNode.ChildNodes[1].Token.Text;
                 SolExpression[] expressions = annotationNode.ChildNodes.Count == 3 ? GetExpressions(annotationNode.ChildNodes[2]) : EmptyArray<SolExpression>.Value;
-                builder.AddAnnotation(new SolAnnotationData(new SolSourceLocation(ActiveFile, node.Span.Location), name, expressions));
+                builder.AddAnnotation(new SolAnnotationBuilder(new SolSourceLocation(ActiveFile, node.Span.Location), name, expressions));
             }
         }
 

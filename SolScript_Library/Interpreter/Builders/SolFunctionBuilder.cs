@@ -20,7 +20,7 @@ namespace SolScript.Interpreter.Builders
         }
 
         // The annotations on this builder.
-        private readonly Utility.List<SolAnnotationData> m_Annotations = new Utility.List<SolAnnotationData>();
+        private readonly Utility.List<SolAnnotationBuilder> m_Annotations = new Utility.List<SolAnnotationBuilder>();
         // The function parameters.
         private readonly Utility.List<SolParameterBuilder> m_Parameters = new Utility.List<SolParameterBuilder>();
         // The list for native marshal types. Instance created by the static methods for native functions
@@ -100,11 +100,11 @@ namespace SolScript.Interpreter.Builders
         #region IAnnotateableBuilder Members
 
         /// <inheritdoc />
-        public IReadOnlyList<SolAnnotationData> Annotations => m_Annotations;
+        public IReadOnlyList<SolAnnotationBuilder> Annotations => m_Annotations;
 
 
         /// <inheritdoc />
-        public IAnnotateableBuilder AddAnnotation(SolAnnotationData annotation)
+        public IAnnotateableBuilder AddAnnotation(SolAnnotationBuilder annotation)
         {
             m_Annotations.Add(annotation);
             return this;
@@ -118,7 +118,7 @@ namespace SolScript.Interpreter.Builders
         }
 
         /// <inheritdoc />
-        public IAnnotateableBuilder AddAnnotations(params SolAnnotationData[] annotations)
+        public IAnnotateableBuilder AddAnnotations(params SolAnnotationBuilder[] annotations)
         {
             m_Annotations.AddRange(annotations);
             return this;
@@ -342,9 +342,9 @@ namespace SolScript.Interpreter.Builders
 
 namespace SolScript.Interpreter
 {
-    public sealed class SolAnnotationData
+    public sealed class SolAnnotationBuilder
     {
-        public SolAnnotationData(SolSourceLocation location, string name, params SolExpression[] arguments)
+        public SolAnnotationBuilder(SolSourceLocation location, string name, params SolExpression[] arguments)
         {
             Name = name;
             Location = location;

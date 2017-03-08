@@ -115,6 +115,7 @@
         &lt;/And&gt;&#xD;
       &lt;/Entry.Match&gt;&#xD;
       &lt;Entry.SortBy&gt;&#xD;
+        &lt;Access /&gt;&#xD;
         &lt;Readonly /&gt;&#xD;
         &lt;Name /&gt;&#xD;
       &lt;/Entry.SortBy&gt;&#xD;
@@ -126,6 +127,11 @@
           &lt;Kind Is="Indexer" /&gt;&#xD;
         &lt;/Or&gt;&#xD;
       &lt;/Entry.Match&gt;&#xD;
+      &lt;Entry.SortBy&gt;&#xD;
+        &lt;Access /&gt;&#xD;
+        &lt;Readonly /&gt;&#xD;
+        &lt;Name /&gt;&#xD;
+      &lt;/Entry.SortBy&gt;&#xD;
     &lt;/Entry&gt;&#xD;
     &lt;Region Name="${0} Members" Priority="100"&gt;&#xD;
       &lt;Region.GroupBy&gt;&#xD;

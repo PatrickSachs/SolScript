@@ -21,6 +21,34 @@ namespace SolScript.Utility
     /// </summary>
     internal static class InternalHelper
     {
+        public static bool IsOverride(this MethodInfo method)
+        {
+            return !method.Equals(method.GetBaseDefinition());
+        }
+        /// <summary>
+        ///     Converts annotation builders into annotation definitions. Validates the annotations type and type mode.
+        /// </summary>
+        /// <param name="assembly">The assembly to use for type lookups.</param>
+        /// <param name="data">The annotation data.</param>
+        /// <exception cref="SolMarshallingException">An annotation class does not exist/is not an annotation.</exception>
+        public static Array<SolAnnotationDefinition> AnnotationsFromData(SolAssembly assembly, IReadOnlyList<SolAnnotationBuilder> data)
+        {
+            var annotations = new Array<SolAnnotationDefinition>(data.Count);
+            for (int i = 0; i < annotations.Length; i++)
+            {
+                SolClassDefinition annotationDefinition;
+                if (!assembly.TryGetClass(data[i].Name, out annotationDefinition))
+                {
+                    throw new SolMarshallingException(data[i].Name, "The class used as annotation \"" + data[i].Name + "\" does not exist.");
+                }
+                if (annotationDefinition.TypeMode != SolTypeMode.Annotation)
+                {
+                    throw new SolMarshallingException(data[i].Name, "The class \"" + annotationDefinition.Type + "\" used as annotation is not an annotation.");
+                }
+                annotations[i] = new SolAnnotationDefinition(data[i].Location, annotationDefinition, data[i].Arguments);
+            }
+            return annotations;
+        }
         private static readonly HashSet<Type> FuncGenericTypes = new HashSet<Type> {
             typeof(Func<>),
             typeof(Func<,>),

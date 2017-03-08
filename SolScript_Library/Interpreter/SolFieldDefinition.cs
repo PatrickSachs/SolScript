@@ -28,14 +28,13 @@ namespace SolScript.Interpreter
         /// </summary>
         /// <param name="assembly">The assembly to use for type lookups and register the definition to.</param>
         /// <param name="builder">The field builder.</param>
-        /// <exception cref="SolMarshallingException">No matching SolType for the native field type.</exception>
+        /// <exception cref="SolMarshallingException">No matching SolType for the native field type/Invalid annotations.</exception>
         public SolFieldDefinition(SolAssembly assembly, SolFieldBuilder builder) : base(assembly, builder.Location)
         {
             Name = builder.Name;
             AccessModifier = builder.AccessModifier;
-            MemberModifier = builder.MemberModifier;
             Type = builder.FieldType.Get(assembly);
-            AnnotationsFromData(builder.Annotations);
+            Annotations = InternalHelper.AnnotationsFromData(assembly, builder.Annotations);
             Initializer = builder.IsNative ? new SolFieldInitializerWrapper(builder.NativeField) : new SolFieldInitializerWrapper(builder.ScriptField);
         }
 
@@ -56,12 +55,6 @@ namespace SolScript.Interpreter
         public readonly SolFieldInitializerWrapper Initializer;
 
         /// <summary>
-        ///     The member modifier specifying the type of field.
-        /// </summary>
-        /// <seealso cref="SolMemberModifier" />
-        public readonly SolMemberModifier MemberModifier;
-
-        /// <summary>
         ///     The name of the field.
         /// </summary>
         public readonly string Name;
@@ -72,6 +65,6 @@ namespace SolScript.Interpreter
         public readonly SolType Type;
 
         /// <inheritdoc />
-        public override IReadOnlyList<SolAnnotationDefinition> Annotations { get; protected set; }
+        public override IReadOnlyList<SolAnnotationDefinition> Annotations { get; }
     }
 }

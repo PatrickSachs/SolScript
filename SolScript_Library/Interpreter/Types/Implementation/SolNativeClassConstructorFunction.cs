@@ -33,15 +33,35 @@ namespace SolScript.Interpreter.Types.Implementation
                 return 12 + (int) Id;
             }
         }
-        
+
         /// <inheritdoc />
         /// <exception cref="SolRuntimeException">A runtime error occured while calling the function.</exception>
         /// <exception cref="InvalidOperationException">A critical internal error occured. Execution may have to be halted.</exception>
         protected override SolValue Call_Impl(SolExecutionContext context, params SolValue[] args)
         {
-            SolClass.Inheritance inheritance = ClassInstance.FindInheritance(Definition.DefinedIn);
-            if (inheritance == null) {
-                throw new SolRuntimeException(context, "Cannot call this constructor function on a class of type \"" + ClassInstance.Type + "\".");
+            SolClass.Inheritance inheritance = ClassInstance.InheritanceChain;
+            SolClass.Inheritance nativeStart = null;
+            while (inheritance != null) {
+                if (nativeStart == null && inheritance.Definition.NativeType != null) {
+                    nativeStart = inheritance;
+                }
+                if (inheritance.Definition == Definition.DefinedIn) {
+                    if (nativeStart == null) {
+                        throw new InvalidOperationException(
+                            "The inheritance level of the native constructor is lower than the native inheritance start. This indicates class inheritance corruption. " +
+                            $"(inheritance='{inheritance.Definition.Type}', nativeStart='{null}', definition='{Definition.DefinedIn?.Type}')");
+                    }
+                    break;
+                }
+                inheritance = inheritance.BaseInheritance;
+            }
+            // We can only call the most derived native constructor of a class since the constructor sets 
+            // the native object to the entire native part of the inheritance chain.
+            // This is required since functions are registered in the inheritance chain element they were
+            // declared in and thus try to access the native object of that level.
+            if (nativeStart == null || inheritance != nativeStart) {
+                throw new SolRuntimeException(context,
+                    "Cannot call this native constructor function for class \"" + Definition.DefinedIn.NotNull().Type + "\" on a class of type \"" + ClassInstance.Type + "\".");
             }
             if (ClassInstance.IsInitialized) {
                 throw new SolRuntimeException(context, "Cannot call constructor of an initialized \"" + ClassInstance.Type + "\" class instance.");
@@ -52,7 +72,12 @@ namespace SolScript.Interpreter.Types.Implementation
             } catch (SolMarshallingException ex) {
                 throw new SolRuntimeException(context, "Could to marshal the function parameters to native objects: " + ex.Message, ex);
             }
-            inheritance.NativeObject = InternalHelper.SandboxInvokeMethod(context, Definition.Chunk.GetNativeConstructor(), null, values);
+            object nativeInstance = InternalHelper.SandboxInvokeMethod(context, Definition.Chunk.GetNativeConstructor(), null, values);
+            SolClass.Inheritance setting = nativeStart;
+            while (setting != null) {
+                setting.NativeObject = nativeInstance;
+                setting = setting.BaseInheritance;
+            }
             SolMarshal.GetAssemblyCache(Assembly).StoreReference(inheritance.NativeObject.NotNull(), ClassInstance);
             return SolNil.Instance;
         }
