@@ -224,6 +224,12 @@ namespace SolScript.Utility
             }
         }
 
+        ///<inheritdoc cref="JoinToString{T}(string,IEnumerable{T})"/>
+        [DebuggerStepThrough]
+        internal static string JoinToString<T>(string separator, params T[] array)
+        {
+            return JoinToString(separator, (IEnumerable<T>)array);
+        }
         /// <summary>
         ///     Converts an enumerable of objects to a string using the <see cref="object.ToString()" /> method.
         /// </summary>
@@ -231,13 +237,18 @@ namespace SolScript.Utility
         /// <param name="separator">The separator between values.</param>
         /// <param name="array">The enumerable to convert.</param>
         /// <returns>The joined string.</returns>
-        /// <seealso cref="JoinToString{T}(string,System.Collections.Generic.IEnumerable{T}, Func{T,string})" />
+        /// <seealso cref="JoinToString{T}(string, Func{T,string},System.Collections.Generic.IEnumerable{T})" />
         [DebuggerStepThrough]
         internal static string JoinToString<T>(string separator, IEnumerable<T> array)
         {
             return string.Join(separator, array);
         }
-
+        ///<inheritdoc cref="JoinToString{T}(string, Func{T,string},IEnumerable{T})"/>
+        [DebuggerStepThrough]
+        internal static string JoinToString<T>(string separator, Func<T, string> obtainer, params T[] array)
+        {
+            return JoinToString(separator, obtainer,(IEnumerable<T>)array);
+        }
         /// <summary>
         ///     Converts an enumerable of objects to a string using a conversion delegate.
         /// </summary>
@@ -248,7 +259,7 @@ namespace SolScript.Utility
         /// <returns>The joined string.</returns>
         /// <seealso cref="JoinToString{T}(string,System.Collections.Generic.IEnumerable{T})" />
         [DebuggerStepThrough]
-        internal static string JoinToString<T>(string separator, IEnumerable<T> array, Func<T, string> obtainer)
+        internal static string JoinToString<T>(string separator, Func<T, string> obtainer, IEnumerable<T> array)
         {
             StringBuilder builder = new StringBuilder();
             foreach (T element in array) {

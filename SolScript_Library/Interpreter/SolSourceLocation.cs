@@ -9,6 +9,9 @@ namespace SolScript.Interpreter
     /// </summary>
     public struct SolSourceLocation
     {
+        /// <summary>
+        ///     The file name used when the location refers to native code.
+        /// </summary>
         public const string NATIVE_FILE = "<native>";
 
         /// <summary>

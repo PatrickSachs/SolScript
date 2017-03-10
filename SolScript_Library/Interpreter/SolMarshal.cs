@@ -270,8 +270,22 @@ namespace SolScript.Interpreter
                         throw new SolMarshallingException(
                             $"Cannot marshal native type \"{type}\" to SolScript: A error occured while creating its representing class instance of type \"" + classDef.Type + "\".", ex);
                     }
-                    solClass.InheritanceChain.NativeObject = value;
+                    // Assign the native object to all inheritance levels.
+                    SolClass.Inheritance inheritance = solClass.InheritanceChain;
+                    while (inheritance != null) {
+                        inheritance.NativeObject = value;
+                        inheritance = inheritance.BaseInheritance;
+                    }
                     cache.StoreReference(value, solClass);
+                    // Assigning self after storing in assembly cache.
+                    INativeClassSelf self = value as INativeClassSelf;
+                    if (self != null) {
+                        if (self.Self != null) {
+                            throw new SolMarshallingException("Type native Self value of native class \"" + type.Name + "\"(SolClass \"" + solClass.Type 
+                                + "\") is not null. This is either an indicator for a duplicate native class or corrupted marshalling data.");
+                        }
+                        self.Self = solClass;
+                    }
                 }
                 return solClass;
             }

@@ -9,7 +9,7 @@ namespace SolScript.Interpreter
     public abstract class SolMetaKey
     {
         /// <summary>
-        ///     Creates a new meta key instance using the given parameteters.
+        ///     Creates a new meta key instance using the given parameters.
         /// </summary>
         /// <param name="name">The function name.</param>
         /// <param name="type">The function return type.</param>

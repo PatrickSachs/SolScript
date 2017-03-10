@@ -80,7 +80,7 @@ namespace SolScript.Compiler
             if (definition.TypeMode != SolTypeMode.Abstract && abstracts.Count != 0) {
                 throw new SolCompilerException(definition.Location, "The non-abstract class \"" + definition.Type + "\" has " + abstracts.Count +
                                                " unimplemented abstract function(s). Non-abstract classes need to implement all abstract functions. Function(s): " +
-                                               InternalHelper.JoinToString(", ", abstracts.Values, FuncStr));
+                                               InternalHelper.JoinToString(", ", FuncStr, abstracts.Values));
             }
         }
 

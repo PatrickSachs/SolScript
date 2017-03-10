@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Security;
+using System.Text;
 using Irony;
 using Irony.Parsing;
 using JetBrains.Annotations;
@@ -79,8 +80,31 @@ namespace SolScript.Interpreter
 
         #endregion
 
+        /// <summary>
+        /// The input stream of this assembly. Used for reading data from SolScript. (Defaults to the console input)<br/>Although possible, it is not recommended to change this value during runtime.
+        /// </summary>
+        public Stream Input { get; set; }
+        /// <summary>
+        /// The output stream of this assembly. Used for writing data from SolScript. (Defaults to the console output)<br/>Although possible, it is not recommended to change this value during runtime.
+        /// </summary>
+        public Stream Output { get; set; }
+
+        /// <summary>
+        /// The encoding of the <see cref="Output"/> stream. (Defaults to the console encoding)
+        /// </summary>
+        public Encoding OutputEncoding { get; set; }
+
+        /// <summary>
+        /// The encoding of the <see cref="Input"/> stream. (Defaults to the console encoding)
+        /// </summary>
+        public Encoding InputEncoding { get; set; }
+
         private SolAssembly(SolAssemblyOptions options)
         {
+            Input = Console.OpenStandardInput();
+            Output = Console.OpenStandardOutput();
+            InputEncoding = Console.InputEncoding;
+            OutputEncoding = Console.OutputEncoding;
             m_Options = (SolAssemblyOptions) options.Clone();
             m_Compiler = new SolCompiler(this);
             m_Libraries.Add(lang.GetLibrary());

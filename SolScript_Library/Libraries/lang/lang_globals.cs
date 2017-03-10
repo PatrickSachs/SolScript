@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Text;
 using JetBrains.Annotations;
 using SolScript.Interpreter;
@@ -85,10 +86,13 @@ namespace SolScript.Libraries.lang
         /// </summary>
         /// <param name="context"></param>
         /// <param name="values">The values to print.</param>
+        /// <exception cref="SolRuntimeException">The <see cref="SolAssembly.OutputEncoding"/> is not supported on this system.</exception>
+        /// <exception cref="SolRuntimeException">An I/O error occured while writing to the standard output.</exception>
+        /// <exception cref="SolRuntimeException">The standard output does not support writing.</exception>
+        /// <exception cref="SolRuntimeException">The standard output has been closed.</exception>
         [SolGlobal(lang.NAME)]
         public static void print(SolExecutionContext context, params SolValue[] values)
         {
-            // todo: unify std out with the one of IO - stdout and stdin properties in solassembly?
             StringBuilder builder = new StringBuilder();
             SolStackFrame frame;
             // We are peeking at a depth of one since zero would be this
@@ -96,13 +100,30 @@ namespace SolScript.Libraries.lang
             // method is the print method.
             if (context.PeekStackFrame(out frame, 1)) {
                 frame.AppendFunctionName(builder);
-                builder.Append(' ');
+            } else {
+                builder.Append(SolSourceLocation.NATIVE_FILE);
             }
-            builder.Append("[");
+            builder.Append(" [");
             builder.Append(context.CurrentLocation);
             builder.Append("] : ");
-            builder.Append(InternalHelper.JoinToString(",", values, value => value.ToString(context)));
-            Console.WriteLine(builder.ToString());
+            builder.Append(InternalHelper.JoinToString(",", value => value.ToString(context), values));
+            builder.Append(Environment.NewLine);
+            string str = builder.ToString();
+            byte[] bytes;
+            try {
+                bytes = context.Assembly.OutputEncoding.GetBytes(str.ToCharArray(), 0, str.Length);
+            } catch (EncoderFallbackException ex) {
+                throw new SolRuntimeException(context, "The assembly output encoding \"" + context.Assembly.OutputEncoding.EncodingName + "\" is not supported on this system.", ex);
+            }
+            try {
+                context.Assembly.Output.Write(bytes, 0, bytes.Length);
+            } catch (IOException ex) {
+                throw new SolRuntimeException(context, "An I/O error occured while writing to the standard output.", ex);
+            } catch (NotSupportedException ex) {
+                throw new SolRuntimeException(context, "The standard output does not support writing. Huston, we may have a problem.", ex);
+            } catch (ObjectDisposedException ex) {
+                throw new SolRuntimeException(context, "The standard output has been closed.", ex);
+            }
         }
 
         /// <summary>

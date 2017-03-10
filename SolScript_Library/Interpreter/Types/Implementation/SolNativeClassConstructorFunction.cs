@@ -79,6 +79,11 @@ namespace SolScript.Interpreter.Types.Implementation
                 setting = setting.BaseInheritance;
             }
             SolMarshal.GetAssemblyCache(Assembly).StoreReference(inheritance.NativeObject.NotNull(), ClassInstance);
+            // Assigning self after storing in assembly cache.
+            INativeClassSelf self = nativeInstance as INativeClassSelf;
+            if (self != null) {
+                self.Self = ClassInstance;
+            }
             return SolNil.Instance;
         }
 
