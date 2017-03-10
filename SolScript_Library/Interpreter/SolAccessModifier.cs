@@ -22,7 +22,6 @@ namespace SolScript.Interpreter
         ///     An internal access modifier has been specified. For classes the variable may only be accessed from inside the same
         ///     class.
         /// </summary>
-        // todo: what does internal mean for globals?
         Internal = 2
     }
 }

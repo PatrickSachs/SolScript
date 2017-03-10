@@ -207,14 +207,26 @@ namespace SolScript.Interpreter.Library
                     SolGlobalAttribute globalClassAttribute = type.GetCustomAttribute<SolGlobalAttribute>();
                     if (globalClassAttribute != null && globalClassAttribute.Library == Name) {
                         SolDebug.WriteLine("Library " + Name + " scans global class: " + type.Name);
-                        // todo: global native fields
                         foreach (MethodInfo method in type.GetMethods(BINDING_FLAGS)) {
                             SolGlobalAttribute globalMethodAttribute = method.GetCustomAttribute<SolGlobalAttribute>();
                             if (globalMethodAttribute != null && globalMethodAttribute.Library == Name) {
-                                SolDebug.WriteLine("  Found " + method.Name);
+                                SolDebug.WriteLine("  Found Method " + method.Name);
                                 SolFunctionBuilder solMethod;
                                 if (TryBuildMethod(method, out solMethod)) {
                                     m_GlobalFunctions.Add(solMethod);
+                                }
+                            }
+                        }
+                        foreach (FieldOrPropertyInfo field in FieldOrPropertyInfo.Get(type))
+                        {
+                            SolGlobalAttribute globalAttribute = field.GetCustomAttribute<SolGlobalAttribute>();
+                            if (globalAttribute != null && globalAttribute.Library == Name)
+                            {
+                                SolDebug.WriteLine("  Found Field " + field.Name);
+                                SolFieldBuilder solField;
+                                if (TryBuildField(field, out solField))
+                                {
+                                    m_GlobalFieldBuilders.Add(solField);
                                 }
                             }
                         }

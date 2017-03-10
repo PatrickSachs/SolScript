@@ -80,25 +80,6 @@ namespace SolScript.Interpreter
 
         #endregion
 
-        /// <summary>
-        /// The input stream of this assembly. Used for reading data from SolScript. (Defaults to the console input)<br/>Although possible, it is not recommended to change this value during runtime.
-        /// </summary>
-        public Stream Input { get; set; }
-        /// <summary>
-        /// The output stream of this assembly. Used for writing data from SolScript. (Defaults to the console output)<br/>Although possible, it is not recommended to change this value during runtime.
-        /// </summary>
-        public Stream Output { get; set; }
-
-        /// <summary>
-        /// The encoding of the <see cref="Output"/> stream. (Defaults to the console encoding)
-        /// </summary>
-        public Encoding OutputEncoding { get; set; }
-
-        /// <summary>
-        /// The encoding of the <see cref="Input"/> stream. (Defaults to the console encoding)
-        /// </summary>
-        public Encoding InputEncoding { get; set; }
-
         private SolAssembly(SolAssemblyOptions options)
         {
             Input = Console.OpenStandardInput();
@@ -181,7 +162,19 @@ namespace SolScript.Interpreter
         public IVariables GlobalVariables { get; private set; }
 
         /// <summary>
-        ///     todo: figure out what internal globals should be used for or if they should be allowed at all.
+        ///     The input stream of this assembly. Used for reading data from SolScript. (Defaults to the console input)<br />
+        ///     Although possible, it is not recommended to change this value during runtime.
+        /// </summary>
+        public Stream Input { get; set; }
+
+        /// <summary>
+        ///     The encoding of the <see cref="Input" /> stream. (Defaults to the console encoding)
+        /// </summary>
+        public Encoding InputEncoding { get; set; }
+
+        /// <summary>
+        ///     Internal globals can only be accessed from other global variables and functions. They should only be used for meta
+        ///     functions.
         /// </summary>
         public IVariables InternalVariables { get; private set; }
 
@@ -189,6 +182,17 @@ namespace SolScript.Interpreter
         ///     The local variables of an assembly can only be accessed from other global variables and functions.
         /// </summary>
         public IVariables LocalVariables { get; private set; }
+
+        /// <summary>
+        ///     The output stream of this assembly. Used for writing data from SolScript. (Defaults to the console output)<br />
+        ///     Although possible, it is not recommended to change this value during runtime.
+        /// </summary>
+        public Stream Output { get; set; }
+
+        /// <summary>
+        ///     The encoding of the <see cref="Output" /> stream. (Defaults to the console encoding)
+        /// </summary>
+        public Encoding OutputEncoding { get; set; }
 
         /// <summary>
         ///     The current state of this assembly. Some methods may only work in a certain state.
@@ -428,7 +432,7 @@ namespace SolScript.Interpreter
                         try {
                             declareInVariables.Declare(fieldPair.Key, fieldDefinition.Type);
                             if (fieldDefinition.Annotations.Count > 0) {
-                                SolClass[] annotations = new SolClass[fieldDefinition.Annotations.Count];
+                                var annotations = new SolClass[fieldDefinition.Annotations.Count];
                                 for (int i = 0; i < fieldDefinition.Annotations.Count; i++) {
                                     SolAnnotationDefinition annotation = fieldDefinition.Annotations[i];
                                     var annotationArgs = new SolValue[annotation.Arguments.Length];
@@ -437,7 +441,7 @@ namespace SolScript.Interpreter
                                     }
                                     try {
                                         SolClass annotationInstance = annotation.Definition.Assembly.New(annotation.Definition, AnnotationClassCreationOptions, annotationArgs);
-                                        annotations[i]=annotationInstance;
+                                        annotations[i] = annotationInstance;
                                     } catch (SolTypeRegistryException ex) {
                                         throw new SolTypeRegistryException(annotation.Definition.Location,
                                             $"An error occured while initializing the annotation \"{annotation.Definition.Type}\" on global field \"{fieldDefinition.Name}\".",

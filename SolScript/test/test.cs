@@ -23,4 +23,11 @@ namespace SolScript.test
             return l_library ?? (l_library = new SolLibrary(NAME, typeof(test).Assembly));
         }
     }
+
+    [SolGlobal("test")]
+    public static class test_G
+    {
+        [SolGlobal("test")]
+        public static string Field;
+    }
 }
