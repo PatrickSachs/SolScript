@@ -24,7 +24,6 @@ namespace SolScript.Interpreter.Library
             NativeMethodPostProcessor internalPostProcessor = NativeMethodPostProcessor.GetAccessor(SolAccessModifier.Internal);
             RegisterMethodPostProcessor(SolMetaKey.__a_get_variable.Name, internalPostProcessor);
             RegisterMethodPostProcessor(SolMetaKey.__a_set_variable.Name, internalPostProcessor);
-            RegisterMethodPostProcessor(SolMetaKey.__a_call_function.Name, internalPostProcessor);
             RegisterMethodPostProcessor(SolMetaKey.__a_pre_new.Name, internalPostProcessor);
             RegisterMethodPostProcessor(SolMetaKey.__a_post_new.Name, internalPostProcessor);
             // todo: meta function post processors (detect operators).

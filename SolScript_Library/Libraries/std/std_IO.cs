@@ -21,6 +21,12 @@ namespace SolScript.Libraries.std
     [PublicAPI]
     public class std_IO : INativeClassSelf
     {
+        [SolLibraryVisibility(std.NAME, true)]
+        private std_IO() { }
+
+        /// <summary>
+        /// The type name is "IO".
+        /// </summary>
         [SolLibraryVisibility(std.NAME, false)] public const string TYPE = "IO";
 
         private const double SECOND_TO_MS = 1000;

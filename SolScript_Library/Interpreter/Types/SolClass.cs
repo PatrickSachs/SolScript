@@ -341,7 +341,7 @@ namespace SolScript.Interpreter.Types
             }
             // ===========================================
             // Prepare
-            // The function is already recceived at this point
+            // The function is already received at this point
             // so that we can create a fake stack-frame helping
             // out with error reporting.
             SolFunction ctorFunction;
@@ -350,7 +350,7 @@ namespace SolScript.Interpreter.Types
                 // If the constructor could not be found, we add a dummy function in order to have a stack trace.
                 ctorFunction = TryGetMetaFunction(SolMetaKey.__new, out link) ? link.GetFunction(this) : SolFunction.Dummy(Assembly);
             } catch (SolVariableException ex) {
-                throw new InvalidOperationException($"The constructor of \"{Type}\" was in an invalid state.", ex);
+                throw new SolRuntimeException(callingContext, $"The constructor of \"{Type}\" was in an invalid state.", ex);
             }
             callingContext.PushStackFrame(ctorFunction);
             // ===========================================

@@ -291,7 +291,7 @@ namespace SolScript.Interpreter
                 SolClassDefinition def = m_ClassDefinitions[builder.Name];
                 if (builder.BaseClass != null) {
                     SolClassDefinition baseDef = m_ClassDefinitions[builder.BaseClass];
-                    if (!baseDef.CanBeInherited()) {
+                    if (!baseDef.CanBeInherited(def)) {
                         m_ErrorAdder.Add(new SolError(def.Location, ErrorId.InvalidInheritance,
                             "Class \"" + def.Type + "\" tried to inherit from class \"" + baseDef.Type + "\" which does not allow inheritance."));
                         hadError = true;
@@ -427,6 +427,25 @@ namespace SolScript.Interpreter
                         SolExpression scriptInitializer = fieldDefinition.Initializer.GetScriptField();
                         try {
                             declareInVariables.Declare(fieldPair.Key, fieldDefinition.Type);
+                            if (fieldDefinition.Annotations.Count > 0) {
+                                SolClass[] annotations = new SolClass[fieldDefinition.Annotations.Count];
+                                for (int i = 0; i < fieldDefinition.Annotations.Count; i++) {
+                                    SolAnnotationDefinition annotation = fieldDefinition.Annotations[i];
+                                    var annotationArgs = new SolValue[annotation.Arguments.Length];
+                                    for (int j = 0; j < annotationArgs.Length; j++) {
+                                        annotationArgs[j] = annotation.Arguments[j].Evaluate(context, LocalVariables);
+                                    }
+                                    try {
+                                        SolClass annotationInstance = annotation.Definition.Assembly.New(annotation.Definition, AnnotationClassCreationOptions, annotationArgs);
+                                        annotations[i]=annotationInstance;
+                                    } catch (SolTypeRegistryException ex) {
+                                        throw new SolTypeRegistryException(annotation.Definition.Location,
+                                            $"An error occured while initializing the annotation \"{annotation.Definition.Type}\" on global field \"{fieldDefinition.Name}\".",
+                                            ex);
+                                    }
+                                }
+                                declareInVariables.AssignAnnotations(fieldPair.Key, annotations);
+                            }
                             declareInVariables.Assign(fieldPair.Key, scriptInitializer.Evaluate(context, LocalVariables));
                         } catch (SolVariableException ex) {
                             throw new SolTypeRegistryException(fieldDefinition.Location, "Failed to register global field \"" + fieldDefinition.Name + "\"", ex);
@@ -612,7 +631,7 @@ namespace SolScript.Interpreter
                         try {
                             SolClass annotationInstance = annotation.Definition.Assembly.New(annotation.Definition, AnnotationClassCreationOptions, annotationArgs);
                             annotations.Add(annotationInstance);
-                        } catch (SolRuntimeException ex) {
+                        } catch (SolTypeRegistryException ex) {
                             throw new SolTypeRegistryException(annotation.Definition.Location,
                                 $"An error occured while initializing the annotation \"{annotation.Definition.Type}\" of class \"{instance.Type}\"(Inheritance Level: \"{activeInheritance.Definition.Type}\").",
                                 ex);

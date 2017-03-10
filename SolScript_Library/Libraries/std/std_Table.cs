@@ -17,6 +17,12 @@ namespace SolScript.Libraries.std
     [PublicAPI]
     public class std_Table
     {
+        [SolLibraryVisibility(std.NAME, true)]
+        private std_Table() {}
+
+        /// <summary>
+        ///     The type name is "Table".
+        /// </summary>
         [SolLibraryVisibility(std.NAME, false)] public const string TYPE = "Table";
 
         #region Overrides

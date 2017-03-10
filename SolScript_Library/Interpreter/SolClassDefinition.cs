@@ -177,7 +177,6 @@ namespace SolScript.Interpreter
                 FindAndRegisterMetaFunction(SolMetaKey.__a_post_new);
                 FindAndRegisterMetaFunction(SolMetaKey.__a_get_variable);
                 FindAndRegisterMetaFunction(SolMetaKey.__a_set_variable);
-                FindAndRegisterMetaFunction(SolMetaKey.__a_call_function);
             }
         }
 
@@ -294,15 +293,16 @@ namespace SolScript.Interpreter
         /// <summary>
         ///     Can the class be inherited?
         /// </summary>
+        /// <param name="by">The class that wants to extend this one.</param>
         /// <returns>True if the class can be inherited, false if not.</returns>
-        public bool CanBeInherited()
+        public bool CanBeInherited(SolClassDefinition by)
         {
-            // todo: better inheritance. e.g. allow annotations to extend annotations.
             switch (TypeMode) {
                 case SolTypeMode.Default:
                 case SolTypeMode.Abstract:
                     return true;
                 case SolTypeMode.Annotation:
+                    return by.TypeMode == SolTypeMode.Annotation;
                 case SolTypeMode.Singleton:
                 case SolTypeMode.Sealed:
                     return false;

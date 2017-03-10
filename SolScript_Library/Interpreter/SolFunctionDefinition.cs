@@ -62,8 +62,7 @@ namespace SolScript.Interpreter
         ///     native method/constructor.
         /// </summary>
         public readonly SolChunkWrapper Chunk;
-
-        // todo: possibly class function definition class?
+        
         /// <summary>
         ///     The class this definition was defined in. If the function is a global function this value is null.
         /// </summary>

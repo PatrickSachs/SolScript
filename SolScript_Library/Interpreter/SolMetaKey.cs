@@ -159,12 +159,7 @@ namespace SolScript.Interpreter
         ///     Called whenever the linked variable/field is set.
         /// </summary>
         public static readonly SolMetaKey<SolTable> __a_set_variable = new SolMetaKey<SolTable>(nameof(__a_set_variable), false);
-
-        /// <summary>
-        ///     Called whenever the linked function is called.
-        /// </summary>
-        public static readonly SolMetaKey<SolTable> __a_call_function = new SolMetaKey<SolTable>(nameof(__a_call_function), false);
-
+        
         // ReSharper restore InconsistentNaming
 
         #endregion

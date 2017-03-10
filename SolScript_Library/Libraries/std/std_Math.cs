@@ -16,16 +16,16 @@ namespace SolScript.Libraries.std
     [SolLibraryClass(std.NAME, SolTypeMode.Singleton)]
     [SolLibraryName(TYPE)]
     [PublicAPI]
-    public class std_Math
+    public class std_Math : INativeClassSelf
     {
-        public std_Math()
+        [SolLibraryVisibility(std.NAME, true)]
+        private std_Math()
         {
             int seed = Environment.TickCount;
             m_RandomSeed = new SolNumber(seed);
             m_Random = new Random(seed);
         }
-
-        // todo: create a way to register the assembly in these modules. (maybe per interface?)
+        
         [SolLibraryVisibility(std.NAME, false)] public const string TYPE = "Math";
         [SolLibraryVisibility(std.NAME, false)] private Random m_Random;
         [SolLibraryVisibility(std.NAME, false)] private SolNumber m_RandomSeed;
@@ -52,9 +52,10 @@ namespace SolScript.Libraries.std
 
         #region Overrides
 
+        /// <inheritdoc />
         public override string ToString()
         {
-            return "Math Module";
+            return "Math Singleton";
         }
 
         #endregion
@@ -324,5 +325,8 @@ namespace SolScript.Libraries.std
         {
             return SolBool.ValueOf(number.Value % 1 == 0);
         }
+
+        /// <inheritdoc />
+        public SolClass Self { get; set; }
     }
 }
