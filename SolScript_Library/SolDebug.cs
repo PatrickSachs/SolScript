@@ -23,8 +23,15 @@ namespace SolScript
         /// <param name="member">Do not set - The caller member name.</param>
         /// <remarks>Only included in <c>DEBUG</c> builds.</remarks>
         [Conditional("DEBUG")]
-        public static void WriteLine(string message, [CallerFilePath] string caller = "?",
-            [CallerMemberName] string member = "?")
+        public static void WriteLine(string message,
+#if DEBUG
+            [CallerFilePath]
+#endif
+        string caller = "?",
+#if DEBUG
+            [CallerMemberName]
+#endif
+        string member = "?")
         {
             string file = Path.GetFileNameWithoutExtension(caller) ?? "?";
             string prefix = file + "." + member + "()";
