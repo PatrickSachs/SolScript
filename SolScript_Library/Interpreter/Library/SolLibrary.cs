@@ -288,7 +288,7 @@ namespace SolScript.Interpreter.Library
         {
             /// <summary>
             ///     Returns a default implementation of the <see cref="NativeFieldPostProcessor" />, returning all values according to
-            ///     the speicifed default values.
+            ///     the specified default values.
             /// </summary>
             /// <returns>The post processor instance.</returns>
             public static NativeFieldPostProcessor GetDefault()

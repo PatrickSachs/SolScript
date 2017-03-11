@@ -9,32 +9,43 @@ using SolScript.Utility;
 
 namespace SolScript.Interpreter.Types
 {
-    public sealed class SolTable : SolValue, IValueIndexable, IEnumerable<KeyValuePair<SolValue, SolValue>>
+    /// <summary>
+    ///     The table is used as pure data storage. It allows for key-value pair storage. A key of any type can be mapped to a
+    ///     value of any type.
+    /// </summary>
+    public sealed class SolTable : SolValue, IValueIndexable, IReadOnlyCollection<KeyValuePair<SolValue, SolValue>>
     {
+        /// <summary>
+        ///     Creates a new empty table.
+        /// </summary>
         public SolTable()
         {
             m_Id = s_NextId++;
         }
 
-        public SolTable(params SolValue[] array) : this()
+        /// <inheritdoc cref="SolTable(IEnumerable{SolValue})" />
+        public SolTable(params SolValue[] array) : this((IEnumerable<SolValue>) array) {}
+
+        /// <summary>
+        ///     Creates a new table from the given enumerable.
+        /// </summary>
+        /// <param name="array">The enumerable.</param>
+        public SolTable(IEnumerable<SolValue> array) : this()
         {
-            for (int i = 0; i < array.Length; i++)
-            {
-                m_Table[new SolNumber(i)] = array[i];
+            int i = 0;
+            foreach (SolValue value in array) {
+                m_Table[new SolNumber(i)] = value;
+                i++;
             }
-            m_N = array.Length;
+            m_N = i;
         }
 
-        public SolTable(IReadOnlyList<SolValue> array) : this()
-        {
-            for (int i = 0; i < array.Count; i++) {
-                m_Table[new SolNumber(i)] = array[i];
-            }
-            m_N = array.Count;
-        }
-
+        /// <summary>
+        ///     The type name is "table".
+        /// </summary>
         public const string TYPE = "table";
 
+        // The id of the next table.
         private static uint s_NextId;
 
         private static readonly SolString s_IteratorKey = SolString.ValueOf("key").Intern();
@@ -42,11 +53,19 @@ namespace SolScript.Interpreter.Types
         private readonly uint m_Id;
         private readonly Utility.Dictionary<SolValue, SolValue> m_Table = new Utility.Dictionary<SolValue, SolValue>();
         private int m_N;
+
+        /// <summary>
+        ///     All keys in this table.
+        /// </summary>
+        public IReadOnlyCollection<SolValue> Keys => m_Table.Keys;
+
+        /// <inheritdoc />
         public override string Type => TYPE;
 
-        public int Count => m_Table.Count;
+        #region IReadOnlyCollection<KeyValuePair<SolValue,SolValue>> Members
 
-        #region IEnumerable<KeyValuePair<SolValue,SolValue>> Members
+        /// <inheritdoc />
+        public int Count => m_Table.Count;
 
         /// <summary> Returns an enumerator that iterates through the table. </summary>
         /// <returns> An enumerator that can be used to iterate through the table. </returns>
@@ -65,21 +84,30 @@ namespace SolScript.Interpreter.Types
             return GetEnumerator();
         }
 
+        /// <inheritdoc />
+        public bool Contains(KeyValuePair<SolValue, SolValue> item)
+        {
+            SolValue value;
+            return m_Table.TryGetValue(item.Key, out value) && value.Equals(item.Value);
+        }
+
         #endregion
 
         #region IValueIndexable Members
 
         /// <summary>
         ///     Sets or gets a value from the table. When setting any current value
-        ///     will be overridden. When getting if the given key exists its value will be
-        ///     returned. If the key does not exist a nil value will be returned instead.
-        ///     This indexer will NOT throw on non existant keys.
+        ///     will be overridden. <br/> If the key does not exist nil will be returned instead.
         /// </summary>
         /// <param name="key"> The key name </param>
         /// <returns> 'any?' value. </returns>
+        /// <exception cref="ArgumentNullException">Tried to index/set a native null value.</exception>
         [NotNull]
         public SolValue this[[NotNull] SolValue key] {
             get {
+                if (key == null) {
+                    throw new ArgumentNullException(nameof(key), "Tried to index a table by a native null value.");
+                }
                 SolValue value;
                 if (m_Table.TryGetValue(key, out value)) {
                     return value;
@@ -87,14 +115,12 @@ namespace SolScript.Interpreter.Types
                 return SolNil.Instance;
             }
             set {
-#if DEBUG
                 if (value == null) {
-                    throw new ArgumentNullException(nameof(value), "Debug -> Tried to set a null value as table element. This is NOT allowed!");
+                    throw new ArgumentNullException(nameof(key), "Tried to assign a native null value to a table.");
                 }
                 if (key == null) {
-                    throw new ArgumentNullException(nameof(key), "Debug -> Tried to set a null key as table element. This is NOT allowed!");
+                    throw new ArgumentNullException(nameof(key), "Tried to index a table by a native null value.");
                 }
-#endif
                 if (value.Type == SolNil.TYPE) {
                     m_Table.Remove(key);
                 } else {
@@ -107,6 +133,7 @@ namespace SolScript.Interpreter.Types
 
         #region Overrides
 
+        /// <inheritdoc />
         public override int GetHashCode()
         {
             unchecked {
@@ -180,6 +207,7 @@ namespace SolScript.Interpreter.Types
             return builder.ToString();
         }
 
+        /// <inheritdoc />
         public override bool IsEqual(SolExecutionContext context, SolValue other)
         {
             if (other.Type != "table") {
@@ -189,6 +217,7 @@ namespace SolScript.Interpreter.Types
             return m_Id == otherTable.m_Id;
         }
 
+        /// <inheritdoc />
         public override IEnumerable<SolValue> Iterate(SolExecutionContext context)
         {
             // ReSharper disable once LoopCanBeConvertedToQuery
@@ -200,45 +229,31 @@ namespace SolScript.Interpreter.Types
             }
         }
 
+        /// <inheritdoc />
         public override SolNumber GetN(SolExecutionContext context)
         {
             return new SolNumber(m_N);
         }
 
-        public override bool Equals(object other)
-        {
-            if (ReferenceEquals(this, other)) {
-                return true;
-            }
-            if (ReferenceEquals(other, null)) {
-                return false;
-            }
-            SolTable otherTable = other as SolTable;
-            if (otherTable?.Count != Count) {
-                return false;
-            }
-            foreach (KeyValuePair<SolValue, SolValue> pair in m_Table) {
-                SolValue otherValue;
-                if (!otherTable.m_Table.TryGetValue(pair.Key, out otherValue)) {
-                    return false;
-                }
-                if (otherValue.Type != pair.Value.Type) {
-                    return false;
-                }
-                if (otherValue.Type == "table") {
-                    if (((SolTable) otherValue).m_Id != ((SolTable) pair.Value).m_Id) {
-                        return false;
-                    }
-                } else {
-                    if (!otherValue.Equals(pair.Value)) {
-                        return false;
-                    }
-                }
-            }
-            return true;
-        }
-
         #endregion
+
+        /// <summary>
+        ///     Iterates the array part of this table. Starting at index 0, then index 1, etc. Stops once an index cannot be found.
+        ///     Indices may NOT be skipped.
+        /// </summary>
+        /// <returns>The enumerable.</returns>
+        public IEnumerable<SolValue> IterateArray()
+        {
+            int num = 0;
+            while (true) {
+                SolValue value;
+                if (!m_Table.TryGetValue(new SolNumber(num), out value)) {
+                    break;
+                }
+                yield return value;
+                num++;
+            }
+        }
 
         /// <summary>
         ///     Clears all data in this <see cref="SolTable" />.
@@ -265,39 +280,33 @@ namespace SolScript.Interpreter.Types
             m_N = n;
         }
 
-        [CanBeNull]
-        public SolValue GetIfDefined(string key)
+        /// <summary>
+        /// Tries to get a <paramref name="value"/> associated with the given <paramref name="key"/>.
+        /// </summary>
+        /// <param name="key">The key to index key.</param>
+        /// <param name="value">The value. Will be nil if it does not exist.</param>
+        /// <returns>true if the value exists, false if not. </returns>
+        /// <remarks>The <paramref name="value"/> is NEVER be null, only nil!</remarks>
+        public bool TryGet(SolValue key, [NotNull] out SolValue value)
         {
-            return GetIfDefined((SolValue) SolString.ValueOf(key));
-        }
-
-        [CanBeNull]
-        public SolValue GetIfDefined(SolValue key)
-        {
-            SolValue value;
-            return m_Table.TryGetValue(key, out value)
-                ? value
-                : null;
-        }
-
-        public bool TryGet(string key, out SolValue value)
-        {
-            return m_Table.TryGetValue(SolString.ValueOf(key), out value);
-        }
-
-        public bool TryGet(SolValue key, out SolValue value)
-        {
-            return m_Table.TryGetValue(key, out value);
+            if (m_Table.TryGetValue(key, out value)) {
+                return true;
+            }
+            value = SolNil.Instance;
+            return false;
         }
 
         /// <summary>
         ///     Appends a new value to the end to the array structure of this table.
         ///     Returns the new index.
         /// </summary>
-        /// <param name="value"> The value </param>
-        /// <returns> The index of the newly added value </returns>
+        /// <param name="value"> The value. </param>
+        /// <returns> The index of the newly added value. Or -1 if the value was nil. </returns>
         public SolNumber Append([NotNull] SolValue value)
         {
+            if (value.Type == SolNil.TYPE) {
+                return new SolNumber(-1);
+            }
             SolNumber key = new SolNumber(m_N);
             while (m_Table.ContainsKey(key)) {
                 key = new SolNumber(m_N);
@@ -318,29 +327,5 @@ namespace SolScript.Interpreter.Types
         {
             return m_Table.ContainsKey(key);
         }
-
-        public SolValue[] ToArray()
-        {
-            var array = new SolValue[m_N];
-            for (int i = 0; i < m_N; i++) {
-                array[i] = this[new SolNumber(i)];
-            }
-            return array;
-        }
-
-        /*public SolValue this[[NotNull] string key] {
-            get { return this[new SolString(key)]; }
-            set { this[new SolString(key)] = value; }
-        }
-
-        public SolValue this[double key] {
-            get { return this[new SolNumber(key)]; }
-            set { this[new SolNumber(key)] = value; }
-        }
-
-        public SolValue this[bool key] {
-            get { return this[SolBool.ValueOf(key)]; }
-            set { this[SolBool.ValueOf(key)] = value; }
-        }*/
     }
 }

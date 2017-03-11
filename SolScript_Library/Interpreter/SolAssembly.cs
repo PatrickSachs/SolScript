@@ -95,7 +95,6 @@ namespace SolScript.Interpreter
         // The Irony Grammar rules used for SolScript.
         private static readonly SolScriptGrammar s_Grammar = new SolScriptGrammar();
 
-        private static readonly ClassCreationOptions AnnotationClassCreationOptions = new ClassCreationOptions.Customizable().SetEnforceCreation(true);
 
         private readonly Utility.Dictionary<string, SolClassDefinition> m_ClassDefinitions = new Utility.Dictionary<string, SolClassDefinition>();
         // The compiler used to validate and compile the assembly.
@@ -417,6 +416,15 @@ namespace SolScript.Interpreter
                 }
                 try {
                     declareInVariables.Declare(funcPair.Key, new SolType(SolFunction.TYPE, false));
+                    if (funcDefinition.Annotations.Count > 0) {
+                        try {
+                            declareInVariables.AssignAnnotations(funcPair.Key, InternalHelper.CreateAnnotations(context, LocalVariables, funcDefinition.Annotations));
+                        } catch (SolTypeRegistryException ex) {
+                            throw new SolTypeRegistryException(funcDefinition.Location,
+                                $"An error occured while initializing one of the annotations on global function \"{funcDefinition.Name}\".",
+                                ex);
+                        }
+                    }
                     declareInVariables.Assign(funcPair.Key, function);
                 } catch (SolVariableException ex) {
                     throw new SolTypeRegistryException(funcDefinition.Location, "Failed to register global function \"" + funcDefinition.Name + "\"", ex);
@@ -432,23 +440,13 @@ namespace SolScript.Interpreter
                         try {
                             declareInVariables.Declare(fieldPair.Key, fieldDefinition.Type);
                             if (fieldDefinition.Annotations.Count > 0) {
-                                var annotations = new SolClass[fieldDefinition.Annotations.Count];
-                                for (int i = 0; i < fieldDefinition.Annotations.Count; i++) {
-                                    SolAnnotationDefinition annotation = fieldDefinition.Annotations[i];
-                                    var annotationArgs = new SolValue[annotation.Arguments.Length];
-                                    for (int j = 0; j < annotationArgs.Length; j++) {
-                                        annotationArgs[j] = annotation.Arguments[j].Evaluate(context, LocalVariables);
-                                    }
-                                    try {
-                                        SolClass annotationInstance = annotation.Definition.Assembly.New(annotation.Definition, AnnotationClassCreationOptions, annotationArgs);
-                                        annotations[i] = annotationInstance;
-                                    } catch (SolTypeRegistryException ex) {
-                                        throw new SolTypeRegistryException(annotation.Definition.Location,
-                                            $"An error occured while initializing the annotation \"{annotation.Definition.Type}\" on global field \"{fieldDefinition.Name}\".",
-                                            ex);
-                                    }
+                                try {
+                                    declareInVariables.AssignAnnotations(fieldPair.Key, InternalHelper.CreateAnnotations(context, LocalVariables, fieldDefinition.Annotations));
+                                } catch (SolTypeRegistryException ex) {
+                                    throw new SolTypeRegistryException(fieldDefinition.Location,
+                                        $"An error occured while initializing one of the annotations on global field \"{fieldDefinition.Name}\".",
+                                        ex);
                                 }
-                                declareInVariables.AssignAnnotations(fieldPair.Key, annotations);
                             }
                             declareInVariables.Assign(fieldPair.Key, scriptInitializer.Evaluate(context, LocalVariables));
                         } catch (SolVariableException ex) {
@@ -627,19 +625,13 @@ namespace SolScript.Interpreter
             while (activeInheritance != null) {
                 // Create Annotations
                 if (options.CreateAnnotations) {
-                    foreach (SolAnnotationDefinition annotation in activeInheritance.Definition.Annotations) {
-                        var annotationArgs = new SolValue[annotation.Arguments.Length];
-                        for (int i = 0; i < annotationArgs.Length; i++) {
-                            annotationArgs[i] = annotation.Arguments[i].Evaluate(creationContext, activeInheritance.GetVariables(SolAccessModifier.Local, SolClass.Inheritance.Mode.All));
-                        }
-                        try {
-                            SolClass annotationInstance = annotation.Definition.Assembly.New(annotation.Definition, AnnotationClassCreationOptions, annotationArgs);
-                            annotations.Add(annotationInstance);
-                        } catch (SolTypeRegistryException ex) {
-                            throw new SolTypeRegistryException(annotation.Definition.Location,
-                                $"An error occured while initializing the annotation \"{annotation.Definition.Type}\" of class \"{instance.Type}\"(Inheritance Level: \"{activeInheritance.Definition.Type}\").",
-                                ex);
-                        }
+                    try {
+                        annotations.AddRange(InternalHelper.CreateAnnotations(creationContext, activeInheritance.GetVariables(SolAccessModifier.Local, SolClass.Inheritance.Mode.All),
+                            activeInheritance.Definition.Annotations));
+                    } catch (SolTypeRegistryException ex) {
+                        throw new SolTypeRegistryException(activeInheritance.Definition.Location,
+                            $"An error occured while initializing one of the annotation on class \"{instance.Type}\"(Inheritance Level: \"{activeInheritance.Definition.Type}\").",
+                            ex);
                     }
                 }
                 foreach (KeyValuePair<string, SolFieldDefinition> fieldPair in activeInheritance.Definition.FieldLookup) {
@@ -673,16 +665,13 @@ namespace SolScript.Interpreter
                         IVariables localUsage = activeInheritance.GetVariables(SolAccessModifier.Local, SolClass.Inheritance.Mode.All);
                         // Let's create the field annotations(If we actually have some to create).
                         if (options.CreateFieldAnnotations && fieldDefinition.Annotations.Count > 0) {
-                            var fieldAnnotationInstances = new SolClass[fieldDefinition.Annotations.Count];
-                            for (int i = 0; i < fieldAnnotationInstances.Length; i++) {
-                                SolAnnotationDefinition fieldAnnotation = fieldDefinition.Annotations[i];
-                                var values = new SolValue[fieldAnnotation.Arguments.Length];
-                                for (int v = 0; v < values.Length; v++) {
-                                    values[v] = fieldAnnotation.Arguments[v].Evaluate(creationContext, localUsage);
-                                }
-                                fieldAnnotationInstances[i] = New(fieldAnnotation.Definition, AnnotationClassCreationOptions, values);
+                            try {
+                                variables.AssignAnnotations(fieldDefinition.Name, InternalHelper.CreateAnnotations(creationContext, localUsage, fieldDefinition.Annotations));
+                            } catch (SolTypeRegistryException ex) {
+                                throw new SolTypeRegistryException(activeInheritance.Definition.Location,
+                                    $"An error occured while initializing one of the annotation on class field \"{instance.Type}.{fieldDefinition.Name}\"(Inheritance Level: \"{activeInheritance.Definition.Type}\").",
+                                    ex);
                             }
-                            variables.AssignAnnotations(fieldDefinition.Name, fieldAnnotationInstances);
                         }
                         // Assign the script fields.
                         if (options.AssignScriptFields && fieldDefinition.Initializer.FieldType == SolFieldInitializerWrapper.Type.ScriptField) {

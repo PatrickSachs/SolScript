@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Library;
@@ -362,13 +363,13 @@ namespace SolScript.Interpreter.Types
                     if (annotation.TryGetMetaFunction(SolMetaKey.__a_pre_new, out preLink)) {
                         SolTable metaTable = SolMetaKey.__a_pre_new.Cast(preLink.GetFunction(annotation).Call(callingContext, new SolTable(args), new SolTable(rawArgs))).NotNull();
                         SolValue metaNewArgsRaw;
-                        if (metaTable.TryGet("new_args", out metaNewArgsRaw)) {
+                        if (metaTable.TryGet(SolString.ValueOf("new_args"), out metaNewArgsRaw)) {
                             SolTable metaNewArgs = metaNewArgsRaw as SolTable;
                             if (metaNewArgs == null) {
                                 throw new SolRuntimeException(callingContext,
                                     $"The annotation \"{annotation}\" tried to override the constructor arguments of a class instance of type \"{Type}\" with a \"{metaNewArgsRaw.Type}\" value. Expected a \"table!\" value.");
                             }
-                            args = metaNewArgs.ToArray();
+                            args = metaNewArgs.IterateArray().ToArray();
                         }
                     }
                 } catch (SolVariableException ex) {

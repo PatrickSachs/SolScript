@@ -343,7 +343,7 @@ namespace SolScript.Interpreter
                                     return new VarOperation(null, VariableState.FailedRuntimeError, ex);
                                 }
                                 SolValue metaOverride;
-                                if (table.TryGet("override", out metaOverride)) {
+                                if (table.TryGet(SolString.ValueOf("override"), out metaOverride)) {
                                     if (!Type.IsCompatible(Assembly, metaOverride.Type)) {
                                         return new VarOperation(null, VariableState.FailedTypeMismatch,
                                             new SolVariableException(SolSourceLocation.Native(), "The annotation \"" + annotation.Type + "\" tried to override the value set to the variable \"" + Name +
@@ -385,7 +385,7 @@ namespace SolScript.Interpreter
                                     return new VarOperation(null, VariableState.FailedRuntimeError, ex);
                                 }
                                 SolValue metaOverride;
-                                if (table.TryGet("override", out metaOverride)) {
+                                if (table.TryGet(SolString.ValueOf("override"), out metaOverride)) {
                                     if (!Type.IsCompatible(Assembly, metaOverride.Type)) {
                                         return new VarOperation(value, VariableState.FailedTypeMismatch, null);
                                     }

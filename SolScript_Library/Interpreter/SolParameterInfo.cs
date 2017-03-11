@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
@@ -83,6 +84,7 @@ namespace SolScript.Interpreter
 
         #region Overrides
 
+        /// <inheritdoc />
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) {
@@ -97,6 +99,7 @@ namespace SolScript.Interpreter
             return Equals_Impl((SolParameterInfo) obj);
         }
 
+        /// <inheritdoc />
         public override int GetHashCode()
         {
             unchecked {
@@ -124,7 +127,7 @@ namespace SolScript.Interpreter
         /// <exception cref="SolVariableException">The parameters do not fit.</exception>
         public SolValue[] VerifyArguments(SolAssembly assembly, SolValue[] arguments)
         {
-            var newArguments = new SolValue[Count > arguments.Length ? Count : arguments.Length];
+            var newArguments = new Utility.List<SolValue>(Count > arguments.Length ? Count : arguments.Length);
             for (int i = 0; i < Count; i++) {
                 // First go through every declared parameter and see if the types are compatible.
                 if (i < arguments.Length) {
@@ -134,14 +137,14 @@ namespace SolScript.Interpreter
                         throw new SolVariableException(SolSourceLocation.Native(), 
                             $"Parameter \"{m_Parameters[i].Name}\" expected a value of type \"{m_Parameters[i].Type}\", but recceived a value of the incompatible type \"{arg.Type}\".");
                     }
-                    newArguments[i] = arg;
+                    newArguments.Add(arg);
                 } else {
                     // The parameter has no longer been passed and will thus be treated as nil.
                     if (!m_Parameters[i].Type.CanBeNil) {
                         throw new SolVariableException(SolSourceLocation.Native(), 
                             $"Parameter \"{m_Parameters[i].Name}\" expected a value of type \"{m_Parameters[i].Type}\", but did not recceive a value at all. No implicit nil value can be passed since the parameter does not accept nil values.");
                     }
-                    newArguments[i] = SolNil.Instance;
+                    newArguments.Add(SolNil.Instance);
                 }
             }
             if (arguments.Length > Count) {
@@ -150,11 +153,20 @@ namespace SolScript.Interpreter
                     // Additional arguments are not allowed.
                     throw new SolVariableException(SolSourceLocation.Native(), "Tried to pass " + (arguments.Length - Count) + " optional arguments although optional arguments are not allowed.");
                 }
-                for (int i = Count; i < arguments.Length; i++) {
-                    newArguments[i] = arguments[i];
+                // If the only arguments to the optional arguments is a table we use the 
+                // array part of the table as args table.
+                if (arguments.Length == Count + 1 && arguments[Count].Type == SolTable.TYPE) {
+                    SolTable tableArg = (SolTable) arguments[Count];
+                    newArguments.AddRange(tableArg.IterateArray());
+                } else
+                {
+                    for (int i = Count; i < arguments.Length; i++)
+                    {
+                        newArguments.Add(arguments[i]);
+                    }
                 }
             }
-            return newArguments;
+            return newArguments.ToArray();
         }
 
         /// <summary>

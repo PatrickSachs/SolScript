@@ -21,34 +21,6 @@ namespace SolScript.Utility
     /// </summary>
     internal static class InternalHelper
     {
-        public static bool IsOverride(this MethodInfo method)
-        {
-            return !method.Equals(method.GetBaseDefinition());
-        }
-        /// <summary>
-        ///     Converts annotation builders into annotation definitions. Validates the annotations type and type mode.
-        /// </summary>
-        /// <param name="assembly">The assembly to use for type lookups.</param>
-        /// <param name="data">The annotation data.</param>
-        /// <exception cref="SolMarshallingException">An annotation class does not exist/is not an annotation.</exception>
-        public static Array<SolAnnotationDefinition> AnnotationsFromData(SolAssembly assembly, IReadOnlyList<SolAnnotationBuilder> data)
-        {
-            var annotations = new Array<SolAnnotationDefinition>(data.Count);
-            for (int i = 0; i < annotations.Length; i++)
-            {
-                SolClassDefinition annotationDefinition;
-                if (!assembly.TryGetClass(data[i].Name, out annotationDefinition))
-                {
-                    throw new SolMarshallingException(data[i].Name, "The class used as annotation \"" + data[i].Name + "\" does not exist.");
-                }
-                if (annotationDefinition.TypeMode != SolTypeMode.Annotation)
-                {
-                    throw new SolMarshallingException(data[i].Name, "The class \"" + annotationDefinition.Type + "\" used as annotation is not an annotation.");
-                }
-                annotations[i] = new SolAnnotationDefinition(data[i].Location, annotationDefinition, data[i].Arguments);
-            }
-            return annotations;
-        }
         private static readonly HashSet<Type> FuncGenericTypes = new HashSet<Type> {
             typeof(Func<>),
             typeof(Func<,>),
@@ -88,6 +60,35 @@ namespace SolScript.Utility
             typeof(Action<,,,,,,,,,,,,,,>),
             typeof(Action<,,,,,,,,,,,,,,,>)
         };
+
+        public static readonly ClassCreationOptions AnnotationClassCreationOptions = new ClassCreationOptions.Customizable().SetEnforceCreation(true);
+
+        public static bool IsOverride(this MethodInfo method)
+        {
+            return !method.Equals(method.GetBaseDefinition());
+        }
+
+        /// <summary>
+        ///     Converts annotation builders into annotation definitions. Validates the annotations type and type mode.
+        /// </summary>
+        /// <param name="assembly">The assembly to use for type lookups.</param>
+        /// <param name="data">The annotation data.</param>
+        /// <exception cref="SolMarshallingException">An annotation class does not exist/is not an annotation.</exception>
+        public static Array<SolAnnotationDefinition> AnnotationsFromData(SolAssembly assembly, IReadOnlyList<SolAnnotationBuilder> data)
+        {
+            var annotations = new Array<SolAnnotationDefinition>(data.Count);
+            for (int i = 0; i < annotations.Length; i++) {
+                SolClassDefinition annotationDefinition;
+                if (!assembly.TryGetClass(data[i].Name, out annotationDefinition)) {
+                    throw new SolMarshallingException(data[i].Name, "The class used as annotation \"" + data[i].Name + "\" does not exist.");
+                }
+                if (annotationDefinition.TypeMode != SolTypeMode.Annotation) {
+                    throw new SolMarshallingException(data[i].Name, "The class \"" + annotationDefinition.Type + "\" used as annotation is not an annotation.");
+                }
+                annotations[i] = new SolAnnotationDefinition(data[i].Location, annotationDefinition, data[i].Arguments);
+            }
+            return annotations;
+        }
 
         /// <summary>
         ///     Checks if a <see cref="SolValue" /> is <see cref="SolNil" /> or null.
@@ -224,12 +225,13 @@ namespace SolScript.Utility
             }
         }
 
-        ///<inheritdoc cref="JoinToString{T}(string,IEnumerable{T})"/>
+        /// <inheritdoc cref="JoinToString{T}(string,IEnumerable{T})" />
         [DebuggerStepThrough]
         internal static string JoinToString<T>(string separator, params T[] array)
         {
-            return JoinToString(separator, (IEnumerable<T>)array);
+            return JoinToString(separator, (IEnumerable<T>) array);
         }
+
         /// <summary>
         ///     Converts an enumerable of objects to a string using the <see cref="object.ToString()" /> method.
         /// </summary>
@@ -243,12 +245,14 @@ namespace SolScript.Utility
         {
             return string.Join(separator, array);
         }
-        ///<inheritdoc cref="JoinToString{T}(string, Func{T,string},IEnumerable{T})"/>
+
+        /// <inheritdoc cref="JoinToString{T}(string, Func{T,string},IEnumerable{T})" />
         [DebuggerStepThrough]
         internal static string JoinToString<T>(string separator, Func<T, string> obtainer, params T[] array)
         {
-            return JoinToString(separator, obtainer,(IEnumerable<T>)array);
+            return JoinToString(separator, obtainer, (IEnumerable<T>) array);
         }
+
         /// <summary>
         ///     Converts an enumerable of objects to a string using a conversion delegate.
         /// </summary>
@@ -544,6 +548,29 @@ namespace SolScript.Utility
                 throw new InvalidOperationException("An unspecified internal error occured while calling native method \"" + method.Name + "\": " + ex.Message, ex);
             }
             return nativeObject;
+        }
+
+        /// <summary>
+        ///     Creates the given annotations.
+        /// </summary>
+        /// <param name="context">The context to use for calling their constructors.</param>
+        /// <param name="variables">The variables to evaluate their constructor expressions in.</param>
+        /// <param name="definitions">The annotation definitions.</param>
+        /// <returns>The annotation instances.</returns>
+        /// <exception cref="SolTypeRegistryException">An error occured while creating the instance.</exception>
+        public static SolClass[] CreateAnnotations(SolExecutionContext context, IVariables variables, IReadOnlyList<SolAnnotationDefinition> definitions)
+        {
+            var annotations = new SolClass[definitions.Count];
+            for (int i = 0; i < annotations.Length; i++) {
+                SolAnnotationDefinition annotation = definitions[i];
+                var annotationArgs = new SolValue[annotation.Arguments.Length];
+                for (int j = 0; j < annotationArgs.Length; j++) {
+                    annotationArgs[j] = annotation.Arguments[j].Evaluate(context, variables);
+                }
+                SolClass annotationInstance = annotation.Definition.Assembly.New(annotation.Definition, AnnotationClassCreationOptions, annotationArgs);
+                annotations[i] = annotationInstance;
+            }
+            return annotations;
         }
 
         /// <summary>

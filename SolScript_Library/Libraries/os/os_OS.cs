@@ -135,10 +135,14 @@ namespace SolScript.Libraries.os
                 throw new SolVariableException(SolSourceLocation.Native(), "No day is defined. A date-table at least requires a year, month and day field.");
             }
             int dayInt = MakeInteger(day, "Invalid day type. {0}");
-            SolValue hour = table.GetIfDefined((SolValue) Str_hour);
-            SolValue minute = table.GetIfDefined((SolValue) Str_minute);
-            SolValue second = table.GetIfDefined((SolValue) Str_second);
-            SolValue millisecond = table.GetIfDefined((SolValue) Str_milliecond);
+            SolValue hour;
+            SolValue minute;
+            SolValue second;
+            SolValue millisecond;
+            hour = table.TryGet((SolValue) Str_hour, out hour) ? hour : null;
+            minute = table.TryGet((SolValue) Str_minute, out minute) ? minute : null;
+            second = table.TryGet((SolValue) Str_second, out second) ? second : null;
+            millisecond = table.TryGet((SolValue) Str_milliecond, out millisecond) ? millisecond : null;
             if (hour == null && minute == null && second == null) {
                 if (millisecond != null) {
                     throw new SolVariableException(SolSourceLocation.Native(), "Cannot specify a millisecond if hour, minute and second are not specified.");
