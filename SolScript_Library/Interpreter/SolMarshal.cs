@@ -263,7 +263,6 @@ namespace SolScript.Interpreter
                     if (!assembly.TryGetClass(type, out classDef)) {
                         throw new SolMarshallingException($"Cannot marshal native type \"{type}\" to SolScript: This type does not have a SolClass representing it.");
                     }
-                    // todo: investigate if this order(native obj being assigned later) will cause problems (annotations specifically)
                     try {
                         solClass = assembly.New(classDef, NativeClassCreationOptions);
                     } catch (SolTypeRegistryException ex) {

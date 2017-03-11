@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using JetBrains.Annotations;
+using SolScript.Compiler;
 using SolScript.Interpreter.Builders;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
@@ -38,6 +39,11 @@ namespace SolScript.Interpreter
         /// </summary>
         public Type NativeType;
 
+        /// <summary>
+        ///     Raw access to the annotations of this class.
+        /// </summary>
+        [CanBeNull] internal Array<SolAnnotationDefinition> AnnotationsArray;
+
         // The fields of this definition.
         private readonly Utility.Dictionary<string, SolFieldDefinition> m_Fields = new Utility.Dictionary<string, SolFieldDefinition>();
         // The functions of this definition.
@@ -50,9 +56,40 @@ namespace SolScript.Interpreter
         private Utility.Dictionary<SolMetaKey, MetaFunctionLink> l_meta_functions;
 
         /// <summary>
-        /// Raw access to the annotations of this class.
+        ///     All meta functions on this class. This includes meta functions declared at all inheritance levels.
         /// </summary>
-        [CanBeNull] internal Array<SolAnnotationDefinition> AnnotationsArray;
+        public IReadOnlyDictionary<SolMetaKey, MetaFunctionLink> AllMetaFunctions {
+            get {
+                if (!DidBuildMetaFunctions) {
+                    BuildMetaFunctions();
+                }
+                return l_meta_functions;
+            }
+        }
+
+        /// <inheritdoc />
+        public override IReadOnlyList<SolAnnotationDefinition> Annotations {
+            get {
+                Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher, "Annotations can only be accessed once the class body has been generated.");
+                return AnnotationsArray;
+            }
+        }
+
+        /// <summary>
+        ///     The meta functions only declared in this class definition.
+        /// </summary>
+        public IReadOnlyDictionary<SolMetaKey, MetaFunctionLink> DeclaredMetaFunctions {
+            get {
+                if (!DidBuildMetaFunctions) {
+                    BuildMetaFunctions();
+                }
+                var dic = new Utility.Dictionary<SolMetaKey, MetaFunctionLink>();
+                foreach (KeyValuePair<SolMetaKey, MetaFunctionLink> m in l_meta_functions.Where(p => p.Value.Definition.DefinedIn == this)) {
+                    dic.Add(m.Key, m.Value);
+                }
+                return dic;
+            }
+        }
 
         /// <summary>
         ///     A lookup of the fields declared in this class. Consider using one of the
@@ -72,7 +109,8 @@ namespace SolScript.Interpreter
         public IReadOnlyCollection<SolFieldDefinition> Fields {
             get {
                 Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher, "Fields can only be accessed once the class body has been generated.");
-                return m_Fields.Values; }
+                return m_Fields.Values;
+            }
         }
 
         /// <summary>
@@ -83,7 +121,8 @@ namespace SolScript.Interpreter
         public IReadOnlyDictionary<string, SolFunctionDefinition> FunctionLookup {
             get {
                 Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher, "Functions can only be accessed once the class body has been generated.");
-                return m_Functions; }
+                return m_Functions;
+            }
         }
 
         /// <summary>
@@ -92,14 +131,8 @@ namespace SolScript.Interpreter
         public IReadOnlyCollection<SolFunctionDefinition> Functions {
             get {
                 Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher, "Functions can only be accessed once the class body has been generated.");
-                return m_Functions.Values; }
-        }
-
-        /// <inheritdoc />
-        public override IReadOnlyList<SolAnnotationDefinition> Annotations {
-            get {
-                Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher, "Annotations can only be accessed once the class body has been generated.");
-                return AnnotationsArray; }
+                return m_Functions.Values;
+            }
         }
 
         /// <summary>
@@ -149,10 +182,6 @@ namespace SolScript.Interpreter
         }
 
         /// <summary>Creates the meta function lookup for the class definition.</summary>
-        /// <exception cref="SolVariableException">
-        ///     The meta function could be found but was in an invalid state(e.g. wrong type,
-        ///     accessor...).
-        /// </exception>
         /// <exception cref="InvalidOperationException">Invalid state.</exception>
         /// <remarks>Requires <see cref="SolAssembly.AssemblyState.GeneratedClassBodies" /> or higher state.</remarks>
         private void BuildMetaFunctions()
@@ -206,26 +235,13 @@ namespace SolScript.Interpreter
         ///     Tries to find and add a meta function.
         /// </summary>
         /// <param name="meta">The meta function helper.</param>
-        /// <param name="parameters">The parameter types of the meta function.</param>
         /// <returns>true if said meta function could be found, false if not.</returns>
-        /// <exception cref="SolVariableException">
-        ///     The meta function could be found but was in an invalid state(e.g. wrong type,
-        ///     accessor...).
-        /// </exception>
-        /// <remarks>This method does NOT assert state!</remarks>
+        /// <remarks>This method does NOT assert state! Type checks, etc. should be performed by the <see cref="SolCompiler" />.</remarks>
         // This method is meant for usage from inside BuildMetaFunctions.
-        private bool FindAndRegisterMetaFunction(SolMetaKey meta, params SolType[] parameters)
+        private bool FindAndRegisterMetaFunction(SolMetaKey meta)
         {
-            // todo: find meta function parameters
             SolFunctionDefinition definition;
             if (TryGetFunction(meta.Name, false, out definition)) {
-                if (definition.AccessModifier != SolAccessModifier.Local && definition.AccessModifier != SolAccessModifier.Internal) {
-                    throw new SolVariableException(definition.Location, $"The meta function \"{meta.Name}\" of class \"{Type}\" must either be local or internal.");
-                }
-                if (!meta.Type.IsCompatible(Assembly, definition.ReturnType)) {
-                    throw new SolVariableException(definition.Location,
-                        $"The return type \"{definition.ReturnType}\" of meta function \"{meta.Name}\" in class \"{Type}\" is not compatible with the required return type \"{meta.Type}\"");
-                }
                 l_meta_functions.Add(meta, new MetaFunctionLink(meta, definition));
                 return true;
             }
@@ -512,13 +528,14 @@ namespace SolScript.Interpreter
                 SolValue value = inheritance.GetVariables(Definition.AccessModifier, SolClass.Inheritance.Mode.Declarations).Get(Meta.Name);
                 SolFunction function = value as SolFunction;
                 if (function == null) {
-                    throw new SolVariableException(Definition.Location, "Tried to get meta function \"" + Meta.Name + "\" from a \"" + instance.Type + "\" instance. Expected a function value, received a \"" + value.Type +
-                                                   "\" value.");
+                    throw new SolVariableException(Definition.Location,
+                        "Tried to get meta function \"" + Meta.Name + "\" from a \"" + instance.Type + "\" instance. Expected a function value, received a \"" + value.Type +
+                        "\" value.");
                 }
                 return function;
             }
 
-            /// <inheritdoc cref="Equals(object)"/>
+            /// <inheritdoc cref="Equals(object)" />
             protected bool Equals(MetaFunctionLink other)
             {
                 return Meta.Equals(other.Meta) && Equals(Definition, other.Definition);

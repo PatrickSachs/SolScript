@@ -24,6 +24,7 @@ namespace SolScript.Interpreter.Exceptions
         protected SolException(SolSourceLocation location, string message) : base(location + " : " + message)
         {
             Location = location;
+            RawMessage = message;
         }
 
         /// <summary>
@@ -35,6 +36,7 @@ namespace SolScript.Interpreter.Exceptions
         protected SolException(SolSourceLocation location, string message, Exception inner) : base(location + " : " + message, inner)
         {
             Location = location;
+            RawMessage = message;
         }
 
         /// <summary>

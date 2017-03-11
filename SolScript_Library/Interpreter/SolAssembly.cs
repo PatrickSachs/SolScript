@@ -255,7 +255,7 @@ namespace SolScript.Interpreter
                         Builders.AddFunction(function);
                     }
                 } catch (SolTypeRegistryException ex) {
-                    m_ErrorAdder.Add(new SolError(ex.Location, ErrorId.ClassRegistry, ex.Message, false, ex));
+                    m_ErrorAdder.Add(new SolError(ex.Location, ErrorId.ClassRegistry, ex.RawMessage, false, ex));
                     hadError = true;
                 }
             }
@@ -306,8 +306,8 @@ namespace SolScript.Interpreter
                         SolFieldDefinition fieldDefinition = new SolFieldDefinition(this, def, fieldBuilder);
                         def.AssignFieldDirect(fieldDefinition);
                     } catch (SolMarshallingException ex) {
-                        m_ErrorAdder.Add(new SolError(fieldBuilder.Location, ErrorId.ClassFieldRegistry,
-                            "Failed to get field type for field \"" + fieldBuilder.Name + "\" in class \"" + def.Type + "\": " + ex.Message, false, ex));
+                        m_ErrorAdder.Add(new SolError(ex.Location, ErrorId.ClassFieldRegistry,
+                            "Failed to get field type for field \"" + fieldBuilder.Name + "\" in class \"" + def.Type + "\": " + ex.RawMessage, false, ex));
                         hadError = true;
                     }
                 }
@@ -316,16 +316,16 @@ namespace SolScript.Interpreter
                         SolFunctionDefinition functionDefinition = new SolFunctionDefinition(this, def, functionBuilder);
                         def.AssignFunctionDirect(functionDefinition);
                     } catch (SolMarshallingException ex) {
-                        m_ErrorAdder.Add(new SolError(functionBuilder.Location, ErrorId.ClassFunctionRegistry,
-                            "Failed to get return type for function \"" + functionBuilder.Name + "\" in class \"" + def.Type + "\": " + ex.Message, false, ex));
+                        m_ErrorAdder.Add(new SolError(ex.Location, ErrorId.ClassFunctionRegistry,
+                            "Failed to get return type for function \"" + functionBuilder.Name + "\" in class \"" + def.Type + "\": " + ex.RawMessage, false, ex));
                         hadError = true;
                     }
                 }
                 try {
                     def.AnnotationsArray = InternalHelper.AnnotationsFromData(this, builder.Annotations);
                 } catch (SolMarshallingException ex) {
-                    m_ErrorAdder.Add(new SolError(builder.Location, ErrorId.InvalidAnnotationType,
-                        "Failed to create an annotation definition for class \"" + def.Type + "\": " + ex.Message, false, ex));
+                    m_ErrorAdder.Add(new SolError(ex.Location, ErrorId.InvalidAnnotationType,
+                        "Failed to create an annotation definition for class \"" + def.Type + "\": " + ex.RawMessage, false, ex));
                     hadError = true;
                 }
                 // We cannot validate the class at this point since the base class may not be built yet.
@@ -336,8 +336,8 @@ namespace SolScript.Interpreter
                     SolFieldDefinition fieldDefinition = new SolFieldDefinition(this, globalFieldBuilder);
                     m_GlobalFields.Add(globalFieldBuilder.Name, fieldDefinition);
                 } catch (SolMarshallingException ex) {
-                    m_ErrorAdder.Add(new SolError(globalFieldBuilder.Location, ErrorId.GlobalFieldRegistry,
-                        "Failed to get return type for global function \"" + globalFieldBuilder.Name + "\": " + ex.Message, false, ex));
+                    m_ErrorAdder.Add(new SolError(ex.Location, ErrorId.GlobalFieldRegistry,
+                        "Failed to get return type for global function \"" + globalFieldBuilder.Name + "\": " + ex.RawMessage, false, ex));
                     hadError = true;
                 }
             }
@@ -346,8 +346,8 @@ namespace SolScript.Interpreter
                     SolFunctionDefinition functionDefinition = new SolFunctionDefinition(this, globalFunctionBuilder);
                     m_GlobalFunctions.Add(globalFunctionBuilder.Name, functionDefinition);
                 } catch (SolMarshallingException ex) {
-                    m_ErrorAdder.Add(new SolError(globalFunctionBuilder.Location, ErrorId.GlobalFunctionRegistry,
-                        "Failed to get field type for global field \"" + globalFunctionBuilder.Name + "\": " + ex.Message, false, ex));
+                    m_ErrorAdder.Add(new SolError(ex.Location, ErrorId.GlobalFunctionRegistry,
+                        "Failed to get field type for global field \"" + globalFunctionBuilder.Name + "\": " + ex.RawMessage, false, ex));
                     hadError = true;
                 }
             }
@@ -358,7 +358,7 @@ namespace SolScript.Interpreter
                     SolDebug.WriteLine("   ... Class " + definition.Type);
                     m_Compiler.ValidateClass(definition);
                 } catch (SolCompilerException ex) {
-                    m_ErrorAdder.Add(new SolError(ex.Location, ErrorId.CompilerError, ex.Message, false, ex));
+                    m_ErrorAdder.Add(new SolError(ex.Location, ErrorId.CompilerError, ex.RawMessage, false, ex));
                     hadError = true;
                 }
             }
@@ -367,7 +367,7 @@ namespace SolScript.Interpreter
                     SolDebug.WriteLine("   ... Global Function " + definition.Name);
                     m_Compiler.ValidateFunction(definition);
                 } catch (SolCompilerException ex) {
-                    m_ErrorAdder.Add(new SolError(ex.Location, ErrorId.CompilerError, ex.Message, false, ex));
+                    m_ErrorAdder.Add(new SolError(ex.Location, ErrorId.CompilerError, ex.RawMessage, false, ex));
                     hadError = true;
                 }
             }
@@ -900,7 +900,7 @@ namespace SolScript.Interpreter
                     try {
                         factory.InterpretTree(tree, script.Builders, out classBuilders);
                     } catch (SolInterpreterException ex) {
-                        script.m_ErrorAdder.Add(new SolError(ex.Location, ErrorId.InterpreterError, ex.Message, false, ex));
+                        script.m_ErrorAdder.Add(new SolError(ex.Location, ErrorId.InterpreterError, ex.RawMessage, false, ex));
                         // Parse all trees even if we have errors. This allows easier debugging for the user if there are errors
                         // spread accross multiple files.
                         continue;
