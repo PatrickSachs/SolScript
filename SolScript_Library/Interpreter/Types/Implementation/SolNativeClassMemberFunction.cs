@@ -36,7 +36,13 @@ namespace SolScript.Interpreter.Types.Implementation
                 throw new SolRuntimeException(context, "Could to marshal the function parameters to native objects: " + ex.Message, ex);
             }
             MethodInfo nativeMethod = Definition.Chunk.GetNativeMethod();
-            object nativeObject = InternalHelper.SandboxInvokeMethod(context, Definition.Chunk.GetNativeMethod(), inheritance.NativeObject, values);
+            DynamicReference.GetState getState;
+            object nativeMember = inheritance.NativeReference.GetReference(out getState);
+            if (getState != DynamicReference.GetState.Retrieved) {
+                throw new InvalidOperationException("Internal error: The internal reference of class inheritance \"" + inheritance.Definition.Type + "\" in class \"" + ClassInstance.Type +
+                                                    "\" could not be resolved.");
+            }
+            object nativeObject = InternalHelper.SandboxInvokeMethod(context, Definition.Chunk.GetNativeMethod(), nativeMember, values);
             SolValue returnValue;
             try {
                 returnValue = SolMarshal.MarshalFromNative(Assembly, nativeMethod.ReturnType, nativeObject);

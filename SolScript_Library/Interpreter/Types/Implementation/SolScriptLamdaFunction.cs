@@ -29,7 +29,6 @@ namespace SolScript.Interpreter.Types.Implementation
         }
 
         private readonly SolChunk m_Chunk;
-        // todo: improve variable capturing for lamda functions. as of now it may captures EVERYTHING even if not required.
         [CanBeNull] private readonly IVariables m_ParentVariables;
 
         #region Overrides

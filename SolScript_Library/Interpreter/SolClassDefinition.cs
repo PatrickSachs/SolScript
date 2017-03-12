@@ -68,7 +68,7 @@ namespace SolScript.Interpreter
         }
 
         /// <inheritdoc />
-        public override IReadOnlyList<SolAnnotationDefinition> Annotations {
+        public override IReadOnlyList<SolAnnotationDefinition> DeclaredAnnotations {
             get {
                 Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher, "Annotations can only be accessed once the class body has been generated.");
                 return AnnotationsArray;

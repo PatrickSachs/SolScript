@@ -47,7 +47,6 @@ namespace SolScript.Interpreter.Types.Implementation
         /// <exception cref="SolRuntimeException">A runtime error occured.</exception>
         protected override SolValue Call_Impl(SolExecutionContext context, params SolValue[] args)
         {
-            // todo: internal access for global variables need to be figured out. (meaning, what does internal on globals even mean?)
             Variables varContext = new Variables(Assembly) {
                 Parent = Assembly.LocalVariables
             };

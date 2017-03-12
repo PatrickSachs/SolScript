@@ -103,7 +103,11 @@ namespace SolScript.Interpreter.Types
         {
             Inheritance inheritance = FindInheritance(type);
             if (inheritance != null) {
-                object nativeObject = inheritance.NativeObject;
+                DynamicReference.GetState getState;
+                object nativeObject = inheritance.NativeReference.GetReference(out getState);
+                if (getState != DynamicReference.GetState.Retrieved) {
+                    throw new SolMarshallingException(type, "The native reference of inheritance level \"" + inheritance.Definition.Type + "\" could not be resolved.");
+                }
                 if (nativeObject == null) {
                     return null;
                 }
@@ -460,6 +464,7 @@ namespace SolScript.Interpreter.Types
                 Instance = instance;
                 BaseInheritance = baseInheritance;
                 Definition = definition;
+                NativeReference = DynamicReference.FailedReference.Instance;
                 m_DeclaredLocalVariables = new DeclaredLocalClassInheritanceVariables(this);
                 m_DeclaredInternalVariables = new DeclaredInternalClassInheritanceVariables(this);
                 m_DeclaredGlobalVariables = new DeclaredGlobalClassInheritanceVariables(this);
@@ -485,7 +490,7 @@ namespace SolScript.Interpreter.Types
             /// <summary>
             ///     The native object representing this exact <see cref="Inheritance" />.
             /// </summary>
-            [CanBeNull] public object NativeObject;
+            public DynamicReference NativeReference;
 
             // Indexing works by (int)Mode + (int)AccessModifier
             private readonly IVariables[] l_variables = new IVariables[6];

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using SolScript.Interpreter;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Utility;
@@ -99,6 +100,11 @@ namespace SolScript.Compiler
                                                                     " unimplemented abstract function(s). Non-abstract classes need to implement all abstract functions. Function(s): " +
                                                                     InternalHelper.JoinToString(", ", FuncStr, abstracts.Values));
             }
+            /*if (definition.TypeMode != SolTypeMode.Annotation && definition.NativeType != null && definition.NativeType.IsSubclassOf(typeof(Attribute))) {
+                throw new SolCompilerException(definition.Location,
+                    "The non-annotation class \"" + definition.Type + "\" represents the native type \"" + definition.NativeType.Name +
+                    "\", which is an attribute. Attribute native types can only be annotations.");
+            }*/
             ValidateMetaFunctions(definition);
         }
 

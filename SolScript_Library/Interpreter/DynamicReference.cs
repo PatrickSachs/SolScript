@@ -63,6 +63,40 @@ namespace SolScript.Interpreter
         /// </param>
         public abstract void SetReference([CanBeNull] object value, out SetState refState);
 
+        #region Nested type: FailedReference
+
+        /// <summary>
+        ///     This reference always fails at whatever it tries to do. I almost feel a bit sorry for it.
+        /// </summary>
+        public sealed class FailedReference : DynamicReference
+        {
+            private FailedReference() {}
+
+            /// <summary>
+            ///     The singleton instance.
+            /// </summary>
+            public static readonly FailedReference Instance = new FailedReference();
+
+            #region Overrides
+
+            /// <inheritdoc />
+            public override object GetReference(out GetState refState)
+            {
+                refState = GetState.NotRetrieved;
+                return null;
+            }
+
+            /// <inheritdoc />
+            public override void SetReference(object value, out SetState refState)
+            {
+                refState = SetState.NotAssigned;
+            }
+
+            #endregion
+        }
+
+        #endregion
+
         #region Nested type: FixedReference
 
         /// <summary>
@@ -118,20 +152,14 @@ namespace SolScript.Interpreter
             /// <inheritdoc />
             public override object GetReference(out GetState refState)
             {
-                object obj = m_Inheritance.NativeObject;
-                refState = obj != null ? GetState.Retrieved : GetState.NotRetrieved;
-                return obj;
+                return m_Inheritance.NativeReference.GetReference(out refState);
             }
 
             /// <inheritdoc />
             public override void SetReference(object value, out SetState refState)
             {
-                if (m_Inheritance.NativeObject != null) {
-                    refState = SetState.NotAssigned;
-                } else {
-                    m_Inheritance.NativeObject = value;
-                    refState = SetState.Assigned;
-                }
+                m_Inheritance.NativeReference = new FixedReference(value);
+                refState = SetState.Assigned;
             }
 
             #endregion
@@ -149,6 +177,9 @@ namespace SolScript.Interpreter
         {
             private NullReference() {}
 
+            /// <summary>
+            ///     The singleton instance.
+            /// </summary>
             public static readonly NullReference Instance = new NullReference();
 
             #region Overrides

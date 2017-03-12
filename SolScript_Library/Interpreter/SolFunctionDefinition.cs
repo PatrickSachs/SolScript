@@ -37,7 +37,7 @@ namespace SolScript.Interpreter
             Name = builder.Name;
             AccessModifier = builder.AccessModifier;
             MemberModifier = builder.MemberModifier;
-            Annotations = InternalHelper.AnnotationsFromData(assembly, builder.Annotations);
+            DeclaredAnnotations = InternalHelper.AnnotationsFromData(assembly, builder.Annotations);
             ReturnType = builder.ReturnType.Get(assembly);
             var parameters = new SolParameter[builder.Parameters.Count];
             for (int i = 0; i < parameters.Length; i++) {
@@ -90,6 +90,6 @@ namespace SolScript.Interpreter
         public readonly SolType ReturnType;
 
         /// <inheritdoc />
-        public override IReadOnlyList<SolAnnotationDefinition> Annotations { get; }
+        public override IReadOnlyList<SolAnnotationDefinition> DeclaredAnnotations { get; }
     }
 }

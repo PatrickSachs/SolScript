@@ -271,8 +271,9 @@ namespace SolScript.Interpreter
                     }
                     // Assign the native object to all inheritance levels.
                     SolClass.Inheritance inheritance = solClass.InheritanceChain;
+                    DynamicReference reference = new DynamicReference.FixedReference(value);
                     while (inheritance != null) {
-                        inheritance.NativeObject = value;
+                        inheritance.NativeReference = reference;
                         inheritance = inheritance.BaseInheritance;
                     }
                     cache.StoreReference(value, solClass);

@@ -1,4 +1,6 @@
-﻿using SolScript.Interpreter.Library;
+﻿using System;
+using SolScript.Interpreter;
+using SolScript.Interpreter.Library;
 
 namespace SolScript.test
 {
@@ -29,5 +31,11 @@ namespace SolScript.test
     {
         [SolGlobal("test")]
         public static string Field;
+
+        [SolGlobal("test")]
+        public static void BREAK()
+        {
+            Console.WriteLine("> BREAKPOINT <");
+        }
     }
 }

@@ -62,6 +62,7 @@ namespace SolScript.Utility
         };
 
         public static readonly ClassCreationOptions AnnotationClassCreationOptions = new ClassCreationOptions.Customizable().SetEnforceCreation(true);
+        public static readonly ClassCreationOptions AnnotationClassCreationOptionsNoCtor = new ClassCreationOptions.Customizable().SetEnforceCreation(true).SetCallConstructor(false);
 
         public static bool IsOverride(this MethodInfo method)
         {
@@ -556,9 +557,13 @@ namespace SolScript.Utility
         /// <param name="context">The context to use for calling their constructors.</param>
         /// <param name="variables">The variables to evaluate their constructor expressions in.</param>
         /// <param name="definitions">The annotation definitions.</param>
+        /// <param name="provider">
+        ///     (Optional) If the annotations are on a native object pass it here. This is required if an
+        ///     annotation definition is an attribute, since attributes cannot be obtained without native instance.
+        /// </param>
         /// <returns>The annotation instances.</returns>
         /// <exception cref="SolTypeRegistryException">An error occured while creating the instance.</exception>
-        public static SolClass[] CreateAnnotations(SolExecutionContext context, IVariables variables, IReadOnlyList<SolAnnotationDefinition> definitions)
+        public static SolClass[] CreateAnnotations(SolExecutionContext context, IVariables variables, IReadOnlyList<SolAnnotationDefinition> definitions, ICustomAttributeProvider provider)
         {
             var annotations = new SolClass[definitions.Count];
             for (int i = 0; i < annotations.Length; i++) {
@@ -567,11 +572,82 @@ namespace SolScript.Utility
                 for (int j = 0; j < annotationArgs.Length; j++) {
                     annotationArgs[j] = annotation.Arguments[j].Evaluate(context, variables);
                 }
-                SolClass annotationInstance = annotation.Definition.Assembly.New(annotation.Definition, AnnotationClassCreationOptions, annotationArgs);
+                SolClass annotationInstance;
+                if (provider != null && (annotation.Definition.NativeType?.IsSubclassOf(typeof(Attribute)) ?? false)) {
+                    // We cannot create the instance of new native attributes(or should not). Thus we need some special handling for them.
+                    // By default the static attribute is used. The instance is typically then overridden by annotation creation methods.
+                    annotationInstance = annotation.Definition.Assembly.New(annotation.Definition, AnnotationClassCreationOptionsNoCtor, annotationArgs);
+                    DynamicReference attributeReference = new StaticAttributeRef(provider, annotation.Definition.NativeType);
+                    SolClass.Inheritance inheritance = annotationInstance.InheritanceChain;
+                    while (inheritance != null) {
+                        inheritance.NativeReference = attributeReference;
+                        inheritance = inheritance.BaseInheritance;
+                    }
+                } else {
+                    annotationInstance = annotation.Definition.Assembly.New(annotation.Definition, AnnotationClassCreationOptions, annotationArgs);
+                }
                 annotations[i] = annotationInstance;
             }
             return annotations;
         }
+
+        /// <summary>
+        ///     Gets a static attribute from a type.
+        /// </summary>
+        private class StaticAttributeRef : DynamicReference
+        {
+            /// <summary>
+            ///     Creates a new <see cref="StaticAttributeRef" /> instance.
+            /// </summary>
+            /// <param name="holder">The attribute holder.</param>
+            /// <param name="attribute">The attribute type.</param>
+            public StaticAttributeRef(ICustomAttributeProvider holder, Type attribute)
+            {
+                m_Holder = holder;
+                m_Attribute = attribute;
+            }
+
+            // The attribute type.
+            private readonly Type m_Attribute;
+            // The attribute holder.
+            private readonly ICustomAttributeProvider m_Holder;
+
+            #region Overrides
+
+            /// <inheritdoc />
+            public override object GetReference(out GetState refState)
+            {
+                object[] objs;
+                try {
+                    objs = m_Holder.GetCustomAttributes(m_Attribute, true);
+                } catch (TypeLoadException) {
+                    refState = GetState.NotRetrieved;
+                    return null;
+                } catch (InvalidOperationException) {
+                    refState = GetState.NotRetrieved;
+                    return null;
+                } catch (AmbiguousMatchException) {
+                    refState = GetState.NotRetrieved;
+                    return null;
+                }
+                if (objs.Length == 0) {
+                    refState = GetState.NotRetrieved;
+                    return null;
+                }
+                refState = GetState.Retrieved;
+                return objs[0];
+            }
+
+            /// <inheritdoc />
+            public override void SetReference(object value, out SetState refState)
+            {
+                // Cannot assign.
+                refState = SetState.NotAssigned;
+            }
+
+            #endregion
+        }
+        
 
         /// <summary>
         ///     Creates an instance of the given object using <see cref="Activator.CreateInstance(Type, object[])" />.

@@ -9,7 +9,7 @@ namespace SolScript.Interpreter.Types.Implementation
     ///     This type represents a constructor imported from native code. Constructors
     ///     needs a different implementation since they don't have a backing
     ///     MethodInfo(instead a ConstructorInfo) and do not simply return a SolValue,
-    ///     but instead create a NativeObject which needs to be registered inside the
+    ///     but instead create a NativeReference which needs to be registered inside the
     ///     SolClass to that a valid object for instance access exists.<br />If you are looking for the constructor function of
     ///     script functions: Script functions simply use a "normal" <see cref="SolScriptClassFunction" /> as constructor,
     ///     since the constructor is only a meta-function invoked upon creation of the class.
@@ -72,19 +72,80 @@ namespace SolScript.Interpreter.Types.Implementation
             } catch (SolMarshallingException ex) {
                 throw new SolRuntimeException(context, "Could to marshal the function parameters to native objects: " + ex.Message, ex);
             }
-            object nativeInstance = InternalHelper.SandboxInvokeMethod(context, Definition.Chunk.GetNativeConstructor(), null, values);
+            object nativeInstance = InternalHelper.SandboxInvokeMethod(context, Definition.Chunk.GetNativeConstructor(), null, values).NotNull();
+            DynamicReference reference = new DynamicReference.FixedReference(nativeInstance);
             SolClass.Inheritance setting = nativeStart;
             while (setting != null) {
-                setting.NativeObject = nativeInstance;
+                setting.NativeReference = reference;
                 setting = setting.BaseInheritance;
             }
-            SolMarshal.GetAssemblyCache(Assembly).StoreReference(inheritance.NativeObject.NotNull(), ClassInstance);
+            //if (nativeInstance != null) {
+                SolMarshal.GetAssemblyCache(Assembly).StoreReference(nativeInstance, ClassInstance);
+            //}
             // Assigning self after storing in assembly cache.
             INativeClassSelf self = nativeInstance as INativeClassSelf;
             if (self != null) {
                 self.Self = ClassInstance;
             }
             return SolNil.Instance;
+        }
+
+        #endregion
+
+        #region Nested type: StaticAttributeRef
+
+        /// <summary>
+        ///     Gets a static attribute from a type.
+        /// </summary>
+        private class StaticAttributeRef : DynamicReference
+        {
+            /// <summary>
+            ///     Creates a new <see cref="StaticAttributeRef" /> instance.
+            /// </summary>
+            /// <param name="holder">The type.</param>
+            /// <param name="attribute">The attribute type.</param>
+            public StaticAttributeRef(Type holder, Type attribute)
+            {
+                m_Holder = holder;
+                m_Attribute = attribute;
+            }
+
+            // The attribute type.
+            private readonly Type m_Attribute;
+            // The type.
+            private readonly Type m_Holder;
+
+            #region Overrides
+
+            /// <inheritdoc />
+            public override object GetReference(out GetState refState)
+            {
+                object[] objs;
+                try {
+                    objs = m_Holder.GetCustomAttributes(m_Attribute, true);
+                } catch (TypeLoadException) {
+                    refState = GetState.NotRetrieved;
+                    return null;
+                } catch (InvalidOperationException) {
+                    refState = GetState.NotRetrieved;
+                    return null;
+                }
+                if (objs.Length == 0) {
+                    refState = GetState.NotRetrieved;
+                    return null;
+                }
+                refState = GetState.Retrieved;
+                return objs[0];
+            }
+
+            /// <inheritdoc />
+            public override void SetReference(object value, out SetState refState)
+            {
+                // Cannot assign.
+                refState = SetState.NotAssigned;
+            }
+
+            #endregion
         }
 
         #endregion

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Security;
 using System.Text;
 using Irony;
@@ -401,14 +402,18 @@ namespace SolScript.Interpreter
                 SolFunctionDefinition funcDefinition = funcPair.Value;
                 IVariables declareInVariables = GetVariablesForModifier(funcDefinition.AccessModifier);
                 SolFunction function;
+                ICustomAttributeProvider provider;
                 switch (funcDefinition.Chunk.ChunkType) {
                     case SolChunkWrapper.Type.ScriptChunk:
                         function = new SolScriptGlobalFunction(funcDefinition);
+                        provider = null;
                         break;
                     case SolChunkWrapper.Type.NativeMethod:
                         function = new SolNativeGlobalFunction(funcDefinition, DynamicReference.NullReference.Instance);
+                        provider = funcDefinition.Chunk.GetNativeMethod();
                         break;
                     case SolChunkWrapper.Type.NativeConstructor:
+                        provider = funcDefinition.Chunk.GetNativeConstructor();
                         throw new SolTypeRegistryException(funcDefinition.Location,
                             "Tried to make a native constructor the global function \"" + funcPair.Key + "\". Native constructors cannot be global functions.");
                     default:
@@ -416,9 +421,9 @@ namespace SolScript.Interpreter
                 }
                 try {
                     declareInVariables.Declare(funcPair.Key, new SolType(SolFunction.TYPE, false));
-                    if (funcDefinition.Annotations.Count > 0) {
+                    if (funcDefinition.DeclaredAnnotations.Count > 0) {
                         try {
-                            declareInVariables.AssignAnnotations(funcPair.Key, InternalHelper.CreateAnnotations(context, LocalVariables, funcDefinition.Annotations));
+                            declareInVariables.AssignAnnotations(funcPair.Key, InternalHelper.CreateAnnotations(context, LocalVariables, funcDefinition.DeclaredAnnotations, provider));
                         } catch (SolTypeRegistryException ex) {
                             throw new SolTypeRegistryException(funcDefinition.Location,
                                 $"An error occured while initializing one of the annotations on global function \"{funcDefinition.Name}\".",
@@ -439,10 +444,10 @@ namespace SolScript.Interpreter
                         SolExpression scriptInitializer = fieldDefinition.Initializer.GetScriptField();
                         try {
                             declareInVariables.Declare(fieldPair.Key, fieldDefinition.Type);
-                            if (fieldDefinition.Annotations.Count > 0) {
+                            if (fieldDefinition.DeclaredAnnotations.Count > 0) {
                                 try {
-                                    declareInVariables.AssignAnnotations(fieldPair.Key, InternalHelper.CreateAnnotations(context, LocalVariables, fieldDefinition.Annotations));
-                                } catch (SolTypeRegistryException ex) {
+                                    declareInVariables.AssignAnnotations(fieldPair.Key, InternalHelper.CreateAnnotations(context, LocalVariables, fieldDefinition.DeclaredAnnotations, null));
+                                } catch (SolVariableException ex) {
                                     throw new SolTypeRegistryException(fieldDefinition.Location,
                                         $"An error occured while initializing one of the annotations on global field \"{fieldDefinition.Name}\".",
                                         ex);
@@ -459,6 +464,16 @@ namespace SolScript.Interpreter
                             declareInVariables.DeclareNative(fieldPair.Key, fieldDefinition.Type, nativeField, DynamicReference.NullReference.Instance);
                         } catch (SolVariableException ex) {
                             throw new SolTypeRegistryException(fieldDefinition.Location, "Failed to register native global field \"" + fieldDefinition.Name + "\"", ex);
+                        }
+                        try
+                        {
+                            declareInVariables.AssignAnnotations(fieldPair.Key, InternalHelper.CreateAnnotations(context, LocalVariables, fieldDefinition.DeclaredAnnotations, nativeField));
+                        }
+                        catch (SolVariableException ex)
+                        {
+                            throw new SolTypeRegistryException(fieldDefinition.Location,
+                                $"An error occured while initializing one of the annotations on global field \"{fieldDefinition.Name}\".",
+                                ex);
                         }
                         break;
                     default:
@@ -623,11 +638,12 @@ namespace SolScript.Interpreter
             SolClass.Inheritance activeInheritance = instance.InheritanceChain;
             // todo this needs to start at the base type in order for field inits to work? or does it not matter since field inits should not depend on members?!
             while (activeInheritance != null) {
+                DynamicReference inheritanceDynRef = new DynamicReference.InheritanceNative(activeInheritance);
                 // Create Annotations
                 if (options.CreateAnnotations) {
                     try {
                         annotations.AddRange(InternalHelper.CreateAnnotations(creationContext, activeInheritance.GetVariables(SolAccessModifier.Local, SolClass.Inheritance.Mode.All),
-                            activeInheritance.Definition.Annotations));
+                            activeInheritance.Definition.DeclaredAnnotations, activeInheritance.Definition.NativeType));
                     } catch (SolTypeRegistryException ex) {
                         throw new SolTypeRegistryException(activeInheritance.Definition.Location,
                             $"An error occured while initializing one of the annotation on class \"{instance.Type}\"(Inheritance Level: \"{activeInheritance.Definition.Type}\").",
@@ -640,17 +656,19 @@ namespace SolScript.Interpreter
                     // Which variable context is this field declared in?
                     // Declare the field.
                     bool wasDeclared = false;
+                    ICustomAttributeProvider provider;
                     switch (fieldDefinition.Initializer.FieldType) {
                         case SolFieldInitializerWrapper.Type.ScriptField:
+                            provider = null;
                             if (options.DeclareScriptFields) {
                                 variables.Declare(fieldDefinition.Name, fieldDefinition.Type);
                                 wasDeclared = true;
                             }
                             break;
                         case SolFieldInitializerWrapper.Type.NativeField:
+                            provider = fieldDefinition.Initializer.GetNativeField();
                             if (options.DeclareNativeFields) {
-                                variables.DeclareNative(fieldDefinition.Name, fieldDefinition.Type, fieldDefinition.Initializer.GetNativeField(),
-                                    new DynamicReference.InheritanceNative(activeInheritance));
+                                variables.DeclareNative(fieldDefinition.Name, fieldDefinition.Type, fieldDefinition.Initializer.GetNativeField(), inheritanceDynRef);
                                 wasDeclared = true;
                             }
                             break;
@@ -664,9 +682,9 @@ namespace SolScript.Interpreter
                         // Annotations and fields are initialized using local access.
                         IVariables localUsage = activeInheritance.GetVariables(SolAccessModifier.Local, SolClass.Inheritance.Mode.All);
                         // Let's create the field annotations(If we actually have some to create).
-                        if (options.CreateFieldAnnotations && fieldDefinition.Annotations.Count > 0) {
+                        if (options.CreateFieldAnnotations && fieldDefinition.DeclaredAnnotations.Count > 0) {
                             try {
-                                variables.AssignAnnotations(fieldDefinition.Name, InternalHelper.CreateAnnotations(creationContext, localUsage, fieldDefinition.Annotations));
+                                variables.AssignAnnotations(fieldDefinition.Name, InternalHelper.CreateAnnotations(creationContext, localUsage, fieldDefinition.DeclaredAnnotations, provider));
                             } catch (SolTypeRegistryException ex) {
                                 throw new SolTypeRegistryException(activeInheritance.Definition.Location,
                                     $"An error occured while initializing one of the annotation on class field \"{instance.Type}.{fieldDefinition.Name}\"(Inheritance Level: \"{activeInheritance.Definition.Type}\").",
@@ -691,9 +709,16 @@ namespace SolScript.Interpreter
             }
             instance.AnnotationsArray = new Array<SolClass>(annotations.ToArray());
             if (options.CallConstructor) {
-                try {
+                /*if (definition.NativeType != null && definition.NativeType.IsSubclassOf(typeof(Attribute))) {
+                    // We cannot create the instance of new native attributes(or should not). Use special wrappers for them.
+                    throw new SolTypeRegistryException(definition.Location, "The class \"" + definition.Type + "\" wraps the native type \"" + definition.NativeType + "\", which is an attribute. Attributes cannot be created using the new keyword.");
+                }*/
+                try
+                {
                     instance.CallConstructor(creationContext, constructorArguments);
-                } catch (SolRuntimeException ex) {
+                }
+                catch (SolRuntimeException ex)
+                {
                     throw new SolTypeRegistryException(definition.Location, $"An error occured while calling the constructor of class \"{definition.Type}\".", ex);
                 }
             }

@@ -79,7 +79,7 @@ namespace SolScript.Libraries.std
                 return new SolTable {
                     [Str_name] = SolString.ValueOf(definition.Name),
                     [Str_modifier] = SolString.ValueOf(definition.AccessModifier.ToString()),
-                    [Str_annotations] = GetAnnotations(definition.Annotations),
+                    [Str_annotations] = GetAnnotations(definition.DeclaredAnnotations),
                     [Str_defined_in] = definition.DefinedIn != null ? (SolValue) SolString.ValueOf(definition.DefinedIn.Type) : SolNil.Instance,
                     [Str_type] = SolString.ValueOf(definition.ReturnType.Type),
                     [Str_can_be_nil] = SolBool.ValueOf(definition.ReturnType.CanBeNil),
@@ -161,7 +161,7 @@ namespace SolScript.Libraries.std
                 [Str_type] = SolString.ValueOf(definition.Type.Type),
                 [Str_can_be_nil] = SolBool.ValueOf(definition.Type.CanBeNil),
                 [Str_defined_in] = definition.DefinedIn != null ? (SolValue) SolString.ValueOf(definition.DefinedIn.Type) : SolNil.Instance,
-                [Str_annotations] = GetAnnotations(definition.Annotations),
+                [Str_annotations] = GetAnnotations(definition.DeclaredAnnotations),
                 [Str_source_location] = GetSourceLocation(definition.Location),
                 [Str_modifier] = SolString.ValueOf(definition.AccessModifier.ToString())
             };
@@ -197,7 +197,7 @@ namespace SolScript.Libraries.std
                 [Str_mode] = SolString.ValueOf(definition.TypeMode.ToString()),
                 [Str_fields] = GetFields(definition.Fields),
                 [Str_functions] = GetFunctions(definition.Functions),
-                [Str_annotations] = GetAnnotations(definition.Annotations),
+                [Str_annotations] = GetAnnotations(definition.DeclaredAnnotations),
                 [Str_source_location] = GetSourceLocation(definition.Location)
             };
             return table;

@@ -34,7 +34,7 @@ namespace SolScript.Interpreter
             Name = builder.Name;
             AccessModifier = builder.AccessModifier;
             Type = builder.FieldType.Get(assembly);
-            Annotations = InternalHelper.AnnotationsFromData(assembly, builder.Annotations);
+            DeclaredAnnotations = InternalHelper.AnnotationsFromData(assembly, builder.Annotations);
             Initializer = builder.IsNative ? new SolFieldInitializerWrapper(builder.NativeField) : new SolFieldInitializerWrapper(builder.ScriptField);
         }
 
@@ -65,6 +65,6 @@ namespace SolScript.Interpreter
         public readonly SolType Type;
 
         /// <inheritdoc />
-        public override IReadOnlyList<SolAnnotationDefinition> Annotations { get; }
+        public override IReadOnlyList<SolAnnotationDefinition> DeclaredAnnotations { get; }
     }
 }

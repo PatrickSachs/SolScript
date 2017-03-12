@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.Remoting.Channels;
 using JetBrains.Annotations;
 using SolScript.Interpreter.Builders;
 using SolScript.Interpreter.Types;
@@ -27,16 +29,17 @@ namespace SolScript.Interpreter.Library
             RegisterMethodPostProcessor(SolMetaKey.__a_pre_new.Name, internalPostProcessor);
             RegisterMethodPostProcessor(SolMetaKey.__a_post_new.Name, internalPostProcessor);
             // todo: meta function post processors (detect operators).
+            m_FieldPostProcessors.Add(nameof(Attribute.TypeId), NativeFieldPostProcessor.FailOnAttribute.Instance);
             FallbackFieldPostProcessor = NativeFieldPostProcessor.GetDefault();
         }
 
         private readonly Assembly[] m_Assemblies;
-        private readonly Dictionary<string, NativeFieldPostProcessor> m_FieldPostProcessors = new Dictionary<string, NativeFieldPostProcessor>();
-        private readonly List<SolFieldBuilder> m_GlobalFieldBuilders = new List<SolFieldBuilder>();
-        private readonly List<SolFunctionBuilder> m_GlobalFunctions = new List<SolFunctionBuilder>();
-        private readonly Dictionary<string, NativeMethodPostProcessor> m_MethodPostProcessors = new Dictionary<string, NativeMethodPostProcessor>();
-        private readonly Dictionary<Type, SolClassBuilder> m_NativeToBuilder = new Dictionary<Type, SolClassBuilder>();
-        private readonly Dictionary<string, SolClassBuilder> m_SolToBuilder = new Dictionary<string, SolClassBuilder>();
+        private readonly Utility.Dictionary<string, NativeFieldPostProcessor> m_FieldPostProcessors = new Utility.Dictionary<string, NativeFieldPostProcessor>();
+        private readonly Utility.List<SolFieldBuilder> m_GlobalFieldBuilders = new Utility.List<SolFieldBuilder>();
+        private readonly Utility.List<SolFunctionBuilder> m_GlobalFunctions = new Utility.List<SolFunctionBuilder>();
+        private readonly Utility.Dictionary<string, NativeMethodPostProcessor> m_MethodPostProcessors = new Utility.Dictionary<string, NativeMethodPostProcessor>();
+        private readonly Utility.Dictionary<Type, SolClassBuilder> m_NativeToBuilder = new Utility.Dictionary<Type, SolClassBuilder>();
+        private readonly Utility.Dictionary<string, SolClassBuilder> m_SolToBuilder = new Utility.Dictionary<string, SolClassBuilder>();
         private NativeFieldPostProcessor m_FallbackFieldPostProcessor;
         private NativeMethodPostProcessor m_FallbackMethodPostProcessor;
 
@@ -265,6 +268,10 @@ namespace SolScript.Interpreter.Library
                     }
                 }
                 foreach (FieldOrPropertyInfo field in FieldOrPropertyInfo.Get(builder.NativeType)) {
+                    /*string fieldName = field.Name;
+                    if (fieldName == nameof(Attribute.TypeId)) {
+                        Console.WriteLine("got it.");
+                    }*/
                     SolFieldBuilder solField;
                     if (field.IsSpecialName) {
                         continue;
@@ -277,7 +284,7 @@ namespace SolScript.Interpreter.Library
             }
             HasBeenCreated = true;
         }
-
+        
         #region Nested type: NativeFieldPostProcessor
 
         /// <summary>
@@ -310,7 +317,7 @@ namespace SolScript.Interpreter.Library
             /// <summary>
             ///     If this returns true no field for this method can be created. By default all fields can be created.
             /// </summary>
-            public virtual bool DoesFailCreation(FieldOrPropertyInfo method) => false;
+            public virtual bool DoesFailCreation(FieldOrPropertyInfo field) => false;
 
             /// <summary>
             ///     Gets the remapped function name. The default is <see cref="FieldOrPropertyInfo.Name" />.
@@ -347,6 +354,25 @@ namespace SolScript.Interpreter.Library
             }
 
             #endregion
+            /// <summary>
+            /// This post processors fails creation on fields in attributes.
+            /// </summary>
+            public class FailOnAttribute : NativeFieldPostProcessor
+            {
+                private FailOnAttribute() { }
+                /// <summary>
+                /// The singleton instance.
+                /// </summary>
+                public static readonly FailOnAttribute Instance = new FailOnAttribute();
+                /// <inheritdoc />
+                public override bool DoesFailCreation(FieldOrPropertyInfo field)
+                {
+                    if (field.DeclaringType == null) {
+                        return false;
+                    }
+                    return field.DeclaringType == typeof(Attribute) || field.DeclaringType.IsSubclassOf(typeof(Attribute));
+                }
+            }
         }
 
         #endregion
@@ -613,6 +639,7 @@ namespace SolScript.Interpreter.Library
                 .SetAccessModifier(access)
                 .SetFieldType(remappedType.HasValue ? SolTypeBuilder.Fixed(remappedType.Value) : SolTypeBuilder.Native(field.DataType));
             // todo: annotations for native fields
+            NativeAnnotations(field, solField);
             return true;
         }
 
@@ -674,6 +701,7 @@ namespace SolScript.Interpreter.Library
                 .SetAllowOptionalParameters(allowOptional)
                 .SetNativeSendContext(sendContext)
                 .SetMemberModifier(memberModifier);
+            NativeAnnotations(method, solMethod);
             return true;
         }
 
@@ -702,9 +730,24 @@ namespace SolScript.Interpreter.Library
                 .SetNativeMarshalTypes(marshalTypes)
                 .SetAllowOptionalParameters(allowOptional)
                 .SetNativeSendContext(sendContext);
+            NativeAnnotations(constructor, solConstructor);
             return true;
         }
 
+        private void NativeAnnotations(MemberInfo member, IAnnotateableBuilder builder)
+        {
+            foreach (Attribute attribute in member.GetCustomAttributes(true).Cast<Attribute>()) {
+                Type type = attribute.GetType();
+                SolClassBuilder annotationBuilder;
+                if (!m_NativeToBuilder.TryGetValue(type, out annotationBuilder)) {
+                    continue;
+                }
+                if (annotationBuilder.TypeMode != SolTypeMode.Annotation) {
+                    continue;
+                }
+                builder.AddAnnotation(new SolAnnotationBuilder(SolSourceLocation.Native(), annotationBuilder.Name));
+            }
+        }
 
         private const BindingFlags BINDING_FLAGS = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static |
                                                    BindingFlags.Instance | BindingFlags.DeclaredOnly;

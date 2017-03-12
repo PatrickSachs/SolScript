@@ -12,8 +12,8 @@ namespace SolScript.Interpreter
         internal SolAnnotateableDefinitionBase(SolAssembly assembly, SolSourceLocation location) : base(assembly, location) {}
 
         /// <summary>
-        ///     All annotations of this definition.
+        ///     All annotations declared in this definition.
         /// </summary>
-        public abstract IReadOnlyList<SolAnnotationDefinition> Annotations { get; }
+        public abstract IReadOnlyList<SolAnnotationDefinition> DeclaredAnnotations { get; }
     }
 }
