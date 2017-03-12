@@ -1,6 +1,7 @@
 ﻿using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
+using SolScript.Utility;
 
 namespace SolScript.Interpreter
 {
@@ -39,7 +40,7 @@ namespace SolScript.Interpreter
 
         /// <summary>
         ///     Tries to get the value assigned to the given name. The result is only
-        ///     valid if the method returned <see cref="VariableGet.Success" />.
+        ///     valid if the method returned <see cref="VariableState.Success" />.
         /// </summary>
         /// <param name="name"> The name of the variable. </param>
         /// <param name="value"> A pointer to where the variable should be saved. </param>
@@ -77,6 +78,15 @@ namespace SolScript.Interpreter
         /// <param name="annotations"> The annotations to assign to the variable. </param>
         /// <exception cref="SolVariableException">Failed to assign the annotations.</exception>
         void AssignAnnotations([NotNull] string name, [ItemNotNull] params SolClass[] annotations);
+
+        /// <summary>
+        ///     Gets the annotations assigned to a given variable.
+        /// </summary>
+        /// <param name="name">The name of the variable.</param>
+        /// <returns>The annotations.</returns>
+        /// <exception cref="SolVariableException">Failed to get the annotations.</exception>
+        [NotNull]
+        IReadOnlyList<SolClass> GetAnnotations([NotNull] string name);
 
         /// <summary> Assigns a value to the variable with the given name. </summary>
         /// <exception cref="SolVariableException">

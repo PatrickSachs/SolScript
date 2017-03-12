@@ -11,8 +11,6 @@ namespace SolScript.Interpreter
     /// </summary>
     public abstract class DeclaredClassInheritanceVariables : IVariables
     {
-        internal SolClass.Inheritance Inheritance { get;  }
-
         // No 3rd party impls.
         internal DeclaredClassInheritanceVariables(SolClass.Inheritance inheritance)
         {
@@ -24,6 +22,8 @@ namespace SolScript.Interpreter
         ///     The members.
         /// </summary>
         protected readonly Variables Members;
+
+        internal SolClass.Inheritance Inheritance { get; }
 
         #region IVariables Members
 
@@ -53,7 +53,7 @@ namespace SolScript.Interpreter
         {
             VariableState membersState = Members.TryGet(name, out value);
             if (membersState != VariableState.FailedNotDeclared) {
-                // Not declared variables can be functions or parent variables
+                // Not declared variables can be functions
                 // since functions are create lazily.
                 return membersState;
             }
@@ -61,10 +61,20 @@ namespace SolScript.Interpreter
             if (value != null) {
                 return VariableState.Success;
             }
-            /*if (Parent != null) {
-                return Parent.TryGet(name, out value);
-            }*/
             return VariableState.FailedNotDeclared;
+        }
+
+        /// <inheritdoc />
+        /// <exception cref="SolVariableException">Failed to get the annotations.</exception>
+        public IReadOnlyList<SolClass> GetAnnotations(string name)
+        {
+            if (Members.IsDeclared(name)) {
+                return Members.GetAnnotations(name);
+            }
+            if (AttemptFunctionCreation(name) != null) {
+                return Members.GetAnnotations(name);
+            }
+            return EmptyReadOnlyList<SolClass>.Value;
         }
 
         /// <summary>
@@ -123,7 +133,7 @@ namespace SolScript.Interpreter
                 return Members.Assign(name, value);
             }
             if (Inheritance.Definition.TryGetFunction(name, true, out definition) && ValidateFunctionDefinition(definition)) {
-                throw new SolVariableException( Inheritance.Definition.Location,"Cannot assign values to class function \"" + name + "\", they are immutable.");
+                throw new SolVariableException(Inheritance.Definition.Location, "Cannot assign values to class function \"" + name + "\", they are immutable.");
             }
             throw new SolVariableException(Inheritance.Definition.Location, "Cannot assign value to variable \"" + name + "\", not variable with this name has been declared.");
         }

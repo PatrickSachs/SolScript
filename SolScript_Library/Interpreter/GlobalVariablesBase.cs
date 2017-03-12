@@ -72,6 +72,22 @@ namespace SolScript.Interpreter
             return VariableState.FailedNotDeclared;
         }
 
+        /// <inheritdoc />
+        /// <exception cref="SolVariableException">Failed to get the annotations.</exception>
+        public IReadOnlyList<SolClass> GetAnnotations(string name)
+        {
+            if (Members.IsDeclared(name)) {
+                return Members.GetAnnotations(name);
+            }
+            if (GetAndRegisterAdditional(name) != null) {
+                return Members.GetAnnotations(name);
+            }
+            if (Parent != null) {
+                return Parent.GetAnnotations(name);
+            }
+            return EmptyReadOnlyList<SolClass>.Value;
+        }
+
         /// <summary>
         ///     Declares the value with the given name and type and also provides
         ///     some (optional) annotations.

@@ -229,6 +229,23 @@ namespace SolScript.Interpreter
             }
         }
 
+        /// <inheritdoc />
+        /// <exception cref="SolVariableException">Failed to get the annotations.</exception>
+        public IReadOnlyList<SolClass> GetAnnotations(string name)
+        {
+            Base valueInfo;
+            if (m_Variables.TryGetValue(name, out valueInfo))
+            {
+
+                return valueInfo.Annotations;
+            }
+            if (Parent != null)
+            {
+                return Parent.GetAnnotations(name);
+            }
+            throw new SolVariableException(SolSourceLocation.Native(), $"Cannot get annotations of variable \"{name}\" - No variable with the given name has been declared.");
+        }
+
         #region Nested type: Base
 
         /// <summary>
@@ -538,7 +555,10 @@ namespace SolScript.Interpreter
             /// <inheritdoc />
             protected override VarOperation TryGetValue_Impl()
             {
-                return new VarOperation(m_AssignedValue, VariableState.Success, null);
+                if (m_AssignedValue != null) {
+                    return new VarOperation(m_AssignedValue, VariableState.Success, null);
+                }
+                return new VarOperation(null, VariableState.FailedNotAssigned, null);
             }
 
             /// <inheritdoc />

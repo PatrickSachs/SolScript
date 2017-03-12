@@ -8,19 +8,19 @@
         /// <inheritdoc />
         public override SolAssembly Assembly => Definition.Assembly;
 
+        /// <summary>
+        ///     The definition of this function.
+        /// </summary>
+        public abstract SolFunctionDefinition Definition { get; }
+
+        /// <inheritdoc />
+        public override SolSourceLocation Location => Definition.Location;
+
         /// <inheritdoc />
         public override SolParameterInfo ParameterInfo => Definition.ParameterInfo;
 
         /// <inheritdoc />
         public override SolType ReturnType => Definition.ReturnType;
-
-        /// <inheritdoc />
-        public override SolSourceLocation Location => Definition.Location;
-
-        /// <summary>
-        ///     The definition of this function.
-        /// </summary>
-        public abstract SolFunctionDefinition Definition { get; }
 
         #region Overrides
 

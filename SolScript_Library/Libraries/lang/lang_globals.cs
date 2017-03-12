@@ -23,7 +23,7 @@ namespace SolScript.Libraries.lang
         private const string DEFAULT_ASSERTION_FAILED_MESSAGE = "Assertion failed!";
 
         /// <summary>
-        ///     Raises an exceution error with the given message.
+        ///     Raises an execution error with the given message.
         /// </summary>
         /// <param name="context"></param>
         /// <param name="message">The error message. (Default: "An error occured.")</param>

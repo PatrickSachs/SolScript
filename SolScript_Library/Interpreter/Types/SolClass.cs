@@ -891,6 +891,18 @@ namespace SolScript.Interpreter.Types
                 }
 
                 /// <inheritdoc />
+                /// <exception cref="SolVariableException">Failed to get the annotations.</exception>
+                public IReadOnlyList<SolClass> GetAnnotations(string name)
+                {
+                    foreach (IVariables source in GetVariableSources()) {
+                        if (source.IsDeclared(name)) {
+                            return source.GetAnnotations(name);
+                        }
+                    }
+                    return EmptyReadOnlyList<SolClass>.Value;
+                }
+
+                /// <inheritdoc />
                 /// <exception cref="SolVariableException">
                 ///     No variable with this name has been declared.
                 /// </exception>

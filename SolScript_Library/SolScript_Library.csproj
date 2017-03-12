@@ -59,9 +59,9 @@
     <Compile Include="Interpreter\SolParameterBuilder.cs" />
     <Compile Include="Interpreter\Statements\Statement_Base.cs" />
     <Compile Include="Interpreter\Statements\Statement_Self.cs" />
+    <Compile Include="Interpreter\Types\GlobalSolFunction.cs" />
     <Compile Include="Interpreter\Types\Implementation\SolLamdaFunction.cs" />
     <Compile Include="Interpreter\Types\Implementation\SolNativeLamdaFunction.cs" />
-    <Compile Include="Libraries\lang\lang_AnnotationTargets.cs" />
     <Compile Include="Libraries\std\std_BinaryStream.cs" />
     <Compile Include="Libraries\std\std_TextStream.cs" />
     <Compile Include="MiscUtil\BigEndianBitConverter.cs" />

@@ -213,6 +213,26 @@ namespace SolScript.Interpreter
         private StatementFactory Factory => l_factory ?? (l_factory = new StatementFactory(this));
 
         /// <summary>
+        ///     Gets the global variables associated with the given access modifier.
+        /// </summary>
+        /// <param name="access">The access modifier.</param>
+        /// <returns>The variable source.</returns>
+        public IVariables GetVariables(SolAccessModifier access)
+        {
+            // todo: declared only global variables.
+            switch (access) {
+                case SolAccessModifier.None:
+                    return GlobalVariables;
+                case SolAccessModifier.Local:
+                    return LocalVariables;
+                case SolAccessModifier.Internal:
+                    return InternalVariables;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(access), access, null);
+            }
+        }
+
+        /// <summary>
         ///     Inclused a <see cref="SolLibrary" /> which will be included in the library upon creation.
         /// </summary>
         /// <param name="library"></param>
@@ -465,12 +485,9 @@ namespace SolScript.Interpreter
                         } catch (SolVariableException ex) {
                             throw new SolTypeRegistryException(fieldDefinition.Location, "Failed to register native global field \"" + fieldDefinition.Name + "\"", ex);
                         }
-                        try
-                        {
+                        try {
                             declareInVariables.AssignAnnotations(fieldPair.Key, InternalHelper.CreateAnnotations(context, LocalVariables, fieldDefinition.DeclaredAnnotations, nativeField));
-                        }
-                        catch (SolVariableException ex)
-                        {
+                        } catch (SolVariableException ex) {
                             throw new SolTypeRegistryException(fieldDefinition.Location,
                                 $"An error occured while initializing one of the annotations on global field \"{fieldDefinition.Name}\".",
                                 ex);
@@ -654,10 +671,12 @@ namespace SolScript.Interpreter
                     SolFieldDefinition fieldDefinition = fieldPair.Value;
                     IVariables variables = activeInheritance.GetVariables(fieldDefinition.AccessModifier, SolClass.Inheritance.Mode.Declarations);
                     // Which variable context is this field declared in?
-                    // Declare the field.
+                    // Declare the field.  
                     bool wasDeclared = false;
                     ICustomAttributeProvider provider;
                     switch (fieldDefinition.Initializer.FieldType) {
+                        // todo: allow to not init fields - e.g. not null types will probably need to be init from the ctor.
+                        //    -> but check later on (after ctor) if they are actually inited. !! RESPECT DECLAREXYZFIELD OPTION!!
                         case SolFieldInitializerWrapper.Type.ScriptField:
                             provider = null;
                             if (options.DeclareScriptFields) {
@@ -713,12 +732,9 @@ namespace SolScript.Interpreter
                     // We cannot create the instance of new native attributes(or should not). Use special wrappers for them.
                     throw new SolTypeRegistryException(definition.Location, "The class \"" + definition.Type + "\" wraps the native type \"" + definition.NativeType + "\", which is an attribute. Attributes cannot be created using the new keyword.");
                 }*/
-                try
-                {
+                try {
                     instance.CallConstructor(creationContext, constructorArguments);
-                }
-                catch (SolRuntimeException ex)
-                {
+                } catch (SolRuntimeException ex) {
                     throw new SolTypeRegistryException(definition.Location, $"An error occured while calling the constructor of class \"{definition.Type}\".", ex);
                 }
             }

@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.Remoting.Channels;
 using JetBrains.Annotations;
 using SolScript.Interpreter.Builders;
 using SolScript.Interpreter.Types;
@@ -29,24 +27,24 @@ namespace SolScript.Interpreter.Library
             RegisterMethodPostProcessor(SolMetaKey.__a_pre_new.Name, internalPostProcessor);
             RegisterMethodPostProcessor(SolMetaKey.__a_post_new.Name, internalPostProcessor);
             // todo: meta function post processors (detect operators).
-            m_FieldPostProcessors.Add(nameof(Attribute.TypeId), NativeFieldPostProcessor.FailOnAttribute.Instance);
+            // Fields
             FallbackFieldPostProcessor = NativeFieldPostProcessor.GetDefault();
+            m_FieldPostProcessors.Add(nameof(Attribute.TypeId), new NativeFieldPostProcessor.FailOnType(typeof(Attribute)));
+            m_FieldPostProcessors.Add(nameof(INativeClassSelf.Self), new NativeFieldPostProcessor.FailOnInterface(typeof(INativeClassSelf)));
         }
 
+        private const BindingFlags BINDING_FLAGS = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static |
+                                                   BindingFlags.Instance | BindingFlags.DeclaredOnly;
+
         private readonly Assembly[] m_Assemblies;
-        private readonly Utility.Dictionary<string, NativeFieldPostProcessor> m_FieldPostProcessors = new Utility.Dictionary<string, NativeFieldPostProcessor>();
-        private readonly Utility.List<SolFieldBuilder> m_GlobalFieldBuilders = new Utility.List<SolFieldBuilder>();
-        private readonly Utility.List<SolFunctionBuilder> m_GlobalFunctions = new Utility.List<SolFunctionBuilder>();
-        private readonly Utility.Dictionary<string, NativeMethodPostProcessor> m_MethodPostProcessors = new Utility.Dictionary<string, NativeMethodPostProcessor>();
-        private readonly Utility.Dictionary<Type, SolClassBuilder> m_NativeToBuilder = new Utility.Dictionary<Type, SolClassBuilder>();
-        private readonly Utility.Dictionary<string, SolClassBuilder> m_SolToBuilder = new Utility.Dictionary<string, SolClassBuilder>();
+        private readonly Dictionary<string, NativeFieldPostProcessor> m_FieldPostProcessors = new Dictionary<string, NativeFieldPostProcessor>();
+        private readonly List<SolFieldBuilder> m_GlobalFieldBuilders = new List<SolFieldBuilder>();
+        private readonly List<SolFunctionBuilder> m_GlobalFunctions = new List<SolFunctionBuilder>();
+        private readonly Dictionary<string, NativeMethodPostProcessor> m_MethodPostProcessors = new Dictionary<string, NativeMethodPostProcessor>();
+        private readonly Dictionary<Type, SolClassBuilder> m_NativeToBuilder = new Dictionary<Type, SolClassBuilder>();
+        private readonly Dictionary<string, SolClassBuilder> m_SolToBuilder = new Dictionary<string, SolClassBuilder>();
         private NativeFieldPostProcessor m_FallbackFieldPostProcessor;
         private NativeMethodPostProcessor m_FallbackMethodPostProcessor;
-
-        /// <summary>
-        ///     Have the builders of this library been created?
-        /// </summary>
-        public bool HasBeenCreated { get; private set; }
 
         /// <summary>
         ///     All classes in this library.
@@ -96,6 +94,23 @@ namespace SolScript.Interpreter.Library
         public string Name { get; }
 
         /// <summary>
+        ///     This fallback processor will be used in case there is no explicitly defined post processor the a field.
+        /// </summary>
+        /// <exception cref="ArgumentNullException" accessor="set">
+        ///     Cannot set the fallback field processor to null.
+        ///     <paramref name="value" />
+        /// </exception>
+        public NativeFieldPostProcessor FallbackFieldPostProcessor {
+            get { return m_FallbackFieldPostProcessor; }
+            set {
+                if (value == null) {
+                    throw new ArgumentNullException(nameof(value), "Cannot set the fallback field processor to null.");
+                }
+                m_FallbackFieldPostProcessor = value;
+            }
+        }
+
+        /// <summary>
         ///     This fallback processor will be used in case there is no explicitly defined post processor the a method.
         /// </summary>
         /// <exception cref="ArgumentNullException" accessor="set">
@@ -113,21 +128,9 @@ namespace SolScript.Interpreter.Library
         }
 
         /// <summary>
-        ///     This fallback processor will be used in case there is no explicitly defined post processor the a field.
+        ///     Have the builders of this library been created?
         /// </summary>
-        /// <exception cref="ArgumentNullException" accessor="set">
-        ///     Cannot set the fallback field processor to null.
-        ///     <paramref name="value" />
-        /// </exception>
-        public NativeFieldPostProcessor FallbackFieldPostProcessor {
-            get { return m_FallbackFieldPostProcessor; }
-            set {
-                if (value == null) {
-                    throw new ArgumentNullException(nameof(value), "Cannot set the fallback field processor to null.");
-                }
-                m_FallbackFieldPostProcessor = value;
-            }
-        }
+        public bool HasBeenCreated { get; private set; }
 
         /// <summary>
         ///     Gets the registered post processor for the given method name. If no expcilty defined post processor for this name
@@ -220,15 +223,12 @@ namespace SolScript.Interpreter.Library
                                 }
                             }
                         }
-                        foreach (FieldOrPropertyInfo field in FieldOrPropertyInfo.Get(type))
-                        {
+                        foreach (FieldOrPropertyInfo field in FieldOrPropertyInfo.Get(type)) {
                             SolGlobalAttribute globalAttribute = field.GetCustomAttribute<SolGlobalAttribute>();
-                            if (globalAttribute != null && globalAttribute.Library == Name)
-                            {
+                            if (globalAttribute != null && globalAttribute.Library == Name) {
                                 SolDebug.WriteLine("  Found Field " + field.Name);
                                 SolFieldBuilder solField;
-                                if (TryBuildField(field, out solField))
-                                {
+                                if (TryBuildField(field, out solField)) {
                                     m_GlobalFieldBuilders.Add(solField);
                                 }
                             }
@@ -237,12 +237,10 @@ namespace SolScript.Interpreter.Library
                 }
             }
             // === Create Builder Bodies
-            foreach (SolClassBuilder builder in m_SolToBuilder.Values)
-            {
+            foreach (SolClassBuilder builder in m_SolToBuilder.Values) {
                 Type baseType = builder.NativeType.BaseType;
                 SolClassBuilder baseTypeBuilder;
-                if (baseType != null && m_NativeToBuilder.TryGetValue(baseType, out baseTypeBuilder))
-                {
+                if (baseType != null && m_NativeToBuilder.TryGetValue(baseType, out baseTypeBuilder)) {
                     builder.SetBaseClass(baseTypeBuilder.Name);
                 }
                 foreach (ConstructorInfo constructor in builder.NativeType.GetConstructors(BINDING_FLAGS)) {
@@ -262,8 +260,7 @@ namespace SolScript.Interpreter.Library
                         continue;
                     }
                     SolFunctionBuilder solMethod;
-                    if (TryBuildMethod(method, out solMethod))
-                    {
+                    if (TryBuildMethod(method, out solMethod)) {
                         builder.AddFunction(solMethod);
                     }
                 }
@@ -284,7 +281,149 @@ namespace SolScript.Interpreter.Library
             }
             HasBeenCreated = true;
         }
-        
+
+        [ContractAnnotation("solField:null => false")]
+        private bool TryBuildField(FieldOrPropertyInfo field, [CanBeNull] out SolFieldBuilder solField)
+        {
+            // todo: investigate if invisibility should truly take precendence over the post processor enforcing creation control over attributes. ("OverrideExplicitAttributes")
+            SolLibraryVisibilityAttribute visibility = field.GetCustomAttributes<SolLibraryVisibilityAttribute>().FirstOrDefault(a => a.LibraryName == Name);
+            bool visible = visibility?.Visible ?? field.IsPublic;
+            if (!visible) {
+                solField = null;
+                return false;
+            }
+            string name;
+            SolAccessModifier access;
+            SolType? remappedType;
+            NativeFieldPostProcessor postProcessor = GetFieldPostProcessor(field.Name);
+            if (postProcessor.DoesFailCreation(field)) {
+                solField = null;
+                return false;
+            }
+            if (postProcessor.OverridesExplicitAttributes(field)) {
+                name = postProcessor.GetName(field);
+                access = postProcessor.GetAccessModifier(field);
+                remappedType = postProcessor.GetFieldType(field);
+            } else {
+                // todo: auto create sol style naming if desired
+                name = field.GetCustomAttribute<SolLibraryNameAttribute>()?.Name ?? postProcessor.GetName(field);
+                access = field.GetCustomAttribute<SolLibraryAccessModifierAttribute>()?.AccessModifier ?? postProcessor.GetAccessModifier(field);
+                remappedType = field.GetCustomAttribute<SolContractAttribute>()?.GetSolType() ?? postProcessor.GetFieldType(field);
+            }
+            solField = SolFieldBuilder.NewNativeField(name, field)
+                .SetAccessModifier(access)
+                .SetFieldType(remappedType.HasValue ? SolTypeBuilder.Fixed(remappedType.Value) : SolTypeBuilder.Native(field.DataType));
+            // todo: annotations for native fields
+            NativeAnnotations(field, solField);
+            return true;
+        }
+
+        /// <summary>
+        ///     Tries to create the function builder for the given method.
+        /// </summary>
+        /// <param name="method">The method to create the builder for.</param>
+        /// <param name="solMethod">The created builder. Only valid if the method returned true.</param>
+        /// <returns>true if the builder could be created, false if not.</returns>
+        [ContractAnnotation("solMethod:null => false")]
+        private bool TryBuildMethod(MethodInfo method, [CanBeNull] out SolFunctionBuilder solMethod)
+        {
+            // todo: investigate if invisibility should truly take precendence over the post processor enforcing creation control over attributes. ("OverrideExplicitAttributes")
+            SolLibraryVisibilityAttribute visibility = method.GetCustomAttributes<SolLibraryVisibilityAttribute>().FirstOrDefault(a => a.LibraryName == Name);
+            bool visible = visibility?.Visible ?? method.IsPublic;
+            if (!visible) {
+                solMethod = null;
+                return false;
+            }
+            string name;
+            SolAccessModifier access;
+            SolType? remappedReturn;
+            NativeMethodPostProcessor postProcessor = GetMethodPostProcessor(method.Name);
+            if (postProcessor.DoesFailCreation(method)) {
+                solMethod = null;
+                return false;
+            }
+            if (postProcessor.OverridesExplicitAttributes(method)) {
+                name = postProcessor.GetName(method);
+                access = postProcessor.GetAccessModifier(method);
+                remappedReturn = postProcessor.GetReturn(method);
+            } else {
+                name = method.GetCustomAttribute<SolLibraryNameAttribute>()?.Name ?? postProcessor.GetName(method);
+                access = method.GetCustomAttribute<SolLibraryAccessModifierAttribute>()?.AccessModifier ?? postProcessor.GetAccessModifier(method);
+                remappedReturn = method.GetCustomAttribute<SolContractAttribute>()?.GetSolType() ?? postProcessor.GetReturn(method);
+            }
+            SolParameterBuilder[] parameters;
+            Type[] marshalTypes;
+            bool allowOptional;
+            bool sendContext;
+            InternalHelper.GetParameterBuilders(method.GetParameters(), out parameters, out marshalTypes, out allowOptional, out sendContext);
+            // todo: annotations for native functions. if it has a native attribute that is an annotation add it here.
+            // Member Mods are set here since need access to the type and the inheritance data.
+            SolMemberModifier memberModifier = method.IsAbstract ? SolMemberModifier.Abstract : method.IsOverride() ? SolMemberModifier.Override : SolMemberModifier.None;
+            if (memberModifier == SolMemberModifier.Override) {
+                SolClassBuilder definition;
+                if (!m_NativeToBuilder.TryGetValue(method.GetBaseDefinition().DeclaringType.NotNull(), out definition)) {
+                    // If we got here it means that the NATIVE method is an override. But it is not an override
+                    // in SolScript since it overrides a method declared in a class that is not part of SoScriot.
+                    memberModifier = SolMemberModifier.None;
+                    SolDebug.WriteLine("Changed member mod of " + method.Name + " from native " + method.DeclaringType + " from override to none.");
+                }
+            }
+            solMethod = SolFunctionBuilder.NewNativeFunction(name, method)
+                .SetAccessModifier(access)
+                .SetReturnType(remappedReturn.HasValue ? SolTypeBuilder.Fixed(remappedReturn.Value) : SolTypeBuilder.Native(method.ReturnType))
+                .SetParameters(parameters)
+                .SetNativeMarshalTypes(marshalTypes)
+                .SetAllowOptionalParameters(allowOptional)
+                .SetNativeSendContext(sendContext)
+                .SetMemberModifier(memberModifier);
+            NativeAnnotations(method, solMethod);
+            return true;
+        }
+
+        [ContractAnnotation("solConstructor:null => false")]
+        private bool TryBuildConstructor(ConstructorInfo constructor, [CanBeNull] out SolFunctionBuilder solConstructor)
+        {
+            // todo: ctors are marked as abstract or override later on since we need to know if they have a base class. this should be done here but cant.
+            // todo: flesh out ctors as well as functions
+            // todo: annotations                    
+            SolLibraryVisibilityAttribute visibility = constructor.GetCustomAttributes<SolLibraryVisibilityAttribute>().FirstOrDefault(a => a.LibraryName == Name);
+            bool visible = visibility?.Visible ?? constructor.IsPublic;
+            if (!visible) {
+                solConstructor = null;
+                return false;
+            }
+            SolAccessModifier accessModifier = constructor.GetCustomAttribute<SolLibraryAccessModifierAttribute>()?.AccessModifier ?? SolAccessModifier.Internal;
+            SolParameterBuilder[] parameters;
+            Type[] marshalTypes;
+            bool allowOptional;
+            bool sendContext;
+            InternalHelper.GetParameterBuilders(constructor.GetParameters(), out parameters, out marshalTypes, out allowOptional, out sendContext);
+            solConstructor = SolFunctionBuilder.NewNativeConstructor(SolMetaKey.__new.Name, constructor)
+                .SetAccessModifier(accessModifier)
+                .SetReturnType(SolTypeBuilder.Fixed(new SolType(SolNil.TYPE, true)))
+                .SetParameters(parameters)
+                .SetNativeMarshalTypes(marshalTypes)
+                .SetAllowOptionalParameters(allowOptional)
+                .SetNativeSendContext(sendContext);
+            NativeAnnotations(constructor, solConstructor);
+            return true;
+        }
+
+        private void NativeAnnotations(MemberInfo member, IAnnotateableBuilder builder)
+        {
+            foreach (Attribute attribute in member.GetCustomAttributes(true).Cast<Attribute>()) {
+                Type type = attribute.GetType();
+                SolClassBuilder annotationBuilder;
+                if (!m_NativeToBuilder.TryGetValue(type, out annotationBuilder)) {
+                    continue;
+                }
+                if (annotationBuilder.TypeMode != SolTypeMode.Annotation) {
+                    continue;
+                }
+                builder.AddAnnotation(new SolAnnotationBuilder(SolSourceLocation.Native(), annotationBuilder.Name));
+            }
+        }
+
         #region Nested type: NativeFieldPostProcessor
 
         /// <summary>
@@ -354,25 +493,79 @@ namespace SolScript.Interpreter.Library
             }
 
             #endregion
+
+            #region Nested type: FailOnInterface
+
             /// <summary>
-            /// This post processors fails creation on fields in attributes.
+            ///     This post processor fails creation of fields that were declared in a type implementing the given interface.
             /// </summary>
-            public class FailOnAttribute : NativeFieldPostProcessor
+            public class FailOnInterface : NativeFieldPostProcessor
             {
-                private FailOnAttribute() { }
                 /// <summary>
-                /// The singleton instance.
+                ///     Creates a new <see cref="NativeFieldPostProcessor.FailOnInterface" /> instance.
                 /// </summary>
-                public static readonly FailOnAttribute Instance = new FailOnAttribute();
+                /// <param name="interfce">The interface type to fail on.</param>
+                /// <exception cref="ArgumentException"><paramref name="interfce" /> is not an interface.</exception>
+                public FailOnInterface(Type interfce)
+                {
+                    if (!interfce.IsInterface) {
+                        throw new ArgumentException("The given type \"" + interfce + "\" is not an interface.", nameof(interfce));
+                    }
+                    m_Type = interfce;
+                }
+
+                private readonly Type m_Type;
+
+                #region Overrides
+
                 /// <inheritdoc />
                 public override bool DoesFailCreation(FieldOrPropertyInfo field)
                 {
                     if (field.DeclaringType == null) {
                         return false;
                     }
-                    return field.DeclaringType == typeof(Attribute) || field.DeclaringType.IsSubclassOf(typeof(Attribute));
+
+                    return field.DeclaringType.GetInterfaces().Contains(m_Type);
                 }
+
+                #endregion
             }
+
+            #endregion
+
+            #region Nested type: FailOnType
+
+            /// <summary>
+            ///     This post processors fails creation of fields in the given type.
+            /// </summary>
+            public class FailOnType : NativeFieldPostProcessor
+            {
+                /// <summary>
+                ///     Creates a new <see cref="NativeFieldPostProcessor.FailOnType" /> instance.
+                /// </summary>
+                /// <param name="type">The type to fail on.</param>
+                public FailOnType(Type type)
+                {
+                    m_Type = type;
+                }
+
+                private readonly Type m_Type;
+
+                #region Overrides
+
+                /// <inheritdoc />
+                public override bool DoesFailCreation(FieldOrPropertyInfo field)
+                {
+                    if (field.DeclaringType == null) {
+                        return false;
+                    }
+                    return field.DeclaringType == m_Type || field.DeclaringType.IsSubclassOf(m_Type);
+                }
+
+                #endregion
+            }
+
+            #endregion
         }
 
         #endregion
@@ -606,150 +799,5 @@ namespace SolScript.Interpreter.Library
         }
 
         #endregion
-
-        [ContractAnnotation("solField:null => false")]
-        private bool TryBuildField(FieldOrPropertyInfo field, [CanBeNull] out SolFieldBuilder solField)
-        {
-            // todo: investigate if invisibility should truly take precendence over the post processor enforcing creation control over attributes. ("OverrideExplicitAttributes")
-            SolLibraryVisibilityAttribute visibility = field.GetCustomAttributes<SolLibraryVisibilityAttribute>().FirstOrDefault(a => a.LibraryName == Name);
-            bool visible = visibility?.Visible ?? field.IsPublic;
-            if (!visible) {
-                solField = null;
-                return false;
-            }
-            string name;
-            SolAccessModifier access;
-            SolType? remappedType;
-            NativeFieldPostProcessor postProcessor = GetFieldPostProcessor(field.Name);
-            if (postProcessor.DoesFailCreation(field)) {
-                solField = null;
-                return false;
-            }
-            if (postProcessor.OverridesExplicitAttributes(field)) {
-                name = postProcessor.GetName(field);
-                access = postProcessor.GetAccessModifier(field);
-                remappedType = postProcessor.GetFieldType(field);
-            } else {
-                // todo: auto create sol style naming if desired
-                name = field.GetCustomAttribute<SolLibraryNameAttribute>()?.Name ?? postProcessor.GetName(field);
-                access = field.GetCustomAttribute<SolLibraryAccessModifierAttribute>()?.AccessModifier ?? postProcessor.GetAccessModifier(field);
-                remappedType = field.GetCustomAttribute<SolContractAttribute>()?.GetSolType() ?? postProcessor.GetFieldType(field);
-            }
-            solField = SolFieldBuilder.NewNativeField(name, field)
-                .SetAccessModifier(access)
-                .SetFieldType(remappedType.HasValue ? SolTypeBuilder.Fixed(remappedType.Value) : SolTypeBuilder.Native(field.DataType));
-            // todo: annotations for native fields
-            NativeAnnotations(field, solField);
-            return true;
-        }
-
-        /// <summary>
-        ///     Tries to create the function builder for the given method.
-        /// </summary>
-        /// <param name="method">The method to create the builder for.</param>
-        /// <param name="solMethod">The created builder. Only valid if the method returned true.</param>
-        /// <returns>true if the builder could be created, false if not.</returns>
-        [ContractAnnotation("solMethod:null => false")]
-        private bool TryBuildMethod(MethodInfo method, [CanBeNull] out SolFunctionBuilder solMethod)
-        {
-            // todo: investigate if invisibility should truly take precendence over the post processor enforcing creation control over attributes. ("OverrideExplicitAttributes")
-            SolLibraryVisibilityAttribute visibility = method.GetCustomAttributes<SolLibraryVisibilityAttribute>().FirstOrDefault(a => a.LibraryName == Name);
-            bool visible = visibility?.Visible ?? method.IsPublic;
-            if (!visible) {
-                solMethod = null;
-                return false;
-            }
-            string name;
-            SolAccessModifier access;
-            SolType? remappedReturn;
-            NativeMethodPostProcessor postProcessor = GetMethodPostProcessor(method.Name);
-            if (postProcessor.DoesFailCreation(method)) {
-                solMethod = null;
-                return false;
-            }
-            if (postProcessor.OverridesExplicitAttributes(method)) {
-                name = postProcessor.GetName(method);
-                access = postProcessor.GetAccessModifier(method);
-                remappedReturn = postProcessor.GetReturn(method);
-            } else {
-                name = method.GetCustomAttribute<SolLibraryNameAttribute>()?.Name ?? postProcessor.GetName(method);
-                access = method.GetCustomAttribute<SolLibraryAccessModifierAttribute>()?.AccessModifier ?? postProcessor.GetAccessModifier(method);
-                remappedReturn = method.GetCustomAttribute<SolContractAttribute>()?.GetSolType() ?? postProcessor.GetReturn(method);
-            }
-            SolParameterBuilder[] parameters;
-            Type[] marshalTypes;
-            bool allowOptional;
-            bool sendContext;
-            InternalHelper.GetParameterBuilders(method.GetParameters(), out parameters, out marshalTypes, out allowOptional, out sendContext);
-            // todo: annotations for native functions. if it has a native attribute that is an annotation add it here.
-            // Member Mods are set here since need access to the type and the inheritance data.
-            SolMemberModifier memberModifier = method.IsAbstract ? SolMemberModifier.Abstract : method.IsOverride() ? SolMemberModifier.Override : SolMemberModifier.None;
-            if (memberModifier == SolMemberModifier.Override) {
-                SolClassBuilder definition;
-                if (!m_NativeToBuilder.TryGetValue(method.GetBaseDefinition().DeclaringType.NotNull(), out definition)) {
-                    // If we got here it means that the NATIVE method is an override. But it is not an override
-                    // in SolScript since it overrides a method declared in a class that is not part of SoScriot.
-                    memberModifier = SolMemberModifier.None;
-                    SolDebug.WriteLine("Changed member mod of " + method.Name + " from native " + method.DeclaringType + " from override to none.");
-                }
-            }
-            solMethod = SolFunctionBuilder.NewNativeFunction(name, method)
-                .SetAccessModifier(access)
-                .SetReturnType(remappedReturn.HasValue ? SolTypeBuilder.Fixed(remappedReturn.Value) : SolTypeBuilder.Native(method.ReturnType))
-                .SetParameters(parameters)
-                .SetNativeMarshalTypes(marshalTypes)
-                .SetAllowOptionalParameters(allowOptional)
-                .SetNativeSendContext(sendContext)
-                .SetMemberModifier(memberModifier);
-            NativeAnnotations(method, solMethod);
-            return true;
-        }
-
-        [ContractAnnotation("solConstructor:null => false")]
-        private bool TryBuildConstructor(ConstructorInfo constructor, [CanBeNull] out SolFunctionBuilder solConstructor)
-        {
-            // todo: ctors are marked as abstract or override later on since we need to know if they have a base class. this should be done here but cant.
-            // todo: flesh out ctors as well as functions
-            // todo: annotations                    
-            SolLibraryVisibilityAttribute visibility = constructor.GetCustomAttributes<SolLibraryVisibilityAttribute>().FirstOrDefault(a => a.LibraryName == Name);
-            bool visible = visibility?.Visible ?? constructor.IsPublic;
-            if (!visible) {
-                solConstructor = null;
-                return false;
-            }
-            SolAccessModifier accessModifier = constructor.GetCustomAttribute<SolLibraryAccessModifierAttribute>()?.AccessModifier ?? SolAccessModifier.Internal;
-            SolParameterBuilder[] parameters;
-            Type[] marshalTypes;
-            bool allowOptional;
-            bool sendContext;
-            InternalHelper.GetParameterBuilders(constructor.GetParameters(), out parameters, out marshalTypes, out allowOptional, out sendContext);
-            solConstructor = SolFunctionBuilder.NewNativeConstructor(SolMetaKey.__new.Name, constructor)
-                .SetAccessModifier(accessModifier)
-                .SetReturnType(SolTypeBuilder.Fixed(new SolType(SolNil.TYPE, true)))
-                .SetParameters(parameters)
-                .SetNativeMarshalTypes(marshalTypes)
-                .SetAllowOptionalParameters(allowOptional)
-                .SetNativeSendContext(sendContext);
-            NativeAnnotations(constructor, solConstructor);
-            return true;
-        }
-
-        private void NativeAnnotations(MemberInfo member, IAnnotateableBuilder builder)
-        {
-            foreach (Attribute attribute in member.GetCustomAttributes(true).Cast<Attribute>()) {
-                Type type = attribute.GetType();
-                SolClassBuilder annotationBuilder;
-                if (!m_NativeToBuilder.TryGetValue(type, out annotationBuilder)) {
-                    continue;
-                }
-                if (annotationBuilder.TypeMode != SolTypeMode.Annotation) {
-                    continue;
-                }
-                builder.AddAnnotation(new SolAnnotationBuilder(SolSourceLocation.Native(), annotationBuilder.Name));
-            }
-        }
-
-        private const BindingFlags BINDING_FLAGS = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static |
-                                                   BindingFlags.Instance | BindingFlags.DeclaredOnly;
     }
 }

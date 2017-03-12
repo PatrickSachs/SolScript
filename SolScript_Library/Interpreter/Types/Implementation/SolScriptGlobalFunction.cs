@@ -5,7 +5,7 @@ namespace SolScript.Interpreter.Types.Implementation
     /// <summary>
     ///     This class is used for global functions declared in script.
     /// </summary>
-    public sealed class SolScriptGlobalFunction : DefinedSolFunction
+    public sealed class SolScriptGlobalFunction : GlobalSolFunction
     {
         /// <summary>
         ///     Creates the function.
