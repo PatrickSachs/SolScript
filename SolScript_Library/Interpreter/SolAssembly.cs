@@ -659,7 +659,7 @@ namespace SolScript.Interpreter
                 // Create Annotations
                 if (options.CreateAnnotations) {
                     try {
-                        annotations.AddRange(InternalHelper.CreateAnnotations(creationContext, activeInheritance.GetVariables(SolAccessModifier.Local, SolClass.Inheritance.Mode.All),
+                        annotations.AddRange(InternalHelper.CreateAnnotations(creationContext, activeInheritance.GetVariables(SolAccessModifier.Local, SolVariableMode.All),
                             activeInheritance.Definition.DeclaredAnnotations, activeInheritance.Definition.NativeType));
                     } catch (SolTypeRegistryException ex) {
                         throw new SolTypeRegistryException(activeInheritance.Definition.Location,
@@ -669,7 +669,7 @@ namespace SolScript.Interpreter
                 }
                 foreach (KeyValuePair<string, SolFieldDefinition> fieldPair in activeInheritance.Definition.FieldLookup) {
                     SolFieldDefinition fieldDefinition = fieldPair.Value;
-                    IVariables variables = activeInheritance.GetVariables(fieldDefinition.AccessModifier, SolClass.Inheritance.Mode.Declarations);
+                    IVariables variables = activeInheritance.GetVariables(fieldDefinition.AccessModifier, SolVariableMode.Declarations);
                     // Which variable context is this field declared in?
                     // Declare the field.  
                     bool wasDeclared = false;
@@ -699,7 +699,7 @@ namespace SolScript.Interpreter
                     // initializers are not supposed/allowed to reference other members anyways.
                     if (wasDeclared) {
                         // Annotations and fields are initialized using local access.
-                        IVariables localUsage = activeInheritance.GetVariables(SolAccessModifier.Local, SolClass.Inheritance.Mode.All);
+                        IVariables localUsage = activeInheritance.GetVariables(SolAccessModifier.Local, SolVariableMode.All);
                         // Let's create the field annotations(If we actually have some to create).
                         if (options.CreateFieldAnnotations && fieldDefinition.DeclaredAnnotations.Count > 0) {
                             try {

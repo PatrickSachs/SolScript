@@ -36,7 +36,7 @@ namespace SolScript.Interpreter.Types.Implementation
         {
             SolClass.Inheritance inheritance = ClassInstance.FindInheritance(Definition.DefinedIn).NotNull();
             Variables varContext = new Variables(Assembly) {
-                Parent = inheritance.GetVariables(SolAccessModifier.Local, SolClass.Inheritance.Mode.All)
+                Parent = inheritance.GetVariables(SolAccessModifier.Local, SolVariableMode.All)
             };
             try {
                 InsertParameters(varContext, args);

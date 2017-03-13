@@ -123,8 +123,8 @@ namespace SolScript.Interpreter.Statements
                     // 2 Not found -> Only global access.
                     // Kind of funny how this little null coalescing operator handles the "deciding part" of access rights.
                     SolClass.Inheritance inheritance = LinkedStatement.WrittenInClass != null ? solClass.FindInheritance(LinkedStatement.WrittenInClass) : null;
-                    value = inheritance?.GetVariables(SolAccessModifier.Local, SolClass.Inheritance.Mode.All).Assign(keyString.Value, value)
-                            ?? solClass.InheritanceChain.GetVariables(SolAccessModifier.None, SolClass.Inheritance.Mode.All).Assign(keyString.Value, value);
+                    value = inheritance?.GetVariables(SolAccessModifier.Local, SolVariableMode.All).Assign(keyString.Value, value)
+                            ?? solClass.InheritanceChain.GetVariables(SolAccessModifier.None, SolVariableMode.All).Assign(keyString.Value, value);
                     return value;
                 }
                 IValueIndexable indexable = indexableRaw as IValueIndexable;

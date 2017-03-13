@@ -525,7 +525,7 @@ namespace SolScript.Interpreter
                 if (inheritance == null) {
                     throw new SolVariableException(Definition.Location, $"Could not find the class \"{instance.Type}\" in the inheritance chain of class \"{Definition.DefinedIn.NotNull().Type}\".");
                 }
-                SolValue value = inheritance.GetVariables(Definition.AccessModifier, SolClass.Inheritance.Mode.Declarations).Get(Meta.Name);
+                SolValue value = inheritance.GetVariables(Definition.AccessModifier, SolVariableMode.Declarations).Get(Meta.Name);
                 SolFunction function = value as SolFunction;
                 if (function == null) {
                     throw new SolVariableException(Definition.Location,

@@ -17,6 +17,10 @@ namespace SolScript.Interpreter.Types
     /// </summary>
     public sealed class SolClass : SolValue, IValueIndexable
     {
+        /// <summary>
+        ///     Creates a new class.
+        /// </summary>
+        /// <param name="definition">The definition to base if on.</param>
         internal SolClass(SolClassDefinition definition)
         {
             Id = s_NextId++;
@@ -27,33 +31,36 @@ namespace SolScript.Interpreter.Types
                 inheritance = new Inheritance(this, activeDefinition, inheritance);
             }
             InheritanceChain = inheritance;
-            //GlobalVariables = new ClassGlobalVariables(this);
-            //InternalVariables = new ClassInternalVariables(this);
         }
 
+        // The next class id.
         private static uint s_NextId;
-        //public readonly ClassGlobalVariables GlobalVariables;
+        // The unique id of this class. (Until we overflow the uint max size at least.)
         public readonly uint Id;
+        // The inheritance chain. This is where all the fancy magic happens.
         internal readonly Inheritance InheritanceChain;
-        //public readonly ClassInternalVariables InternalVariables;
-
+        // Internal array containing the annotations.
         internal Array<SolClass> AnnotationsArray;
 
+        /// <summary>
+        ///     The annotations on this class instance.
+        /// </summary>
         public IReadOnlyList<SolClass> Annotations => AnnotationsArray;
+
+        /// <summary>
+        ///     The assembly this class is in.
+        /// </summary>
         public SolAssembly Assembly => InheritanceChain.Definition.Assembly;
 
-        /// <summary>
-        ///     The global variables of this class.
-        /// </summary>
-        public IVariables GlobalVariables => InheritanceChain.GetVariables(SolAccessModifier.None, Inheritance.Mode.All);
-
-        /// <summary>
-        ///     The internal variables of this class.
-        /// </summary>
-        public IVariables InternalVariables => InheritanceChain.GetVariables(SolAccessModifier.Internal, Inheritance.Mode.All);
-
+        /// <inheritdoc />
         public override bool IsClass => true;
+
+        /// <inheritdoc />
         public override string Type => InheritanceChain.Definition.Type;
+
+        /// <summary>
+        ///     The type mode of this class, explaining if the class is a singleton, sealed, class, etc.
+        /// </summary>
         public SolTypeMode TypeMode => InheritanceChain.Definition.TypeMode;
 
         /// <summary>
@@ -81,7 +88,7 @@ namespace SolScript.Interpreter.Types
                     throw new SolVariableException(InheritanceChain.Definition.Location,
                         $"Tried to get-index a variable in {Type} with a {key.Type} value. Classes can only be indexed directly or by strings.");
                 }
-                return GlobalVariables.Get(keySolStr.Value);
+                return GetVariables(SolAccessModifier.None, SolVariableMode.All).Get(keySolStr.Value);
             }
             set {
                 SolString keySolStr = key as SolString;
@@ -89,7 +96,7 @@ namespace SolScript.Interpreter.Types
                     throw new SolVariableException(InheritanceChain.Definition.Location,
                         $"Tried to set-index a variable in {Type} with a {key.Type} value. Classes can only be indexed directly or by strings.");
                 }
-                GlobalVariables.Assign(keySolStr.Value, value);
+                GetVariables(SolAccessModifier.None, SolVariableMode.All).Assign(keySolStr.Value, value);
             }
         }
 
@@ -145,6 +152,7 @@ namespace SolScript.Interpreter.Types
             return base.GetN(context);
         }
 
+        /// <inheritdoc />
         public override int GetHashCode()
         {
             unchecked {
@@ -271,6 +279,47 @@ namespace SolScript.Interpreter.Types
         #endregion
 
         /// <summary>
+        ///     Gets a variable source from this class.
+        /// </summary>
+        /// <param name="access">The access modifier of the variable source.</param>
+        /// <param name="mode">The variable mode.</param>
+        /// <param name="level">
+        ///     The inheritance level. (e.g. if a class named "MyClass" extends "Base" pass "Base" to obtain the
+        ///     variables of "Base". Otherwise the most derived type will be used - in this example "MyClass".)
+        /// </param>
+        /// <returns>The variable source.</returns>
+        /// <exception cref="SolVariableException">The class does not extend <paramref name="level" />.</exception>
+        public IVariables GetVariables(SolAccessModifier access, SolVariableMode mode, string level)
+        {
+            Inheritance inheritance = level != null ? FindInheritance(level) : InheritanceChain;
+            if (inheritance == null) {
+                throw new SolVariableException(InheritanceChain.Definition.Location, "The class \"" + Type + "\" does not extend \"" + level + "\".");
+            }
+            return inheritance.GetVariables(access, mode);
+        }
+
+        /// <summary>
+        ///     Gets a variable source from this class.
+        /// </summary>
+        /// <param name="access">The access modifier of the variable source.</param>
+        /// <param name="mode">The variable mode.</param>
+        /// <param name="level">
+        ///     The inheritance level. (e.g. if a class named "MyClass" extends "Base" pass the declaration of "Base" to obtain the
+        ///     variables of "Base". Otherwise the most derived type will be used - in this example "MyClass".)
+        /// </param>
+        /// <returns>The variable source.</returns>
+        /// <exception cref="SolVariableException">The class does not extend <paramref name="level" />.</exception>
+        public IVariables GetVariables(SolAccessModifier access, SolVariableMode mode, SolClassDefinition level = null)
+        {
+            Inheritance inheritance = level != null ? FindInheritance(level) : InheritanceChain;
+            if (inheritance == null) {
+                throw new SolVariableException(InheritanceChain.Definition.Location, "The class \"" + Type + "\" does not extend \"" + level + "\".");
+            }
+            return inheritance.GetVariables(access, mode);
+        }
+
+
+        /// <summary>
         ///     Tries to get a meta function of this class.
         /// </summary>
         /// <param name="meta">The meta key identifier.</param>
@@ -336,9 +385,11 @@ namespace SolScript.Interpreter.Types
 
         /// <summary> Calls the constructor for this class. </summary>
         /// <param name="callingContext">The context to use for calling the constructor.</param>
-        /// <param name="args">The constrcutor arguments.</param>
+        /// <param name="args">The constructor arguments.</param>
+        /// <exception cref="InvalidOperationException">The class is already initialized.</exception>
         /// <exception cref="InvalidOperationException">A critical internal error occured while calling this function.</exception>
         /// <exception cref="SolRuntimeException">An error occured while calling this function.</exception>
+        /// <seealso cref="IsInitialized" />
         internal void CallConstructor(SolExecutionContext callingContext, params SolValue[] args)
         {
             if (IsInitialized) {
@@ -407,45 +458,15 @@ namespace SolScript.Interpreter.Types
         /// </summary>
         internal class Inheritance
         {
-            #region Mode enum
-
-            /// <summary>
-            ///     The <see cref="Mode" /> enum is used to retrieve <see cref="IVariables" /> for a certain variable mode using
-            ///     <see cref="Inheritance.GetVariables" />.
-            /// </summary>
-            /// <remarks>Be cautious when using the ordinal values of this enum as if does not follow the typical 0, 1, 2 pattern!</remarks>
-            public enum Mode
-            {
-                /// <summary>
-                ///     The variables of all inheritance elements of this class will be regarded. In some cases(such as for
-                ///     <see cref="SolAccessModifier.Local" /> access) the inheritance element on which the variables are received from
-                ///     might take precedence.
-                /// </summary>
-                All = 0,
-
-                /// <summary>
-                ///     Only the variables of the base elements of this class will be regarded. If no base class exists this will simply
-                ///     contain the global assembly variables.
-                /// </summary>
-                Base = All + 3,
-
-                /// <summary>
-                ///     Only the variables directly declared in this inheritance element and given access modifier will be obtained.
-                /// </summary>
-                Declarations = Base + 3
-            }
-
-            #endregion
-
             // Creates the ... creators. Yay.
             static Inheritance()
             {
-                s_Creators[(int) Mode.All + (int) SolAccessModifier.None] = i => new All_Globals(i);
-                s_Creators[(int) Mode.All + (int) SolAccessModifier.Internal] = i => new All_Internals(i);
-                s_Creators[(int) Mode.All + (int) SolAccessModifier.Local] = i => new All_Locals(i);
-                s_Creators[(int) Mode.Base + (int) SolAccessModifier.None] = i => new Base_Globals(i);
-                s_Creators[(int) Mode.Base + (int) SolAccessModifier.Internal] = i => new Base_Internals(i);
-                s_Creators[(int) Mode.Base + (int) SolAccessModifier.Local] = i => new Base_Locals(i);
+                s_Creators[(int) SolVariableMode.All + (int) SolAccessModifier.None] = i => new All_Globals(i);
+                s_Creators[(int) SolVariableMode.All + (int) SolAccessModifier.Internal] = i => new All_Internals(i);
+                s_Creators[(int) SolVariableMode.All + (int) SolAccessModifier.Local] = i => new All_Locals(i);
+                s_Creators[(int) SolVariableMode.Base + (int) SolAccessModifier.None] = i => new Base_Globals(i);
+                s_Creators[(int) SolVariableMode.Base + (int) SolAccessModifier.Internal] = i => new Base_Internals(i);
+                s_Creators[(int) SolVariableMode.Base + (int) SolAccessModifier.Local] = i => new Base_Locals(i);
             }
 
             /// <summary>
@@ -492,7 +513,7 @@ namespace SolScript.Interpreter.Types
             /// </summary>
             public DynamicReference NativeReference;
 
-            // Indexing works by (int)Mode + (int)AccessModifier
+            // Indexing works by (int)SolVariableMode + (int)AccessModifier
             private readonly IVariables[] l_variables = new IVariables[6];
             // The global variables declared at this inheritance level.
             private readonly DeclaredGlobalClassInheritanceVariables m_DeclaredGlobalVariables;
@@ -501,15 +522,15 @@ namespace SolScript.Interpreter.Types
             // The local variables declared at this inheritance level.
             private readonly DeclaredLocalClassInheritanceVariables m_DeclaredLocalVariables;
 
-            public IVariables GetVariables(SolAccessModifier access, Mode mode)
+            public IVariables GetVariables(SolAccessModifier access, SolVariableMode mode)
             {
                 int index = (int) access + (int) mode;
                 switch (index) {
-                    case (int) SolAccessModifier.None + (int) Mode.Declarations:
+                    case (int) SolAccessModifier.None + (int) SolVariableMode.Declarations:
                         return m_DeclaredGlobalVariables;
-                    case (int) SolAccessModifier.Local + (int) Mode.Declarations:
+                    case (int) SolAccessModifier.Local + (int) SolVariableMode.Declarations:
                         return m_DeclaredLocalVariables;
-                    case (int) SolAccessModifier.Internal + (int) Mode.Declarations:
+                    case (int) SolAccessModifier.Internal + (int) SolVariableMode.Declarations:
                         return m_DeclaredInternalVariables;
                     default:
                         return l_variables[index] ?? (l_variables[index] = s_Creators[index](this));
@@ -576,8 +597,8 @@ namespace SolScript.Interpreter.Types
                 {
                     Inheritance active = VarInheritance.Instance.InheritanceChain;
                     while (active != null) {
-                        yield return active.m_DeclaredGlobalVariables;
                         yield return active.m_DeclaredInternalVariables;
+                        yield return active.m_DeclaredGlobalVariables;
                         active = active.BaseInheritance;
                     }
                     yield return Assembly.GlobalVariables;
@@ -837,7 +858,7 @@ namespace SolScript.Interpreter.Types
             /// <summary>
             ///     Base class for creating per-inheritance element variable sources.
             /// </summary>
-            private abstract class InheritanceVarBase : IVariables
+            private abstract class InheritanceVarBase : VarBase
             {
                 /// <inheritdoc />
                 protected InheritanceVarBase(Inheritance inheritance)
@@ -850,127 +871,185 @@ namespace SolScript.Interpreter.Types
                 /// </summary>
                 protected readonly Inheritance VarInheritance;
 
-                #region IVariables Members
+                /// <inheritdoc />
+                protected override SolClass Instance => VarInheritance.Instance;
+
+                #region Overrides
 
                 /// <inheritdoc />
-                /// <exception cref="SolVariableException">Failed to get the value.</exception>
-                public SolValue Get(string name)
+                protected override SolSourceLocation GetLocation()
                 {
-                    SolValue value;
-                    VariableState s = TryGet(name, out value);
-                    if (value == null || s != VariableState.Success) {
-                        throw InternalHelper.CreateVariableGetException(name, s, null, VarInheritance.Definition.Location);
-                    }
-                    return value;
+                    return VarInheritance.Definition.Location;
                 }
-
-                /// <inheritdoc />
-                public virtual VariableState TryGet(string name, out SolValue value)
-                {
-                    foreach (IVariables source in GetVariableSources()) {
-                        VariableState s = source.TryGet(name, out value);
-                        switch (s) {
-                            case VariableState.Success:
-                            case VariableState.FailedCouldNotResolveNativeReference:
-                            case VariableState.FailedNotAssigned:
-                            case VariableState.FailedTypeMismatch:
-                            case VariableState.FailedNativeException:
-                            case VariableState.FailedRuntimeError:
-                                // We either found it, or something went wrong.
-                                return s;
-                            case VariableState.FailedNotDeclared:
-                                // Nope, isn't here - let's go on.
-                                break;
-                            default:
-                                throw new ArgumentOutOfRangeException();
-                        }
-                    }
-                    // Phew, okay we checked all of 'em and found nothing. It's not there.
-                    value = null;
-                    return VariableState.FailedNotDeclared;
-                }
-
-                /// <inheritdoc />
-                /// <exception cref="SolVariableException">Failed to get the annotations.</exception>
-                public IReadOnlyList<SolClass> GetAnnotations(string name)
-                {
-                    foreach (IVariables source in GetVariableSources()) {
-                        if (source.IsDeclared(name)) {
-                            return source.GetAnnotations(name);
-                        }
-                    }
-                    return EmptyReadOnlyList<SolClass>.Value;
-                }
-
-                /// <inheritdoc />
-                /// <exception cref="SolVariableException">
-                ///     No variable with this name has been declared.
-                /// </exception>
-                public virtual void AssignAnnotations(string name, params SolClass[] annotations)
-                {
-                    foreach (IVariables source in GetVariableSources()) {
-                        if (source.IsDeclared(name)) {
-                            source.AssignAnnotations(name, annotations);
-                        }
-                    }
-                    throw new SolVariableException(VarInheritance.Definition.Location, "Tried to assign annotations to class field \"" + name + "\". No such field exists.");
-                }
-
-                /// <inheritdoc />
-                /// <exception cref="SolVariableException">
-                ///     No variable with this name has been declared.
-                /// </exception>
-                public virtual SolValue Assign(string name, SolValue value)
-                {
-                    foreach (IVariables source in GetVariableSources()) {
-                        if (source.IsDeclared(name)) {
-                            return source.Assign(name, value);
-                        }
-                    }
-                    throw new SolVariableException(VarInheritance.Definition.Location, "Tried to assign class field \"" + name + "\". No such field exists.");
-                }
-
-                /// <inheritdoc />
-                public virtual bool IsDeclared(string name)
-                {
-                    foreach (IVariables source in GetVariableSources()) {
-                        if (source.IsDeclared(name)) {
-                            return true;
-                        }
-                    }
-                    return false;
-                }
-
-                /// <inheritdoc />
-                public virtual bool IsAssigned(string name)
-                {
-                    foreach (IVariables source in GetVariableSources()) {
-                        if (source.IsAssigned(name)) {
-                            return true;
-                        }
-                    }
-                    return false;
-                }
-
-                /// <inheritdoc />
-                public abstract void Declare(string name, SolType type);
-
-                /// <inheritdoc />
-                public abstract void DeclareNative(string name, SolType type, FieldOrPropertyInfo field, DynamicReference fieldReference);
-
-                /// <inheritdoc />
-                public SolAssembly Assembly => VarInheritance.Instance.Assembly;
 
                 #endregion
-
-                /// <summary>
-                ///     Gets all <see cref="IVariables" />s that declare the values.
-                /// </summary>
-                /// <returns>The variable source enumerable.</returns>
-                protected abstract IEnumerable<IVariables> GetVariableSources();
             }
 
             #endregion
+        }
+
+        #endregion
+
+        #region Nested type: VarBase
+
+        /// <summary>
+        ///     Base class for all special variable sources regarding classes.
+        /// </summary>
+        private abstract class VarBase : IVariables
+        {
+            /// <summary>
+            ///     The class instance this variable source is on.
+            /// </summary>
+            protected abstract SolClass Instance { get; }
+
+            #region IVariables Members
+
+            /// <inheritdoc />
+            /// <exception cref="SolVariableException">Failed to get the value.</exception>
+            public SolValue Get(string name)
+            {
+                SolValue value;
+                VariableState s = TryGet(name, out value);
+                if (value == null || s != VariableState.Success) {
+                    throw InternalHelper.CreateVariableGetException(name, s, null, GetLocation());
+                }
+                return value;
+            }
+
+            /// <inheritdoc />
+            public virtual VariableState TryGet(string name, out SolValue value)
+            {
+                foreach (IVariables source in GetVariableSources()) {
+                    VariableState s = source.TryGet(name, out value);
+                    switch (s) {
+                        case VariableState.Success:
+                        case VariableState.FailedCouldNotResolveNativeReference:
+                        case VariableState.FailedNotAssigned:
+                        case VariableState.FailedTypeMismatch:
+                        case VariableState.FailedNativeException:
+                        case VariableState.FailedRuntimeError:
+                            // We either found it, or something went wrong.
+                            return s;
+                        case VariableState.FailedNotDeclared:
+                            // Nope, isn't here - let's go on.
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
+                }
+                // Phew, okay we checked all of 'em and found nothing. It's not there.
+                value = null;
+                return VariableState.FailedNotDeclared;
+            }
+
+            /// <inheritdoc />
+            /// <exception cref="SolVariableException">Failed to get the annotations.</exception>
+            public IReadOnlyList<SolClass> GetAnnotations(string name)
+            {
+                foreach (IVariables source in GetVariableSources()) {
+                    if (source.IsDeclared(name)) {
+                        return source.GetAnnotations(name);
+                    }
+                }
+                return EmptyReadOnlyList<SolClass>.Value;
+            }
+
+            /// <inheritdoc />
+            /// <exception cref="SolVariableException">
+            ///     No variable with this name has been declared.
+            /// </exception>
+            public virtual void AssignAnnotations(string name, params SolClass[] annotations)
+            {
+                foreach (IVariables source in GetVariableSources()) {
+                    if (source.IsDeclared(name)) {
+                        source.AssignAnnotations(name, annotations);
+                    }
+                }
+                throw new SolVariableException(GetLocation(), "Tried to assign annotations to class field \"" + name + "\". No such field exists.");
+            }
+
+            /// <inheritdoc />
+            /// <exception cref="SolVariableException">
+            ///     No variable with this name has been declared.
+            /// </exception>
+            public virtual SolValue Assign(string name, SolValue value)
+            {
+                foreach (IVariables source in GetVariableSources()) {
+                    if (source.IsDeclared(name)) {
+                        return source.Assign(name, value);
+                    }
+                }
+                throw new SolVariableException(GetLocation(), "Tried to assign class field \"" + name + "\". No such field exists.");
+            }
+
+            /// <inheritdoc />
+            public virtual bool IsDeclared(string name)
+            {
+                foreach (IVariables source in GetVariableSources()) {
+                    if (source.IsDeclared(name)) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            /// <inheritdoc />
+            public virtual bool IsAssigned(string name)
+            {
+                foreach (IVariables source in GetVariableSources()) {
+                    if (source.IsAssigned(name)) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            /// <inheritdoc />
+            /// <exception cref="SolVariableException">
+            ///     A variable with this name has already been declared.
+            /// </exception>
+            /// <exception cref="SolVariableException">The <see cref="GetVariableSources" /> enumerable is empty.</exception>
+            public virtual void Declare(string name, SolType type)
+            {
+                using (IEnumerator<IVariables> enumerator = GetVariableSources().GetEnumerator()) {
+                    if (!enumerator.MoveNext()) {
+                        throw new SolVariableException(GetLocation(), "Cannot declare class field \"" + name + "\". No native variable sources exist.");
+                    }
+                    enumerator.Current.Declare(name, type);
+                }
+            }
+
+            /// <inheritdoc />
+            /// <exception cref="SolVariableException">
+            ///     A variable with this name has already been declared.
+            /// </exception>
+            /// <exception cref="SolVariableException">The <see cref="GetVariableSources" /> enumerable is empty.</exception>
+            public virtual void DeclareNative(string name, SolType type, FieldOrPropertyInfo field, DynamicReference fieldReference)
+            {
+                using (IEnumerator<IVariables> enumerator = GetVariableSources().GetEnumerator()) {
+                    if (!enumerator.MoveNext()) {
+                        throw new SolVariableException(GetLocation(), "Cannot declare native class field \"" + name + "\". No native variable sources exist.");
+                    }
+                    enumerator.Current.DeclareNative(name, type, field, fieldReference);
+                }
+            }
+
+            /// <inheritdoc />
+            public SolAssembly Assembly => Instance.Assembly;
+
+            #endregion
+
+            /// <summary>
+            ///     Gets the location of this variable source used for errors.
+            /// </summary>
+            /// <returns>The location.</returns>
+            protected abstract SolSourceLocation GetLocation();
+
+            /// <summary>
+            ///     Gets all <see cref="IVariables" />s that declare the values.
+            /// </summary>
+            /// <returns>The variable source enumerable.</returns>
+            protected abstract IEnumerable<IVariables> GetVariableSources();
         }
 
         #endregion

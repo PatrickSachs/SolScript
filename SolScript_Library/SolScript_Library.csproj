@@ -55,6 +55,7 @@
     <Compile Include="Interpreter\Expressions\Expression_Tertiary.cs" />
     <Compile Include="Interpreter\GlobalVariablesBase.cs" />
     <Compile Include="Interpreter\INativeClassSelf.cs" />
+    <Compile Include="Interpreter\SolVariableMode.cs" />
     <Compile Include="Interpreter\SolMemberModifier.cs" />
     <Compile Include="Interpreter\SolParameterBuilder.cs" />
     <Compile Include="Interpreter\Statements\Statement_Base.cs" />

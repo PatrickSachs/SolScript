@@ -54,7 +54,7 @@ namespace SolScript.Interpreter.Statements
             }
             try {
                 // The base keyword may not access locals.
-                return inheritance.GetVariables(SolAccessModifier.Internal, SolClass.Inheritance.Mode.Base).Get(index.Value);
+                return inheritance.GetVariables(SolAccessModifier.Internal, SolVariableMode.Base).Get(index.Value);
             } catch (SolVariableException ex) {
                 throw new SolRuntimeException(context, "Failed to resolve a self statement variable.", ex);
             }

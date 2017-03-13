@@ -321,7 +321,7 @@ namespace SolScript.Libraries.std
                 SolClass theClass = classFunction.ClassInstance;
                 SolClass.Inheritance inheritance = theClass.FindInheritance(classFunction.Definition.DefinedIn).NotNull();
                 try {
-                    annotations = inheritance.GetVariables(classFunction.Definition.AccessModifier, SolClass.Inheritance.Mode.Declarations).GetAnnotations(classFunction.Definition.Name);
+                    annotations = inheritance.GetVariables(classFunction.Definition.AccessModifier, SolClass.Inheritance.SolVariableMode.Declarations).GetAnnotations(classFunction.Definition.Name);
                 } catch (SolVariableException ex) {
                     throw new SolRuntimeException(context, "Cannot get annotations of function \"" + theClass.Type + "." + classFunction.Definition.Name + "\".", ex);
                 }
@@ -370,7 +370,7 @@ namespace SolScript.Libraries.std
             IReadOnlyList<SolClass> annotations = null;
             // todo: var source that literally searches EVERYTHING.
             // Check if the member is a global/internal
-            IVariables source = instance.InheritanceChain.GetVariables(SolAccessModifier.Internal, SolClass.Inheritance.Mode.All);
+            IVariables source = instance.InheritanceChain.GetVariables(SolAccessModifier.Internal, SolVariableMode.All);
             if (source.IsDeclared(member.Value)) {
                 try {
                     annotations = source.GetAnnotations(member.Value);
@@ -381,7 +381,7 @@ namespace SolScript.Libraries.std
                 // If not - Well then let's being the quest to look through all the locals.
                 SolClass.Inheritance active = instance.InheritanceChain;
                 while (active != null) {
-                    if ((source = active.GetVariables(SolAccessModifier.Local, SolClass.Inheritance.Mode.Declarations)).IsDeclared(member.Value)) {
+                    if ((source = active.GetVariables(SolAccessModifier.Local, SolVariableMode.Declarations)).IsDeclared(member.Value)) {
                         try {
                             annotations = source.GetAnnotations(member.Value);
                         } catch (SolVariableException ex) {
