@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
 using SolScript.Interpreter.Types.Implementation;
@@ -179,28 +180,42 @@ namespace SolScript.Interpreter
         ///     variables with this name will be overwritten. Make sure to check if a field with this name has been declared
         ///     beforehand.
         /// </remarks>
+        /// <exception cref="SolVariableException">An error occured.</exception>
         public SolFunction AttemptFunctionCreation(string name)
         {
             SolFunctionDefinition functionDefinition;
             if (Inheritance.Definition.TryGetFunction(name, true, out functionDefinition) && ValidateFunctionDefinition(functionDefinition)) {
                 SolFunction function;
+                ICustomAttributeProvider provider;
                 switch (functionDefinition.Chunk.ChunkType) {
                     case SolChunkWrapper.Type.ScriptChunk:
                         function = new SolScriptClassFunction(Inheritance.Instance, functionDefinition);
+                        provider = null;
                         break;
                     case SolChunkWrapper.Type.NativeMethod:
                         function = new SolNativeClassMemberFunction(Inheritance.Instance, functionDefinition);
+                        provider = functionDefinition.Chunk.GetNativeMethod();
                         break;
                     case SolChunkWrapper.Type.NativeConstructor:
                         function = new SolNativeClassConstructorFunction(Inheritance.Instance, functionDefinition);
+                        provider = functionDefinition.Chunk.GetNativeConstructor();
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
                 SolDebug.WriteLine("Created function instance '" + name + "' for class '" + Inheritance.Instance.Type + "' - " + function + " [level: " + GetType().Name + "]");
-                // ReSharper disable once ExceptionNotDocumented
-                // "function!" is always compatible with functions.
-                Members.SetValue(name, function, new SolType(SolFunction.TYPE, false));
+                Members.Declare(name, new SolType(SolFunction.TYPE, false));
+                if (functionDefinition.DeclaredAnnotations.Count > 0) {
+                    SolClass[] annotations;
+                    try {
+                        annotations = InternalHelper.CreateAnnotations(new SolExecutionContext(Assembly, "Function \"" + name + "\" annotation creator"),
+                            Inheritance.GetVariables(SolAccessModifier.Local, SolVariableMode.All), functionDefinition.DeclaredAnnotations, provider);
+                    } catch (SolTypeRegistryException ex) {
+                        throw new SolVariableException(functionDefinition.Location, "Failed to create an annotation for function \"" + Inheritance.Definition.Type + "." + name + "\".", ex);
+                    }
+                    Members.AssignAnnotations(name, annotations);
+                }
+                Members.Assign(name, function);
                 return function;
             }
             return null;
