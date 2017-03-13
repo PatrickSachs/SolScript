@@ -24,7 +24,7 @@ namespace SolScript.Interpreter
         ///     The assembly to check for validity in. The assembly is
         ///     required in order to check for mixins.
         /// </param>
-        /// <param name="other"> The type (incl. nilablity) to check. </param>
+        /// <param name="other"> The type (incl. nilability) to check. </param>
         /// <returns>
         ///     true if a value of the given type can be assigned to a variable of
         ///     this type.

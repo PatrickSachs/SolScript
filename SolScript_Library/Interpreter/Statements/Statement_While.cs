@@ -2,6 +2,7 @@
 using JetBrains.Annotations;
 using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Types;
+using SolScript.Utility;
 
 namespace SolScript.Interpreter.Statements {
     public class Statement_While : SolStatement {
@@ -37,6 +38,7 @@ namespace SolScript.Interpreter.Statements {
             return SolNil.Instance;
         }
 
+        /// <inheritdoc />
         protected override string ToString_Impl() {
             return $"Statement_While(Condition={Condition}, Chunk={Chunk})";
         }

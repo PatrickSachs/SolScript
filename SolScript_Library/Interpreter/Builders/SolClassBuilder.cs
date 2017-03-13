@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using SolScript.Utility;
 
 namespace SolScript.Interpreter.Builders
 {
@@ -19,7 +20,7 @@ namespace SolScript.Interpreter.Builders
         }
 
         // All annotations on this class.
-        private readonly List<SolAnnotationData> m_Annotations = new List<SolAnnotationData>();
+        private readonly Utility.List<SolAnnotationBuilder> m_Annotations = new Utility.List<SolAnnotationBuilder>();
 
         /// <summary>
         ///     The name of the base class(= the class this one extends).
@@ -38,7 +39,7 @@ namespace SolScript.Interpreter.Builders
         #region IAnnotateableBuilder Members
 
         /// <inheritdoc />
-        public IAnnotateableBuilder AddAnnotation(SolAnnotationData annotation)
+        public IAnnotateableBuilder AddAnnotation(SolAnnotationBuilder annotation)
         {
             m_Annotations.Add(annotation);
             return this;
@@ -52,14 +53,14 @@ namespace SolScript.Interpreter.Builders
         }
 
         /// <inheritdoc />
-        public IAnnotateableBuilder AddAnnotations(params SolAnnotationData[] annotations)
+        public IAnnotateableBuilder AddAnnotations(params SolAnnotationBuilder[] annotations)
         {
             m_Annotations.AddRange(annotations);
             return this;
         }
 
         /// <inheritdoc />
-        public IReadOnlyList<SolAnnotationData> Annotations => m_Annotations;
+        public IReadOnlyList<SolAnnotationBuilder> Annotations => m_Annotations;
 
         #endregion
 

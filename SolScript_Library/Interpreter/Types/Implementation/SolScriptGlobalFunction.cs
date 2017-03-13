@@ -1,15 +1,14 @@
-﻿using System;
-using SolScript.Interpreter.Exceptions;
+﻿using SolScript.Interpreter.Exceptions;
 
 namespace SolScript.Interpreter.Types.Implementation
 {
     /// <summary>
-    /// This class is used for global functions declared in script.
+    ///     This class is used for global functions declared in script.
     /// </summary>
-    public sealed class SolScriptGlobalFunction : DefinedSolFunction
+    public sealed class SolScriptGlobalFunction : GlobalSolFunction
     {
         /// <summary>
-        /// Creates the function.
+        ///     Creates the function.
         /// </summary>
         /// <param name="definition">The function definition.</param>
         public SolScriptGlobalFunction(SolFunctionDefinition definition)
@@ -17,12 +16,20 @@ namespace SolScript.Interpreter.Types.Implementation
             Definition = definition;
         }
 
-        /// <inheritdoc/>
+        /// <inheritdoc />
         public override SolFunctionDefinition Definition { get; }
 
         #region Overrides
 
-        /// <inheritdoc/>
+        /// <inheritdoc />
+        protected override SolClass GetClassInstance(out bool isCurrent, out bool resetOnExit)
+        {
+            isCurrent = true;
+            resetOnExit = true;
+            return null;
+        }
+
+        /// <inheritdoc />
         public override int GetHashCode()
         {
             unchecked {
@@ -30,17 +37,16 @@ namespace SolScript.Interpreter.Types.Implementation
             }
         }
 
-        /// <inheritdoc/>
+        /// <inheritdoc />
         public override bool Equals(object other)
         {
             return other == this;
         }
 
-        /// <inheritdoc/>
+        /// <inheritdoc />
         /// <exception cref="SolRuntimeException">A runtime error occured.</exception>
         protected override SolValue Call_Impl(SolExecutionContext context, params SolValue[] args)
         {
-            // todo: internal access for global variables need to be figured out. (meaning, what does internal on globals even mean?)
             Variables varContext = new Variables(Assembly) {
                 Parent = Assembly.LocalVariables
             };

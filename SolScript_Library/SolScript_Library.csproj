@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>SolScript</RootNamespace>
     <AssemblyName>SolScript_Library</AssemblyName>
-    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
   </PropertyGroup>
@@ -45,12 +45,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
@@ -59,10 +54,22 @@
     <Compile Include="Interpreter\Expressions\Expression_Bool.cs" />
     <Compile Include="Interpreter\Expressions\Expression_Tertiary.cs" />
     <Compile Include="Interpreter\GlobalVariablesBase.cs" />
+    <Compile Include="Interpreter\INativeClassSelf.cs" />
+    <Compile Include="Interpreter\SolVariableMode.cs" />
     <Compile Include="Interpreter\SolMemberModifier.cs" />
     <Compile Include="Interpreter\SolParameterBuilder.cs" />
+    <Compile Include="Interpreter\Statements\Statement_Base.cs" />
+    <Compile Include="Interpreter\Statements\Statement_Self.cs" />
+    <Compile Include="Interpreter\Types\GlobalSolFunction.cs" />
     <Compile Include="Interpreter\Types\Implementation\SolLamdaFunction.cs" />
     <Compile Include="Interpreter\Types\Implementation\SolNativeLamdaFunction.cs" />
+    <Compile Include="Libraries\std\std_BinaryStream.cs" />
+    <Compile Include="Libraries\std\std_TextStream.cs" />
+    <Compile Include="MiscUtil\BigEndianBitConverter.cs" />
+    <Compile Include="MiscUtil\DoubleConverter.cs" />
+    <Compile Include="MiscUtil\EndianBitConverter.cs" />
+    <Compile Include="MiscUtil\Endianness.cs" />
+    <Compile Include="MiscUtil\LittleEndianBitConverter.cs" />
     <Compile Include="SolError.cs" />
     <Compile Include="Compiler\SolCompiler.cs" />
     <Compile Include="ErrorId.cs" />
@@ -95,10 +102,10 @@
     <Compile Include="Interpreter\Types\Marshal\NativeVoidMarshaller.cs" />
     <Compile Include="Interpreter\Variables.cs" />
     <Compile Include="Interpreter\ClassCreationOptions.cs" />
-    <Compile Include="Interpreter\ClassGlobalVariables.cs" />
-    <Compile Include="Interpreter\ClassInheritanceVariables.cs" />
-    <Compile Include="Interpreter\ClassInternalVariables.cs" />
-    <Compile Include="Interpreter\ClassVariables.cs" />
+    <Compile Include="Interpreter\DeclaredGlobalClassInheritanceVariables.cs" />
+    <Compile Include="Interpreter\DeclaredLocalClassInheritanceVariables.cs" />
+    <Compile Include="Interpreter\DeclaredInternalClassInheritanceVariables.cs" />
+    <Compile Include="Interpreter\DeclaredClassInheritanceVariables.cs" />
     <Compile Include="Interpreter\Exceptions\SolInterpreterException.cs" />
     <Compile Include="Interpreter\Exceptions\SolRuntimeException.cs" />
     <Compile Include="Interpreter\Exceptions\SolTypeRegistryException.cs" />
@@ -120,7 +127,6 @@
     <Compile Include="Libraries\os\os_File.cs" />
     <Compile Include="Libraries\os\os_OS.cs" />
     <Compile Include="Libraries\std\std.cs" />
-    <Compile Include="Libraries\std\std_Stream - Copy.cs" />
     <Compile Include="Libraries\std\std_Stream.cs" />
     <Compile Include="Libraries\std\std_IO.cs" />
     <Compile Include="Libraries\std\std_Reflect.cs" />
@@ -186,7 +192,10 @@
     <Compile Include="Interpreter\Expressions\SolExpression.cs" />
     <Compile Include="Interpreter\Expressions\Expression_String.cs" />
     <Compile Include="Interpreter\Expressions\Expression_Nil.cs" />
-    <Compile Include="Interpreter\InternalHelper.cs" />
+    <Compile Include="Utility\CallerFilePathAttribute.cs" />
+    <Compile Include="Utility\CallerMemberNameAttribute.cs" />
+    <Compile Include="Utility\EmptyReadOnlyList.cs" />
+    <Compile Include="Utility\InternalHelper.cs" />
     <Compile Include="Libraries\std\std_Math.cs" />
     <Compile Include="Interpreter\SolChunk.cs" />
     <Compile Include="Interpreter\Library\SolLibrary.cs" />
@@ -194,7 +203,6 @@
     <Compile Include="Interpreter\Statements\Statement_AssignVar.cs" />
     <Compile Include="Interpreter\Statements\StatementFactory.cs" />
     <Compile Include="Interpreter\Statements\Statement_Conditional.cs" />
-    <Compile Include="Interpreter\WeakTable.cs" />
     <Compile Include="Parser\Literals\SolScriptStringLiteral.cs" />
     <Compile Include="Interpreter\Statements\Statement_CallInstanceFunction.cs" />
     <Compile Include="Interpreter\Statements\SolStatement.cs" />
@@ -208,6 +216,14 @@
     <Compile Include="Parser\Terminals\SolScriptLongStringTerminal.cs" />
     <Compile Include="NamespaceDoc.cs" />
     <Compile Include="SolErrorCollection.cs" />
+    <Compile Include="Utility\Array.cs" />
+    <Compile Include="Utility\Collection.cs" />
+    <Compile Include="Utility\Dictionary.cs" />
+    <Compile Include="Utility\EmptyArray.cs" />
+    <Compile Include="Utility\IReadOnlyCollection.cs" />
+    <Compile Include="Utility\IReadOnlyDictionary.cs" />
+    <Compile Include="Utility\IReadOnlyList.cs" />
+    <Compile Include="Utility\List.cs" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

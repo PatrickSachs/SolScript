@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
-using NesterovskyBros.Utils;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
 using SolScript.Interpreter.Types.Marshal;
@@ -115,7 +115,7 @@ namespace SolScript.Interpreter
                     } else {
                         string toSolType = SolValue.PrimitiveTypeNameOf(type);
                         if (!allowCasting) {
-                            throw new SolMarshallingException(value.Type, type, "Cannot implictly convert types. Explicit casting is required.");
+                            throw new SolMarshallingException(value.Type, type, "Cannot implicitly convert types. Explicit casting is required.");
                         }
                         if (toSolType == SolValue.ANY_TYPE) {
                             nativeValue = value;
@@ -125,9 +125,13 @@ namespace SolScript.Interpreter
                             }
                             nativeValue = (SolClass) value;
                         } else {
-                            // todo: cast sol value
-                            // todo: type safety lol
-                            throw new NotImplementedException("todo: cast sol value");
+                            if (value.Type == SolNil.TYPE) {
+                                nativeValue = null;
+                            } else {
+                                // todo: cast sol value
+                                // todo: type safety lol
+                                throw new NotImplementedException("todo: cast sol value");
+                            }
                         }
                     }
                 } else {
@@ -259,15 +263,29 @@ namespace SolScript.Interpreter
                     if (!assembly.TryGetClass(type, out classDef)) {
                         throw new SolMarshallingException($"Cannot marshal native type \"{type}\" to SolScript: This type does not have a SolClass representing it.");
                     }
-                    // todo: investigate if this order(native obj being assigned later) will cause problems (annotations specifically)
                     try {
                         solClass = assembly.New(classDef, NativeClassCreationOptions);
                     } catch (SolTypeRegistryException ex) {
                         throw new SolMarshallingException(
                             $"Cannot marshal native type \"{type}\" to SolScript: A error occured while creating its representing class instance of type \"" + classDef.Type + "\".", ex);
                     }
-                    solClass.InheritanceChain.NativeObject = value;
+                    // Assign the native object to all inheritance levels.
+                    SolClass.Inheritance inheritance = solClass.InheritanceChain;
+                    DynamicReference reference = new DynamicReference.FixedReference(value);
+                    while (inheritance != null) {
+                        inheritance.NativeReference = reference;
+                        inheritance = inheritance.BaseInheritance;
+                    }
                     cache.StoreReference(value, solClass);
+                    // Assigning self after storing in assembly cache.
+                    INativeClassSelf self = value as INativeClassSelf;
+                    if (self != null) {
+                        if (self.Self != null) {
+                            throw new SolMarshallingException("Type native Self value of native class \"" + type.Name + "\"(SolClass \"" + solClass.Type 
+                                + "\") is not null. This is either an indicator for a duplicate native class or corrupted marshalling data.");
+                        }
+                        self.Self = solClass;
+                    }
                 }
                 return solClass;
             }
@@ -321,16 +339,19 @@ namespace SolScript.Interpreter
             public AssemblyCache([NotNull] SolAssembly assembly)
             {
                 Assembly = assembly;
-                m_NativeToSol = new WeakTable<object, SolClass>();
+                m_NativeToSol = new ConditionalWeakTable<object, SolClass>();
             }
 
             [NotNull] public readonly SolAssembly Assembly;
 
-            private readonly WeakTable<object, SolClass> m_NativeToSol;
+            private readonly ConditionalWeakTable<object, SolClass> m_NativeToSol;
 
-            public bool StoreReference([NotNull] object value, [NotNull] SolClass solClass)
+            public void StoreReference([NotNull] object value, [NotNull] SolClass solClass)
             {
-                return m_NativeToSol.TryAdd(value, solClass);
+                // todo: determine if conditional weak table doesnt cause issues
+                // there was a reson why it was swapped for a third party one after all. (i assume. though sometimes i do things that just dont make sense...)
+                // note to self: keep in mind to document this kinda stuff....
+                m_NativeToSol.Add(value, solClass);
             }
 
             [CanBeNull]

@@ -18,7 +18,7 @@ namespace SolScript.Interpreter.Types.Implementation
             Assembly = assembly;
             m_AutoDelegate = autoDelegate;
         }
-        
+
         internal static readonly SolParameterInfo AnyParameters = new SolParameterInfo(new SolParameter[0], true);
         private readonly AutoDelegate m_AutoDelegate;
 
@@ -36,6 +36,14 @@ namespace SolScript.Interpreter.Types.Implementation
         public override SolSourceLocation Location => SolSourceLocation.Native();
 
         #region Overrides
+
+        /// <inheritdoc />
+        protected override SolClass GetClassInstance(out bool isCurrent, out bool resetOnExit)
+        {
+            isCurrent = false;
+            resetOnExit = false;
+            return null;
+        }
 
         /// <inheritdoc />
         /// <exception cref="SolRuntimeException">A native exception occured while calling the auto delegate wrapper function.</exception>

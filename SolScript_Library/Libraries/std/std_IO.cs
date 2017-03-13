@@ -1,11 +1,13 @@
 ﻿using System;
 using System.IO;
+using System.Runtime.Serialization;
 using System.Threading;
 using JetBrains.Annotations;
 using SolScript.Interpreter;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Library;
 using SolScript.Interpreter.Types;
+using SolScript.Utility;
 
 // ReSharper disable InconsistentNaming
 
@@ -17,82 +19,34 @@ namespace SolScript.Libraries.std
     [SolLibraryClass(std.NAME, SolTypeMode.Singleton)]
     [SolLibraryName(TYPE)]
     [PublicAPI]
-    public class std_IO
+    public class std_IO : INativeClassSelf
     {
-        public std_IO()
-        {
-            NativeInStream = Console.OpenStandardInput();
-            NativeOutStream = Console.OpenStandardOutput();
-        }
+        [SolLibraryVisibility(std.NAME, true)]
+        private std_IO() { }
 
+        /// <summary>
+        /// The type name is "IO".
+        /// </summary>
         [SolLibraryVisibility(std.NAME, false)] public const string TYPE = "IO";
 
         private const double SECOND_TO_MS = 1000;
 
-        private static std_Stream m_InStream;
-        private static Stream m_NativeInStream;
-        private static Stream m_NativeOutStream;
-        private static std_Stream m_OutStream;
+        private std_TextStream l_in_stream;
+        private std_TextStream l_out_stream;
 
         /// <summary>
-        ///     The native <see cref="Stream" /> the input will be retrieved from. Keep in mind that this value may be overwritten
-        ///     at any time if a new <see cref="in_stream" /> is assigned.
+        ///     You can use this <see cref="std_TextStream" /> to manually retrieve data from the default input.
         /// </summary>
-        [SolLibraryVisibility(std.NAME, false)]
-        public static Stream NativeInStream {
-            get { return m_NativeInStream; }
-            set {
-                if (value == null) {
-                    throw new ArgumentNullException("Cannot get the native input stream to null.");
-                }
-                if (value != m_NativeInStream) {
-                    m_NativeInStream = value;
-                    m_InStream = new std_Stream(value);
-                }
-            }
-        }
+        /// <returns>The in stream.</returns>
+        [SolContract(std_TextStream.TYPE, false)]
+        public std_TextStream in_stream() => l_in_stream ?? (l_in_stream = new std_TextStream(Self.Assembly.Input, Self.Assembly.InputEncoding));
 
         /// <summary>
-        ///     The native <see cref="Stream" /> the output will be written to. Keep in mind that this value may be overwritten at
-        ///     any time if a new <see cref="in_stream" /> is assigned.
+        ///     You can use this <see cref="std_TextStream" /> to manually write data to the default output.
         /// </summary>
-        [SolLibraryVisibility(std.NAME, false)]
-        public static Stream NativeOutStream {
-            get { return m_NativeOutStream; }
-            set {
-                if (value == null) {
-                    throw new ArgumentNullException("Cannot get the native output stream to null.");
-                }
-                if (value != m_NativeOutStream) {
-                    m_NativeOutStream = value;
-                    m_OutStream = new std_Stream(value);
-                }
-            }
-        }
-
-        /// <summary>
-        ///     You can use this <see cref="std_Stream" /> to manually retrieve data from the default input.
-        /// </summary>
-        [SolContract(std_Stream.TYPE, false)]
-        public std_Stream in_stream {
-            get { return m_InStream; }
-            set {
-                m_InStream = value;
-                m_NativeInStream = value.GetNativeStream();
-            }
-        }
-
-        /// <summary>
-        ///     You can use this <see cref="std_Stream" /> to manually write data to the default output.
-        /// </summary>
-        [SolContract(std_Stream.TYPE, false)]
-        public std_Stream out_stream {
-            get { return m_OutStream; }
-            set {
-                m_OutStream = value;
-                m_NativeOutStream = value.GetNativeStream();
-            }
-        }
+        /// <returns>The out stream.</returns>
+        [SolContract(std_TextStream.TYPE, false)]
+        public std_TextStream out_stream() => l_out_stream ?? (l_out_stream = new std_TextStream(Self.Assembly.Output, Self.Assembly.OutputEncoding));
 
         /// <summary>
         ///     The prefix to write whenever requesting user input. Set to <see cref="SolNil" /> to disable the prefix.
@@ -122,16 +76,18 @@ namespace SolScript.Libraries.std
         [SolContract(TYPE, false)]
         public std_IO write(SolExecutionContext context, [SolContract(SolValue.ANY_TYPE, true)] SolValue data)
         {
-            m_OutStream.write(context, data.Type == SolString.TYPE ? data : SolString.ValueOf(data.ToString(context)));
+            SolString solString = data as SolString;
+            out_stream().write(context, solString ?? SolString.ValueOf(data.ToString(context)));
             return this;
         }
 
-        /// <inheritdoc cref="std_Stream.writeln" />
+        /// <inheritdoc cref="std_TextStream.writeln" />
         /// <returns>The <see cref="std_IO" /> singleton itself.</returns>
         /// <exception cref="SolRuntimeException">An error occured while writing or the type is invalid.</exception>
-        public std_IO writeln(SolExecutionContext context, [SolContract(SolValue.ANY_TYPE, false)] SolValue data)
+        public std_IO writeln(SolExecutionContext context, [SolContract(SolValue.ANY_TYPE, true)] SolValue data)
         {
-            m_OutStream.writeln(context, data);
+            SolString solString = data as SolString;
+            out_stream().writeln(context, solString ?? SolString.ValueOf(data.ToString(context)));
             return this;
         }
 
@@ -149,12 +105,12 @@ namespace SolScript.Libraries.std
         public SolString read(SolExecutionContext context, [SolContract(SolValue.ANY_TYPE, true)] SolValue message)
         {
             if (!message.IsNil()) {
-                m_OutStream.writeln(context, message);
+                writeln(context, message);
             }
             if (!read_prefix.IsNil()) {
-                m_OutStream.write(context, read_prefix);
+                out_stream().write(context, read_prefix);
             }
-            return m_InStream.readln(context);
+            return in_stream().readln(context);
         }
 
         /// <summary>
@@ -166,5 +122,9 @@ namespace SolScript.Libraries.std
         {
             Thread.Sleep((int) (time.Value * SECOND_TO_MS));
         }
+
+        /// <inheritdoc />
+        [SolLibraryVisibility(std.NAME, false)]
+        public SolClass Self { get; set; }
     }
 }

@@ -7,7 +7,7 @@ namespace SolScript.Interpreter.Types
 {
     /// <summary>
     ///     The <see cref="SolString" /> is used to represent well... a string. As opposed to may other languages a string is
-    ///     an actual primite in SolScript. There is not character type. Characters are either represented by a string with a
+    ///     an actual primitive in SolScript. There is not character type. Characters are either represented by a string with a
     ///     length of one or a number.
     /// </summary>
     public sealed class SolString : SolValue
@@ -15,30 +15,25 @@ namespace SolScript.Interpreter.Types
         static SolString()
         {
             // Intern some often used values.
-            Empty.Intern();
             new SolString(" ").Intern();
-            new SolString(SolBool.TRUE_STRING).Intern();
-            new SolString(SolBool.FALSE_STRING).Intern();
-            new SolString("key").Intern();
-            new SolString("value").Intern();
-            new SolString("index").Intern();
-            new SolString("length").Intern();
-            new SolString("override").Intern();
-            new SolString("new_args").Intern();
         }
 
-        // Private constrcutor to support interning.
+        // Private constructor to support interning.
         private SolString(string value)
         {
             Value = value;
         }
 
+        /// <summary>
+        /// The type name is "string".
+        /// </summary>
         public const string TYPE = "string";
 
-        private static readonly Dictionary<string, SolString> Interned = new Dictionary<string, SolString>();
+        // All interned strings.
+        private static readonly Dictionary<string, SolString> s_Interned = new Dictionary<string, SolString>();
 
         /// <inheritdoc cref="string.Empty" />
-        public static readonly SolString Empty = new SolString(string.Empty);
+        public static readonly SolString Empty = new SolString(string.Empty).Intern();
 
         /// <summary>
         ///     The current value of this string.
@@ -148,7 +143,7 @@ namespace SolScript.Interpreter.Types
         public static SolString ValueOf(string value)
         {
             SolString str;
-            if (Interned.TryGetValue(value, out str)) {
+            if (s_Interned.TryGetValue(value, out str)) {
                 return str;
             }
             return new SolString(value);
@@ -160,7 +155,7 @@ namespace SolScript.Interpreter.Types
         /// </summary>
         public SolString Intern()
         {
-            Interned[string.Intern(Value)] = this;
+            s_Interned[string.Intern(Value)] = this;
             return this;
         }
 

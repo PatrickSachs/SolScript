@@ -1,6 +1,7 @@
 ﻿using System;
 using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
+using SolScript.Utility;
 
 namespace SolScript.Interpreter.Types.Implementation
 {
@@ -8,7 +9,7 @@ namespace SolScript.Interpreter.Types.Implementation
     ///     This type represents a constructor imported from native code. Constructors
     ///     needs a different implementation since they don't have a backing
     ///     MethodInfo(instead a ConstructorInfo) and do not simply return a SolValue,
-    ///     but instead create a NativeObject which needs to be registered inside the
+    ///     but instead create a NativeReference which needs to be registered inside the
     ///     SolClass to that a valid object for instance access exists.<br />If you are looking for the constructor function of
     ///     script functions: Script functions simply use a "normal" <see cref="SolScriptClassFunction" /> as constructor,
     ///     since the constructor is only a meta-function invoked upon creation of the class.
@@ -38,9 +39,29 @@ namespace SolScript.Interpreter.Types.Implementation
         /// <exception cref="InvalidOperationException">A critical internal error occured. Execution may have to be halted.</exception>
         protected override SolValue Call_Impl(SolExecutionContext context, params SolValue[] args)
         {
-            SolClass.Inheritance inheritance = ClassInstance.FindInheritance(Definition.DefinedIn);
-            if (inheritance == null) {
-                throw new SolRuntimeException(context, "Cannot call this constructor function on a class of type \"" + ClassInstance.Type + "\".");
+            SolClass.Inheritance inheritance = ClassInstance.InheritanceChain;
+            SolClass.Inheritance nativeStart = null;
+            while (inheritance != null) {
+                if (nativeStart == null && inheritance.Definition.NativeType != null) {
+                    nativeStart = inheritance;
+                }
+                if (inheritance.Definition == Definition.DefinedIn) {
+                    if (nativeStart == null) {
+                        throw new InvalidOperationException(
+                            "The inheritance level of the native constructor is lower than the native inheritance start. This indicates class inheritance corruption. " +
+                            $"(inheritance='{inheritance.Definition.Type}', nativeStart='{null}', definition='{Definition.DefinedIn?.Type}')");
+                    }
+                    break;
+                }
+                inheritance = inheritance.BaseInheritance;
+            }
+            // We can only call the most derived native constructor of a class since the constructor sets 
+            // the native object to the entire native part of the inheritance chain.
+            // This is required since functions are registered in the inheritance chain element they were
+            // declared in and thus try to access the native object of that level.
+            if (nativeStart == null || inheritance != nativeStart) {
+                throw new SolRuntimeException(context,
+                    "Cannot call this native constructor function for class \"" + Definition.DefinedIn.NotNull().Type + "\" on a class of type \"" + ClassInstance.Type + "\".");
             }
             if (ClassInstance.IsInitialized) {
                 throw new SolRuntimeException(context, "Cannot call constructor of an initialized \"" + ClassInstance.Type + "\" class instance.");
@@ -51,9 +72,80 @@ namespace SolScript.Interpreter.Types.Implementation
             } catch (SolMarshallingException ex) {
                 throw new SolRuntimeException(context, "Could to marshal the function parameters to native objects: " + ex.Message, ex);
             }
-            inheritance.NativeObject = InternalHelper.SandboxInvokeMethod(context, Definition.Chunk.GetNativeConstructor(), null, values);
-            SolMarshal.GetAssemblyCache(Assembly).StoreReference(inheritance.NativeObject.NotNull(), ClassInstance);
+            object nativeInstance = InternalHelper.SandboxInvokeMethod(context, Definition.Chunk.GetNativeConstructor(), null, values).NotNull();
+            DynamicReference reference = new DynamicReference.FixedReference(nativeInstance);
+            SolClass.Inheritance setting = nativeStart;
+            while (setting != null) {
+                setting.NativeReference = reference;
+                setting = setting.BaseInheritance;
+            }
+            //if (nativeInstance != null) {
+                SolMarshal.GetAssemblyCache(Assembly).StoreReference(nativeInstance, ClassInstance);
+            //}
+            // Assigning self after storing in assembly cache.
+            INativeClassSelf self = nativeInstance as INativeClassSelf;
+            if (self != null) {
+                self.Self = ClassInstance;
+            }
             return SolNil.Instance;
+        }
+
+        #endregion
+
+        #region Nested type: StaticAttributeRef
+
+        /// <summary>
+        ///     Gets a static attribute from a type.
+        /// </summary>
+        private class StaticAttributeRef : DynamicReference
+        {
+            /// <summary>
+            ///     Creates a new <see cref="StaticAttributeRef" /> instance.
+            /// </summary>
+            /// <param name="holder">The type.</param>
+            /// <param name="attribute">The attribute type.</param>
+            public StaticAttributeRef(Type holder, Type attribute)
+            {
+                m_Holder = holder;
+                m_Attribute = attribute;
+            }
+
+            // The attribute type.
+            private readonly Type m_Attribute;
+            // The type.
+            private readonly Type m_Holder;
+
+            #region Overrides
+
+            /// <inheritdoc />
+            public override object GetReference(out GetState refState)
+            {
+                object[] objs;
+                try {
+                    objs = m_Holder.GetCustomAttributes(m_Attribute, true);
+                } catch (TypeLoadException) {
+                    refState = GetState.NotRetrieved;
+                    return null;
+                } catch (InvalidOperationException) {
+                    refState = GetState.NotRetrieved;
+                    return null;
+                }
+                if (objs.Length == 0) {
+                    refState = GetState.NotRetrieved;
+                    return null;
+                }
+                refState = GetState.Retrieved;
+                return objs[0];
+            }
+
+            /// <inheritdoc />
+            public override void SetReference(object value, out SetState refState)
+            {
+                // Cannot assign.
+                refState = SetState.NotAssigned;
+            }
+
+            #endregion
         }
 
         #endregion

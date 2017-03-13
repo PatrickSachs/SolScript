@@ -41,7 +41,7 @@ namespace SolScript.Interpreter.Types
         /// </summary>
         public const string TYPE = "function";
 
-        // The Id the next function will recceive.
+        // The Id the next function will receive.
         private static uint s_NextId;
 
         private static readonly MethodInfo s_CreateAutoDelegateMethod =
@@ -51,6 +51,7 @@ namespace SolScript.Interpreter.Types
         ///     The unique Id of this function.
         /// </summary>
         public readonly uint Id;
+
 
         /// <summary>
         ///     The <see cref="SolAssembly" /> this function belongs to.
@@ -115,12 +116,30 @@ namespace SolScript.Interpreter.Types
         #endregion
 
         /// <summary>
+        ///     Gets the class instance of this function.
+        /// </summary>
+        /// <param name="isCurrent">
+        ///     Should the <see cref="SolExecutionContext.CurrentClass" /> of the active context be set to this
+        ///     class?
+        /// </param>
+        /// <param name="resetOnExit">
+        ///     Should the
+        ///     <see cref="SolExecutionContext.CurrentClass" /> of the execution context be reset to its previous value once
+        ///     exiting this function?<br />
+        ///     This can have an impact even if <paramref name="isCurrent" /> is false, in case e.g. a nested function changes the
+        ///     <see cref="SolExecutionContext.CurrentClass" />.
+        /// </param>
+        /// <returns>The class instance. Null if none.</returns>
+        [CanBeNull]
+        protected abstract SolClass GetClassInstance(out bool isCurrent, out bool resetOnExit);
+
+        /// <summary>
         ///     A dummy function, doing nothing once called. Accepts any parameter, returns nothing(thus nil).
         /// </summary>
         /// <param name="assembly">The assembly this function belongs to.</param>
         /// <returns>The dummy function.</returns>
         public static SolFunction Dummy(SolAssembly assembly)
-            => new SolScriptLamdaFunction(assembly, SolSourceLocation.Native(), SolParameterInfo.Any, SolType.AnyNil, new SolChunk(assembly, SolSourceLocation.Native(),  null), null);
+            => new SolScriptLamdaFunction(assembly, SolSourceLocation.Native(), SolParameterInfo.Any, SolType.AnyNil, new SolChunk(assembly, SolSourceLocation.Native(), null), null);
 
         /// <summary>
         ///     Creates a delegate you can use to call the function.
@@ -178,6 +197,12 @@ namespace SolScript.Interpreter.Types
         [NotNull]
         public SolValue Call([NotNull] SolExecutionContext context, [ItemNotNull] params SolValue[] args)
         {
+            SolClass oldClass = context.CurrentClass;
+            bool isCurrent, resetOnExit;
+            SolClass newClass = GetClassInstance(out isCurrent, out resetOnExit);
+            if (isCurrent) {
+                context.CurrentClass = newClass;
+            }
             context.PushStackFrame(this);
             try {
                 args = ParameterInfo.VerifyArguments(Assembly, args);
@@ -189,6 +214,9 @@ namespace SolScript.Interpreter.Types
                 throw new SolRuntimeException(context, $"Expected a return value of type \"{ReturnType}\", recceived a value of type \"{returnValue.Type}\".");
             }
             context.PopStackFrame();
+            if (resetOnExit) {
+                context.CurrentClass = oldClass;
+            }
             return returnValue;
         }
 
@@ -196,19 +224,18 @@ namespace SolScript.Interpreter.Types
         protected abstract SolValue Call_Impl([NotNull] SolExecutionContext context, [ItemNotNull] params SolValue[] args);
 
         /// <summary>
-        ///     Insers the given arguments into the variables. The name of the variables is used according to the ones defined in
+        ///     Inserts the given arguments into the variables. The name of the variables is used according to the ones defined in
         ///     the <see cref="ParameterInfo" />.
         /// </summary>
         /// <param name="variables">The variables to insert the arguments into.</param>
         /// <param name="arguments">The arguments to insert.</param>
         /// <remarks>
         ///     No further type/length checks will be performed. It is your responsibility to make sure that the types are of the
-        ///     correct
-        ///     type. <br />This should typically be no big issue since the default arguments passed to the function have already
-        ///     been
-        ///     verified. <br />Should you override the arguments manually for some reason you may want to re-check the types to
-        ///     avoid
-        ///     crtical bugs in user code.
+        ///     correct type. <br />This should typically be no big issue since the default arguments passed to the function have
+        ///     already
+        ///     been verified. <br />Should you override the arguments manually for some reason you may want to re-check the types
+        ///     to
+        ///     avoid critical bugs in user code.
         /// </remarks>
         /// <exception cref="SolVariableException">An error occured during insertion.</exception>
         protected virtual void InsertParameters(IVariables variables, SolValue[] arguments)

@@ -6,7 +6,7 @@ namespace SolScript.Interpreter.Library
     ///     The <see cref="SolGlobalAttribute" /> is used to mark a method as a global function in SolScript.
     /// </summary>
     /// <remarks>Only classes annotated with this attribute are scanned for global methods.</remarks>
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true)]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = true)]
     public sealed class SolGlobalAttribute : Attribute
     {
         /// <summary>

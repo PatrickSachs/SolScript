@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Globalization;
-using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 using JetBrains.Annotations;
@@ -8,6 +7,7 @@ using SolScript.Interpreter;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Library;
 using SolScript.Interpreter.Types;
+using SolScript.Utility;
 
 // ReSharper disable InconsistentNaming
 
@@ -21,20 +21,24 @@ namespace SolScript.Libraries.std
     [PublicAPI]
     public class std_String
     {
-        public std_String()
+        [SolLibraryVisibility(std.NAME, true)]
+        private std_String()
         {
             UseLocalCulture = true;
         }
 
+        /// <summary>
+        ///     The type name is "String".
+        /// </summary>
         [SolLibraryVisibility(std.NAME, false)] public const string TYPE = "String";
 
         private static readonly SolString Str_index = SolString.ValueOf("index").Intern();
         private static readonly SolString Str_length = SolString.ValueOf("length").Intern();
         private static readonly SolString Str_value = SolString.ValueOf("value").Intern();
 
-        /// <inheritdoc cref="use_local_culture"/>
-        [SolLibraryVisibility(std.NAME, false)]
-        public static bool UseLocalCulture { get; set; }
+        /// <inheritdoc cref="SolString.Empty" />
+        [SolContract(SolString.TYPE, false)]
+        public SolString empty => SolString.Empty;
 
         /// <summary>
         ///     Should the local culture be used for string operations? (Default: true)
@@ -45,9 +49,9 @@ namespace SolScript.Libraries.std
             set { UseLocalCulture = value.Value; }
         }
 
-        /// <inheritdoc cref="SolString.Empty" />
-        [SolContract(SolString.TYPE, false)]
-        public SolString empty => SolString.Empty;
+        /// <inheritdoc cref="use_local_culture" />
+        [SolLibraryVisibility(std.NAME, false)]
+        public static bool UseLocalCulture { get; set; }
 
         #region Overrides
 

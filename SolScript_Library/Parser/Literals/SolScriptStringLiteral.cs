@@ -1,27 +1,36 @@
 ﻿using Irony.Parsing;
 
-namespace SolScript.Parser.Literals {
-    internal class SolScriptStringLiteral : StringLiteral {
+namespace SolScript.Parser.Literals
+{
+    internal class SolScriptStringLiteral : StringLiteral
+    {
         public SolScriptStringLiteral(string name)
-            : base(name) {
+            : base(name)
+        {
             AddStartEnd("'", StringOptions.AllowsAllEscapes);
             AddStartEnd("\"", StringOptions.AllowsAllEscapes);
         }
 
-        protected override bool ReadBody(ISourceStream source, CompoundTokenDetails details) {
+        #region Overrides
+
+        protected override bool ReadBody(ISourceStream source, CompoundTokenDetails details)
+        {
             int nlPos = source.Text.IndexOf('\n', source.PreviewPosition);
-            char prev = source.Text[nlPos - 1];
-            if (prev == '\r') {
-                // hi im windows.
-                prev = source.Text[nlPos - 2];
-            }
-            if (prev == '\\') {
-                details.Flags += (short) StringOptions.AllowsLineBreak;
+            if (nlPos > 0) {
+                char prev = source.Text[nlPos - 1];
+                if (prev == '\r' && nlPos > 1) {
+                    // hi im windows.
+                    prev = source.Text[nlPos - 2];
+                }
+                if (prev == '\\') {
+                    details.Flags += (short) StringOptions.AllowsLineBreak;
+                }
             }
             return base.ReadBody(source, details);
         }
 
-        protected override string HandleSpecialEscape(string segment, CompoundTokenDetails details) {
+        protected override string HandleSpecialEscape(string segment, CompoundTokenDetails details)
+        {
             if (string.IsNullOrEmpty(segment)) {
                 return string.Empty;
             }
@@ -50,13 +59,16 @@ namespace SolScript.Parser.Literals {
                         success = int.TryParse(value, out dummy);
                     }
 
-                    if (!success)
+                    if (!success) {
                         details.Error = "Invalid escape sequence: \000 must be a valid number.";
+                    }
                 }
                     break;
             }
             details.Error = "Invalid escape sequence: \\" + segment;
             return segment;
         }
+
+        #endregion
     }
 }

@@ -80,6 +80,8 @@ namespace SolScript.Parser {
             KeyTerm ABSTRACT = Keyword("abstract");
             KeyTerm SEALED = Keyword("sealed");
             KeyTerm OVERRIDE = Keyword("override");
+            KeyTerm BASE = Keyword("base");
+            KeyTerm SELF = Keyword("self");
             // =======================================
             // === KEYWORDS
             KeyTerm NIL = Keyword("nil");
@@ -120,6 +122,8 @@ namespace SolScript.Parser {
             NonTerminal StatementList = new NonTerminal("StatementList");
             NonTerminal LastStatement = new NonTerminal("LastStatement");
             NonTerminal Statement_CallFunction = new NonTerminal("Statement_CallFunction");
+            NonTerminal Statement_Base = new NonTerminal("Statement_Base");
+            NonTerminal Statement_Self = new NonTerminal("Statement_Self");
             // Functions
             NonTerminal Statement_DeclareFunc = new NonTerminal("Statement_DeclareFunc");
             NonTerminal Statement_DeclareFunc_Local = new NonTerminal("Statement_DeclareFunc_Local");
@@ -312,6 +316,13 @@ namespace SolScript.Parser {
             Statement_While.Rule =
                 WHILE + Expression + DO + Chunk + END
                 ;
+            Statement_Base.Rule =
+                BASE + "[" + Expression + "]"
+                | BASE + DOT + _identifier
+                ;
+            Statement_Self.Rule =
+                SELF
+                ;
             Statement.Rule =
                 Statement_AssignVar
                 | Statement_DeclareVar
@@ -343,6 +354,8 @@ namespace SolScript.Parser {
                 | Statement_Conditional
                 | Statement_New
                 | Statement_AssignVar
+                | Statement_Base
+                | Statement_Self
                 ;
             Expression.Rule =
                  _number

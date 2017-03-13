@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using SolScript.Utility;
 
 namespace SolScript.Interpreter.Builders
 {
@@ -10,21 +11,21 @@ namespace SolScript.Interpreter.Builders
         /// <summary>
         ///     All currently registered annotations.
         /// </summary>
-        IReadOnlyList<SolAnnotationData> Annotations { get; }
+        IReadOnlyList<SolAnnotationBuilder> Annotations { get; }
 
         /// <summary>
         ///     Adds a new annotation to this builder.
         /// </summary>
         /// <param name="annotation">The annotation.</param>
         /// <returns>The builder.</returns>
-        IAnnotateableBuilder AddAnnotation(SolAnnotationData annotation);
+        IAnnotateableBuilder AddAnnotation(SolAnnotationBuilder annotation);
 
         /// <summary>
         ///     Adds multiple new annotations to this builder.
         /// </summary>
         /// <param name="annotations">The annotations.</param>
         /// <returns>The builder.</returns>
-        IAnnotateableBuilder AddAnnotations(params SolAnnotationData[] annotations);
+        IAnnotateableBuilder AddAnnotations(params SolAnnotationBuilder[] annotations);
 
         /// <summary>
         ///     Removes all annotations from this builder.

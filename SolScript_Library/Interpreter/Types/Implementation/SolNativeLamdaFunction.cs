@@ -3,6 +3,7 @@ using System.Linq;
 using System.Reflection;
 using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
+using SolScript.Utility;
 
 namespace SolScript.Interpreter.Types.Implementation
 {
@@ -28,6 +29,14 @@ namespace SolScript.Interpreter.Types.Implementation
         public new SolParameterInfo.Native ParameterInfo => (SolParameterInfo.Native) base.ParameterInfo;
 
         #region Overrides
+
+        /// <inheritdoc />
+        protected override SolClass GetClassInstance(out bool isCurrent, out bool resetOnExit)
+        {
+            isCurrent = false;
+            resetOnExit = false;
+            return null;
+        }
 
         /// <inheritdoc />
         /// <exception cref="SolRuntimeException">A runtime error occured.</exception>

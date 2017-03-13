@@ -3,6 +3,7 @@ using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Types;
+using SolScript.Utility;
 
 namespace SolScript.Interpreter.Statements
 {
@@ -20,12 +21,12 @@ namespace SolScript.Interpreter.Statements
         /// <param name="arguments">The constructor arguments.</param>
         public Statement_New([NotNull] SolAssembly assembly, SolSourceLocation location, string typeName, params SolExpression[] arguments) : base(assembly, location)
         {
-            m_Arguments = arguments;
+            m_Arguments = new Array<SolExpression>(arguments);
             TypeName = typeName;
         }
 
         // The constructor arguments.
-        private readonly SolExpression[] m_Arguments;
+        private readonly Array<SolExpression> m_Arguments;
 
         /// <summary>
         ///     The name of the class that should be created.

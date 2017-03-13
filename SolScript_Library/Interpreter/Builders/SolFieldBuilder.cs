@@ -1,5 +1,5 @@
-﻿using System.Collections.Generic;
-using SolScript.Interpreter.Expressions;
+﻿using SolScript.Interpreter.Expressions;
+using SolScript.Utility;
 
 namespace SolScript.Interpreter.Builders
 {
@@ -15,17 +15,33 @@ namespace SolScript.Interpreter.Builders
         }
 
         // The annotations on this field.
-        private readonly List<SolAnnotationData> m_Annotations = new List<SolAnnotationData>();
+        private readonly List<SolAnnotationBuilder> m_Annotations = new List<SolAnnotationBuilder>();
 
         /// <summary>
-        ///     The name of this field.
+        ///     The access modifier of this field.
         /// </summary>
-        public string Name { get; private set; }
+        public SolAccessModifier AccessModifier { get; set; }
 
         /// <summary>
         ///     The unresolved type of this field.
         /// </summary>
         public SolTypeBuilder FieldType { get; private set; }
+
+        /// <summary>
+        ///     Is this field native?
+        /// </summary>
+        public bool IsNative { get; private set; }
+
+        /// <summary>
+        ///     The member modifier of this field.
+        /// </summary>
+        /// <remarks>This value is ignored, fields cannot have member modifiers.</remarks>
+        public SolMemberModifier MemberModifier { get; set; }
+
+        /// <summary>
+        ///     The name of this field.
+        /// </summary>
+        public string Name { get; private set; }
 
         /// <summary>
         ///     The native backing field of this type. Only valid if <see cref="IsNative" /> is true.
@@ -37,33 +53,13 @@ namespace SolScript.Interpreter.Builders
         /// </summary>
         public SolExpression ScriptField { get; private set; }
 
-        /// <summary>
-        ///     The member modifier of this field.
-        /// </summary>
-        public SolMemberModifier MemberModifier { get; set; }
-
-        /// <summary>
-        ///     The access modifier of this field.
-        /// </summary>
-        public SolAccessModifier AccessModifier { get; set; }
-
-        /// <summary>
-        ///     The location in source code.
-        /// </summary>
-        public SolSourceLocation Location { get; private set; }
-
-        /// <summary>
-        ///     Is this field native?
-        /// </summary>
-        public bool IsNative { get; private set; }
-
         #region IAnnotateableBuilder Members
 
         /// <inheritdoc />
-        public IReadOnlyList<SolAnnotationData> Annotations => m_Annotations;
+        public IReadOnlyList<SolAnnotationBuilder> Annotations => m_Annotations;
 
         /// <inheritdoc />
-        public IAnnotateableBuilder AddAnnotation(SolAnnotationData annotation)
+        public IAnnotateableBuilder AddAnnotation(SolAnnotationBuilder annotation)
         {
             m_Annotations.Add(annotation);
             return this;
@@ -77,29 +73,38 @@ namespace SolScript.Interpreter.Builders
         }
 
         /// <inheritdoc />
-        public IAnnotateableBuilder AddAnnotations(params SolAnnotationData[] annotations)
+        public IAnnotateableBuilder AddAnnotations(params SolAnnotationBuilder[] annotations)
         {
             m_Annotations.AddRange(annotations);
             return this;
         }
 
         #endregion
-        
-        /// <inheritdoc cref="MemberModifier"/>
+
+        #region ISourceLocateable Members
+
+        /// <summary>
+        ///     The location in source code.
+        /// </summary>
+        public SolSourceLocation Location { get; private set; }
+
+        #endregion
+
+        /// <inheritdoc cref="MemberModifier" />
         public SolFieldBuilder SetMemberModifier(SolMemberModifier modifier)
         {
             MemberModifier = modifier;
             return this;
         }
 
-        /// <inheritdoc cref="AccessModifier"/>
+        /// <inheritdoc cref="AccessModifier" />
         public SolFieldBuilder SetAccessModifier(SolAccessModifier modifier)
         {
             AccessModifier = modifier;
             return this;
         }
 
-        /// <inheritdoc cref="FieldType"/>
+        /// <inheritdoc cref="FieldType" />
         public SolFieldBuilder SetFieldType(SolTypeBuilder type)
         {
             FieldType = type;

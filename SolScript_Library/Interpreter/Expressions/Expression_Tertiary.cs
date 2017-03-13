@@ -1,5 +1,4 @@
-﻿using System;
-using SolScript.Interpreter.Types;
+﻿using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter.Expressions
 {
@@ -51,7 +50,7 @@ namespace SolScript.Interpreter.Expressions
         /// <inheritdoc />
         protected override string ToString_Impl()
         {
-            return First + Operation.Name1 + Second + Operation.Name2 + Third;
+            return First + Operation.Operator1 + Second + Operation.Operator2 + Third;
         }
 
         #endregion
@@ -65,14 +64,18 @@ namespace SolScript.Interpreter.Expressions
         /// </summary>
         public sealed class Conditional : OperationRef
         {
+            private Conditional() {}
+
+            /// <summary>
+            ///     The singleton instance.
+            /// </summary>
             public static readonly Conditional Instance = new Conditional();
-            private Conditional() { }
 
             /// <inheritdoc />
-            public override string Name1 => "?";
+            public override string Operator1 => "?";
 
             /// <inheritdoc />
-            public override string Name2 => ":";
+            public override string Operator2 => ":";
 
             #region Overrides
 
@@ -100,12 +103,12 @@ namespace SolScript.Interpreter.Expressions
             /// <summary>
             ///     The name of the first operation.
             /// </summary>
-            public abstract string Name1 { get; }
+            public abstract string Operator1 { get; }
 
             /// <summary>
             ///     The name of the second operation.
             /// </summary>
-            public abstract string Name2 { get; }
+            public abstract string Operator2 { get; }
 
             /// <summary>
             ///     Performs the evaluation and returns the value.
@@ -114,8 +117,7 @@ namespace SolScript.Interpreter.Expressions
             /// <param name="parentVariables">The parent variables.</param>
             /// <param name="context">The current context.</param>
             /// <returns>The evaluated value.</returns>
-            // The teritary values are resolved on demand since not all three may be required. And possibly not even be desired to be evaluated. 
-            // todo: find a nicer way to do this. just essentially redirecting the expression call seems a bit dirty and breaking the idea of encapsulation.
+            // The tertiary values are resolved on demand since not all three may be required. And possibly not even be desired to be evaluated. 
             public abstract SolValue Perform(Expression_Tertiary expression, IVariables parentVariables, SolExecutionContext context);
         }
 

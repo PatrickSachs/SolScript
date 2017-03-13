@@ -11,13 +11,9 @@ namespace SolScript.Interpreter.Exceptions
         /// <summary>
         ///     Creates a new compiler exception.
         /// </summary>
-        protected SolCompilerException() {}
-
-        /// <summary>
-        ///     Creates a new compiler exception.
-        /// </summary>
+        /// <param name="location">The code location this exception relates to.</param>
         /// <param name="message">The error message.</param>
-        public SolCompilerException(string message) : base(message) {}
+        public SolCompilerException(SolSourceLocation location, string message) : base(location, message) {}
 
         /// <summary>
         ///     Deserializes a compiler exception.
@@ -34,8 +30,9 @@ namespace SolScript.Interpreter.Exceptions
         /// <summary>
         ///     Creates a new compiler exception.
         /// </summary>
+        /// <param name="location">The code location this exception relates to.</param>
         /// <param name="message">The error message.</param>
         /// <param name="inner">The inner wrapped exception.</param>
-        public SolCompilerException(string message, Exception inner) : base(message, inner) {}
+        public SolCompilerException(SolSourceLocation location, string message, Exception inner) : base(location, message, inner) {}
     }
 }

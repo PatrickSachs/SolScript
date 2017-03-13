@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Reflection;
 using SolScript.Interpreter.Exceptions;
+using SolScript.Utility;
 
 namespace SolScript.Interpreter.Types.Implementation
 {
     /// <summary>
     ///     This class is used for native global functions.
     /// </summary>
-    public sealed class SolNativeGlobalFunction : DefinedSolFunction
+    public sealed class SolNativeGlobalFunction : GlobalSolFunction
     {
         /// <summary>
         ///     Creates the function instance.
@@ -38,6 +39,14 @@ namespace SolScript.Interpreter.Types.Implementation
             unchecked {
                 return 13 + (int) Id;
             }
+        }
+
+        /// <inheritdoc />
+        protected override SolClass GetClassInstance(out bool isCurrent, out bool resetOnExit)
+        {
+            isCurrent = true;
+            resetOnExit = true;
+            return null;
         }
 
         /// <inheritdoc />

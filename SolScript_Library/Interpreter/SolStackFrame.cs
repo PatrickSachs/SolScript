@@ -20,23 +20,34 @@ namespace SolScript.Interpreter
         ///     The function that has been called during this frame.
         /// </summary>
         /// <remarks>
-        ///     Warning: Storing the function as a reference could prevent the GC of e.g. a pratically lambda function(and thus
+        ///     Warning: Storing the function as a reference could prevent the GC of e.g. a lambda function(and thus
         ///     possibly an entire class hierarchy!) if the stack trace is not popped correctly.
         /// </remarks>
         public readonly SolFunction Function;
 
-        internal SolStackFrame(SolSourceLocation location, SolFunction function)
+        /// <summary>
+        ///     Creates a new stack frame.
+        /// </summary>
+        /// <param name="location">The location of the stack frame in code.</param>
+        /// <param name="function">The function the frame related to.</param>
+        public SolStackFrame(SolSourceLocation location, SolFunction function)
         {
             Location = location;
             Function = function;
         }
 
+        /// <summary>
+        ///     Appends a nice format of the function name of this stack frame to a <see cref="StringBuilder" />.
+        /// </summary>
+        /// <param name="builder">The builder.</param>
         public void AppendFunctionName(StringBuilder builder)
         {
             SolClassFunction classFunction = Function as SolClassFunction;
             DefinedSolFunction definedFunction = Function as DefinedSolFunction;
             if (classFunction != null) {
-                SolClassDefinition definingClass = classFunction.ClassInstance.InheritanceChain.Definition;
+                bool _;
+                SolClassDefinition onClass = classFunction.ClassInstance.InheritanceChain.Definition;
+                SolClassDefinition definingClass = classFunction.Definition.DefinedIn ?? onClass;
                 builder.Append(definingClass.Type);
                 builder.Append(".");
             }
@@ -47,6 +58,7 @@ namespace SolScript.Interpreter
             }
         }
 
+        /// <inheritdoc />
         [Pure]
         public override string ToString()
         {
@@ -62,6 +74,10 @@ namespace SolScript.Interpreter
             return builder.ToString();
         }
 
+        /// <summary>
+        ///     Appends a nice format of the function parameters of this stack frame to a <see cref="StringBuilder" />.
+        /// </summary>
+        /// <param name="builder">The builder.</param>
         public void AppendFunctionParameters(StringBuilder builder)
         {
             bool first = true;
@@ -76,32 +92,65 @@ namespace SolScript.Interpreter
             }
         }
 
+        /// <summary>
+        ///     Checks if this stack frame is eual to another. Two stack frames are considered equal if their
+        ///     <see cref="Location" /> equals and
+        ///     their <see cref="Function" /> is reference equal.
+        /// </summary>
+        /// <param name="other">The other frame.</param>
+        /// <returns>true if equal, false if not.</returns>
         [Pure]
         public bool Equals(SolStackFrame other)
         {
             return Location.Equals(other.Location) && Function == other.Function;
         }
 
+        /// <summary>
+        ///     Wraps <see cref="Equals(SolScript.Interpreter.SolStackFrame)" />.
+        /// </summary>
+        /// <param name="frame1">First frame.</param>
+        /// <param name="frame2">Second frame.</param>
+        /// <returns>true if equal, false if not.</returns>
         public static bool operator ==(SolStackFrame frame1, SolStackFrame frame2)
         {
             return frame1.Equals(frame2);
         }
 
+        /// <summary>
+        ///     Wraps <see cref="Equals(object)" />.
+        /// </summary>
+        /// <param name="frame1">First frame.</param>
+        /// <param name="frame2">Second potential frame.</param>
+        /// <returns>true if equal, false if not.</returns>
         public static bool operator ==(SolStackFrame frame1, object frame2)
         {
             return frame1.Equals(frame2);
         }
 
+        /// <summary>
+        ///     Wraps <see cref="Equals(object)" />.
+        /// </summary>
+        /// <param name="frame1">First frame.</param>
+        /// <param name="frame2">Second potential frame.</param>
+        /// <returns>true not if equal, false if.</returns>
         public static bool operator !=(SolStackFrame frame1, object frame2)
         {
             return frame1.Equals(frame2);
         }
 
+        /// <summary>
+        ///     Wraps <see cref="Equals(SolScript.Interpreter.SolStackFrame)" />.
+        /// </summary>
+        /// <param name="frame1">First frame.</param>
+        /// <param name="frame2">Second frame.</param>
+        /// <returns>true if not equal, false if.</returns>
         public static bool operator !=(SolStackFrame frame1, SolStackFrame frame2)
         {
             return !frame1.Equals(frame2);
         }
 
+        /// <inheritdoc />
+        /// <seealso cref="Equals(SolScript.Interpreter.SolStackFrame)" />
         [Pure]
         public override bool Equals(object obj)
         {
@@ -111,6 +160,7 @@ namespace SolScript.Interpreter
             return obj is SolStackFrame && Equals((SolStackFrame) obj);
         }
 
+        /// <inheritdoc />
         [Pure]
         public override int GetHashCode()
         {

@@ -8,7 +8,7 @@ using SolScript.Interpreter.Types;
 namespace SolScript.Interpreter
 {
     /// <summary>
-    ///     The SolExcecutionContext holds various information about the current
+    ///     The <see cref="SolExecutionContext"/> holds various information about the current
     ///     script execution. A lot of methods require you to pass the execution
     ///     context, so it is generally a good idea to pass it around wherever you can.<br />
     ///     You may create a new execution context at any given time without any negative implications (if the assembly is set
@@ -18,7 +18,7 @@ namespace SolScript.Interpreter
     public class SolExecutionContext
     {
         /// <summary>
-        ///     Creates a new exceution context.
+        ///     Creates a new <see cref="SolExecutionContext"/>.
         /// </summary>
         /// <param name="assembly">The assembly the context belongs to. <seealso cref="Assembly" /></param>
         /// <param name="name">The name of this context. <seealso cref="Name" /></param>
@@ -30,13 +30,13 @@ namespace SolScript.Interpreter
         }
 
         /// <summary>
-        ///     The assembly this exceution context belongs to. Setting the assembly to the correct one is very important as the
-        ///     Assembly field of the exceution context may be the only way to get a handle to the type registry of an assembly.
+        ///     The assembly this execution context belongs to. Setting the assembly to the correct one is very important as the
+        ///     Assembly field of the execution context may be the only way to get a handle to the type registry of an assembly.
         /// </summary>
         public readonly SolAssembly Assembly;
 
         /// <summary>
-        ///     The raw Stack Trace stack. Be very careful with this as corruption in this stack can lead to crashes in the
+        ///     The raw Stack Trace. Be very careful with this as corruption in this stack can lead to crashes in the
         ///     SolScript runtime as the stack trace is not constantly checked for integrity.
         /// </summary>
         protected readonly LinkedList<SolStackFrame> StackTrace = new LinkedList<SolStackFrame>();
@@ -49,7 +49,13 @@ namespace SolScript.Interpreter
         public SolSourceLocation CurrentLocation { get; set; }
 
         /// <summary>
-        ///     The name of this excution context. This name is purely for debugging or crash report purposes and thus should have
+        ///     The class this context is currently in. This property is set automatically.<br /> Only change it if you know what
+        ///     you are doing as changing this value can break the runtime.
+        /// </summary>
+        public SolClass CurrentClass { get; set; }
+
+        /// <summary>
+        ///     The name of this execution context. This name is purely for debugging or crash report purposes and thus should have
         ///     a descriptive name.
         /// </summary>
         public string Name { get; }
@@ -80,7 +86,7 @@ namespace SolScript.Interpreter
         }
 
         /// <summary>
-        ///     Pushes a new alredy created stack frame onto the stack.
+        ///     Pushes a new already created stack frame onto the stack.
         /// </summary>
         /// <param name="frame">The stack frame.</param>
         public virtual void PushStackFrame(SolStackFrame frame)
@@ -103,9 +109,9 @@ namespace SolScript.Interpreter
         /// <summary>
         ///     Tries to get the latest <see cref="SolStackFrame" /> on the stack trace.
         /// </summary>
-        /// <param name="frame">The stack frame. Only valid if the method retunred true.</param>
+        /// <param name="frame">The stack frame. Only valid if the method returned true.</param>
         /// <param name="depth">How deep to peek? Zero is the last element, one is the element before the last, and so on.</param>
-        /// <returns>If the stack frame could be obatined. Can fail if the stack trace is empty.</returns>
+        /// <returns>If the stack frame could be obtained. Can fail if the stack trace is empty.</returns>
         /// <exception cref="ArgumentException">Cannot peek by a negative amount(<paramref name="depth" /> is smaller than 0).</exception>
         public virtual bool PeekStackFrame(out SolStackFrame frame, int depth = 0)
         {
@@ -129,9 +135,23 @@ namespace SolScript.Interpreter
             return true;
         }
 
-        protected StringBuilder GenerateStackTraceImpl()
+        /// <summary>
+        ///     Generates the stack trace builder and appends all necessary data.
+        /// </summary>
+        /// <returns>The builder.</returns>
+        /// <remarks>
+        ///     Keep in mind that some methods may append further data to the builder. The builder should thus end in a new
+        ///     line.
+        /// </remarks>
+        protected virtual StringBuilder GenerateStackTrace_Impl()
         {
             StringBuilder builder = new StringBuilder();
+            builder.Append("Error in execution " + Name + ".");
+            if (CurrentClass != null) {
+                builder.AppendLine("(Currently in class: \"" + CurrentClass.Type + "\" - Instance-Id: " + CurrentClass.Id + ")");
+            } else {
+                builder.AppendLine();
+            }
             foreach (SolStackFrame frame in StackTrace) {
                 builder.Append("  ");
                 builder.AppendLine(frame.ToString());
@@ -145,15 +165,18 @@ namespace SolScript.Interpreter
             return builder;
         }
 
-        public virtual string GenerateStackTrace()
+        /// <summary>
+        ///     Generates the stack trace with information about each called function. Also (optionally) indicates that a given
+        ///     exception has caused the generation of this stack trace.
+        /// </summary>
+        /// <param name="nativeException">The exception.</param>
+        /// <returns>The stack trace as string.</returns>
+        public virtual string GenerateStackTrace(Exception nativeException = null)
         {
-            return GenerateStackTraceImpl().ToString();
-        }
-
-        public virtual string GenerateStackTrace(Exception nativeException)
-        {
-            StringBuilder builder = GenerateStackTraceImpl();
-            if (!(nativeException is SolException)) {
+            StringBuilder builder = GenerateStackTrace_Impl();
+            if (nativeException is SolException) {
+                SolException.UnwindExceptionStack((SolException) nativeException, builder);
+            } else if (nativeException != null) {
                 builder.Append("Caused by a native exception: ");
                 builder.Append(nativeException.GetType().Name);
                 if (!string.IsNullOrEmpty(nativeException.Message)) {

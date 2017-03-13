@@ -2,6 +2,7 @@
 using System.Reflection;
 using SolScript.Interpreter;
 using SolScript.Interpreter.Expressions;
+using SolScript.Utility;
 
 namespace SolScript.Interpreter
 {

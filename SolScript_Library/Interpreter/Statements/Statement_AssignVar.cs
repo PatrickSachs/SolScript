@@ -1,36 +1,72 @@
-﻿using SolScript.Interpreter.Exceptions;
+﻿using System;
+using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Types;
 using SolScript.Interpreter.Types.Interfaces;
 
 namespace SolScript.Interpreter.Statements
 {
-    public class Statement_AssignVar : SolStatement
+    /// <summary>
+    ///     The assign var statement is used to assign values to variables. It can be chained due to also being an expression.
+    /// </summary>
+    public class Statement_AssignVar : SolStatement, IWrittenInClass
+
     {
-        public Statement_AssignVar(SolAssembly assembly, SolSourceLocation location, TargetRef target, SolExpression valueGetter) : base(assembly, location)
+        /// <summary>
+        ///     Creates a new statement.
+        /// </summary>
+        /// <param name="assembly">The assembly.</param>
+        /// <param name="location">The location in code.</param>
+        /// <param name="target">The operation used to actually assign the value.</param>
+        /// <param name="valueGetter">The expression used to obtain the value that should be assigned.</param>
+        /// <param name="writtenInClass">The class name this statement was written in.</param>
+        /// <exception cref="InvalidOperationException">The target source is already linked to another statement.</exception>
+        public Statement_AssignVar(SolAssembly assembly, SolSourceLocation location, TargetRef target, SolExpression valueGetter, string writtenInClass) : base(assembly, location)
         {
+            if (target.LinkedStatement != null && Target.LinkedStatement != this) {
+                throw new InvalidOperationException("The variable target is already linked to another statement - " + target.LinkedStatement);
+            }
             Target = target;
+            Target.LinkedStatement = this;
             ValueGetter = valueGetter;
+            WrittenInClass = writtenInClass;
         }
 
+        /// <summary>
+        ///     The operation used to actually assign the value.
+        /// </summary>
         public readonly TargetRef Target;
+
+        /// <summary>
+        ///     The expression used to obtain the value that should be assigned.
+        /// </summary>
         public readonly SolExpression ValueGetter;
 
+        #region IWrittenInClass Members
+
+        /// <inheritdoc />
+        public string WrittenInClass { get; }
+
+        #endregion
+
         #region Overrides
-        
+
+        /// <inheritdoc />
+        /// <exception cref="SolRuntimeException">Failed to assign the variable.</exception>
         public override SolValue Execute(SolExecutionContext context, IVariables parentVariables, out Terminators terminators)
         {
             context.CurrentLocation = Location;
             SolValue value = ValueGetter.Evaluate(context, parentVariables);
             try {
-                Target.Set(value, context, parentVariables);
+                value = Target.Set(value, context, parentVariables);
             } catch (SolVariableException ex) {
-                throw new SolRuntimeException(context, ex.Message);
+                throw new SolRuntimeException(context, "Failed to assign the variable.", ex);
             }
             terminators = Terminators.None;
             return value;
         }
 
+        /// <inheritdoc />
         protected override string ToString_Impl()
         {
             return $"{Target} = {ValueGetter}";
@@ -46,6 +82,11 @@ namespace SolScript.Interpreter.Statements
         /// </summary>
         public class IndexedVariable : TargetRef
         {
+            /// <summary>
+            ///     Creates a new indexed variable.
+            /// </summary>
+            /// <param name="indexableGetter">The expression used to get the value that should be indexed.</param>
+            /// <param name="keyGetter">The expression used to get the key the indexed value should be indexed by.</param>
             public IndexedVariable(SolExpression indexableGetter, SolExpression keyGetter)
             {
                 IndexableGetter = indexableGetter;
@@ -56,6 +97,7 @@ namespace SolScript.Interpreter.Statements
             ///     The value that will be indexed. The return value must implement <see cref="IValueIndexable" />.
             /// </summary>
             public readonly SolExpression IndexableGetter;
+
             /// <summary>
             ///     The key by which the result of <see cref="IndexableGetter" /> will be indexed.
             /// </summary>
@@ -64,18 +106,36 @@ namespace SolScript.Interpreter.Statements
             #region Overrides
 
             /// <inheritdoc />
-            /// <remarks> Evaluates the <see cref="IndexableGetter"/> first, then the <see cref="KeyGetter"/> </remarks>
-            public override void Set(SolValue value, SolExecutionContext context, IVariables parentVariables)
+            /// <remarks> Evaluates the <see cref="IndexableGetter" /> first, then the <see cref="KeyGetter" /> </remarks>
+            /// <exception cref="SolVariableException">An error occured.</exception>
+            public override SolValue Set(SolValue value, SolExecutionContext context, IVariables parentVariables)
             {
                 SolValue indexableRaw = IndexableGetter.Evaluate(context, parentVariables);
-                IValueIndexable indexable = indexableRaw as IValueIndexable;
-                if (indexable == null) {
-                    throw new SolVariableException("Cannot index the type \"" + indexableRaw.Type + "\".");
+                SolValue key = KeyGetter.Evaluate(context, parentVariables);
+                SolClass solClass = indexableRaw as SolClass;
+                if (solClass != null) {
+                    SolString keyString = key as SolString;
+                    if (keyString == null) {
+                        throw new SolVariableException(KeyGetter.Location, $"Tried to index a class with a \"{key.Type}\" value.");
+                    }
+                    // 1 Inheritance could be found -> We can access locals! An inheritance can be found if the
+                    //   get expression was declared inside the class.
+                    // 2 Not found -> Only global access.
+                    // Kind of funny how this little null coalescing operator handles the "deciding part" of access rights.
+                    SolClass.Inheritance inheritance = LinkedStatement.WrittenInClass != null ? solClass.FindInheritance(LinkedStatement.WrittenInClass) : null;
+                    value = inheritance?.GetVariables(SolAccessModifier.Local, SolVariableMode.All).Assign(keyString.Value, value)
+                            ?? solClass.InheritanceChain.GetVariables(SolAccessModifier.None, SolVariableMode.All).Assign(keyString.Value, value);
+                    return value;
                 }
-                // <bubble>SolVariableException</bubble>
-                indexable[KeyGetter.Evaluate(context, parentVariables)] = value;
+                IValueIndexable indexable = indexableRaw as IValueIndexable;
+                if (indexable != null) {
+                    value = indexable[key] = value;
+                    return value;
+                }
+                throw new SolVariableException(IndexableGetter.Location, "Tried to index a \"" + indexableRaw.Type + "\" value.");
             }
 
+            /// <inheritdoc />
             public override string ToString()
             {
                 return $"{IndexableGetter}[{KeyGetter}]";
@@ -93,6 +153,10 @@ namespace SolScript.Interpreter.Statements
         /// </summary>
         public class NamedVariable : TargetRef
         {
+            /// <summary>
+            ///     Creates a new named variable.
+            /// </summary>
+            /// <param name="name">The name of the variable.</param>
             public NamedVariable(string name)
             {
                 Name = name;
@@ -106,12 +170,13 @@ namespace SolScript.Interpreter.Statements
             #region Overrides
 
             /// <inheritdoc />
-            public override void Set(SolValue value, SolExecutionContext context, IVariables parentVariables)
+            /// <exception cref="SolVariableException">An error occured.</exception>
+            public override SolValue Set(SolValue value, SolExecutionContext context, IVariables parentVariables)
             {
-                // <bubble>SolVariableException</bubble>
-                parentVariables.Assign(Name, value);
+                return parentVariables.Assign(Name, value);
             }
 
+            /// <inheritdoc />
             public override string ToString()
             {
                 return Name;
@@ -130,12 +195,18 @@ namespace SolScript.Interpreter.Statements
         public abstract class TargetRef
         {
             /// <summary>
+            ///     The statement this target is currently linked to. (Updated automatically)
+            /// </summary>
+            public Statement_AssignVar LinkedStatement { get; internal set; }
+
+            /// <summary>
             ///     Sets the variable to the given value.
             /// </summary>
             /// <param name="value">The value to set the variable to.</param>
             /// <param name="context">The current context.</param>
             /// <param name="parentVariables">The parent variable context.</param>
-            public abstract void Set(SolValue value, SolExecutionContext context, IVariables parentVariables);
+            /// <exception cref="SolVariableException">An error occured.</exception>
+            public abstract SolValue Set(SolValue value, SolExecutionContext context, IVariables parentVariables);
         }
 
         #endregion
