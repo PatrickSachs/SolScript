@@ -1,8 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 
-// ReSharper disable InconsistentNaming
-
 namespace SolScript
 {
     /// <summary>

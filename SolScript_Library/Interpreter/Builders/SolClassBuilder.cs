@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using PSUtility.Enumerables;
 using SolScript.Utility;
 
 namespace SolScript.Interpreter.Builders
@@ -20,7 +21,7 @@ namespace SolScript.Interpreter.Builders
         }
 
         // All annotations on this class.
-        private readonly Utility.List<SolAnnotationBuilder> m_Annotations = new Utility.List<SolAnnotationBuilder>();
+        private readonly PSUtility.Enumerables.List<SolAnnotationBuilder> m_Annotations = new PSUtility.Enumerables.List<SolAnnotationBuilder>();
 
         /// <summary>
         ///     The name of the base class(= the class this one extends).

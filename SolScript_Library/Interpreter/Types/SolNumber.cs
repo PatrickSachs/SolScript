@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Globalization;
-using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Utility;
 
@@ -13,9 +12,9 @@ namespace SolScript.Interpreter.Types
             Value = value;
         }
 
-        public readonly double Value;
-
         public const string TYPE = "number";
+
+        public readonly double Value;
 
         public override string Type => TYPE;
 
@@ -37,7 +36,7 @@ namespace SolScript.Interpreter.Types
             return base.ConvertTo(type);
         }
 
-        protected override string ToString_Impl([CanBeNull] SolExecutionContext context)
+        protected override string ToString_Impl(SolExecutionContext context)
         {
             return Value.ToString(CultureInfo.InvariantCulture);
         }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using JetBrains.Annotations;
+using PSUtility.Enumerables;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
 using SolScript.Utility;
@@ -25,7 +26,7 @@ namespace SolScript.Interpreter
             Assembly = assembly;
         }
 
-        private readonly Utility.Dictionary<string, Base> m_Variables = new Utility.Dictionary<string, Base>();
+        private readonly PSUtility.Enumerables.Dictionary<string, Base> m_Variables = new PSUtility.Enumerables.Dictionary<string, Base>();
 
         [CanBeNull] private IVariables m_ParentContext;
 

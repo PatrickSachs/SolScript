@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
+using PSUtility.Enumerables;
 using SolScript.Interpreter.Expressions;
 using SolScript.Utility;
 
@@ -20,12 +21,12 @@ namespace SolScript.Interpreter.Builders
         }
 
         // The annotations on this builder.
-        private readonly Utility.List<SolAnnotationBuilder> m_Annotations = new Utility.List<SolAnnotationBuilder>();
+        private readonly PSUtility.Enumerables.List<SolAnnotationBuilder> m_Annotations = new PSUtility.Enumerables.List<SolAnnotationBuilder>();
         // The function parameters.
-        private readonly Utility.List<SolParameterBuilder> m_Parameters = new Utility.List<SolParameterBuilder>();
+        private readonly PSUtility.Enumerables.List<SolParameterBuilder> m_Parameters = new PSUtility.Enumerables.List<SolParameterBuilder>();
         // The list for native marshal types. Instance created by the static methods for native functions
         // to avoid the creation of unnecessary lists.
-        private Utility.List<Type> l_native_marshal_types;
+        private PSUtility.Enumerables.List<Type> l_native_marshal_types;
 
         /// <summary>
         ///     The name of this function?
@@ -210,7 +211,7 @@ namespace SolScript.Interpreter.Builders
             builder.NativeConstructor = null;
             builder.ScriptChunk = null;
             builder.Location = SolSourceLocation.Native();
-            builder.l_native_marshal_types = new Utility.List<Type>();
+            builder.l_native_marshal_types = new PSUtility.Enumerables.List<Type>();
             return builder;
         }
 
@@ -228,7 +229,7 @@ namespace SolScript.Interpreter.Builders
             builder.NativeConstructor = constructor;
             builder.ScriptChunk = null;
             builder.Location = SolSourceLocation.Native();
-            builder.l_native_marshal_types = new Utility.List<Type>();
+            builder.l_native_marshal_types = new PSUtility.Enumerables.List<Type>();
             return builder;
         }
 

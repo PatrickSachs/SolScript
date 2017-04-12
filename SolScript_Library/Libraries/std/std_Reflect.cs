@@ -3,6 +3,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using JetBrains.Annotations;
+using PSUtility.Enumerables;
 using SolScript.Interpreter;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Library;
@@ -24,7 +25,7 @@ namespace SolScript.Libraries.std
         /// </summary>
         [SolLibraryVisibility(std.NAME, false)] public const string TYPE = "Reflect";
 
-        private static readonly IReadOnlyDictionary<SolTypeMode, SolString> s_TypeModeNames = new Utility.Dictionary<SolTypeMode, SolString> {
+        private static readonly IReadOnlyDictionary<SolTypeMode, SolString> s_TypeModeNames = new PSUtility.Enumerables.Dictionary<SolTypeMode, SolString> {
             [SolTypeMode.Default] = "none",
             [SolTypeMode.Abstract] = "abstract",
             [SolTypeMode.Annotation] = "annotation",
@@ -32,13 +33,13 @@ namespace SolScript.Libraries.std
             [SolTypeMode.Singleton] = "singleton"
         };
 
-        private static readonly IReadOnlyDictionary<SolAccessModifier, SolString> s_AccessModifierNames = new Utility.Dictionary<SolAccessModifier, SolString> {
+        private static readonly IReadOnlyDictionary<SolAccessModifier, SolString> s_AccessModifierNames = new PSUtility.Enumerables.Dictionary<SolAccessModifier, SolString> {
             [SolAccessModifier.None] = "none",
             [SolAccessModifier.Local] = "local",
             [SolAccessModifier.Internal] = "internal"
         };
 
-        private static readonly IReadOnlyDictionary<SolMemberModifier, SolString> s_MemberModifierNames = new Utility.Dictionary<SolMemberModifier, SolString> {
+        private static readonly IReadOnlyDictionary<SolMemberModifier, SolString> s_MemberModifierNames = new PSUtility.Enumerables.Dictionary<SolMemberModifier, SolString> {
             [SolMemberModifier.None] = "none",
             [SolMemberModifier.Abstract] = "abstract",
             [SolMemberModifier.Override] = "override"
@@ -350,10 +351,10 @@ namespace SolScript.Libraries.std
                 throw new SolRuntimeException(context, "Failed to get annotations of global \"" + member.Value + "\".", ex);
             }
             if (type == null) {
-                return new SolTable(annotations);
+                return SolTable.Of(annotations);
             }
             SolType typeCheck = new SolType(type, false);
-            return new SolTable(annotations.Where(a => typeCheck.IsCompatible(context.Assembly, a.Type)));
+            return SolTable.Of(annotations.Where(a => typeCheck.IsCompatible(context.Assembly, a.Type)));
         }
 
         /// <summary>
@@ -396,10 +397,10 @@ namespace SolScript.Libraries.std
                     "Failed to get annotations of member \"" + member.Value + "\" on a class instance of type \"" + instance.Type + "\". No member with such a name exists.");
             }
             if (type == null) {
-                return new SolTable(annotations);
+                return SolTable.Of(annotations);
             }
             SolType typeCheck = new SolType(type, false);
-            return new SolTable(annotations.Where(a => typeCheck.IsCompatible(context.Assembly, a.Type)));
+            return SolTable.Of(annotations.Where(a => typeCheck.IsCompatible(context.Assembly, a.Type)));
         }
 
         /// <summary>
@@ -412,10 +413,10 @@ namespace SolScript.Libraries.std
         public SolTable get_class_annotations(SolExecutionContext context, SolClass instance, SolString type)
         {
             if (type == null) {
-                return new SolTable(instance.Annotations);
+                return SolTable.Of(instance.Annotations);
             }
             SolType typeCheck = new SolType(type, false);
-            return new SolTable(instance.Annotations.Where(a => typeCheck.IsCompatible(context.Assembly, a.Type)));
+            return SolTable.Of(instance.Annotations.Where(a => typeCheck.IsCompatible(context.Assembly, a.Type)));
         }
 
         #region Native Helpers

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using JetBrains.Annotations;
+using PSUtility.Enumerables;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Types;
@@ -62,7 +63,7 @@ namespace SolScript.Interpreter.Statements
         protected override string ToString_Impl()
         {
             return
-                $"new {TypeName}({InternalHelper.JoinToString(",", m_Arguments)})";
+                $"new {TypeName}({m_Arguments.JoinToString()})";
         }
 
         #endregion

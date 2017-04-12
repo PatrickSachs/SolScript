@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using JetBrains.Annotations;
+using PSUtility.Enumerables;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
 using SolScript.Utility;
@@ -127,7 +128,7 @@ namespace SolScript.Interpreter
         /// <exception cref="SolVariableException">The parameters do not fit.</exception>
         public SolValue[] VerifyArguments(SolAssembly assembly, SolValue[] arguments)
         {
-            var newArguments = new Utility.List<SolValue>(Count > arguments.Length ? Count : arguments.Length);
+            var newArguments = new PSUtility.Enumerables.List<SolValue>(Count > arguments.Length ? Count : arguments.Length);
             for (int i = 0; i < Count; i++) {
                 // First go through every declared parameter and see if the types are compatible.
                 if (i < arguments.Length) {

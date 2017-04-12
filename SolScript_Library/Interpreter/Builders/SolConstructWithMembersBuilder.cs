@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using PSUtility.Enumerables;
 using SolScript.Utility;
 
 namespace SolScript.Interpreter.Builders
@@ -12,12 +13,12 @@ namespace SolScript.Interpreter.Builders
         /// <summary>
         ///     All member fields of this builder.
         /// </summary>
-        protected readonly Utility.Dictionary<string, SolFieldBuilder> FieldsLookup = new Utility.Dictionary<string, SolFieldBuilder>();
+        protected readonly PSUtility.Enumerables.Dictionary<string, SolFieldBuilder> FieldsLookup = new PSUtility.Enumerables.Dictionary<string, SolFieldBuilder>();
 
         /// <summary>
         ///     All member functions of this builder.
         /// </summary>
-        protected readonly Utility.Dictionary<string, SolFunctionBuilder> FunctionsLookup = new Utility.Dictionary<string, SolFunctionBuilder>();
+        protected readonly PSUtility.Enumerables.Dictionary<string, SolFunctionBuilder> FunctionsLookup = new PSUtility.Enumerables.Dictionary<string, SolFunctionBuilder>();
 
         /// <inheritdoc cref="FieldsLookup" />
         public IReadOnlyCollection<SolFieldBuilder> Fields => FieldsLookup.Values;

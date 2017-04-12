@@ -1,3 +1,5 @@
+using PSUtility.Enumerables;
+
 namespace SolScript.Utility
 {
     /// <summary>

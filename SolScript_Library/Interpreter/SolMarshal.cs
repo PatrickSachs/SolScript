@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
+using PSUtility.Enumerables;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
 using SolScript.Interpreter.Types.Marshal;
@@ -10,6 +11,19 @@ namespace SolScript.Interpreter
 {
     public static class SolMarshal
     {
+        private class Comparer : IComparer<ISolNativeMarshaller>
+        {
+            public static Comparer Instance = new Comparer();
+
+            private Comparer() { }
+
+            /// <inheritdoc />
+            public int Compare(ISolNativeMarshaller x, ISolNativeMarshaller y)
+            {
+                return PriorityComparer.Instance.Compare(x, y);
+            }
+        }
+
         static SolMarshal()
         {
             NativeMarshallers.Add(new NativeNumericMarshaller());
@@ -26,7 +40,7 @@ namespace SolScript.Interpreter
             NativeMarshallers.Add(new NativeDelegateMarshaller());
             NativeMarshallers.Add(new NativeAutoDelegateMarshaller());
             NativeMarshallers.Add(new NativeGenericAutoDelegateMarshaller());
-            NativeMarshallers.Sort(PriorityComparer.Instance);
+            NativeMarshallers.Sort(Comparer.Instance);
         }
 
         public const int PRIORITY_VERY_HIGH = 1000;
@@ -35,22 +49,22 @@ namespace SolScript.Interpreter
         public const int PRIORITY_LOW = -500;
         public const int PRIORITY_VERY_LOW = -1000;
 
-        private static readonly List<ISolNativeMarshaller> NativeMarshallers = new List<ISolNativeMarshaller>();
+        private static readonly System.Collections.Generic.List<ISolNativeMarshaller> NativeMarshallers = new System.Collections.Generic.List<ISolNativeMarshaller>();
 
-        private static readonly Dictionary<SolAssembly, AssemblyCache> s_AssemblyCaches = new Dictionary<SolAssembly, AssemblyCache>();
+        private static readonly System.Collections.Generic.Dictionary<SolAssembly, AssemblyCache> s_AssemblyCaches = new System.Collections.Generic.Dictionary<SolAssembly, AssemblyCache>();
 
         private static readonly ClassCreationOptions NativeClassCreationOptions = new ClassCreationOptions.Customizable().SetEnforceCreation(true).SetCallConstructor(false);
 
         public static void RegisterMarshaller(ISolNativeMarshaller marshaller)
         {
             NativeMarshallers.Add(marshaller);
-            NativeMarshallers.Sort(PriorityComparer.Instance);
+            NativeMarshallers.Sort(Comparer.Instance);
         }
 
         public static void RegisterMarshallers(IEnumerable<ISolNativeMarshaller> marshallers)
         {
             NativeMarshallers.AddRange(marshallers);
-            NativeMarshallers.Sort(PriorityComparer.Instance);
+            NativeMarshallers.Sort(Comparer.Instance);
         }
 
         /// <inheritdoc cref="MarshalFromSol(SolAssembly,int,int,SolValue[],Type[],object[],int,bool)" />
@@ -186,7 +200,7 @@ namespace SolScript.Interpreter
                 case SolFunction.TYPE:
                     return typeof(SolFunction.AutoDelegate);
                 case SolTable.TYPE:
-                    return typeof(Dictionary<object, object>);
+                    return typeof(System.Collections.Generic.Dictionary<object, object>);
                 default: {
                     SolClassDefinition definition;
                     if (assembly.TryGetClass(type, out definition)) {
@@ -336,29 +350,45 @@ namespace SolScript.Interpreter
         /// </summary>
         internal class AssemblyCache
         {
+            private class Comparer : IEqualityComparer<object> {
+                public static readonly Comparer Instance = new Comparer();
+                private Comparer() { }
+                /// <inheritdoc />
+                public bool Equals(object x, object y)
+                {
+                    return ReferenceEquals(x, y);
+                }
+
+                /// <inheritdoc />
+                public int GetHashCode(object obj)
+                {
+                    return obj.GetHashCode();
+                }
+            }
+
             public AssemblyCache([NotNull] SolAssembly assembly)
             {
                 Assembly = assembly;
-                m_NativeToSol = new ConditionalWeakTable<object, SolClass>();
+                m_NativeToSol = new WeakTable<object, SolClass>(Comparer.Instance);
             }
 
             [NotNull] public readonly SolAssembly Assembly;
 
-            private readonly ConditionalWeakTable<object, SolClass> m_NativeToSol;
+            private readonly WeakTable<object, SolClass> m_NativeToSol;
 
             public void StoreReference([NotNull] object value, [NotNull] SolClass solClass)
             {
                 // todo: determine if conditional weak table doesnt cause issues
                 // there was a reson why it was swapped for a third party one after all. (i assume. though sometimes i do things that just dont make sense...)
                 // note to self: keep in mind to document this kinda stuff....
-                m_NativeToSol.Add(value, solClass);
+                m_NativeToSol.TryInsert(value, solClass);
             }
 
             [CanBeNull]
             public SolClass GetReference([NotNull] object value)
             {
                 SolClass solClass;
-                return m_NativeToSol.TryGetValue(value, out solClass) ? solClass : null;
+                return m_NativeToSol.TryGet(value, out solClass) ? solClass : null;
             }
         }
 

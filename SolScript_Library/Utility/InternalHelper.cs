@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Irony.Parsing;
 using JetBrains.Annotations;
+using PSUtility.Enumerables;
 using SolScript.Interpreter;
 using SolScript.Interpreter.Builders;
 using SolScript.Interpreter.Exceptions;
@@ -26,19 +27,7 @@ namespace SolScript.Utility
             typeof(Func<,>),
             typeof(Func<,,>),
             typeof(Func<,,,>),
-            typeof(Func<,,,,>),
-            typeof(Func<,,,,,>),
-            typeof(Func<,,,,,,>),
-            typeof(Func<,,,,,,,>),
-            typeof(Func<,,,,,,,,>),
-            typeof(Func<,,,,,,,,,>),
-            typeof(Func<,,,,,,,,,,>),
-            typeof(Func<,,,,,,,,,,,>),
-            typeof(Func<,,,,,,,,,,,,>),
-            typeof(Func<,,,,,,,,,,,,,>),
-            typeof(Func<,,,,,,,,,,,,,,>),
-            typeof(Func<,,,,,,,,,,,,,,,>),
-            typeof(Func<,,,,,,,,,,,,,,,,>)
+            typeof(Func<,,,,>)
         };
 
         private static readonly HashSet<Type> ActionGenericTypes = new HashSet<Type> {
@@ -46,19 +35,7 @@ namespace SolScript.Utility
             typeof(Action<>),
             typeof(Action<,>),
             typeof(Action<,,>),
-            typeof(Action<,,,>),
-            typeof(Action<,,,,>),
-            typeof(Action<,,,,,>),
-            typeof(Action<,,,,,,>),
-            typeof(Action<,,,,,,,>),
-            typeof(Action<,,,,,,,,>),
-            typeof(Action<,,,,,,,,,>),
-            typeof(Action<,,,,,,,,,,>),
-            typeof(Action<,,,,,,,,,,,>),
-            typeof(Action<,,,,,,,,,,,,>),
-            typeof(Action<,,,,,,,,,,,,,>),
-            typeof(Action<,,,,,,,,,,,,,,>),
-            typeof(Action<,,,,,,,,,,,,,,,>)
+            typeof(Action<,,,>)
         };
 
         public static readonly ClassCreationOptions AnnotationClassCreationOptions = new ClassCreationOptions.Customizable().SetEnforceCreation(true);
@@ -226,55 +203,6 @@ namespace SolScript.Utility
             }
         }
 
-        /// <inheritdoc cref="JoinToString{T}(string,IEnumerable{T})" />
-        [DebuggerStepThrough]
-        internal static string JoinToString<T>(string separator, params T[] array)
-        {
-            return JoinToString(separator, (IEnumerable<T>) array);
-        }
-
-        /// <summary>
-        ///     Converts an enumerable of objects to a string using the <see cref="object.ToString()" /> method.
-        /// </summary>
-        /// <typeparam name="T">The object type.</typeparam>
-        /// <param name="separator">The separator between values.</param>
-        /// <param name="array">The enumerable to convert.</param>
-        /// <returns>The joined string.</returns>
-        /// <seealso cref="JoinToString{T}(string, Func{T,string},System.Collections.Generic.IEnumerable{T})" />
-        [DebuggerStepThrough]
-        internal static string JoinToString<T>(string separator, IEnumerable<T> array)
-        {
-            return string.Join(separator, array);
-        }
-
-        /// <inheritdoc cref="JoinToString{T}(string, Func{T,string},IEnumerable{T})" />
-        [DebuggerStepThrough]
-        internal static string JoinToString<T>(string separator, Func<T, string> obtainer, params T[] array)
-        {
-            return JoinToString(separator, obtainer, (IEnumerable<T>) array);
-        }
-
-        /// <summary>
-        ///     Converts an enumerable of objects to a string using a conversion delegate.
-        /// </summary>
-        /// <typeparam name="T">The object type.</typeparam>
-        /// <param name="separator">The separator between values.</param>
-        /// <param name="array">The enumerable to convert.</param>
-        /// <param name="obtainer">The delegate used to convert.</param>
-        /// <returns>The joined string.</returns>
-        /// <seealso cref="JoinToString{T}(string,System.Collections.Generic.IEnumerable{T})" />
-        [DebuggerStepThrough]
-        internal static string JoinToString<T>(string separator, Func<T, string> obtainer, IEnumerable<T> array)
-        {
-            StringBuilder builder = new StringBuilder();
-            foreach (T element in array) {
-                if (builder.Length != 0) {
-                    builder.Append(separator);
-                }
-                builder.Append(obtainer(element));
-            }
-            return builder.ToString();
-        }
 
         internal static T[] ArrayFilledWith<T>(T value, int length)
         {
@@ -284,151 +212,7 @@ namespace SolScript.Utility
             }
             return array;
         }
-
-        /// <summary>
-        ///     Unescapes a string, making a "human-readable" string usable inside SolScript or any other language for that matter.
-        /// </summary>
-        /// <param name="source">The source string.</param>
-        /// <returns>The unescaped string.</returns>
-        /// <exception cref="ArgumentException">A parsing error occured.</exception>
-        [NotNull]
-        internal static string UnEscape([NotNull] this string source)
-        {
-            if (source.Length == 0) {
-                return string.Empty;
-            }
-            StringBuilder sb = new StringBuilder(source.Length);
-            int pos = 0;
-            while (pos < source.Length) {
-                char c = source[pos];
-                string replStr = null;
-                if (c == '\\') {
-                    // Handle escape sequences
-                    pos++;
-                    if (pos >= source.Length) {
-                        throw new ArgumentException("Missing string escape sequence.", nameof(source));
-                    }
-                    switch (source[pos]) {
-                        // Simple character escapes
-                        case '\'':
-                            c = '\'';
-                            break;
-                        case '\"':
-                            c = '\"';
-                            break;
-                        case '\\':
-                            c = '\\';
-                            break;
-                        case '0':
-                            c = '\0';
-                            break;
-                        case 'a':
-                            c = '\a';
-                            break;
-                        case 'b':
-                            c = '\b';
-                            break;
-                        case 'f':
-                            c = '\f';
-                            break;
-                        case 'n':
-                            replStr = Environment.NewLine;
-                            break;
-                        case 'r':
-                            c = ' ';
-                            break;
-                        case 't':
-                            c = '\t';
-                            break;
-                        case 'v':
-                            c = '\v';
-                            break;
-                        case 'x':
-                            // Hexa escape (1-4 digits)
-                            StringBuilder hexa = new StringBuilder(10);
-                            pos++;
-                            if (pos >= source.Length) {
-                                throw new ArgumentException("Missing string hexa escape sequence.", nameof(source));
-                            }
-                            c = source[pos];
-                            if (char.IsDigit(c) || c >= 'a' && c <= 'f' || c >= 'A' && c <= 'F') {
-                                hexa.Append(c);
-                                pos++;
-                                if (pos < source.Length) {
-                                    c = source[pos];
-                                    if (char.IsDigit(c) || c >= 'a' && c <= 'f' || c >= 'A' && c <= 'F') {
-                                        hexa.Append(c);
-                                        pos++;
-                                        if (pos < source.Length) {
-                                            c = source[pos];
-                                            if (char.IsDigit(c) || c >= 'a' && c <= 'f' ||
-                                                c >= 'A' && c <= 'F') {
-                                                hexa.Append(c);
-                                                pos++;
-                                                if (pos < source.Length) {
-                                                    c = source[pos];
-                                                    if (char.IsDigit(c) || c >= 'a' && c <= 'f' ||
-                                                        c >= 'A' && c <= 'F') {
-                                                        hexa.Append(c);
-                                                        pos++;
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            c = (char) int.Parse(hexa.ToString(), NumberStyles.HexNumber);
-                            pos--;
-                            break;
-                        case 'u':
-                            // Unicode hexa escape (exactly 4 digits)
-                            pos++;
-                            if (pos + 3 >= source.Length) {
-                                throw new ArgumentException("Unrecognized string unicode hexa escape sequence.", nameof(source));
-                            }
-                            try {
-                                uint charValue = uint.Parse(source.Substring(pos, 4),
-                                    NumberStyles.HexNumber);
-                                c = (char) charValue;
-                                pos += 3;
-                            } catch (SystemException) {
-                                throw new ArgumentException("Unrecognized string unicode hexa escape sequence.", nameof(source));
-                            }
-                            break;
-                        case 'U':
-                            // Unicode hexa escape (exactly 8 digits, first four must be 0000)
-                            pos++;
-                            if (pos + 7 >= source.Length) {
-                                throw new ArgumentException("Unrecognized string unicode hexa escape sequence.", nameof(source));
-                            }
-                            try {
-                                uint charValue = uint.Parse(source.Substring(pos, 8),
-                                    NumberStyles.HexNumber);
-                                if (charValue > 0xffff) {
-                                    throw new ArgumentException("Unrecognized string unicode hexa escape sequence.", nameof(source));
-                                }
-                                c = (char) charValue;
-                                pos += 7;
-                            } catch (SystemException) {
-                                throw new ArgumentException("Unrecognized string unicode hexa escape sequence.", nameof(source));
-                            }
-                            break;
-                        default:
-                            throw new ArgumentException("Unrecognized string escape symbol: \"" + c + "\"", nameof(source));
-                    }
-                }
-                pos++;
-                if (replStr == null) {
-                    sb.Append(c);
-                } else {
-                    sb.Append(replStr);
-                }
-            }
-
-            return sb.ToString();
-        }
-
+        
         [CanBeNull]
         internal static ParseTreeNode FindChildByName(this ParseTreeNodeList @this, string name)
         {

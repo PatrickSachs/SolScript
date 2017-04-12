@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using JetBrains.Annotations;
+using PSUtility.Enumerables;
 using SolScript.Interpreter;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Library;
@@ -15,9 +16,7 @@ namespace SolScript.Libraries.std
     ///     The <see cref="std_Stream" /> is the base class for implementation streams. Streams allow you to dynamically access
     ///     and write data at runtime.
     /// </summary>
-    [SolLibraryClass(std.NAME, SolTypeMode.Default)]
-    [SolLibraryName(TYPE)]
-    [PublicAPI]
+    [SolLibraryClass(std.NAME, SolTypeMode.Default), SolLibraryName(TYPE), PublicAPI]
     public class std_Stream
     {
         /// <summary>
@@ -39,7 +38,8 @@ namespace SolScript.Libraries.std
         /// <summary>
         ///     The type name is "Stream".
         /// </summary>
-        [SolLibraryVisibility(std.NAME, false)] public const string TYPE = "Stream";
+        [SolLibraryVisibility(std.NAME, false)]
+        public const string TYPE = "Stream";
 
         /// <summary>
         ///     Used to represent the <see cref="SeekOrigin.Begin" /> <see cref="SeekOrigin" />.
@@ -151,7 +151,7 @@ namespace SolScript.Libraries.std
                         break;
                     }
                     default: {
-                        throw new SolRuntimeException(context, "Invalid seek mode \"" + mode + "\". Valid are: " + InternalHelper.JoinToString(",", MODE_BEGIN, MODE_CURRENT, MODE_END));
+                        throw new SolRuntimeException(context, "Invalid seek mode \"" + mode + "\". Valid are: " + new[] {MODE_BEGIN, MODE_CURRENT, MODE_END}.JoinToString());
                     }
                 }
             } else {
@@ -286,12 +286,14 @@ namespace SolScript.Libraries.std
         protected static SolRuntimeException WriteException(SolExecutionContext context, [CanBeNull] SolVariableException exception)
         {
             return new SolRuntimeException(context, "Invalid data type.", exception);
-        }/// <summary>
-         ///     Creates a new exception indicating that something went wrong while seeking.
-         /// </summary>
-         /// <param name="context">The current context, required for the stack trace.</param>
-         /// <param name="exception">The underlying native exception.</param>
-         /// <returns>The SolException.</returns>
+        }
+
+        /// <summary>
+        ///     Creates a new exception indicating that something went wrong while seeking.
+        /// </summary>
+        /// <param name="context">The current context, required for the stack trace.</param>
+        /// <param name="exception">The underlying native exception.</param>
+        /// <returns>The SolException.</returns>
         protected static SolRuntimeException SeekException(SolExecutionContext context, [CanBeNull] IOException exception)
         {
             return new SolRuntimeException(context, "An I/O error occured while trying to seek on this stream.", exception);

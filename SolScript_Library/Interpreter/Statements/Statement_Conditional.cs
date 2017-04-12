@@ -1,21 +1,47 @@
-﻿using System.Collections.Generic;
-using Irony.Parsing;
-using JetBrains.Annotations;
+﻿using JetBrains.Annotations;
+using PSUtility.Enumerables;
 using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Types;
 
-namespace SolScript.Interpreter.Statements {
-    public class Statement_Conditional : SolStatement {
-        public Statement_Conditional(SolAssembly assembly, SolSourceLocation location) : base(assembly, location) {
+namespace SolScript.Interpreter.Statements
+{
+    /// <summary>
+    ///     This statement is used for <c>if ... else if ... else ... end</c> statements. It allows to check various conditions
+    ///     before falling back to an (optional) else chunk.
+    /// </summary>
+    public class Statement_Conditional : SolStatement
+    {
+        /// <summary>
+        ///     Creates a new conditional statement.
+        /// </summary>
+        /// <param name="assembly">The assembly.</param>
+        /// <param name="location">The source code location.</param>
+        /// <param name="if">An array of all if branches.</param>
+        /// <param name="else">The (optional) fallback else branch.</param>
+        public Statement_Conditional(SolAssembly assembly, SolSourceLocation location, Array<IfBranch> @if, [CanBeNull] SolChunk @else) : base(assembly, location)
+        {
+            m_If = @if;
+            Else = @else;
         }
 
-        [CanBeNull] public SolChunk Else;
+        /// <summary>
+        ///     The chunk that will be executed if no if statement applies.
+        /// </summary>
+        [CanBeNull]
+        public readonly SolChunk Else;
 
-        public IfBranch[] If;
+        private readonly Array<IfBranch> m_If;
+
+        /// <summary>
+        ///     A read only list of all possible if branches.
+        /// </summary>
+        public IReadOnlyList<IfBranch> If => m_If;
 
         #region Overrides
 
-        public override SolValue Execute(SolExecutionContext context, IVariables parentVariables, out Terminators terminators) {
+        /// <inheritdoc />
+        public override SolValue Execute(SolExecutionContext context, IVariables parentVariables, out Terminators terminators)
+        {
             context.CurrentLocation = Location;
             foreach (IfBranch branch in If) {
                 Variables branchVariables = new Variables(Assembly) {Parent = parentVariables};
@@ -33,21 +59,25 @@ namespace SolScript.Interpreter.Statements {
             return SolNil.Instance;
         }
 
-        protected override string ToString_Impl() {
-            return $"Statement_Conditional(If=[{string.Join(",", (IEnumerable<IfBranch>) If)}], Else={Else})";
+        /// <inheritdoc />
+        protected override string ToString_Impl()
+        {
+            return $"Statement_Conditional(If=[{If.JoinToString()}], Else={Else})";
         }
 
         #endregion
 
         #region Nested type: IfBranch
 
-        public class IfBranch {
+        public class IfBranch
+        {
             public SolChunk Chunk;
             public SolExpression Condition;
 
             #region Overrides
 
-            public override string ToString() {
+            public override string ToString()
+            {
                 return $"IfBranch(Condition={Condition}, Chunk={Chunk})";
             }
 
