@@ -1,5 +1,5 @@
-﻿using SolScript.Interpreter.Expressions;
-using SolScript.Utility;
+﻿using PSUtility.Enumerables;
+using SolScript.Interpreter.Expressions;
 
 namespace SolScript.Interpreter.Builders
 {
@@ -16,6 +16,9 @@ namespace SolScript.Interpreter.Builders
 
         // The annotations on this field.
         private readonly List<SolAnnotationBuilder> m_Annotations = new List<SolAnnotationBuilder>();
+
+        /// <inheritdoc />
+        public IReadOnlyList<SolAnnotationBuilder> Annotations => m_Annotations;
 
         /// <summary>
         ///     The access modifier of this field.
@@ -54,9 +57,6 @@ namespace SolScript.Interpreter.Builders
         public SolExpression ScriptField { get; private set; }
 
         #region IAnnotateableBuilder Members
-
-        /// <inheritdoc />
-        public IReadOnlyList<SolAnnotationBuilder> Annotations => m_Annotations;
 
         /// <inheritdoc />
         public IAnnotateableBuilder AddAnnotation(SolAnnotationBuilder annotation)

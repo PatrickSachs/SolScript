@@ -1,5 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using PSUtility.Enumerables;
 using SolScript.Interpreter;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Utility;
@@ -34,9 +34,9 @@ namespace SolScript.Compiler
         public void ValidateClass(SolClassDefinition definition)
         {
             Stack<SolClassDefinition> inheritanceChain = definition.GetInheritanceReversed();
-            var funcNames = new Utility.Dictionary<string, SolFunctionDefinition>();
-            var abstracts = new Utility.Dictionary<string, SolFunctionDefinition>();
-            var fieldNames = new Utility.Dictionary<string, SolFieldDefinition>();
+            var funcNames = new PSUtility.Enumerables.Dictionary<string, SolFunctionDefinition>();
+            var abstracts = new PSUtility.Enumerables.Dictionary<string, SolFunctionDefinition>();
+            var fieldNames = new PSUtility.Enumerables.Dictionary<string, SolFieldDefinition>();
             while (inheritanceChain.Count != 0) {
                 SolClassDefinition current = inheritanceChain.Pop();
                 var thisFuncNames = new HashSet<string>();
@@ -45,10 +45,13 @@ namespace SolScript.Compiler
                     ValidateFunction(function);
                     // Every function name may only exist once for each inheritance level.
                     if (thisFuncNames.Contains(function.Name)) {
-                        // todo: support function overloading(? desired ?). (possibly declare functions in a higher "unreachable" context and rename them matching to their param names?)
                         throw new SolCompilerException(function.Location, "The function \"" + FuncStr(function) + "\" exists twice within its class. Function overloading is currently not supported.");
                     }
                     thisFuncNames.Add(function.Name);
+                    SolFieldDefinition field;
+                    if (fieldNames.TryGetValue(function.Name, out field)) {
+                        throw new SolCompilerException(function.Location, "The function \"" + FuncStr(function) + "\" conflicts with field \"" + FieldStr(field) + "\".");
+                    }
                     // If another function with the same name already exists we can only
                     // continue if this one overrides the other one.
                     if (funcNames.ContainsKey(function.Name)) {
@@ -87,9 +90,15 @@ namespace SolScript.Compiler
                     if (fieldNames.TryGetValue(field.Name, out duplField)) {
                         throw new SolCompilerException(field.Location, "The field \"" + FieldStr(field) + " has already been declared in class \"" + duplField.DefinedIn.NotNull().Type + "\".");
                     }
-                    if (field.AccessModifier == SolAccessModifier.Local) {
-                        thisFieldNames.Add(field.Name);
-                    } else {
+                    SolFunctionDefinition duplFunc;
+                    if (funcNames.TryGetValue(field.Name, out duplFunc)) {
+                        throw new SolCompilerException(field.Location, "The field \"" + FieldStr(field) + "\" conflicts with function \"" + FuncStr(duplFunc) + "\".");
+                    }
+                    if (thisFuncNames.Contains(field.Name)) {
+                        throw new SolCompilerException(field.Location, "The field \"" + FieldStr(field) + "\" conflicts with a local function with the same name.");
+                    }
+                    thisFieldNames.Add(field.Name);
+                    if (field.AccessModifier != SolAccessModifier.Local) {
                         fieldNames.Add(field.Name, field);
                     }
                 }
@@ -97,14 +106,8 @@ namespace SolScript.Compiler
             // Non abstract class need to implement all abstract functions.
             if (definition.TypeMode != SolTypeMode.Abstract && abstracts.Count != 0) {
                 throw new SolCompilerException(definition.Location, "The non-abstract class \"" + definition.Type + "\" has " + abstracts.Count +
-                                                                    " unimplemented abstract function(s). Non-abstract classes need to implement all abstract functions. Function(s): " +
-                                                                    InternalHelper.JoinToString(", ", FuncStr, abstracts.Values));
+                                                                    " unimplemented abstract function(s). Non-abstract classes need to implement all abstract functions. Function(s): " + abstracts.Values.JoinToString(", ", FuncStr));
             }
-            /*if (definition.TypeMode != SolTypeMode.Annotation && definition.NativeType != null && definition.NativeType.IsSubclassOf(typeof(Attribute))) {
-                throw new SolCompilerException(definition.Location,
-                    "The non-annotation class \"" + definition.Type + "\" represents the native type \"" + definition.NativeType.Name +
-                    "\", which is an attribute. Attribute native types can only be annotations.");
-            }*/
             ValidateMetaFunctions(definition);
         }
 

@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using JetBrains.Annotations;
+using PSUtility.Enumerables;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types.Interfaces;
 using SolScript.Utility;
@@ -16,6 +17,25 @@ namespace SolScript.Interpreter.Types
     public sealed class SolTable : SolValue, IValueIndexable, IReadOnlyCollection<KeyValuePair<SolValue, SolValue>>
     {
         /// <summary>
+        /// Creates a table of the given generic enumerable.
+        /// </summary>
+        /// <typeparam name="T">Enumerable type.</typeparam>
+        /// <param name="enumerable">The enumerable.</param>
+        /// <returns>The table.</returns>
+        public static SolTable Of<T>(IEnumerable<T> enumerable) where T : SolValue
+        {
+            SolTable table = new SolTable();
+            int i = 0;
+            foreach (T value in enumerable)
+            {
+                table.m_Table[new SolNumber(i)] = value;
+                i++;
+            }
+            table.m_N = i;
+            return table;
+        }
+
+        /// <summary>
         ///     Creates a new empty table.
         /// </summary>
         public SolTable()
@@ -24,8 +44,10 @@ namespace SolScript.Interpreter.Types
         }
 
         /// <inheritdoc cref="SolTable(IEnumerable{SolValue})" />
-        public SolTable(params SolValue[] array) : this((IEnumerable<SolValue>) array) {}
-
+        public SolTable(params SolValue[] array) : this((IEnumerable<SolValue>) array)
+        {
+            
+        }
         /// <summary>
         ///     Creates a new table from the given enumerable.
         /// </summary>
@@ -51,7 +73,7 @@ namespace SolScript.Interpreter.Types
         private static readonly SolString s_IteratorKey = SolString.ValueOf("key").Intern();
         private static readonly SolString s_IteratorValue = SolString.ValueOf("value").Intern();
         private readonly uint m_Id;
-        private readonly Utility.Dictionary<SolValue, SolValue> m_Table = new Utility.Dictionary<SolValue, SolValue>();
+        private readonly PSUtility.Enumerables.Dictionary<SolValue, SolValue> m_Table = new PSUtility.Enumerables.Dictionary<SolValue, SolValue>();
         private int m_N;
 
         /// <summary>

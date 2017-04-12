@@ -4,7 +4,7 @@ using SolScript.Interpreter.Exceptions;
 namespace SolScript.Interpreter.Types.Marshal
 {
     /// <summary>
-    ///     This interface is used to create custom amrshallers for converting native objects into <see cref="SolValue" />s.
+    ///     This interface is used to create custom marshallers for converting native objects into <see cref="SolValue" />s.
     ///     Register your custom marshallers using <see cref="SolMarshal.RegisterMarshaller" />.
     /// </summary>
     /// <remarks>As a general rule of thumb, one Marshaller should typically only be responsible for marshalling one class.</remarks>

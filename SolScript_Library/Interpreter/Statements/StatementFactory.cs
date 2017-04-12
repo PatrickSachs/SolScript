@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Irony.Parsing;
+using PSUtility.Enumerables;
 using SolScript.Interpreter.Builders;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Expressions;
@@ -26,7 +27,7 @@ namespace SolScript.Interpreter.Statements
         public void InterpretTree(ParseTree tree, SolConstructWithMembersBuilder globals, out IReadOnlyList<SolClassBuilder> classes)
         {
             ActiveFile = tree.FileName;
-            var classesList = new Utility.List<SolClassBuilder>();
+            var classesList = new PSUtility.Enumerables.List<SolClassBuilder>();
             classes = classesList;
             foreach (ParseTreeNode rootedNode in tree.Root.ChildNodes) {
                 switch (rootedNode.Term.Name) {
@@ -789,8 +790,8 @@ namespace SolScript.Interpreter.Statements
                     SolExpression expression = GetExpression(statementNode.ChildNodes[0]);
                     SolExpression[] arguments = statementNode.ChildNodes[1].ChildNodes.Count != 0 ? GetExpressions(statementNode.ChildNodes[1]) : EmptyArray<SolExpression>.Value;
                     MetaItem meta = m_MetaStack.Count != 0 ? m_MetaStack.Peek() : null;
-                    return new Statement_CallInstanceFunction(Assembly, new SolSourceLocation(ActiveFile, statementNode.Span.Location), meta?.ActiveClass.Name, expression, arguments);
-                } // Statement_CallInstanceFunction
+                    return new Statement_CallFunction(Assembly, new SolSourceLocation(ActiveFile, statementNode.Span.Location), meta?.ActiveClass.Name, expression, new Array<SolExpression>(arguments));
+                } // Statement_CallFunction
                 case "Statement_For": {
                     // Statement_For
                     //  - "for"
@@ -865,7 +866,7 @@ namespace SolScript.Interpreter.Statements
                         branches[i + 1] = GetIfOrElseIfBranch(elseIfNode);
                     }
                     SolChunk elseChunk = elseNode.ChildNodes.Count != 0 ? GetChunk(elseNode.ChildNodes[0]) : null;
-                    return new Statement_Conditional(Assembly, new SolSourceLocation(ActiveFile, statementNode.Span.Location)) {If = branches, Else = elseChunk};
+                    return new Statement_Conditional(Assembly, new SolSourceLocation(ActiveFile, statementNode.Span.Location), new Array<Statement_Conditional.IfBranch>(branches), elseChunk);
                 } // Statement_Conditional
                 case "Statement_New": {
                     // 0: "new"

@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>SolScript</RootNamespace>
     <AssemblyName>SolScript_Library</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
   </PropertyGroup>
@@ -33,18 +33,31 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
+    <DocumentationFile>bin\Release\SolScript_Library.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="IntXLib">
+      <HintPath>..\Libraries\IntXLib.dll</HintPath>
+    </Reference>
     <Reference Include="Irony, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ca48ace7223ead47, processorArchitecture=MSIL">
-      <HintPath>..\packages\Irony.0.9.1\lib\net40\Irony.dll</HintPath>
-      <Private>True</Private>
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\Libraries\Irony.dll</HintPath>
     </Reference>
     <Reference Include="JetBrains.Annotations, Version=10.3.0.0, Culture=neutral, PublicKeyToken=1010a0d8d6380325, processorArchitecture=MSIL">
       <HintPath>..\packages\JetBrains.Annotations.10.3.0\lib\net\JetBrains.Annotations.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="MathNet.Numerics">
+      <HintPath>..\Libraries\MathNet.Numerics.dll</HintPath>
+    </Reference>
+    <Reference Include="PSUtility">
+      <HintPath>..\Libraries\PSUtility.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Threading">
+      <HintPath>..\Libraries\System.Threading.dll</HintPath>
+    </Reference>
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Xml" />
   </ItemGroup>
@@ -204,7 +217,7 @@
     <Compile Include="Interpreter\Statements\StatementFactory.cs" />
     <Compile Include="Interpreter\Statements\Statement_Conditional.cs" />
     <Compile Include="Parser\Literals\SolScriptStringLiteral.cs" />
-    <Compile Include="Interpreter\Statements\Statement_CallInstanceFunction.cs" />
+    <Compile Include="Interpreter\Statements\Statement_CallFunction.cs" />
     <Compile Include="Interpreter\Statements\SolStatement.cs" />
     <Compile Include="SolDebug.cs" />
     <Compile Include="Interpreter\SolExecutionContext.cs" />
@@ -216,14 +229,6 @@
     <Compile Include="Parser\Terminals\SolScriptLongStringTerminal.cs" />
     <Compile Include="NamespaceDoc.cs" />
     <Compile Include="SolErrorCollection.cs" />
-    <Compile Include="Utility\Array.cs" />
-    <Compile Include="Utility\Collection.cs" />
-    <Compile Include="Utility\Dictionary.cs" />
-    <Compile Include="Utility\EmptyArray.cs" />
-    <Compile Include="Utility\IReadOnlyCollection.cs" />
-    <Compile Include="Utility\IReadOnlyDictionary.cs" />
-    <Compile Include="Utility\IReadOnlyList.cs" />
-    <Compile Include="Utility\List.cs" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

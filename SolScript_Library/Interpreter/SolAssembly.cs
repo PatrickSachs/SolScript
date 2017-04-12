@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Security;
@@ -8,6 +8,7 @@ using System.Text;
 using Irony;
 using Irony.Parsing;
 using JetBrains.Annotations;
+using PSUtility.Enumerables;
 using SolScript.Compiler;
 using SolScript.Interpreter.Builders;
 using SolScript.Interpreter.Exceptions;
@@ -97,20 +98,20 @@ namespace SolScript.Interpreter
         private static readonly SolScriptGrammar s_Grammar = new SolScriptGrammar();
 
 
-        private readonly Utility.Dictionary<string, SolClassDefinition> m_ClassDefinitions = new Utility.Dictionary<string, SolClassDefinition>();
+        private readonly PSUtility.Enumerables.Dictionary<string, SolClassDefinition> m_ClassDefinitions = new PSUtility.Enumerables.Dictionary<string, SolClassDefinition>();
         // The compiler used to validate and compile the assembly.
         private readonly SolCompiler m_Compiler;
         // Errors can be added here.
         private readonly SolErrorCollection.Adder m_ErrorAdder;
-        private readonly Utility.Dictionary<string, SolFieldDefinition> m_GlobalFields = new Utility.Dictionary<string, SolFieldDefinition>();
-        private readonly Utility.Dictionary<string, SolFunctionDefinition> m_GlobalFunctions = new Utility.Dictionary<string, SolFunctionDefinition>();
+        private readonly PSUtility.Enumerables.Dictionary<string, SolFieldDefinition> m_GlobalFields = new PSUtility.Enumerables.Dictionary<string, SolFieldDefinition>();
+        private readonly PSUtility.Enumerables.Dictionary<string, SolFunctionDefinition> m_GlobalFunctions = new PSUtility.Enumerables.Dictionary<string, SolFunctionDefinition>();
         // All libraries registered in this Assembly.
-        private readonly Utility.List<SolLibrary> m_Libraries = new Utility.List<SolLibrary>();
-        private readonly Utility.Dictionary<Type, SolClassDefinition> m_NativeClasses = new Utility.Dictionary<Type, SolClassDefinition>();
+        private readonly PSUtility.Enumerables.List<SolLibrary> m_Libraries = new PSUtility.Enumerables.List<SolLibrary>();
+        private readonly PSUtility.Enumerables.Dictionary<Type, SolClassDefinition> m_NativeClasses = new PSUtility.Enumerables.Dictionary<Type, SolClassDefinition>();
         // The options for creating this assembly.
         private readonly SolAssemblyOptions m_Options;
         // A helper lookup containing a type/definition map of all singleton definitions.
-        private readonly Utility.Dictionary<string, SolClassDefinition> m_SingletonLookup = new Utility.Dictionary<string, SolClassDefinition>();
+        private readonly PSUtility.Enumerables.Dictionary<string, SolClassDefinition> m_SingletonLookup = new PSUtility.Enumerables.Dictionary<string, SolClassDefinition>();
 
         // The lazy builders. Only available until everything has been parsed.
         private BuildersContainer l_builders;
@@ -392,8 +393,6 @@ namespace SolScript.Interpreter
                     hadError = true;
                 }
             }
-            // todo: compiler validate fields
-            // todo: compiler validate fields in class (also figure out if field overwriting is sth we want)
             State = hadError ? AssemblyState.Error : AssemblyState.GeneratedAll;
             return this;
         }
@@ -648,7 +647,7 @@ namespace SolScript.Interpreter
             if (!options.EnforceCreation && !definition.CanBeCreated()) {
                 throw new InvalidOperationException($"The class \"{definition.Type}\" cannot be instantiated.");
             }
-            var annotations = new Utility.List<SolClass>();
+            var annotations = new PSUtility.Enumerables.List<SolClass>();
             SolClass instance = new SolClass(definition);
             // The context is required to actually initialize the fields.
             SolExecutionContext creationContext = options.CallingContext ?? new SolExecutionContext(this, definition.Type + "#" + instance.Id + " creation context");
@@ -797,7 +796,7 @@ namespace SolScript.Interpreter
         /// </summary>
         private sealed class BuildersContainer : SolConstructWithMembersBuilder.Generic<BuildersContainer>
         {
-            public readonly Utility.Dictionary<string, SolClassBuilder> ClassBuilders = new Utility.Dictionary<string, SolClassBuilder>();
+            public readonly PSUtility.Enumerables.Dictionary<string, SolClassBuilder> ClassBuilders = new PSUtility.Enumerables.Dictionary<string, SolClassBuilder>();
         }
 
         #endregion
@@ -829,33 +828,33 @@ namespace SolScript.Interpreter
             stopwatch.Start();
             try {
 #endif
-                SolDebug.WriteLine("Creating Parser ...");
-                Irony.Parsing.Parser parser = new Irony.Parsing.Parser(s_Grammar);
-                SolDebug.WriteLine("Loading Trees ...");
-                var trees = new Utility.List<ParseTree>();
-                string[] files;
+            SolDebug.WriteLine("Creating Parser ...");
+            Irony.Parsing.Parser parser = new Irony.Parsing.Parser(s_Grammar);
+            SolDebug.WriteLine("Loading Trees ...");
+            var trees = new PSUtility.Enumerables.List<ParseTree>();
+            string[] files;
+            try {
+                files = Directory.GetFiles(sourceDir, options.SourceFilePattern);
+            } catch (DirectoryNotFoundException ex) {
+                throw new DirectoryNotFoundException(
+                    "The directory \"" + sourceDir + "\" does not exist. However a previous check indicated that the directory exists. Do you have other threads messing with the directory?",
+                    ex);
+            }
+            foreach (string dir in files) {
+                ParseTree tree;
                 try {
-                    files = Directory.GetFiles(sourceDir, options.SourceFilePattern);
-                } catch (DirectoryNotFoundException ex) {
+                    tree = parser.Parse(File.ReadAllText(dir), dir);
+                } catch (FileNotFoundException ex) {
                     throw new DirectoryNotFoundException(
-                        "The directory \"" + sourceDir + "\" does not exist. However a previous check indicated that the directory exists. Do you have other threads messing with the directory?",
-                        ex);
+                        "The file \"" + dir + "\" does not exist. However the OS told us about the existence of this file. Do you have other threads messing with the file?", ex);
+                } catch (SecurityException ex) {
+                    throw new UnauthorizedAccessException("Cannot access file \"" + dir + "\".", ex);
                 }
-                foreach (string dir in files) {
-                    ParseTree tree;
-                    try {
-                        tree = parser.Parse(File.ReadAllText(dir), dir);
-                    } catch (FileNotFoundException ex) {
-                        throw new DirectoryNotFoundException(
-                            "The file \"" + dir + "\" does not exist. However the OS told us about the existence of this file. Do you have other threads messing with the file?", ex);
-                    } catch (SecurityException ex) {
-                        throw new UnauthorizedAccessException("Cannot access file \"" + dir + "\".", ex);
-                    }
-                    trees.Add(tree);
-                    SolDebug.WriteLine("  ... Loaded " + dir);
-                }
-                SolAssembly a = FromTrees(trees, options);
-                return a;
+                trees.Add(tree);
+                SolDebug.WriteLine("  ... Loaded " + dir);
+            }
+            SolAssembly a = FromTrees(trees, options);
+            return a;
 #if DEBUG
             } finally {
                 stopwatch.Stop();
@@ -884,17 +883,18 @@ namespace SolScript.Interpreter
             stopwatch.Start();
             try {
 #endif
-                SolDebug.WriteLine("Creating Parser ...");
-                Irony.Parsing.Parser parser = new Irony.Parsing.Parser(s_Grammar);
-                var trees = new Utility.List<ParseTree>(strings.Length);
-                SolDebug.WriteLine("Loading Trees ...");
-                foreach (string s in strings) {
-                    ParseTree tree = parser.Parse(s);
-                    trees.Add(tree);
-                    SolDebug.WriteLine("  ... Loaded " + s);
-                }
-                SolAssembly a = FromTrees(trees, options);
-                return a;
+            SolDebug.WriteLine("Creating Parser ...");
+            Irony.Parsing.Parser parser = new Irony.Parsing.Parser(s_Grammar);
+            var trees = new PSUtility.Enumerables.List<ParseTree>(strings.Length);
+            SolDebug.WriteLine("Loading Trees ...");
+            for (int i = 0; i < strings.Length; i++) {
+                string s = strings[i];
+                ParseTree tree = parser.Parse(s, "Source:" + i.ToString(CultureInfo.InvariantCulture));
+                trees.Add(tree);
+                SolDebug.WriteLine("  ... Loaded " + s);
+            }
+            SolAssembly a = FromTrees(trees, options);
+            return a;
 #if DEBUG
             } finally {
                 stopwatch.Stop();

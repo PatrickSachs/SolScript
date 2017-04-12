@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using JetBrains.Annotations;
+using PSUtility.Enumerables;
 using SolScript.Interpreter;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Library;
@@ -16,9 +17,7 @@ namespace SolScript.Libraries.std
     /// <summary>
     ///     Provides some helper methods related to <see cref="SolString" />s.
     /// </summary>
-    [SolLibraryClass(std.NAME, SolTypeMode.Singleton)]
-    [SolLibraryName(TYPE)]
-    [PublicAPI]
+    [SolLibraryClass(std.NAME, SolTypeMode.Singleton), SolLibraryName(TYPE), PublicAPI]
     public class std_String
     {
         [SolLibraryVisibility(std.NAME, true)]
@@ -30,7 +29,8 @@ namespace SolScript.Libraries.std
         /// <summary>
         ///     The type name is "String".
         /// </summary>
-        [SolLibraryVisibility(std.NAME, false)] public const string TYPE = "String";
+        [SolLibraryVisibility(std.NAME, false)]
+        public const string TYPE = "String";
 
         private static readonly SolString Str_index = SolString.ValueOf("index").Intern();
         private static readonly SolString Str_length = SolString.ValueOf("length").Intern();
@@ -204,7 +204,7 @@ namespace SolScript.Libraries.std
         ///     length mismatch).
         /// </exception>
         [SolContract(SolString.TYPE, false)]
-        public SolString format(SolExecutionContext context, [SolContract(SolString.TYPE, false)] SolString value, [SolContract(SolTable.TYPE, true)] [CanBeNull] params SolValue[] arguments)
+        public SolString format(SolExecutionContext context, [SolContract(SolString.TYPE, false)] SolString value, [SolContract(SolTable.TYPE, true), CanBeNull]  params SolValue[] arguments)
         {
             if (arguments == null) {
                 return value;
@@ -290,10 +290,16 @@ namespace SolScript.Libraries.std
             return value.Substring(start, amount);
         }
 
-        [UsedImplicitly]
-        public string join(string separator, params SolValue[] values)
+        /// <summary>
+        ///     Joins several values to a string using their string conversion function.
+        /// </summary>
+        /// <param name="separator">The separator placed between each value.</param>
+        /// <param name="values">The values to join.</param>
+        /// <returns>The joined string.</returns>
+        [SolContract(SolString.TYPE, false)]
+        public SolString join([SolContract(SolString.TYPE, false)] SolString separator, [SolContract(SolTable.TYPE, false)] params SolValue[] values)
         {
-            return string.Join(separator, (object[]) values);
+            return SolString.ValueOf(values.JoinToString(separator));
         }
 
         [UsedImplicitly]

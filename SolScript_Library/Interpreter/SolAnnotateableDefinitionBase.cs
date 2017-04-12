@@ -1,4 +1,5 @@
-﻿using SolScript.Interpreter.Exceptions;
+﻿using PSUtility.Enumerables;
+using SolScript.Interpreter.Exceptions;
 using SolScript.Utility;
 
 namespace SolScript.Interpreter

@@ -2,6 +2,7 @@
 using System.IO;
 using System.Text;
 using JetBrains.Annotations;
+using PSUtility.Enumerables;
 using SolScript.Interpreter;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Library;
@@ -106,7 +107,7 @@ namespace SolScript.Libraries.lang
             builder.Append(" [");
             builder.Append(context.CurrentLocation);
             builder.Append("] : ");
-            builder.Append(InternalHelper.JoinToString(",", value => value.ToString(context), values));
+            builder.Append(values.JoinToString(", ", value => value.ToString(context)));
             builder.Append(Environment.NewLine);
             string str = builder.ToString();
             byte[] bytes;

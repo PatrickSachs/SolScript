@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using JetBrains.Annotations;
+using PSUtility.Enumerables;
 using SolScript.Compiler;
 using SolScript.Interpreter.Builders;
 using SolScript.Interpreter.Exceptions;
@@ -45,15 +46,15 @@ namespace SolScript.Interpreter
         [CanBeNull] internal Array<SolAnnotationDefinition> AnnotationsArray;
 
         // The fields of this definition.
-        private readonly Utility.Dictionary<string, SolFieldDefinition> m_Fields = new Utility.Dictionary<string, SolFieldDefinition>();
+        private readonly PSUtility.Enumerables.Dictionary<string, SolFieldDefinition> m_Fields = new PSUtility.Enumerables.Dictionary<string, SolFieldDefinition>();
         // The functions of this definition.
-        private readonly Utility.Dictionary<string, SolFunctionDefinition> m_Functions = new Utility.Dictionary<string, SolFunctionDefinition>();
+        private readonly PSUtility.Enumerables.Dictionary<string, SolFunctionDefinition> m_Functions = new PSUtility.Enumerables.Dictionary<string, SolFunctionDefinition>();
 
         // Backing field for base class.
         private SolClassDefinition l_base_class;
 
         // Lazily generated meta functions.
-        private Utility.Dictionary<SolMetaKey, MetaFunctionLink> l_meta_functions;
+        private PSUtility.Enumerables.Dictionary<SolMetaKey, MetaFunctionLink> l_meta_functions;
 
         /// <summary>
         ///     All meta functions on this class. This includes meta functions declared at all inheritance levels.
@@ -83,7 +84,7 @@ namespace SolScript.Interpreter
                 if (!DidBuildMetaFunctions) {
                     BuildMetaFunctions();
                 }
-                var dic = new Utility.Dictionary<SolMetaKey, MetaFunctionLink>();
+                var dic = new PSUtility.Enumerables.Dictionary<SolMetaKey, MetaFunctionLink>();
                 foreach (KeyValuePair<SolMetaKey, MetaFunctionLink> m in l_meta_functions.Where(p => p.Value.Definition.DefinedIn == this)) {
                     dic.Add(m.Key, m.Value);
                 }
@@ -188,7 +189,7 @@ namespace SolScript.Interpreter
         {
             Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher,
                 "Class meta functions can only be built once the class bodies have been generated.");
-            l_meta_functions = new Utility.Dictionary<SolMetaKey, MetaFunctionLink>();
+            l_meta_functions = new PSUtility.Enumerables.Dictionary<SolMetaKey, MetaFunctionLink>();
             FindAndRegisterMetaFunction(SolMetaKey.__new);
             FindAndRegisterMetaFunction(SolMetaKey.__to_string);
             FindAndRegisterMetaFunction(SolMetaKey.__getn);
