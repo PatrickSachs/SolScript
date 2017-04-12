@@ -1,0 +1,8 @@
+# NuGet packages can be reconstructed.
+/packages/
+# No binary files please.
+bin/
+# No binary files please.
+obj/
+# No reason to share my personal ReSharper settings.
+*.DotSettings.user
