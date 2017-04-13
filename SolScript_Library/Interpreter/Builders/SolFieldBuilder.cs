@@ -1,4 +1,5 @@
-﻿using PSUtility.Enumerables;
+﻿using JetBrains.Annotations;
+using PSUtility.Enumerables;
 using SolScript.Interpreter.Expressions;
 
 namespace SolScript.Interpreter.Builders
@@ -132,14 +133,15 @@ namespace SolScript.Interpreter.Builders
         /// </summary>
         /// <param name="name">The field name.</param>
         /// <param name="expression">The field initializer.</param>
+        /// <param name="location">The location. Cannot be inferred from <paramref name="expression"/> since it can be null.</param>
         /// <returns>The field builder.</returns>
-        public static SolFieldBuilder NewScriptField(string name, SolExpression expression)
+        public static SolFieldBuilder NewScriptField(string name, [CanBeNull] SolExpression expression, SolSourceLocation location)
         {
             SolFieldBuilder builder = new SolFieldBuilder(name);
             builder.IsNative = false;
             builder.NativeField = null;
             builder.ScriptField = expression;
-            builder.Location = expression.Location;
+            builder.Location = location;
             return builder;
         }
     }

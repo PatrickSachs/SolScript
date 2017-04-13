@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Reflection;
+using JetBrains.Annotations;
 using SolScript.Interpreter;
 using SolScript.Interpreter.Expressions;
 using SolScript.Utility;
@@ -35,10 +36,10 @@ namespace SolScript.Interpreter
         ///     Creates a new wrapper for a script field.
         /// </summary>
         /// <param name="expression">The field initializer.</param>
-        public SolFieldInitializerWrapper(SolExpression expression)
+        public SolFieldInitializerWrapper([CanBeNull] SolExpression expression)
         {
             FieldType = Type.ScriptField;
-            m_Field = expression.NotNull();
+            m_Field = expression;
         }
 
         /// <summary>
@@ -91,10 +92,11 @@ namespace SolScript.Interpreter
         }
 
         /// <summary>
-        ///     Obtains a reference to the <see cref="SolExpression" /> in this wrapper.
+        ///     Obtains a reference to the <see cref="SolExpression" /> in this wrapper. Can be null if the field is only declared and not assigned.
         /// </summary>
         /// <returns>The script field initializer.</returns>
         /// <exception cref="InvalidOperationException">The <see cref="FieldType" /> is not <see cref="Type.ScriptField" />.</exception>
+        [CanBeNull]
         public SolExpression GetScriptField()
         {
             if (FieldType != Type.ScriptField)

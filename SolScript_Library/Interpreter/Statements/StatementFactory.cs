@@ -322,8 +322,8 @@ namespace SolScript.Interpreter.Statements
             ParseTreeNode assignmentOpt = node.ChildNodes[5];
             SolExpression init = assignmentOpt.ChildNodes.Count != 0
                 ? GetExpression(assignmentOpt.ChildNodes[0])
-                : new Expression_Nil(Assembly, new SolSourceLocation(ActiveFile, assignmentOpt.Span.Location));
-            SolFieldBuilder fieldBuilder = SolFieldBuilder.NewScriptField(fieldName, init)
+                : null;
+            SolFieldBuilder fieldBuilder = SolFieldBuilder.NewScriptField(fieldName, init, init?.Location ?? new SolSourceLocation(ActiveFile, assignmentOpt.Span.Location))
                 .SetFieldType(SolTypeBuilder.Fixed(fieldType))
                 .SetAccessModifier(accessModifier)
                 .SetMemberModifier(memberModifier);

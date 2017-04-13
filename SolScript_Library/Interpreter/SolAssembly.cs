@@ -461,7 +461,6 @@ namespace SolScript.Interpreter
                 IVariables declareInVariables = GetVariablesForModifier(fieldDefinition.AccessModifier);
                 switch (fieldDefinition.Initializer.FieldType) {
                     case SolFieldInitializerWrapper.Type.ScriptField:
-                        SolExpression scriptInitializer = fieldDefinition.Initializer.GetScriptField();
                         try {
                             declareInVariables.Declare(fieldPair.Key, fieldDefinition.Type);
                             if (fieldDefinition.DeclaredAnnotations.Count > 0) {
@@ -473,7 +472,10 @@ namespace SolScript.Interpreter
                                         ex);
                                 }
                             }
-                            declareInVariables.Assign(fieldPair.Key, scriptInitializer.Evaluate(context, LocalVariables));
+                            SolExpression scriptInitializer = fieldDefinition.Initializer.GetScriptField();
+                            if (scriptInitializer != null) {
+                                declareInVariables.Assign(fieldPair.Key, scriptInitializer.Evaluate(context, LocalVariables));
+                            }
                         } catch (SolVariableException ex) {
                             throw new SolTypeRegistryException(fieldDefinition.Location, "Failed to register global field \"" + fieldDefinition.Name + "\"", ex);
                         }
@@ -713,11 +715,13 @@ namespace SolScript.Interpreter
                         // Assign the script fields.
                         if (options.AssignScriptFields && fieldDefinition.Initializer.FieldType == SolFieldInitializerWrapper.Type.ScriptField) {
                             // Evaluate in the variables of the inheritance since the field initializer of e.g. a global field may still refer to a local field.
-                            try {
-                                variables.Assign(fieldDefinition.Name, fieldDefinition.Initializer.GetScriptField().Evaluate(creationContext, localUsage));
-                            } catch (SolVariableException ex) {
-                                throw new SolTypeRegistryException(fieldDefinition.Location, $"An error occured while initializing the field \"{fieldDefinition.Name}\" on class \"{definition.Type}\".",
-                                    ex);
+                            SolExpression fieldExpression = fieldDefinition.Initializer.GetScriptField();
+                            if (fieldExpression != null) {
+                                try {
+                                    variables.Assign(fieldDefinition.Name, fieldExpression.Evaluate(creationContext, localUsage));
+                                } catch (SolVariableException ex) {
+                                    throw new SolTypeRegistryException(fieldDefinition.Location,$"An error occured while initializing the field \"{fieldDefinition.Name}\" on class \"{definition.Type}\".",ex);
+                                }
                             }
                         }
                     }
@@ -728,10 +732,6 @@ namespace SolScript.Interpreter
             }
             instance.AnnotationsArray = new Array<SolClass>(annotations.ToArray());
             if (options.CallConstructor) {
-                /*if (definition.NativeType != null && definition.NativeType.IsSubclassOf(typeof(Attribute))) {
-                    // We cannot create the instance of new native attributes(or should not). Use special wrappers for them.
-                    throw new SolTypeRegistryException(definition.Location, "The class \"" + definition.Type + "\" wraps the native type \"" + definition.NativeType + "\", which is an attribute. Attributes cannot be created using the new keyword.");
-                }*/
                 try {
                     instance.CallConstructor(creationContext, constructorArguments);
                 } catch (SolRuntimeException ex) {
