@@ -68,9 +68,9 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\SolScript_Library\SolScript_Library.csproj">
+    <ProjectReference Include="..\SolScript_Library\SolScript.csproj">
       <Project>{fa9b0a5f-98c6-48d6-a8c3-b47336b60990}</Project>
-      <Name>SolScript_Library</Name>
+      <Name>SolScript</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

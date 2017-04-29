@@ -3,9 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SolScript_Library", "SolScript_Library\SolScript_Library.csproj", "{FA9B0A5F-98C6-48D6-A8C3-B47336B60990}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SolScript", "SolScript_Library\SolScript.csproj", "{FA9B0A5F-98C6-48D6-A8C3-B47336B60990}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SolScript_Console", "SolScript\SolScript_Console.csproj", "{48EEBFB7-73D6-407F-B4CB-9DF79CE00EA0}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommandLine", "SolScript\CommandLine.csproj", "{48EEBFB7-73D6-407F-B4CB-9DF79CE00EA0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTests", "UnitTests\UnitTests.csproj", "{6389B046-CC6E-445B-9024-8EBDE3E6E595}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{48EEBFB7-73D6-407F-B4CB-9DF79CE00EA0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{48EEBFB7-73D6-407F-B4CB-9DF79CE00EA0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{48EEBFB7-73D6-407F-B4CB-9DF79CE00EA0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6389B046-CC6E-445B-9024-8EBDE3E6E595}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6389B046-CC6E-445B-9024-8EBDE3E6E595}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6389B046-CC6E-445B-9024-8EBDE3E6E595}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6389B046-CC6E-445B-9024-8EBDE3E6E595}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
