@@ -79,6 +79,12 @@ namespace SolScript.Interpreter.Types
             return other == this;
         }
 
+        /// <inheritdoc />
+        public override bool IsReferenceEqual(SolExecutionContext context, SolValue other)
+        {
+            return other is SolNil;
+        }
+
         #endregion
     }
 }

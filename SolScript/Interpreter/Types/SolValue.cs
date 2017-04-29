@@ -91,6 +91,8 @@ namespace SolScript.Interpreter.Types
 
         public abstract bool IsEqual(SolExecutionContext context, SolValue other);
 
+        public abstract bool IsReferenceEqual(SolExecutionContext context, SolValue other);
+
         public virtual bool NotEqual(SolExecutionContext context, SolValue other)
         {
             return !IsEqual(context, other);

@@ -587,7 +587,7 @@ namespace SolScript.Interpreter.Statements
                     return new Expression_Literal(SolString.ValueOf(text));
                 } // _string
                 case "_number": {
-                    return new Expression_Literal(new SolNumber((double)expressionNode.Token.Value));
+                    return new Expression_Literal(new SolNumber(expressionNode.Token.Value as int? ?? (double)expressionNode.Token.Value));
                 } // _number
                 case "Expression_Parenthetical": {
                     // This node is not transient since that would enable Expression->Expression 

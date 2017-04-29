@@ -17,6 +17,12 @@ namespace SolScript.Interpreter.Types
     /// </summary>
     public abstract class SolFunction : SolValue, ISourceLocateable
     {
+        /// <inheritdoc />
+        public override bool IsReferenceEqual(SolExecutionContext context, SolValue other)
+        {
+            return Id == (other as SolFunction)?.Id;
+        }
+
         #region Delegates
 
         public delegate object AutoDelegate(params object[] arguments);

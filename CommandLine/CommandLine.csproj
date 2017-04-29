@@ -68,7 +68,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\SolScript_Library\SolScript.csproj">
+    <ProjectReference Include="..\SolScript\SolScript.csproj">
       <Project>{fa9b0a5f-98c6-48d6-a8c3-b47336b60990}</Project>
       <Name>SolScript</Name>
     </ProjectReference>

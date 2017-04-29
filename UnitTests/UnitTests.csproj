@@ -35,6 +35,12 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Irony">
+      <HintPath>..\Libraries\Irony.dll</HintPath>
+    </Reference>
+    <Reference Include="PSUtility">
+      <HintPath>..\Libraries\PSUtility.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core">
       <RequiredTargetFramework>3.5</RequiredTargetFramework>
@@ -53,8 +59,18 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
-    <Compile Include="UnitTest1.cs" />
+    <Compile Include="DescriptorTests.cs" />
+    <Compile Include="Libraries\LangLibraryTests.cs" />
+    <Compile Include="TestHelper.cs" />
+    <Compile Include="TestLibarary\test.cs" />
+    <Compile Include="TypeTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\SolScript\SolScript.csproj">
+      <Project>{fa9b0a5f-98c6-48d6-a8c3-b47336b60990}</Project>
+      <Name>SolScript</Name>
+    </ProjectReference>
   </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">

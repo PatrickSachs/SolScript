@@ -17,25 +17,6 @@ namespace SolScript.Interpreter.Types
     public sealed class SolTable : SolValue, IValueIndexable, IReadOnlyCollection<KeyValuePair<SolValue, SolValue>>
     {
         /// <summary>
-        /// Creates a table of the given generic enumerable.
-        /// </summary>
-        /// <typeparam name="T">Enumerable type.</typeparam>
-        /// <param name="enumerable">The enumerable.</param>
-        /// <returns>The table.</returns>
-        public static SolTable Of<T>(IEnumerable<T> enumerable) where T : SolValue
-        {
-            SolTable table = new SolTable();
-            int i = 0;
-            foreach (T value in enumerable)
-            {
-                table.m_Table[new SolNumber(i)] = value;
-                i++;
-            }
-            table.m_N = i;
-            return table;
-        }
-
-        /// <summary>
         ///     Creates a new empty table.
         /// </summary>
         public SolTable()
@@ -44,10 +25,8 @@ namespace SolScript.Interpreter.Types
         }
 
         /// <inheritdoc cref="SolTable(IEnumerable{SolValue})" />
-        public SolTable(params SolValue[] array) : this((IEnumerable<SolValue>) array)
-        {
-            
-        }
+        public SolTable(params SolValue[] array) : this((IEnumerable<SolValue>) array) {}
+
         /// <summary>
         ///     Creates a new table from the given enumerable.
         /// </summary>
@@ -84,6 +63,16 @@ namespace SolScript.Interpreter.Types
         /// <inheritdoc />
         public override string Type => TYPE;
 
+        /// <summary>
+        ///     Wrapper around this[new <see cref="SolNumber" />(<paramref name="index" />)].
+        /// </summary>
+        /// <param name="index">The index.</param>
+        /// <returns>The associated value.</returns>
+        public SolValue this[double index] {
+            get { return this[new SolNumber(index)]; }
+            set { this[new SolNumber(index)] = value; }
+        }
+
         #region IReadOnlyCollection<KeyValuePair<SolValue,SolValue>> Members
 
         /// <inheritdoc />
@@ -113,13 +102,25 @@ namespace SolScript.Interpreter.Types
             return m_Table.TryGetValue(item.Key, out value) && value.Equals(item.Value);
         }
 
+        /// <inheritdoc />
+        public void CopyTo(Array array, int index)
+        {
+            ArrayUtility.Copy(this, 0, array, index, Count);
+        }
+
+        /// <inheritdoc />
+        public void CopyTo(Array<KeyValuePair<SolValue, SolValue>> array, int index)
+        {
+            ArrayUtility.Copy(this, 0, array, index, Count);
+        }
+
         #endregion
 
         #region IValueIndexable Members
 
         /// <summary>
         ///     Sets or gets a value from the table. When setting any current value
-        ///     will be overridden. <br/> If the key does not exist nil will be returned instead.
+        ///     will be overridden. <br /> If the key does not exist nil will be returned instead.
         /// </summary>
         /// <param name="key"> The key name </param>
         /// <returns> 'any?' value. </returns>
@@ -229,14 +230,39 @@ namespace SolScript.Interpreter.Types
             return builder.ToString();
         }
 
+        /*private bool IsEqualRecursive(SolExecutionContext context, SolTable otherTable, PSUtility.Enumerables.List<SolValue> checkedRefs)
+        {
+            if (m_Id == otherTable.m_Id)
+            {
+                return true;
+            }
+            if (Count != otherTable.Count)
+            {
+                return false;
+            }
+            if (Count == 0 && otherTable.Count == 0)
+            {
+                return true;
+            }
+            foreach (var pair in m_Table)
+            {
+                SolValue otherValue;
+                if (!otherTable.TryGet(pair.Key, out otherValue))
+                {
+                    return false;
+                }
+                checkedRefs.Add(otherValue);
+                if (!otherValue.IsEqual(context, pair.Value))
+                {
+                    return false;
+                }
+            }
+        }*/
+
         /// <inheritdoc />
         public override bool IsEqual(SolExecutionContext context, SolValue other)
         {
-            if (other.Type != "table") {
-                return false;
-            }
-            SolTable otherTable = (SolTable) other;
-            return m_Id == otherTable.m_Id;
+            return IsReferenceEqual(context, other);
         }
 
         /// <inheritdoc />
@@ -258,6 +284,24 @@ namespace SolScript.Interpreter.Types
         }
 
         #endregion
+
+        /// <summary>
+        ///     Creates a table of the given generic enumerable.
+        /// </summary>
+        /// <typeparam name="T">Enumerable type.</typeparam>
+        /// <param name="enumerable">The enumerable.</param>
+        /// <returns>The table.</returns>
+        public static SolTable Of<T>(IEnumerable<T> enumerable) where T : SolValue
+        {
+            SolTable table = new SolTable();
+            int i = 0;
+            foreach (T value in enumerable) {
+                table.m_Table[new SolNumber(i)] = value;
+                i++;
+            }
+            table.m_N = i;
+            return table;
+        }
 
         /// <summary>
         ///     Iterates the array part of this table. Starting at index 0, then index 1, etc. Stops once an index cannot be found.
@@ -303,12 +347,12 @@ namespace SolScript.Interpreter.Types
         }
 
         /// <summary>
-        /// Tries to get a <paramref name="value"/> associated with the given <paramref name="key"/>.
+        ///     Tries to get a <paramref name="value" /> associated with the given <paramref name="key" />.
         /// </summary>
         /// <param name="key">The key to index key.</param>
         /// <param name="value">The value. Will be nil if it does not exist.</param>
         /// <returns>true if the value exists, false if not. </returns>
-        /// <remarks>The <paramref name="value"/> is NEVER be null, only nil!</remarks>
+        /// <remarks>The <paramref name="value" /> is NEVER be null, only nil!</remarks>
         public bool TryGet(SolValue key, [NotNull] out SolValue value)
         {
             if (m_Table.TryGetValue(key, out value)) {
@@ -351,15 +395,9 @@ namespace SolScript.Interpreter.Types
         }
 
         /// <inheritdoc />
-        public void CopyTo(Array array, int index)
+        public override bool IsReferenceEqual(SolExecutionContext context, SolValue other)
         {
-            ArrayUtility.Copy(this, 0, array, index, Count);
-        }
-
-        /// <inheritdoc />
-        public void CopyTo(Array<KeyValuePair<SolValue, SolValue>> array, int index)
-        {
-            ArrayUtility.Copy(this, 0, array, index, Count);
+            return m_Id == (other as SolTable)?.m_Id;
         }
     }
 }

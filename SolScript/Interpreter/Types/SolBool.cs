@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
-using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Utility;
 
@@ -14,8 +12,8 @@ namespace SolScript.Interpreter.Types
             Value = value;
         }
 
-        internal const string TRUE_STRING = "true";
-        internal const string FALSE_STRING = "false";
+        public const string TRUE_STRING = "true";
+        public const string FALSE_STRING = "false";
         public const string TYPE = "bool";
 
         public static readonly SolBool True = new SolBool(true);
@@ -93,16 +91,32 @@ namespace SolScript.Interpreter.Types
 
         #endregion
 
-        
+        /// <summary>
+        ///     Gets the SolScript boolean representation of the given bool value.
+        /// </summary>
+        /// <param name="value">The native bool.</param>
+        /// <returns>The SolScript bool.</returns>
+        /// <remarks>This method exists to ensure that there are only two SolBool instances and to ease usablity.</remarks>
         [DebuggerStepThrough]
         public static SolBool ValueOf(bool value)
         {
             return value ? True : False;
         }
 
+        /// <summary>
+        ///     Negates the bool.
+        /// </summary>
+        /// <param name="this">The bool.</param>
+        /// <returns>If the bool was true, it returns false, otherwise true.</returns>
         public static SolBool operator !(SolBool @this)
         {
             return @this.Value ? False : True;
+        }
+
+        /// <inheritdoc />
+        public override bool IsReferenceEqual(SolExecutionContext context, SolValue other)
+        {
+            return IsEqual(context, other);
         }
     }
 }

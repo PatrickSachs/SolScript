@@ -54,37 +54,41 @@ namespace SolScript.Interpreter
             NativeMarshallers.Sort(Comparer.Instance);
         }
 
-        /// <inheritdoc cref="MarshalFromSol(SolAssembly,int,int,SolValue[],Type[],object[],int,bool)" />
+        /// <inheritdoc cref="MarshalFromSol(int,int,SolValue[],Type[],object[],int,bool)" />
         /// <exception cref="SolMarshallingException">Failed to marshal a value.</exception>
         /// <exception cref="ArgumentException">Array length mismatches.</exception>
-        public static object[] MarshalFromSol(SolAssembly assembly, SolValue[] values, Type[] types, bool allowCasting = true)
+        public static object[] MarshalFromSol(SolValue[] values, Type[] types, bool allowCasting = true)
         {
             var marshalled = new object[types.Length];
-            MarshalFromSol(assembly, values, types, marshalled, 0, allowCasting);
+            MarshalFromSol(values, types, marshalled, 0, allowCasting);
             return marshalled;
         }
 
-        /// <inheritdoc cref="MarshalFromSol(SolAssembly,int,int,SolValue[],Type[],object[],int,bool)" />
+        /// <inheritdoc cref="MarshalFromSol(SolValue, Type)" />
         /// <exception cref="SolMarshallingException">Failed to marshal the value.</exception>
-        [CanBeNull]
+        public static T MarshalFromSol<T>(SolValue value)
+        {
+            return (T)MarshalFromSol(value, typeof(T));
+        }
+
+        /// <inheritdoc cref="MarshalFromSol(int,int,SolValue[],Type[],object[],int,bool)" />
+        /// <exception cref="SolMarshallingException">Failed to marshal the value.</exception>
         public static object MarshalFromSol(SolValue value, Type type)
         {
-            // todo: casting fun here aswell
             return type == typeof(SolValue) || type.IsSubclassOf(typeof(SolValue)) ? value : value.ConvertTo(type);
         }
 
-        /// <inheritdoc cref="MarshalFromSol(SolAssembly,int,int,SolValue[],Type[],object[],int,bool)" />
+        /// <inheritdoc cref="MarshalFromSol(int,int,SolValue[],Type[],object[],int,bool)" />
         /// <exception cref="SolMarshallingException">Failed to marshal a value.</exception>
         /// <exception cref="ArgumentException">Array length mismatches.</exception>
-        public static void MarshalFromSol(SolAssembly assembly, SolValue[] values, Type[] types, object[] array, int offset = 0, bool allowCasting = true)
+        public static void MarshalFromSol(SolValue[] values, Type[] types, object[] array, int offset = 0, bool allowCasting = true)
         {
-            MarshalFromSol(assembly, 0, values.Length, values, types, array, offset, allowCasting);
+            MarshalFromSol(0, values.Length, values, types, array, offset, allowCasting);
         }
 
         /// <summary>
         ///     Marshals multiple values from their SolScript representation to their native counerparts.
         /// </summary>
-        /// <param name="assembly">The assembly to use for type lookups.</param>
         /// <param name="valueStart">The start index in the <paramref name="values" /> array.</param>
         /// <param name="valueCount">How many values should be marshalled from the <paramref name="values" /> array?</param>
         /// <param name="values">The values array to get the value to marshal from.</param>
@@ -97,7 +101,7 @@ namespace SolScript.Interpreter
         /// </param>
         /// <exception cref="SolMarshallingException">Failed to marshal a value.</exception>
         /// <exception cref="ArgumentException">Array length mismatches.</exception>
-        public static void MarshalFromSol(SolAssembly assembly, int valueStart, int valueCount, SolValue[] values, Type[] types, object[] array, int offset, bool allowCasting = true)
+        public static void MarshalFromSol(int valueStart, int valueCount, SolValue[] values, Type[] types, object[] array, int offset, bool allowCasting = true)
         {
             if (valueCount != types.Length || valueStart + valueCount > values.Length || valueCount < 0) {
                 throw new ArgumentException($"Marshalling requires a type for each value - Got {values.Length}(Overridden to {valueCount}, starting at {valueStart}) values and {types.Length} types.",

@@ -52,9 +52,6 @@
       <HintPath>..\packages\MathNet.Numerics.3.18.0\lib\net35\MathNet.Numerics.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="NodeParser">
-      <HintPath>..\Libraries\NodeParser.dll</HintPath>
-    </Reference>
     <Reference Include="PSUtility">
       <HintPath>..\Libraries\PSUtility.dll</HintPath>
     </Reference>
@@ -161,7 +158,6 @@
     <Compile Include="Interpreter\Library\SolContractAttribute.cs" />
     <Compile Include="Interpreter\Library\SolGlobalAttribute.cs" />
     <Compile Include="Interpreter\Library\SolLibraryAccessModifierAttribute.cs" />
-    <Compile Include="Interpreter\Library\SolLibraryClassAttribute.cs" />
     <Compile Include="Interpreter\Library\SolLibraryNameAttribute.cs" />
     <Compile Include="Interpreter\Library\SolLibraryVisibilityAttribute.cs" />
     <Compile Include="Libraries\std\std_String.cs" />

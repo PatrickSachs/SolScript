@@ -20,7 +20,10 @@ namespace SolScript.Interpreter
     public sealed class SolClassDefinition : SolAnnotateableDefinitionBase
     {
         /// <inheritdoc />
-        public SolClassDefinition(SolAssembly assembly, SourceLocation location) : base(assembly, location) {}
+        public SolClassDefinition(SolAssembly assembly, SourceLocation location) : base(assembly, location)
+        {
+            m_AnnotationReadonly = ReadOnlyList<SolAnnotationDefinition>.FromDelegate(() => m_DeclaredAnnotationsList);
+        }
 
         /// <summary>
         ///     Used by the parser. Class definitions are NOT created by using this constructor. Class definitions can be created
@@ -32,21 +35,20 @@ namespace SolScript.Interpreter
         //[Obsolete(InternalHelper.O_PARSER_MSG, InternalHelper.O_PARSER_ERR)]
         internal SolClassDefinition()
         {
-            m_AnnotationReadonly = ReadOnlyList<SolAnnotationDefinition>.FromDelegate(() => DeclaredAnnotationsList);
+            m_AnnotationReadonly = ReadOnlyList<SolAnnotationDefinition>.FromDelegate(() => m_DeclaredAnnotationsList);
         }
-
-        private readonly IReadOnlyList<SolAnnotationDefinition> m_AnnotationReadonly;
 
         /// <summary>
         ///     The reference to the base class used.
         /// </summary>
         internal SolClassDefinitionReference BaseClassReference;
 
+        private readonly IReadOnlyList<SolAnnotationDefinition> m_AnnotationReadonly;
+
         /// <summary>
         ///     Raw access to the annotations of this class.
         /// </summary>
-        [CanBeNull]
-        private readonly IList<SolAnnotationDefinition> DeclaredAnnotationsList = new System.Collections.Generic.List<SolAnnotationDefinition>();
+        private readonly IList<SolAnnotationDefinition> m_DeclaredAnnotationsList = new System.Collections.Generic.List<SolAnnotationDefinition>();
 
         /*/// <summary>
         ///     Raw access to all members of this class.
@@ -85,6 +87,9 @@ namespace SolScript.Interpreter
             get {
                 //Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher,
                 //    "The base class can only be obtained after then class bodies have been generated.");
+                if (BaseClassReference == null) {
+                    return null;
+                }
                 SolClassDefinition baseClass;
                 if (!BaseClassReference.TryGetDefinition(out baseClass)) {
                     throw new InvalidOperationException("The base class {0} of class {1} could not be resolved.".ToString(BaseClassReference.ClassName, Type));
@@ -191,6 +196,12 @@ namespace SolScript.Interpreter
         public override string ToString()
         {
             return $"SolClassDefinition(Type={Type}, Fields={m_Fields?.Count}, Functions={m_Functions?.Count})";
+        }
+
+        /// <inheritdoc />
+        internal override void AddAnnotation(SolAnnotationDefinition annotation)
+        {
+            m_DeclaredAnnotationsList.Add(annotation);
         }
 
         #endregion
@@ -472,12 +483,10 @@ namespace SolScript.Interpreter
         ///     Directs sets a field for this definition.
         /// </summary>
         /// <param name="field">The field to set.</param>
-        /// <exception cref="InvalidOperationException">Invalid state.</exception>
-        /// <remarks>Only valid in <see cref="SolAssembly.AssemblyState.GeneratedClassHulls" /> or higher state.</remarks>
         internal void AssignFieldDirect(SolFieldDefinition field)
         {
-            //Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassHulls, SolAssembly.AssertMatch.Exact, "Class definition fields can only be set during the generation of class bodies.");
             m_Fields[field.Name] = field;
+            field.DefinedIn = this;
         }
 
         /// <summary>
@@ -485,18 +494,10 @@ namespace SolScript.Interpreter
         ///     data of function or class.
         /// </summary>
         /// <param name="function">The function to set.</param>
-        /// <exception cref="InvalidOperationException">Invalid state.</exception>
-        /// <remarks>Only valid in <see cref="SolAssembly.AssemblyState.GeneratedClassHulls" /> or higher state.</remarks>
         internal void AssignFunctionDirect(SolFunctionDefinition function)
         {
-            //Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassHulls, SolAssembly.AssertMatch.Exact, "Class definition functions can only be set during the generation of class bodies.");
             m_Functions[function.Name] = function;
-        }
-
-        /// <inheritdoc />
-        internal override void AddAnnotation(SolAnnotationDefinition annotation)
-        {
-            DeclaredAnnotationsList.Add(annotation);
+            function.DefinedIn = this;
         }
 
         #region Nested type: MetaFunctionLink

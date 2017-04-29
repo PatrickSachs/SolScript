@@ -12,6 +12,12 @@ namespace SolScript.Interpreter.Types
     /// </summary>
     public sealed class SolString : SolValue
     {
+        /// <inheritdoc />
+        public override bool IsReferenceEqual(SolExecutionContext context, SolValue other)
+        {
+            return IsEqual(context, other);
+        }
+
         static SolString()
         {
             // Intern some often used values.

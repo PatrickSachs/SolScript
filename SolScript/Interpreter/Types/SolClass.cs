@@ -238,8 +238,7 @@ namespace SolScript.Interpreter.Types
             if (TryGetMetaFunction(SolMetaFunction.__is_equal, out link)) {
                 return SolMetaFunction.__is_equal.Cast(link.GetFunction(this).Call(context, other)).NotNull().Value;
             }
-            SolClass otherType = other as SolClass;
-            return otherType != null && Id == otherType.Id;
+            return IsReferenceEqual(context, other);
         }
 
         /// <exception cref="InvalidOperationException">A critical internal error occured while calling this function.</exception>
@@ -974,6 +973,12 @@ namespace SolScript.Interpreter.Types
         {
             ObjectType,
             DescibedType
+        }
+
+        /// <inheritdoc />
+        public override bool IsReferenceEqual(SolExecutionContext context, SolValue other)
+        {
+            return Id == (other as SolClass)?.Id;
         }
 
         #endregion

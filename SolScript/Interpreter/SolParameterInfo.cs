@@ -289,14 +289,14 @@ namespace SolScript.Interpreter
                 int offsetStart = SendContext ? 1 : 0;
                 int offsetEnd = AllowOptional ? 1 : 0;
                 var array = new object[Count + offsetStart + offsetEnd];
-                SolMarshal.MarshalFromSol(context.Assembly, 0, Count, arguments, m_NativeTypes, array, offsetStart);
+                SolMarshal.MarshalFromSol(0, Count, arguments, m_NativeTypes, array, offsetStart);
                 if (SendContext) {
                     array[0] = context;
                 }
                 if (AllowOptional) {
                     Array optionalArray = Array.CreateInstance(OptionalType, arguments.Length - Count);
                     array[array.Length - 1] = optionalArray;
-                    SolMarshal.MarshalFromSol(context.Assembly, Count, optionalArray.Length, arguments, InternalHelper.ArrayFilledWith(OptionalType, optionalArray.Length), (object[]) optionalArray, 0);
+                    SolMarshal.MarshalFromSol(Count, optionalArray.Length, arguments, InternalHelper.ArrayFilledWith(OptionalType, optionalArray.Length), (object[]) optionalArray, 0);
                 }
                 return array;
             }

@@ -5,11 +5,14 @@ using SolScript.Parser.Terminals;
 
 // ReSharper disable InconsistentNaming
 
-namespace SolScript.Parser {
+namespace SolScript.Parser
+{
     [Language("SolScript", "0.1", "A truly stellar scripting language.")]
-    internal class SolScriptGrammar : Grammar {
+    internal class SolScriptGrammar : Grammar
+    {
         public SolScriptGrammar() :
-            base(true) {
+            base(true)
+        {
             #region Terminals
 
             // =======================================
@@ -91,7 +94,7 @@ namespace SolScript.Parser {
             #endregion
 
             #region NonTerminals
-            
+
             // =======================================
             // === MISC
             NonTerminal ChunkEnd_opt = new NonTerminal("ChunkEnd");
@@ -183,11 +186,14 @@ namespace SolScript.Parser {
             Root = new NonTerminal("ROOT");
 
             #endregion
+
             // todo: proper tertiary expression for: (a ? b : c)
+
             #region Grammar Rules
+
             RootElement_trans.Rule = FieldWithAccess
-                | FunctionWithAccess
-                | ClassDefinition
+                                     | FunctionWithAccess
+                                     | ClassDefinition
                 ;
             Root.Rule = MakeStarRule(Root, RootElement_trans)
                 ;
@@ -201,18 +207,18 @@ namespace SolScript.Parser {
                 | ABSTRACT
                 | OVERRIDE
                 ;
-            ClassModifier_opt.Rule = 
-                Empty 
+            ClassModifier_opt.Rule =
+                Empty
                 | ANNOTATION
                 | SINGLETON
                 | ABSTRACT
                 | SEALED
                 ;
-            Expression_Bool.Rule = 
-                TRUE 
+            Expression_Bool.Rule =
+                TRUE
                 | FALSE
                 ;
-            Expression_Nil.Rule = 
+            Expression_Nil.Rule =
                 NIL
                 ;
             IdentifierPlusList.Rule =
@@ -222,7 +228,7 @@ namespace SolScript.Parser {
                 AnnotationList + ClassModifier_opt + ToTerm("class") + _identifier + ClassDefinition_Extends_opt + ClassDefinition_Body
                 ;
             ClassDefinition_Extends_opt.Rule =
-                EXTENDS + _identifier
+                (EXTENDS + _identifier)
                 | Empty
                 ;
             ClassDefinition_Body.Rule =
@@ -242,15 +248,15 @@ namespace SolScript.Parser {
                 AnnotationList + AccessModifier_opt + MemberModifier_opt + FUNCTION + _identifier + FunctionParameters + TypeRef_opt + FunctionBody
                 ;
             Assignment_opt.Rule =
-                EQ + Expression
+                (EQ + Expression)
                 | Empty
                 ;
             AnnotationList.Rule =
                 MakeStarRule(AnnotationList, Annotation)
                 ;
             Annotation.Rule =
-                ToTerm("@") + _identifier + Arguments_trans
-                | ToTerm("@") + _identifier
+                (ToTerm("@") + _identifier + Arguments_trans)
+                | (ToTerm("@") + _identifier)
                 ;
             Annotation_opt.Rule =
                 Empty
@@ -267,8 +273,8 @@ namespace SolScript.Parser {
                 StatementList + ChunkEnd_opt
                 ;
             Statement_DeclareVar.Rule =
-                VAR + _identifier + TypeRef_opt + EQ + Expression
-                | VAR + _identifier + TypeRef_opt
+                (VAR + _identifier + TypeRef_opt + EQ + Expression)
+                | (VAR + _identifier + TypeRef_opt)
                 ;
             Statement_AssignVar.Rule =
                 Variable + EQ + Expression
@@ -283,10 +289,10 @@ namespace SolScript.Parser {
                 LOCAL + FUNCTION + Variable + FunctionParameters + TypeRef_opt + FunctionBody
                 ;
             Expression_CreateFunc.Rule =
-                FUNCTION + FunctionParameters+ TypeRef_opt  + FunctionBody
+                FUNCTION + FunctionParameters + TypeRef_opt + FunctionBody
                 ;
             FunctionParameters.Rule =
-                "(" + ParameterList + ")" | "(" + ")"
+                ("(" + ParameterList + ")") | ("(" + ")")
                 ;
             FunctionBody.Rule =
                 Chunk + END
@@ -296,7 +302,7 @@ namespace SolScript.Parser {
                 ;
             Statement_Conditional_Else_opt.Rule =
                 Empty
-                | ELSE + Chunk
+                | (ELSE + Chunk)
                 ;
             Statement_Conditional_ElseIf.Rule =
                 ELSEIF + Expression + THEN + Chunk
@@ -317,8 +323,8 @@ namespace SolScript.Parser {
                 WHILE + Expression + DO + Chunk + END
                 ;
             Statement_Base.Rule =
-                BASE + "[" + Expression + "]"
-                | BASE + DOT + _identifier
+                (BASE + "[" + Expression + "]")
+                | (BASE + DOT + _identifier)
                 ;
             Statement_Self.Rule =
                 SELF
@@ -336,8 +342,8 @@ namespace SolScript.Parser {
                 | Statement_New
                 ;
             LastStatement.Rule =
-                RETURN + Expression
-                | RETURN 
+                (RETURN + Expression)
+                | RETURN
                 | BREAK
                 | CONTINUE;
             Function_Name.Rule =
@@ -358,7 +364,7 @@ namespace SolScript.Parser {
                 | Statement_Self
                 ;
             Expression.Rule =
-                 _number
+                _number
                 | Expression_Bool
                 | Expression_Nil
                 | _string
@@ -384,8 +390,8 @@ namespace SolScript.Parser {
                 _identifier
                 ;
             IndexedVariable.Rule =
-                Expression + "[" + Expression + "]"
-                | Expression + DOT + _identifier
+                (Expression + "[" + Expression + "]")
+                | (Expression + DOT + _identifier)
                 ;
             Expression_Parenthetical.Rule =
                 "(" + Expression + ")"
@@ -394,8 +400,8 @@ namespace SolScript.Parser {
                 DO + Chunk + END
                 ;
             Statement_CallFunction.Rule =
-                Expression + Arguments_trans
-                | Expression + "()"
+                (Expression + Arguments_trans)
+                | (Expression + "()")
                 ;
             Arguments_trans.Rule =
                 "(" + ExpressionList + ")"
@@ -430,21 +436,21 @@ namespace SolScript.Parser {
                 ;
             AppendOptionalArg_opt_trans.Rule =
                 Empty
-                | ToTerm(",") + ELLIPSIS
+                | (ToTerm(",") + ELLIPSIS)
                 ;
             ParameterList.Rule =
-                ExplicitParameterList + AppendOptionalArg_opt_trans
+                (ExplicitParameterList + AppendOptionalArg_opt_trans)
                 | ELLIPSIS
                 ;
             Expression_TableConstructor.Rule =
                 "{" + FieldList + "}"
                 ;
             FieldList.Rule =
-                MakeStarRule(FieldList, FieldSeparator, Field)
+                MakeListRule(FieldList, FieldSeparator, Field, TermListOptions.StarList | TermListOptions.AllowTrailingDelimiter)
                 ;
             Field.Rule =
-                "[" + Expression + "]" + "=" + Expression
-                | _identifier + "=" + Expression
+                ("[" + Expression + "]" + "=" + Expression)
+                | (_identifier + "=" + Expression)
                 | Expression
                 ;
             FieldSeparator.Rule =
@@ -452,13 +458,13 @@ namespace SolScript.Parser {
                 | ";"
                 ;
             Expression_Binary.Rule =
-                Expression + Expression_Binary_Operand_trans + Expression
-                | ToTerm("(") + Expression + Expression_Binary_Operand_trans + Expression + ToTerm(")")
+                (Expression + Expression_Binary_Operand_trans + Expression)
+                | (ToTerm("(") + Expression + Expression_Binary_Operand_trans + Expression + ToTerm(")"))
                 ;
             // todo: find a better way to parse tertiary expressions
             Expression_Tertiary.Rule =
-                Expression + ToTerm("?") + Expression + ToTerm(":") + Expression
-                | ToTerm("(") + Expression + ToTerm("?") + Expression + ToTerm(":") + Expression + ToTerm("(") 
+                (Expression + ToTerm("?") + Expression + ToTerm(":") + Expression)
+                | (ToTerm("(") + Expression + ToTerm("?") + Expression + ToTerm(":") + Expression + ToTerm("("))
                 ;
             Expression_Unary.Rule =
                 Expression_Unary_Operand_trans + Expression
@@ -483,12 +489,12 @@ namespace SolScript.Parser {
                 | NIL_COAL
                 ;
             Expression_Unary_Operand_trans.Rule =
-                UPLUSPLUS 
-                | UMINUSMINUS 
+                UPLUSPLUS
+                | UMINUSMINUS
                 | UPLUS
-                | UMINUS 
-                | NOT 
-                | "!" 
+                | UMINUS
+                | NOT
+                | "!"
                 | GETN
                 ;
             MarkTransient(
@@ -529,8 +535,9 @@ namespace SolScript.Parser {
 
             LanguageFlags = LanguageFlags.SupportsCommandLine | LanguageFlags.TailRecursive;
         }
-        
-        public KeyTerm Keyword(string keyword) {
+
+        public KeyTerm Keyword(string keyword)
+        {
             KeyTerm term = ToTerm(keyword);
             term.SetFlag(TermFlags.IsKeyword, true);
             term.SetFlag(TermFlags.IsReservedWord, true);
@@ -539,7 +546,8 @@ namespace SolScript.Parser {
             return term;
         }
 
-        public KeyTerm Operator(string op) {
+        public KeyTerm Operator(string op)
+        {
             string opCased = CaseSensitive ? op : op.ToLower();
             KeyTerm term = new KeyTerm(opCased, op);
             term.SetFlag(TermFlags.IsOperator, true);
@@ -548,7 +556,8 @@ namespace SolScript.Parser {
             return term;
         }
 
-        protected static NumberLiteral CreateSolNumber(string name) {
+        protected static NumberLiteral CreateSolNumber(string name)
+        {
             NumberLiteral term = new NumberLiteral(name, NumberOptions.AllowStartEndDot);
             //default int types are Integer (32bit) -> LongInteger (BigInt); Try Int64 before BigInt: Better performance?
             term.DefaultIntTypes = new[] {TypeCode.Int32, TypeCode.Int64, NumberLiteral.TypeCodeBigInt};
@@ -558,9 +567,10 @@ namespace SolScript.Parser {
             return term;
         }
 
-        protected static StringLiteral CreateSolString(string name) {
+        protected static StringLiteral CreateSolString(string name)
+        {
             //return new SolScriptStringLiteral(name);
-            var strLit = new SolScriptStringLiteral(name);
+            SolScriptStringLiteral strLit = new SolScriptStringLiteral(name);
             /*strLit.AddStartEnd("'", "'", StringOptions.AllowsDoubledQuote);
             strLit.AddStartEnd("\"", "\"", StringOptions.None);
             strLit.EscapeChar = '\\';*/

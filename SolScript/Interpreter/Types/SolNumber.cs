@@ -209,6 +209,12 @@ namespace SolScript.Interpreter.Types
             return otherNumber.Value.Equals(Value);
         }
 
+        /// <inheritdoc />
+        public override bool IsReferenceEqual(SolExecutionContext context, SolValue other)
+        {
+            return IsEqual(context, other);
+        }
+
         #endregion
     }
 }
