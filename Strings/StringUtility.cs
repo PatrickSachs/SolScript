@@ -32,5 +32,11 @@ namespace PSUtility.Strings
             }
             return true;
         }
+
+        // Internal formatting method.
+        internal static string F(this string value, params object[] values)
+        {
+            return string.Format(value, values);
+        }
     }
 }

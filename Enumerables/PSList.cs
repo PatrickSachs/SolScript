@@ -1,29 +1,26 @@
-﻿#if !NETFX_45
+﻿using System;
+using System.Collections.Generic;
+using JetBrains.Annotations;
 
-// ReSharper disable once CheckNamespace
-
-namespace System.Collections.Generic
+namespace PSUtility.Enumerables
 {
     /// <summary>
-    ///     A read only collection allows you to publically expose a collection without the risk of having the data
-    ///     manipulated.
+    ///     This list type extends the <see cref="System.Collections.Generic.List{T}" /> and implements
+    ///     <see cref="IReadOnlyList{T}" />.
     /// </summary>
     /// <typeparam name="T">The list type.</typeparam>
-    public interface IReadOnlyCollection<T> : IEnumerable<T>
+    public class PSList<T> : System.Collections.Generic.List<T>, IReadOnlyList<T>
     {
+        /// <inheritdoc />
+        public PSList() {}
+
+        /// <inheritdoc />
+        public PSList(int capacity) : base(capacity) {}
+
+        /// <inheritdoc />
+        public PSList([NotNull] IEnumerable<T> collection) : base(collection) {}
+
         /// <summary>
-        ///     The amount of elements in this collection.
-        /// </summary>
-        int Count { get; }
-
-        /*/// <summary>
-        ///     Checks if the <see cref="IReadOnlyCollection{T}" /> contains the given item.
-        /// </summary>
-        /// <param name="item">The item to find.</param>
-        /// <returns>true if the item is contained in this collection, false if not.</returns>
-        bool Contains(T item);*/
-
-        /*/// <summary>
         ///     Copies the elements of this collection to an array.
         /// </summary>
         /// <param name="array">The array.</param>
@@ -39,8 +36,11 @@ namespace System.Collections.Generic
         /// </exception>
         /// <exception cref="ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
         /// <exception cref="ArgumentException"><paramref name="array" /> is not long enough.</exception>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> is smaller than 0.</exception>
-        void CopyTo(Array array, int index);
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is smaller than 0.</exception>
+        public void CopyTo(Array array, int index)
+        {
+            ArrayUtility.Copy(this, 0, array, index, Count);
+        }
 
         /// <summary>
         ///     Copies the elements of this collection to an array.
@@ -48,18 +48,19 @@ namespace System.Collections.Generic
         /// <param name="array">The array.</param>
         /// <param name="index">The start index of the array.</param>
         /// <exception cref="ArrayTypeMismatchException">
-        ///     The type of the source <see cref="IReadOnlyCollection{T}" /> is not assignable from <typeparamref name="T" />.
+        ///     The type of the source <see cref="IReadOnlyCollection{T}" /> is not assignable from <typeparamref name="T"/>.
         /// </exception>
         /// <exception cref="RankException">The source array is multidimensional.</exception>
         /// <exception cref="InvalidCastException">
         ///     At least one element in the source <see cref="Array" /> cannot be cast
-        ///     to <typeparamref name="T" />.
+        ///     to <typeparamref name="T"/>.
         /// </exception>
         /// <exception cref="ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
         /// <exception cref="ArgumentException"><paramref name="array" /> is not long enough.</exception>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> is smaller than 0.</exception>
-        void CopyTo(Array<T> array, int index);*/
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is smaller than 0.</exception>
+        public void CopyTo(Array<T> array, int index)
+        {
+            ArrayUtility.Copy(this, 0, array, index, Count);
+        }
     }
 }
-
-#endif

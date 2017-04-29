@@ -1,6 +1,7 @@
-﻿using System;
+﻿#if !NETFX_45
 
-namespace PSUtility.Enumerables
+// ReSharper disable once CheckNamespace
+namespace System.Collections.Generic
 {
     /// <summary>
     ///     A read only lists allows you to publically expose a list without the risk of having the data manipulated.
@@ -17,3 +18,5 @@ namespace PSUtility.Enumerables
         T this[int index] { get; }
     }
 }
+
+#endif

@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace PSUtility.Enumerables.Properties {
+namespace PSUtility.Properties {
     using System;
     
     
@@ -57,6 +57,51 @@ namespace PSUtility.Enumerables.Properties {
             }
             set {
                 resourceCulture = value;
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The array({0} length) is not long enough. A length of {1} is required..
+        /// </summary>
+        internal static string Err_ArrayTooSmall {
+            get {
+                return ResourceManager.GetString("Err_ArrayTooSmall", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The array had {0} rank/s. An array of {1} rank/s was required..
+        /// </summary>
+        internal static string Err_InvalidArrayRank {
+            get {
+                return ResourceManager.GetString("Err_InvalidArrayRank", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The array of element type {0} is not compatible with elements of type {1}..
+        /// </summary>
+        internal static string Err_InvalidArrayType {
+            get {
+                return ResourceManager.GetString("Err_InvalidArrayType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The type \&quot;{0}\&quot; is not a generic collection or non generic list type..
+        /// </summary>
+        internal static string Err_NotCollectionOrListType {
+            get {
+                return ResourceManager.GetString("Err_NotCollectionOrListType", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The {0}({1}) is smaller than zero..
+        /// </summary>
+        internal static string Err_SmallerThanZero {
+            get {
+                return ResourceManager.GetString("Err_SmallerThanZero", resourceCulture);
             }
         }
     }

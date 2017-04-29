@@ -4,6 +4,11 @@ using PSUtility.Math;
 
 namespace PSUtility.Enumerables
 {
+    /// <summary>
+    ///     A hash based table allows you to map values to a weak key. Once the key is collected the value is invalidated.
+    /// </summary>
+    /// <typeparam name="TKey">The key type; must be a reference type.</typeparam>
+    /// <typeparam name="TValue">The value type.</typeparam>
     public class WeakTable<TKey, TValue> where TKey : class
     {
         private readonly IEqualityComparer<TKey> m_Comparer;

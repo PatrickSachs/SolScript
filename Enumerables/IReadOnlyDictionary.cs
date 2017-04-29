@@ -1,8 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
+﻿
+#if !NETFX_45
 
-namespace PSUtility.Enumerables
+// ReSharper disable once CheckNamespace
+
+namespace System.Collections.Generic
 {
+    /// <summary>
+    ///     A 1:1 representation of the <see cref="IReadOnlyDictionary{TKey,TValue}" /> from .NET 4.5
+    /// </summary>
+    /// <typeparam name="TKey">Key type.</typeparam>
+    /// <typeparam name="TValue">Value type.</typeparam>
     public interface IReadOnlyDictionary<TKey, TValue> : IReadOnlyCollection<KeyValuePair<TKey, TValue>>
     {
         /// <summary>
@@ -17,12 +24,12 @@ namespace PSUtility.Enumerables
         /// <summary>
         ///     Gets an enumerable collection that contains the keys in the read-only dictionary.
         /// </summary>
-        IReadOnlyCollection<TKey> Keys { get; }
+        IEnumerable<TKey> Keys { get; }
 
         /// <summary>
         ///     Gets an enumerable collection that contains the values in the read-only dictionary.
         /// </summary>
-        IReadOnlyCollection<TValue> Values { get; }
+        IEnumerable<TValue> Values { get; }
 
         /// <summary>
         ///     Determines whether the read-only dictionary contains an element that has the specified key.
@@ -41,3 +48,5 @@ namespace PSUtility.Enumerables
         bool TryGetValue(TKey key, out TValue value);
     }
 }
+
+#endif
