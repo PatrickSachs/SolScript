@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Irony.Parsing;
 using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
@@ -46,7 +47,7 @@ namespace SolScript.Interpreter
         ///     possible as it contains vital information for debugging in case an error
         ///     arises.
         /// </summary>
-        public SolSourceLocation CurrentLocation { get; set; }
+        public SourceLocation CurrentLocation { get; set; }
 
         /// <summary>
         ///     The class this context is currently in. This property is set automatically.<br /> Only change it if you know what

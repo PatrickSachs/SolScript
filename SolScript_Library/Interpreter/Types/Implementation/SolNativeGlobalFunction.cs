@@ -55,9 +55,8 @@ namespace SolScript.Interpreter.Types.Implementation
         protected override SolValue Call_Impl(SolExecutionContext context, params SolValue[] args)
         {
             MethodInfo nativeMethod = Definition.Chunk.GetNativeMethod();
-            DynamicReference.GetState getState;
-            object nativeInstance = m_Instance.GetReference(out getState);
-            if (getState != DynamicReference.GetState.Retrieved) {
+            object nativeInstance;
+            if (!m_Instance.TryGet(out nativeInstance)) {
                 throw new InvalidOperationException($"The internal reference of the native method {nativeMethod.Name}({nativeMethod.DeclaringType?.FullName ?? "?"}) could not be resolved.");
             }
             object[] values;

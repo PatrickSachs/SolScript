@@ -12,7 +12,7 @@ namespace SolScript.Libraries.std
     /// <summary>
     ///     The <see cref="std_Table" /> is used to provide several helper methods related to <see cref="SolTable" />s.
     /// </summary>
-    [SolLibraryClass(std.NAME, SolTypeMode.Singleton)]
+    [SolTypeDescriptor(std.NAME, SolTypeMode.Singleton, typeof(std_Table))]
     [SolLibraryName(TYPE)]
     [PublicAPI]
     public class std_Table

@@ -1,14 +1,17 @@
 ﻿using System;
+using Irony.Parsing;
+using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
 
 namespace SolScript.Interpreter.Types.Implementation
 {
     public sealed class SolDelegateWrapperFunction : SolFunction
     {
-        public SolDelegateWrapperFunction(SolAssembly assembly, Delegate fDelegate)
+        public SolDelegateWrapperFunction(SolAssembly assembly, Delegate fDelegate, [CanBeNull] SolParameterInfo parameters = null)
         {
             m_Delegate = fDelegate;
             Assembly = assembly;
+            ParameterInfo = parameters ?? SolParameterInfo.Any;
         }
 
         private readonly Delegate m_Delegate;
@@ -17,13 +20,13 @@ namespace SolScript.Interpreter.Types.Implementation
         public override SolAssembly Assembly { get; }
 
         /// <inheritdoc />
-        public override SolParameterInfo ParameterInfo => SolAutoDelegateWrapperFunction.AnyParameters;
+        public override SolParameterInfo ParameterInfo { get; }
 
         /// <inheritdoc />
         public override SolType ReturnType => SolType.AnyNil;
 
         /// <inheritdoc />
-        public override SolSourceLocation Location => SolSourceLocation.Native();
+        public override SourceLocation Location => SolSourceLocation.Native();
 
         #region Overrides
 

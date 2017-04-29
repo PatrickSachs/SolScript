@@ -10,7 +10,7 @@ namespace SolScript.Interpreter
         /// <summary>
         ///     No access modifier has been specified. The variable may be accessed from everywhere.
         /// </summary>
-        None = 0,
+        Global = 0,
 
         /// <summary>
         ///     A local access modifier has been specified. The variable may only be accessed within its context. (e.g. from within

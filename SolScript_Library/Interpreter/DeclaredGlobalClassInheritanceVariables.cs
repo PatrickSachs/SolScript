@@ -20,7 +20,7 @@ namespace SolScript.Interpreter
         protected override bool ValidateFunctionDefinition(SolFunctionDefinition definition)
         {
             // Globals can be accessed.
-            return definition.AccessModifier == SolAccessModifier.None;
+            return definition.AccessModifier == SolAccessModifier.Global;
         }
 
         #endregion

@@ -1,4 +1,6 @@
-﻿namespace SolScript.Interpreter
+﻿using Irony.Parsing;
+
+namespace SolScript.Interpreter
 {
     /// <summary>
     ///     The <see cref="ISourceLocateable" /> interface assists in finding a certain element in the SolScript code.
@@ -8,6 +10,6 @@
         /// <summary>
         ///     The location in code.
         /// </summary>
-        SolSourceLocation Location { get; }
+        SourceLocation Location { get; }
     }
 }

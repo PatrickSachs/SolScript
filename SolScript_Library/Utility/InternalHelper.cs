@@ -1,18 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Text;
 using Irony.Parsing;
 using JetBrains.Annotations;
 using PSUtility.Enumerables;
+using PSUtility.Reflection;
 using SolScript.Interpreter;
-using SolScript.Interpreter.Builders;
 using SolScript.Interpreter.Exceptions;
+using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Library;
 using SolScript.Interpreter.Types;
+using SolScript.Properties;
 
 namespace SolScript.Utility
 {
@@ -22,7 +22,27 @@ namespace SolScript.Utility
     /// </summary>
     internal static class InternalHelper
     {
-        private static readonly HashSet<Type> FuncGenericTypes = new HashSet<Type> {
+        internal class ReferenceEqualityComparer<T> : IEqualityComparer<T>
+        {
+            public static readonly ReferenceEqualityComparer<T> Instance = new ReferenceEqualityComparer<T>();
+            private ReferenceEqualityComparer() { }
+            /// <inheritdoc />
+            public bool Equals(T x, T y)
+            {
+                return ReferenceEquals(x, y);
+            }
+
+            /// <inheritdoc />
+            public int GetHashCode(T obj)
+            {
+                return obj.GetHashCode();
+            }
+        }
+
+        internal const string O_PARSER_MSG = "Only used by the parser. Please use a different overload instead.";
+        internal const bool O_PARSER_ERR = true;
+
+        private static readonly IReadOnlySet<Type> FuncGenericTypes = new PSUtility.Enumerables.HashSet<Type> {
             typeof(Func<>),
             typeof(Func<,>),
             typeof(Func<,,>),
@@ -30,7 +50,7 @@ namespace SolScript.Utility
             typeof(Func<,,,,>)
         };
 
-        private static readonly HashSet<Type> ActionGenericTypes = new HashSet<Type> {
+        private static readonly IReadOnlySet<Type> ActionGenericTypes = new PSUtility.Enumerables.HashSet<Type> {
             typeof(Action),
             typeof(Action<>),
             typeof(Action<,>),
@@ -41,12 +61,30 @@ namespace SolScript.Utility
         public static readonly ClassCreationOptions AnnotationClassCreationOptions = new ClassCreationOptions.Customizable().SetEnforceCreation(true);
         public static readonly ClassCreationOptions AnnotationClassCreationOptionsNoCtor = new ClassCreationOptions.Customizable().SetEnforceCreation(true).SetCallConstructor(false);
 
+        /*internal static SolSourceLocation Location(this ParseTreeNode @this, string file)
+        {
+            return @this.Span.Location.ToSol(file);
+        }
+
+        internal static SolSourceLocation ToSol(this SourceLocation @this, string fileName)
+        {
+            return new SolSourceLocation(fileName, @this);
+        }*/
+
+        public static string ToString(this string @this, params object[] args)
+        {
+            if (@this == null) {
+                return @"null";
+            }
+            return string.Format(@this, args);
+        }
+
         public static bool IsOverride(this MethodInfo method)
         {
             return !method.Equals(method.GetBaseDefinition());
         }
 
-        /// <summary>
+        /*/// <summary>
         ///     Converts annotation builders into annotation definitions. Validates the annotations type and type mode.
         /// </summary>
         /// <param name="assembly">The assembly to use for type lookups.</param>
@@ -66,7 +104,7 @@ namespace SolScript.Utility
                 annotations[i] = new SolAnnotationDefinition(data[i].Location, annotationDefinition, data[i].Arguments);
             }
             return annotations;
-        }
+        }*/
 
         /// <summary>
         ///     Checks if a <see cref="SolValue" /> is <see cref="SolNil" /> or null.
@@ -149,7 +187,7 @@ namespace SolScript.Utility
         /// <param name="location">The location in code.</param>
         /// <returns>The exception, ready to be thrown.</returns>
         /// <remarks>This method does NOT THROW the exception, only create the exception object.</remarks>
-        internal static SolVariableException CreateVariableGetException(string name, VariableState state, Exception exception, SolSourceLocation location)
+        internal static SolVariableException CreateVariableGetException(string name, VariableState state, Exception exception, SourceLocation location)
         {
             switch (state) {
                 case VariableState.Success:
@@ -181,7 +219,7 @@ namespace SolScript.Utility
         /// <param name="location">The location in code.</param>
         /// <returns>The exception, ready to be thrown.</returns>
         /// <remarks>This method does NOT THROW the exception, only create the exception object.</remarks>
-        internal static SolVariableException CreateVariableSetException(string name, VariableState state, Exception exception, SolSourceLocation location)
+        internal static SolVariableException CreateVariableSetException(string name, VariableState state, Exception exception, SourceLocation location)
         {
             switch (state) {
                 case VariableState.Success:
@@ -212,20 +250,116 @@ namespace SolScript.Utility
             }
             return array;
         }
-        
-        [CanBeNull]
-        internal static ParseTreeNode FindChildByName(this ParseTreeNodeList @this, string name)
+
+/*
+        private class LayeredRecursionWorker
         {
-            return @this.Find(p => p.Term.Name == name);
+            private readonly IEnumerable<ParseTreeNode> m_Nodes;
+            private readonly bool m_Backwards;
+
+            public LayeredRecursionWorker(IEnumerable<ParseTreeNode> nodes, bool backwards = false)
+            {
+                m_Nodes = nodes;
+                m_Backwards = backwards;
+            }
+
+            public ParseTreeNode Query(Predicate<ParseTreeNode> predicate)
+            {
+                foreach (ParseTreeNode node in m_Nodes)
+                {
+                    if (predicate(node)) {
+                        return node;
+                    }
+                }
+                var worked = Work(m_Nodes);
+
+            }
+            
+            private IEnumerable<ParseTreeNode> Work(IList<ParseTreeNode> list)
+            {
+                foreach (ParseTreeNode parseTreeNode in m_Backwards ? list.Reverse() : list) {
+                    if (m_Backwards) {
+                        var childrenArray = parseTreeNode.ChildNodes.ToArray();
+                        for (int i = childrenArray.Length - 1; i >= 0; i--) {
+                            yield return childrenArray[i];
+                        }
+                    } else {
+                        foreach (ParseTreeNode childNode in parseTreeNode.ChildNodes) {
+                            yield return childNode;
+                        }
+                    }
+                }
+            }
+        }
+        */
+
+        [CanBeNull]
+        internal static ParseTreeNode FindChildByName(this ParseTreeNodeList @this, string name, NodeRecursionMode recursive = NodeRecursionMode.Layer, int maxDepth = -1)
+        {
+            if (maxDepth == 0) {
+                return null;
+            }
+            switch (recursive) {
+                case NodeRecursionMode.None: {
+                    return @this.Find(p => p.Term.Name == name);
+                }
+                case NodeRecursionMode.Layer: {
+                    ParseTreeNode found;
+                    if ((found = @this.Find(p => p.Term.Name == name)) != null) {
+                        return found;
+                    }
+                    var worker = new PSUtility.Enumerables.List<ParseTreeNode>(@this);
+                    foreach (ParseTreeNode child in @this) {
+                        ParseTreeNodeList childList = child.ChildNodes;
+                        if (childList == null || childList.Count == 0) {
+                            continue;
+                        }
+                        found = FindChildByName(child.ChildNodes, name, NodeRecursionMode.Layer, maxDepth - 1);
+                        if (found != null) {
+                            return found;
+                        }
+                    }
+                    return null;
+                }
+                case NodeRecursionMode.Direct: {
+                    foreach (ParseTreeNode child in @this) {
+                        ParseTreeNode found = FindChildByName(child, name, NodeRecursionMode.Direct, true, maxDepth - 1);
+                        if (found != null) {
+                            return found;
+                        }
+                    }
+                    return null;
+                }
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(recursive), recursive, null);
+            }
         }
 
-        [NotNull]
-        [DebuggerStepThrough]
-        internal static T NotNull<T>([CanBeNull] this T @this, string message = "Unexpected null value!")
+        internal static string Name(this ParseTreeNode @this)
         {
-            if (@this == null) {
-                throw new NullReferenceException(message);
+            return @this.Term.Name;
+        }
+
+        [CanBeNull]
+        internal static ParseTreeNode FindChildByName(this ParseTreeNode @this, string name, NodeRecursionMode recursive = NodeRecursionMode.Layer, bool allowSelf = true, int maxDepth = -1)
+        {
+            if (maxDepth == 0) {
+                return null;
             }
+            if (allowSelf && @this.Term.Name == name) {
+                return @this;
+            }
+            return FindChildByName(@this.ChildNodes, name, recursive, maxDepth);
+        }
+
+        [NotNull, DebuggerStepThrough]
+        internal static T NotNull<T>([CanBeNull] this T @this)
+        {
+#if DEBUG
+            if (@this == null) {
+                throw new NullReferenceException("Unexpected null value!");
+            }
+#endif
             return @this;
         }
 
@@ -335,103 +469,63 @@ namespace SolScript.Utility
             return nativeObject;
         }
 
-        /// <summary>
+        /*/// <summary>
         ///     Creates the given annotations.
         /// </summary>
         /// <param name="context">The context to use for calling their constructors.</param>
         /// <param name="variables">The variables to evaluate their constructor expressions in.</param>
         /// <param name="definitions">The annotation definitions.</param>
         /// <param name="provider">
-        ///     (Optional) If the annotations are on a native object pass it here. This is required if an
-        ///     annotation definition is an attribute, since attributes cannot be obtained without native instance.
+        ///     (Optional) If the annotations are on a native object pass it here. This allows us to use the type bound attribute instance instead of creating a new instance. 
         /// </param>
         /// <returns>The annotation instances.</returns>
         /// <exception cref="SolTypeRegistryException">An error occured while creating the instance.</exception>
-        public static SolClass[] CreateAnnotations(SolExecutionContext context, IVariables variables, IReadOnlyList<SolAnnotationDefinition> definitions, ICustomAttributeProvider provider)
+        public static SolClass[] CreateAnnotations(SolExecutionContext context, IVariables variables, 
+            IReadOnlyList<SolAnnotationDefinition> definitions, ICustomAttributeProvider provider)
         {
             var annotations = new SolClass[definitions.Count];
             for (int i = 0; i < annotations.Length; i++) {
                 SolAnnotationDefinition annotation = definitions[i];
-                var annotationArgs = new SolValue[annotation.Arguments.Length];
+                var annotationArgs = new SolValue[annotation.Arguments.Count];
                 for (int j = 0; j < annotationArgs.Length; j++) {
                     annotationArgs[j] = annotation.Arguments[j].Evaluate(context, variables);
                 }
                 SolClass annotationInstance;
-                if (provider != null && (annotation.Definition.NativeType?.IsSubclassOf(typeof(Attribute)) ?? false)) {
+                DynamicReference describedRef = null;
+                DynamicReference descriptorRef = null;
+                if (provider != null)
+                {
+                    // If we are subclassing attribute 
+                    if (annotation.Definition.DescriptorType.IsSubclassOf(typeof(Attribute)))
+                    {
+                        descriptorRef = new StaticAttributeRef(provider, annotation.Definition.DescriptorType);
+                    }
+                    if (annotation.Definition.DescribedType == annotation.Definition.DescriptorType) {
+                        describedRef = descriptorRef;
+                    }
+                    else if (annotation.Definition.DescribedType.IsSubclassOf(typeof(Attribute)))
+                    {
+                        descriptorRef = new StaticAttributeRef(provider, annotation.Definition.DescribedType);
+                    }
+                }
+                if (provider != null && (annotation.Definition.DescriptorType?.IsSubclassOf(typeof(Attribute)) ?? false)) {
                     // We cannot create the instance of new native attributes(or should not). Thus we need some special handling for them.
                     // By default the static attribute is used. The instance is typically then overridden by annotation creation methods.
-                    annotationInstance = annotation.Definition.Assembly.New(annotation.Definition, AnnotationClassCreationOptionsNoCtor, annotationArgs);
-                    DynamicReference attributeReference = new StaticAttributeRef(provider, annotation.Definition.NativeType);
+                    annotationInstance = annotation.Assembly.New(annotation.Definition, AnnotationClassCreationOptionsNoCtor, annotationArgs);
+                    DynamicReference attributeReference = new StaticAttributeRef(provider, annotation.Definition.DescriptorType);
                     SolClass.Inheritance inheritance = annotationInstance.InheritanceChain;
                     while (inheritance != null) {
                         inheritance.NativeReference = attributeReference;
                         inheritance = inheritance.BaseInheritance;
                     }
                 } else {
-                    annotationInstance = annotation.Definition.Assembly.New(annotation.Definition, AnnotationClassCreationOptions, annotationArgs);
+                    annotationInstance = annotation.Assembly.New(annotation.Definition, AnnotationClassCreationOptions, annotationArgs);
                 }
                 annotations[i] = annotationInstance;
             }
             return annotations;
-        }
+        }*/
 
-        /// <summary>
-        ///     Gets a static attribute from a type.
-        /// </summary>
-        private class StaticAttributeRef : DynamicReference
-        {
-            /// <summary>
-            ///     Creates a new <see cref="StaticAttributeRef" /> instance.
-            /// </summary>
-            /// <param name="holder">The attribute holder.</param>
-            /// <param name="attribute">The attribute type.</param>
-            public StaticAttributeRef(ICustomAttributeProvider holder, Type attribute)
-            {
-                m_Holder = holder;
-                m_Attribute = attribute;
-            }
-
-            // The attribute type.
-            private readonly Type m_Attribute;
-            // The attribute holder.
-            private readonly ICustomAttributeProvider m_Holder;
-
-            #region Overrides
-
-            /// <inheritdoc />
-            public override object GetReference(out GetState refState)
-            {
-                object[] objs;
-                try {
-                    objs = m_Holder.GetCustomAttributes(m_Attribute, true);
-                } catch (TypeLoadException) {
-                    refState = GetState.NotRetrieved;
-                    return null;
-                } catch (InvalidOperationException) {
-                    refState = GetState.NotRetrieved;
-                    return null;
-                } catch (AmbiguousMatchException) {
-                    refState = GetState.NotRetrieved;
-                    return null;
-                }
-                if (objs.Length == 0) {
-                    refState = GetState.NotRetrieved;
-                    return null;
-                }
-                refState = GetState.Retrieved;
-                return objs[0];
-            }
-
-            /// <inheritdoc />
-            public override void SetReference(object value, out SetState refState)
-            {
-                // Cannot assign.
-                refState = SetState.NotAssigned;
-            }
-
-            #endregion
-        }
-        
 
         /// <summary>
         ///     Creates an instance of the given object using <see cref="Activator.CreateInstance(Type, object[])" />.
@@ -604,62 +698,6 @@ namespace SolScript.Utility
             return number;
         }
 
-        /// <inheritdoc cref="MemberInfo.GetCustomAttributes(Type, bool)" />
-        /// <exception cref="TypeLoadException">A custom attribute type cannot be loaded. </exception>
-        /// <exception cref="InvalidOperationException">
-        ///     This member belongs to a type that is loaded into the reflection-only
-        ///     context. See How to: Load Assemblies into the Reflection-Only Context.
-        /// </exception>
-        public static T[] GetCustomAttributes<T>(this MemberInfo member, bool inherit = true) where T : Attribute
-        {
-            object[] attr = member.GetCustomAttributes(typeof(T), inherit);
-            if (attr.Length == 0) {
-                return EmptyArray<T>.Value;
-            }
-            return (T[]) attr;
-        }
-
-        /// <inheritdoc cref="ParameterInfo.GetCustomAttributes(Type, bool)" />
-        /// <exception cref="TypeLoadException">A custom attribute type cannot be loaded. </exception>
-        /// <exception cref="ArgumentException">The type must be a type provided by the underlying runtime system.</exception>
-        public static T[] GetCustomAttributes<T>(this ParameterInfo member, bool inherit = true) where T : Attribute
-        {
-            object[] attr = member.GetCustomAttributes(typeof(T), inherit);
-            if (attr.Length == 0) {
-                return EmptyArray<T>.Value;
-            }
-            return (T[]) attr;
-        }
-
-        /// <inheritdoc cref="MemberInfo.GetCustomAttributes(Type, bool)" />
-        /// <exception cref="TypeLoadException">A custom attribute type cannot be loaded. </exception>
-        /// <exception cref="InvalidOperationException">
-        ///     This member belongs to a type that is loaded into the reflection-only
-        ///     context. See How to: Load Assemblies into the Reflection-Only Context.
-        /// </exception>
-        [CanBeNull]
-        public static T GetCustomAttribute<T>(this MemberInfo member, bool inherit = true) where T : Attribute
-        {
-            T[] attr = GetCustomAttributes<T>(member, inherit);
-            if (attr.Length == 0) {
-                return null;
-            }
-            return attr[0];
-        }
-
-        /// <inheritdoc cref="ParameterInfo.GetCustomAttributes(Type, bool)" />
-        /// <exception cref="TypeLoadException">A custom attribute type cannot be loaded. </exception>
-        /// <exception cref="ArgumentException">The type must be a type provided by the underlying runtime system.</exception>
-        [CanBeNull]
-        public static T GetCustomAttribute<T>(this ParameterInfo member, bool inherit = true) where T : Attribute
-        {
-            T[] attr = GetCustomAttributes<T>(member, inherit);
-            if (attr.Length == 0) {
-                return null;
-            }
-            return attr[0];
-        }
-
         /// <summary>
         ///     Gets the type of a member info. This method respects the the contracts of said member info.
         /// </summary>
@@ -700,21 +738,40 @@ namespace SolScript.Utility
             return SolMarshal.GetSolType(assembly, member.DataType);
         }
 
-        internal static void GetParameterBuilders(ParameterInfo[] parameterInfo, out SolParameterBuilder[] builders, out Type[] marshalTypes, out bool allowOptional, out bool sendContext)
+
+        internal static string FullName(this MemberInfo @this)
+        {
+            Type decl = @this.DeclaringType;
+            if (decl == null) {
+                return @this.Name;
+            }
+            return decl.FullName + "." + @this.Name;
+        }
+
+        internal static string FullName(this ParameterInfo @this)
+        {
+            MemberInfo decl = @this.Member;
+            return decl.FullName() + "." + @this.Name;
+        }
+
+        /// <summary>
+        ///     Builds a parameterinfo object from the given parameter info array.
+        /// </summary>
+        /// <param name="assembly">The assembly to use for type lookups.</param>
+        /// <param name="parameterInfo">The parameters.</param>
+        /// <returns>The parameter info.</returns>
+        /// <exception cref="SolMarshallingException">Failed to marshal a parameter type.</exception>
+        internal static SolParameterInfo.Native GetParameterInfo(SolAssembly assembly, ParameterInfo[] parameterInfo)
         {
             if (parameterInfo.Length == 0) {
-                builders = EmptyArray<SolParameterBuilder>.Value;
-                marshalTypes = EmptyArray<Type>.Value;
-                allowOptional = false;
-                sendContext = false;
-                return;
+                return new SolParameterInfo.Native(EmptyArray<SolParameter>.Value, EmptyArray<Type>.Value, false, false);
             }
             // If null     -> false 
             // if not null -> true (+ value = optional array element type)
             Type allowOptionalType = null;
             int offsetStart = 0;
             int offsetEnd = 0;
-            sendContext = false;
+            bool sendContext = false;
             if (parameterInfo[0].ParameterType == typeof(SolExecutionContext)) {
                 sendContext = true;
                 offsetStart++;
@@ -724,25 +781,113 @@ namespace SolScript.Utility
                 allowOptionalType = paramsParameter.ParameterType.GetElementType();
                 offsetEnd++;
             }
-            builders = new SolParameterBuilder[parameterInfo.Length - offsetStart - offsetEnd];
-            marshalTypes = new Type[builders.Length + (allowOptionalType != null ? 1 : 0)];
+            var parameters = new SolParameter[parameterInfo.Length - offsetStart - offsetEnd];
+            var marshalTypes = new Type[parameters.Length + (allowOptionalType != null ? 1 : 0)];
             for (int i = offsetStart; i < parameterInfo.Length - offsetEnd; i++) {
                 // i is the index in the parameter info array.
                 ParameterInfo activeParameter = parameterInfo[i];
                 SolContractAttribute customContract = activeParameter.GetCustomAttribute<SolContractAttribute>();
                 SolLibraryNameAttribute customName = activeParameter.GetCustomAttribute<SolLibraryNameAttribute>();
-                builders[i - offsetStart] = new SolParameterBuilder(
-                    customName?.Name ?? activeParameter.Name,
-                    customContract != null ? SolTypeBuilder.Fixed(customContract.GetSolType()) : SolTypeBuilder.Native(activeParameter.ParameterType)
-                );
+                SolType type;
+                try {
+                    type = customContract?.GetSolType() ?? SolMarshal.GetSolType(assembly, activeParameter.ParameterType);
+                } catch (SolMarshallingException ex) {
+                    throw new SolMarshallingException(Resources.Err_FailedToBuildNativeParameter.ToString(activeParameter.FullName()), ex);
+                }
+                parameters[i - offsetStart] = new SolParameter(customName?.Name ?? activeParameter.Name, type);
                 marshalTypes[i - offsetStart] = activeParameter.ParameterType;
             }
             if (allowOptionalType != null) {
                 marshalTypes[marshalTypes.Length - 1] = allowOptionalType;
             }
-            allowOptional = allowOptionalType != null;
+            bool allowOptional = allowOptionalType != null;
+            return new SolParameterInfo.Native(parameters, marshalTypes, allowOptional, sendContext);
         }
 
+        public static SolClass[] CreateAnnotations(this SolAnnotationDefinition[] definitions, SolExecutionContext context, IVariables variables)
+        {
+            if (definitions.Length == 0)
+            {
+                return EmptyArray<SolClass>.Value;
+            }
+            SolClass[] classes = new SolClass[definitions.Length];
+            for (int i = 0; i < definitions.Length; i++)
+            {
+                var def = definitions[i];
+                classes[i] = def.Definition.Assembly.New(def.Definition, ClassCreationOptions.Enforce(), def.Arguments.Evaluate(context, variables));
+            }
+            return classes;
+        }
+
+        public static SolClass[] CreateAnnotations(this IList<SolAnnotationDefinition> definitions, SolExecutionContext context, IVariables variables)
+        {
+            if (definitions.Count == 0)
+            {
+                return EmptyArray<SolClass>.Value;
+            }
+            SolClass[] classes = new SolClass[definitions.Count];
+            for (int i = 0; i < definitions.Count; i++)
+            {
+                var def = definitions[i];
+                classes[i] = def.Definition.Assembly.New(def.Definition, ClassCreationOptions.Enforce(), def.Arguments.Evaluate(context, variables));
+            }
+            return classes;
+        }
+
+        public static SolClass[] CreateAnnotations(this IReadOnlyList<SolAnnotationDefinition> definitions, SolExecutionContext context, IVariables variables)
+        {
+            if (definitions.Count == 0)
+            {
+                return EmptyArray<SolClass>.Value;
+            }
+            SolClass[] classes = new SolClass[definitions.Count];
+            for (int i = 0; i < definitions.Count; i++)
+            {
+                var def = definitions[i];
+                classes[i] = def.Definition.Assembly.New(def.Definition, ClassCreationOptions.Enforce(), def.Arguments.Evaluate(context, variables));
+            }
+            return classes;
+        }
+
+        /// <summary>
+        ///     Evaluates an array of expressions.
+        /// </summary>
+        /// <param name="expressions">The expression array.</param>
+        /// <param name="context">The execution context.</param>
+        /// <param name="parentVariables">The parent variables.</param>
+        /// <returns>The value array.</returns>
+        public static SolValue[] Evaluate(this SolExpression[] expressions, SolExecutionContext context, IVariables parentVariables)
+        {
+            if (expressions.Length == 0)
+            {
+                return EmptyArray<SolValue>.Value;
+            }
+            var values = new SolValue[expressions.Length];
+            for (int i = 0; i < values.Length; i++)
+            {
+                values[i] = expressions[i].Evaluate(context, parentVariables);
+            }
+            return values;
+        }/// <summary>
+         ///     Evaluates an array of expressions.
+         /// </summary>
+         /// <param name="expressions">The expression array.</param>
+         /// <param name="context">The execution context.</param>
+         /// <param name="parentVariables">The parent variables.</param>
+         /// <returns>The value array.</returns>
+        public static SolValue[] Evaluate(this IList<SolExpression> expressions, SolExecutionContext context, IVariables parentVariables)
+        {
+            if (expressions.Count == 0)
+            {
+                return EmptyArray<SolValue>.Value;
+            }
+            var values = new SolValue[expressions.Count];
+            for (int i = 0; i < values.Length; i++)
+            {
+                values[i] = expressions[i].Evaluate(context, parentVariables);
+            }
+            return values;
+        }
 
         /*/// <summary>
          /// Helper method to obtain the
@@ -802,5 +947,110 @@ namespace SolScript.Utility
              SolParameterInfo.Native infoClass = new SolParameterInfo.Native(solArray, typeArray, allowOptional != null, sendContext);
              return infoClass;
          }*/
+
+        /*#region Nested type: StaticAttributeRef
+
+        /// <summary>
+        ///     Gets a static attribute from a type.
+        /// </summary>
+        private class StaticAttributeRef : DynamicReference
+        {
+            /// <summary>
+            ///     Creates a new <see cref="StaticAttributeRef" /> instance.
+            /// </summary>
+            /// <param name="holder">The attribute holder.</param>
+            /// <param name="attribute">The attribute type.</param>
+            public StaticAttributeRef(ICustomAttributeProvider holder, Type attribute)
+            {
+                m_Holder = holder;
+                m_Attribute = attribute;
+            }
+
+            // The attribute type.
+            private readonly Type m_Attribute;
+            // The attribute holder.
+            private readonly ICustomAttributeProvider m_Holder;
+
+            #region Overrides
+
+            /// <inheritdoc />
+            public override object GetReference(out GetState refState)
+            {
+                object[] objs;
+                try {
+                    objs = m_Holder.GetCustomAttributes(m_Attribute, true);
+                } catch (TypeLoadException) {
+                    refState = GetState.NotRetrieved;
+                    return null;
+                } catch (InvalidOperationException) {
+                    refState = GetState.NotRetrieved;
+                    return null;
+                } catch (AmbiguousMatchException) {
+                    refState = GetState.NotRetrieved;
+                    return null;
+                }
+                if (objs.Length == 0) {
+                    refState = GetState.NotRetrieved;
+                    return null;
+                }
+                refState = GetState.Retrieved;
+                return objs[0];
+            }
+
+            /// <inheritdoc />
+            public override void SetReference(object value, out SetState refState)
+            {
+                // Cannot assign.
+                refState = SetState.NotAssigned;
+            }
+
+            #endregion
+        }
+
+        #endregion*/
+
+
+        /*internal static void GetParameterBuilders(ParameterInfo[] parameterInfo, out SolParameterBuilder[] builders, out Type[] marshalTypes, out bool allowOptional, out bool sendContext)
+        {
+            if (parameterInfo.Length == 0) {
+                builders = EmptyArray<SolParameterBuilder>.Value;
+                marshalTypes = EmptyArray<Type>.Value;
+                allowOptional = false;
+                sendContext = false;
+                return;
+            }
+            // If null     -> false 
+            // if not null -> true (+ value = optional array element type)
+            Type allowOptionalType = null;
+            int offsetStart = 0;
+            int offsetEnd = 0;
+            sendContext = false;
+            if (parameterInfo[0].ParameterType == typeof(SolExecutionContext)) {
+                sendContext = true;
+                offsetStart++;
+            }
+            if (parameterInfo[parameterInfo.Length - 1].GetCustomAttribute<ParamArrayAttribute>() != null) {
+                ParameterInfo paramsParameter = parameterInfo[parameterInfo.Length - 1];
+                allowOptionalType = paramsParameter.ParameterType.GetElementType();
+                offsetEnd++;
+            }
+            builders = new SolParameterBuilder[parameterInfo.Length - offsetStart - offsetEnd];
+            marshalTypes = new Type[builders.Length + (allowOptionalType != null ? 1 : 0)];
+            for (int i = offsetStart; i < parameterInfo.Length - offsetEnd; i++) {
+                // i is the index in the parameter info array.
+                ParameterInfo activeParameter = parameterInfo[i];
+                SolContractAttribute customContract = activeParameter.GetCustomAttribute<SolContractAttribute>();
+                SolLibraryNameAttribute customName = activeParameter.GetCustomAttribute<SolLibraryNameAttribute>();
+                builders[i - offsetStart] = new SolParameterBuilder(
+                    customName?.Name ?? activeParameter.Name,
+                    customContract != null ? SolTypeBuilder.Fixed(customContract.GetSolType()) : SolTypeBuilder.Native(activeParameter.ParameterType)
+                );
+                marshalTypes[i - offsetStart] = activeParameter.ParameterType;
+            }
+            if (allowOptionalType != null) {
+                marshalTypes[marshalTypes.Length - 1] = allowOptionalType;
+            }
+            allowOptional = allowOptionalType != null;
+        }*/
     }
 }

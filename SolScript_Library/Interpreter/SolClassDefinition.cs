@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Irony.Parsing;
 using JetBrains.Annotations;
 using PSUtility.Enumerables;
 using SolScript.Compiler;
-using SolScript.Interpreter.Builders;
 using SolScript.Interpreter.Exceptions;
+using SolScript.Interpreter.Library;
 using SolScript.Interpreter.Types;
 using SolScript.Utility;
 
@@ -18,48 +19,56 @@ namespace SolScript.Interpreter
     /// </summary>
     public sealed class SolClassDefinition : SolAnnotateableDefinitionBase
     {
-        // No 3rd party implementations.
-        internal SolClassDefinition(SolAssembly assembly, SolSourceLocation location, string type, SolTypeMode typeMode) : base(assembly, location)
+        /// <inheritdoc />
+        public SolClassDefinition(SolAssembly assembly, SourceLocation location) : base(assembly, location) {}
+
+        /// <summary>
+        ///     Used by the parser. Class definitions are NOT created by using this constructor. Class definitions can be created
+        ///     by: <br />
+        ///     a.) Defining the classes in script.<br />
+        ///     b.) Marking a native class with [<see cref="SolTypeDescriptorAttribute" />]. See documentation about library
+        ///     classes for more info.
+        /// </summary>
+        //[Obsolete(InternalHelper.O_PARSER_MSG, InternalHelper.O_PARSER_ERR)]
+        internal SolClassDefinition()
         {
-            Type = type;
-            TypeMode = typeMode;
+            m_AnnotationReadonly = ReadOnlyList<SolAnnotationDefinition>.FromDelegate(() => DeclaredAnnotationsList);
         }
 
-        /// <summary>
-        ///     The type name of this class definition.
-        /// </summary>
-        public readonly string Type;
+        private readonly IReadOnlyList<SolAnnotationDefinition> m_AnnotationReadonly;
 
         /// <summary>
-        ///     The type mode of this class definition.
+        ///     The reference to the base class used.
         /// </summary>
-        public readonly SolTypeMode TypeMode;
-
-        /// <summary>
-        ///     The native type represented by this class definition.
-        /// </summary>
-        public Type NativeType;
+        internal SolClassDefinitionReference BaseClassReference;
 
         /// <summary>
         ///     Raw access to the annotations of this class.
         /// </summary>
-        [CanBeNull] internal Array<SolAnnotationDefinition> AnnotationsArray;
+        [CanBeNull]
+        private readonly IList<SolAnnotationDefinition> DeclaredAnnotationsList = new System.Collections.Generic.List<SolAnnotationDefinition>();
+
+        /*/// <summary>
+        ///     Raw access to all members of this class.
+        /// </summary>
+        /// <remarks>
+        ///     Warning: Make sure to only include <see cref="SolFieldDefinition" /> and <see cref="SolFunctionDefinition" />.
+        ///     Other members can lead to strange behaviour.
+        /// </remarks>
+        internal IList<SolDefinitionBase> DeclaredMembersList;*/
 
         // The fields of this definition.
         private readonly PSUtility.Enumerables.Dictionary<string, SolFieldDefinition> m_Fields = new PSUtility.Enumerables.Dictionary<string, SolFieldDefinition>();
         // The functions of this definition.
         private readonly PSUtility.Enumerables.Dictionary<string, SolFunctionDefinition> m_Functions = new PSUtility.Enumerables.Dictionary<string, SolFunctionDefinition>();
 
-        // Backing field for base class.
-        private SolClassDefinition l_base_class;
-
         // Lazily generated meta functions.
-        private PSUtility.Enumerables.Dictionary<SolMetaKey, MetaFunctionLink> l_meta_functions;
+        private PSUtility.Enumerables.Dictionary<SolMetaFunction, MetaFunctionLink> l_meta_functions;
 
         /// <summary>
         ///     All meta functions on this class. This includes meta functions declared at all inheritance levels.
         /// </summary>
-        public IReadOnlyDictionary<SolMetaKey, MetaFunctionLink> AllMetaFunctions {
+        public IReadOnlyDictionary<SolMetaFunction, MetaFunctionLink> AllMetaFunctions {
             get {
                 if (!DidBuildMetaFunctions) {
                     BuildMetaFunctions();
@@ -68,24 +77,40 @@ namespace SolScript.Interpreter
             }
         }
 
+        /// <summary>
+        ///     The base class of this class definition.
+        /// </summary>
+        /// <remarks>Requires <see cref="SolAssembly.AssemblyState.GeneratedClassBodies" /> state.</remarks>
+        public SolClassDefinition BaseClass {
+            get {
+                //Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher,
+                //    "The base class can only be obtained after then class bodies have been generated.");
+                SolClassDefinition baseClass;
+                if (!BaseClassReference.TryGetDefinition(out baseClass)) {
+                    throw new InvalidOperationException("The base class {0} of class {1} could not be resolved.".ToString(BaseClassReference.ClassName, Type));
+                }
+                return baseClass;
+            }
+        }
+
         /// <inheritdoc />
         public override IReadOnlyList<SolAnnotationDefinition> DeclaredAnnotations {
             get {
-                Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher, "Annotations can only be accessed once the class body has been generated.");
-                return AnnotationsArray;
+                //Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher, "Annotations can only be accessed once the class body has been generated.");
+                return m_AnnotationReadonly;
             }
         }
 
         /// <summary>
         ///     The meta functions only declared in this class definition.
         /// </summary>
-        public IReadOnlyDictionary<SolMetaKey, MetaFunctionLink> DeclaredMetaFunctions {
+        public IReadOnlyDictionary<SolMetaFunction, MetaFunctionLink> DeclaredMetaFunctions {
             get {
                 if (!DidBuildMetaFunctions) {
                     BuildMetaFunctions();
                 }
-                var dic = new PSUtility.Enumerables.Dictionary<SolMetaKey, MetaFunctionLink>();
-                foreach (KeyValuePair<SolMetaKey, MetaFunctionLink> m in l_meta_functions.Where(p => p.Value.Definition.DefinedIn == this)) {
+                var dic = new PSUtility.Enumerables.Dictionary<SolMetaFunction, MetaFunctionLink>();
+                foreach (KeyValuePair<SolMetaFunction, MetaFunctionLink> m in l_meta_functions.Where(p => p.Value.Definition.DefinedIn == this)) {
                     dic.Add(m.Key, m.Value);
                 }
                 return dic;
@@ -99,7 +124,7 @@ namespace SolScript.Interpreter
         /// </summary>
         public IReadOnlyDictionary<string, SolFieldDefinition> FieldLookup {
             get {
-                Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher, "Fields can only be accessed once the class body has been generated.");
+                //Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher, "Fields can only be accessed once the class body has been generated.");
                 return m_Fields;
             }
         }
@@ -109,7 +134,7 @@ namespace SolScript.Interpreter
         /// </summary>
         public IReadOnlyCollection<SolFieldDefinition> Fields {
             get {
-                Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher, "Fields can only be accessed once the class body has been generated.");
+                //Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher, "Fields can only be accessed once the class body has been generated.");
                 return m_Fields.Values;
             }
         }
@@ -121,7 +146,7 @@ namespace SolScript.Interpreter
         /// </summary>
         public IReadOnlyDictionary<string, SolFunctionDefinition> FunctionLookup {
             get {
-                Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher, "Functions can only be accessed once the class body has been generated.");
+                //Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher, "Functions can only be accessed once the class body has been generated.");
                 return m_Functions;
             }
         }
@@ -131,23 +156,30 @@ namespace SolScript.Interpreter
         /// </summary>
         public IReadOnlyCollection<SolFunctionDefinition> Functions {
             get {
-                Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher, "Functions can only be accessed once the class body has been generated.");
+                //Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher, "Functions can only be accessed once the class body has been generated.");
                 return m_Functions.Values;
             }
         }
 
         /// <summary>
-        ///     The base class of this class definition.
+        ///     The native type represented by this class definition.
         /// </summary>
-        /// <remarks>Requires <see cref="SolAssembly.AssemblyState.GeneratedClassBodies" /> state.</remarks>
-        public SolClassDefinition BaseClass {
-            get {
-                Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher,
-                    "The base class can only be obtained after then class bodies have been generated.");
-                return l_base_class;
-            }
-            set { l_base_class = value; }
-        }
+        public Type DescribedType { get; internal set; }
+
+        /// <summary>
+        ///     The native type objects actually are.
+        /// </summary>
+        public Type DescriptorType { get; internal set; }
+
+        /// <summary>
+        ///     The type name of this class definition.
+        /// </summary>
+        public string Type { get; [UsedImplicitly] internal set; }
+
+        /// <summary>
+        ///     The type mode of this class definition.
+        /// </summary>
+        public SolTypeMode TypeMode { get; [UsedImplicitly] internal set; }
 
         // Are the meta functions generated yet? This allows us to access meta functions.
         // Meta functions are generated if you try to access them while they not created.
@@ -158,7 +190,7 @@ namespace SolScript.Interpreter
         /// <inheritdoc />
         public override string ToString()
         {
-            return $"SolClassDefinition(Type={Type}, Fields={m_Fields.Count}, Functions={m_Functions.Count})";
+            return $"SolClassDefinition(Type={Type}, Fields={m_Fields?.Count}, Functions={m_Functions?.Count})";
         }
 
         #endregion
@@ -171,8 +203,8 @@ namespace SolScript.Interpreter
         /// <remarks>Requires <see cref="SolAssembly.AssemblyState.GeneratedClassBodies" /> state.</remarks>
         public Stack<SolClassDefinition> GetInheritanceReversed()
         {
-            Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher,
-                "The inheritance chain can only be obtained after the class bodies have been generated.");
+            //Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher,
+            //    "The inheritance chain can only be obtained after the class bodies have been generated.");
             var stack = new Stack<SolClassDefinition>();
             SolClassDefinition definition = this;
             while (definition != null) {
@@ -187,26 +219,26 @@ namespace SolScript.Interpreter
         /// <remarks>Requires <see cref="SolAssembly.AssemblyState.GeneratedClassBodies" /> or higher state.</remarks>
         private void BuildMetaFunctions()
         {
-            Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher,
-                "Class meta functions can only be built once the class bodies have been generated.");
-            l_meta_functions = new PSUtility.Enumerables.Dictionary<SolMetaKey, MetaFunctionLink>();
-            FindAndRegisterMetaFunction(SolMetaKey.__new);
-            FindAndRegisterMetaFunction(SolMetaKey.__to_string);
-            FindAndRegisterMetaFunction(SolMetaKey.__getn);
-            FindAndRegisterMetaFunction(SolMetaKey.__is_equal);
-            FindAndRegisterMetaFunction(SolMetaKey.__iterate);
-            FindAndRegisterMetaFunction(SolMetaKey.__mod);
-            FindAndRegisterMetaFunction(SolMetaKey.__exp);
-            FindAndRegisterMetaFunction(SolMetaKey.__div);
-            FindAndRegisterMetaFunction(SolMetaKey.__add);
-            FindAndRegisterMetaFunction(SolMetaKey.__sub);
-            FindAndRegisterMetaFunction(SolMetaKey.__mul);
-            FindAndRegisterMetaFunction(SolMetaKey.__concat);
+            //Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher,
+            //    "Class meta functions can only be built once the class bodies have been generated.");
+            l_meta_functions = new PSUtility.Enumerables.Dictionary<SolMetaFunction, MetaFunctionLink>();
+            FindAndRegisterMetaFunction(SolMetaFunction.__new);
+            FindAndRegisterMetaFunction(SolMetaFunction.__to_string);
+            FindAndRegisterMetaFunction(SolMetaFunction.__getn);
+            FindAndRegisterMetaFunction(SolMetaFunction.__is_equal);
+            FindAndRegisterMetaFunction(SolMetaFunction.__iterate);
+            FindAndRegisterMetaFunction(SolMetaFunction.__mod);
+            FindAndRegisterMetaFunction(SolMetaFunction.__exp);
+            FindAndRegisterMetaFunction(SolMetaFunction.__div);
+            FindAndRegisterMetaFunction(SolMetaFunction.__add);
+            FindAndRegisterMetaFunction(SolMetaFunction.__sub);
+            FindAndRegisterMetaFunction(SolMetaFunction.__mul);
+            FindAndRegisterMetaFunction(SolMetaFunction.__concat);
             if (TypeMode == SolTypeMode.Annotation) {
-                FindAndRegisterMetaFunction(SolMetaKey.__a_pre_new);
-                FindAndRegisterMetaFunction(SolMetaKey.__a_post_new);
-                FindAndRegisterMetaFunction(SolMetaKey.__a_get_variable);
-                FindAndRegisterMetaFunction(SolMetaKey.__a_set_variable);
+                FindAndRegisterMetaFunction(SolMetaFunction.__a_pre_new);
+                FindAndRegisterMetaFunction(SolMetaFunction.__a_post_new);
+                FindAndRegisterMetaFunction(SolMetaFunction.__a_get_variable);
+                FindAndRegisterMetaFunction(SolMetaFunction.__a_set_variable);
             }
         }
 
@@ -222,10 +254,10 @@ namespace SolScript.Interpreter
         /// <exception cref="InvalidOperationException">Invalid state.</exception>
         /// <remarks>Requires <see cref="SolAssembly.AssemblyState.GeneratedClassBodies" /> or higher state.</remarks>
         [ContractAnnotation("link:null => false")]
-        public bool TryGetMetaFunction([NotNull] SolMetaKey meta, [CanBeNull] out MetaFunctionLink link)
+        public bool TryGetMetaFunction([NotNull] SolMetaFunction meta, [CanBeNull] out MetaFunctionLink link)
         {
-            Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher,
-                "Class meta functions can only be obtained once the class bodies have been generated.");
+            //Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher,
+            //    "Class meta functions can only be obtained once the class bodies have been generated.");
             if (!DidBuildMetaFunctions) {
                 BuildMetaFunctions();
             }
@@ -239,7 +271,7 @@ namespace SolScript.Interpreter
         /// <returns>true if said meta function could be found, false if not.</returns>
         /// <remarks>This method does NOT assert state! Type checks, etc. should be performed by the <see cref="SolCompiler" />.</remarks>
         // This method is meant for usage from inside BuildMetaFunctions.
-        private bool FindAndRegisterMetaFunction(SolMetaKey meta)
+        private bool FindAndRegisterMetaFunction(SolMetaFunction meta)
         {
             SolFunctionDefinition definition;
             if (TryGetFunction(meta.Name, false, out definition)) {
@@ -275,7 +307,7 @@ namespace SolScript.Interpreter
         [ContractAnnotation("definedIn:null => false")]
         public bool DoesExtendInHierarchy(string className, [CanBeNull] out SolClassDefinition definedIn)
         {
-            Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher, "Class bodies need to be generated before inheritance can be checked.");
+            //Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher, "Class bodies need to be generated before inheritance can be checked.");
             definedIn = BaseClass;
             while (definedIn != null) {
                 if (definedIn.Type == className) {
@@ -370,7 +402,7 @@ namespace SolScript.Interpreter
         [ContractAnnotation("definition:null => false")]
         public bool TryGetFunction(string name, bool declaredOnly, [CanBeNull] out SolFunctionDefinition definition, Func<SolFunctionDefinition, bool> validator)
         {
-            Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher, "Class bodies need to be generated before class functions can be used.");
+            //Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher, "Class bodies need to be generated before class functions can be used.");
             SolClassDefinition activeClassDefinition = this;
             while (activeClassDefinition != null) {
                 if (activeClassDefinition.m_Functions.TryGetValue(name, out definition) && validator(definition)) {
@@ -424,7 +456,7 @@ namespace SolScript.Interpreter
         [ContractAnnotation("definition:null => false")]
         public bool TryGetField(string name, bool declaredOnly, [CanBeNull] out SolFieldDefinition definition, Func<SolFieldDefinition, bool> validator)
         {
-            Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher, "Class bodies need to be generated before class fields can be used.");
+            //Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher, "Class bodies need to be generated before class fields can be used.");
             SolClassDefinition activeClassDefinition = this;
             while (activeClassDefinition != null) {
                 if (activeClassDefinition.m_Fields.TryGetValue(name, out definition) && validator(definition)) {
@@ -444,20 +476,27 @@ namespace SolScript.Interpreter
         /// <remarks>Only valid in <see cref="SolAssembly.AssemblyState.GeneratedClassHulls" /> or higher state.</remarks>
         internal void AssignFieldDirect(SolFieldDefinition field)
         {
-            Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassHulls, SolAssembly.AssertMatch.Exact, "Class definition fields can only be set during the generation of class bodies.");
+            //Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassHulls, SolAssembly.AssertMatch.Exact, "Class definition fields can only be set during the generation of class bodies.");
             m_Fields[field.Name] = field;
         }
 
         /// <summary>
-        ///     Directs sets a function for this definition.
+        ///     Directs sets a function for this definition. This function will override any existing data and not validate the
+        ///     data of function or class.
         /// </summary>
         /// <param name="function">The function to set.</param>
         /// <exception cref="InvalidOperationException">Invalid state.</exception>
         /// <remarks>Only valid in <see cref="SolAssembly.AssemblyState.GeneratedClassHulls" /> or higher state.</remarks>
         internal void AssignFunctionDirect(SolFunctionDefinition function)
         {
-            Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassHulls, SolAssembly.AssertMatch.Exact, "Class definition functions can only be set during the generation of class bodies.");
+            //Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassHulls, SolAssembly.AssertMatch.Exact, "Class definition functions can only be set during the generation of class bodies.");
             m_Functions[function.Name] = function;
+        }
+
+        /// <inheritdoc />
+        internal override void AddAnnotation(SolAnnotationDefinition annotation)
+        {
+            DeclaredAnnotationsList.Add(annotation);
         }
 
         #region Nested type: MetaFunctionLink
@@ -472,7 +511,7 @@ namespace SolScript.Interpreter
         /// </remarks>
         public class MetaFunctionLink
         {
-            internal MetaFunctionLink(SolMetaKey meta, SolFunctionDefinition definition)
+            internal MetaFunctionLink(SolMetaFunction meta, SolFunctionDefinition definition)
             {
                 Meta = meta;
                 Definition = definition;
@@ -486,7 +525,7 @@ namespace SolScript.Interpreter
             /// <summary>
             ///     The meta key of this meta function.
             /// </summary>
-            public readonly SolMetaKey Meta;
+            public readonly SolMetaFunction Meta;
 
             #region Overrides
 

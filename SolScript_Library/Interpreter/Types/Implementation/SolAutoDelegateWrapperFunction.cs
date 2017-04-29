@@ -1,4 +1,5 @@
 ﻿using System;
+using Irony.Parsing;
 using SolScript.Interpreter.Exceptions;
 
 namespace SolScript.Interpreter.Types.Implementation
@@ -33,7 +34,7 @@ namespace SolScript.Interpreter.Types.Implementation
         public override SolType ReturnType => SolType.AnyNil;
 
         /// <inheritdoc />
-        public override SolSourceLocation Location => SolSourceLocation.Native();
+        public override SourceLocation Location => SolSourceLocation.Native();
 
         #region Overrides
 
@@ -56,7 +57,7 @@ namespace SolScript.Interpreter.Types.Implementation
                 throw new SolRuntimeException(context, "A native exception occured while calling the auto delegate wrapper function.", ex);
             }
             try {
-                return SolMarshal.MarshalFromNative(Assembly, returnValue);
+                return SolMarshal.MarshalFromNative(Assembly, returnValue?.GetType() ?? typeof(object), returnValue);
             } catch (SolMarshallingException ex) {
                 throw new SolRuntimeException(context, "Failed to marshal the return value of an auto delgate back to SolScript.", ex);
             }

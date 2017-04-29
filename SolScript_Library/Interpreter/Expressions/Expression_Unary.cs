@@ -3,19 +3,27 @@ using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter.Expressions {
     public class Expression_Unary : SolExpression {
-        public Expression_Unary(SolAssembly assembly, SolSourceLocation location) : base(assembly, location) {
+        public Expression_Unary() { }
+
+        /// <inheritdoc />
+        public Expression_Unary(OperationRef operation, SolExpression valueGetter) : base()
+        {
+            Operation = operation;
+            ValueGetter = valueGetter;
         }
 
-        public OperationRef Operation;
-        public SolExpression ValueGetter;
+        public OperationRef Operation { get; internal set; }
+        public SolExpression ValueGetter { get; internal set; }
 
         #region Overrides
 
+        /// <inheritdoc />
         public override SolValue Evaluate(SolExecutionContext context, IVariables parentVariables) {
             context.CurrentLocation = Location;
             return Operation.Perform(ValueGetter.Evaluate(context, parentVariables), context);
         }
 
+        /// <inheritdoc />
         protected override string ToString_Impl() {
             return $"{Operation.Name}{ValueGetter}";
         }
@@ -41,7 +49,7 @@ namespace SolScript.Interpreter.Expressions {
         }
 
         #endregion
-
+        /*
         #region Nested type: MinusMinusOperation
 
         public class MinusMinusOperation : OperationRef {
@@ -64,7 +72,7 @@ namespace SolScript.Interpreter.Expressions {
         }
 
         #endregion
-
+        */
         #region Nested type: MinusOperation
 
         public class MinusOperation : OperationRef {
@@ -113,7 +121,7 @@ namespace SolScript.Interpreter.Expressions {
         }
 
         #endregion
-
+        
         #region Nested type: PlusOperation
 
         public class PlusOperation : OperationRef {
@@ -134,7 +142,7 @@ namespace SolScript.Interpreter.Expressions {
         }
 
         #endregion
-
+        /*
         #region Nested type: PlusPlusOperation
 
         public class PlusPlusOperation : OperationRef {
@@ -156,6 +164,6 @@ namespace SolScript.Interpreter.Expressions {
             #endregion
         }
 
-        #endregion
+        #endregion*/
     }
 }

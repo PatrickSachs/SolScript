@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Irony.Parsing;
+using SolScript.Interpreter;
 
 namespace SolScript.Parser.Terminals
 {
@@ -79,7 +80,7 @@ namespace SolScript.Parser.Terminals
                     source.PreviewPosition += match.Index + match.Length;
                     if (context.VsLineScanState.Value != 0) {
                         //We are using line-mode and begin terminal was on previous line.
-                        SourceLocation tokenStart = new SourceLocation {Position = 0};
+                        SourceLocation tokenStart = new SourceLocation(SolSourceLocation.NATIVE_FILE, 0, 0, 0);
                         string lexeme = source.Text.Substring(0, source.PreviewPosition);
                         context.VsLineScanState.Value = 0;
                         return new Token(this, tokenStart, lexeme, lexeme.Substring(grLength + 2, lexeme.Length - (grLength + 2) * 2));

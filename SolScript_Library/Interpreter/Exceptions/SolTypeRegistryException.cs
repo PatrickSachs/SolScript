@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.Serialization;
+using Irony.Parsing;
 
 namespace SolScript.Interpreter.Exceptions
 {
@@ -10,7 +11,7 @@ namespace SolScript.Interpreter.Exceptions
     public class SolTypeRegistryException : SolException
     {
         /// <inheritdoc />
-        public SolTypeRegistryException(SolSourceLocation location, string message) : base(location, message) {}
+        public SolTypeRegistryException(SourceLocation location, string message) : base(location, message) {}
 
         /// <inheritdoc />
         /// <exception cref="SerializationException">
@@ -22,6 +23,6 @@ namespace SolScript.Interpreter.Exceptions
         protected SolTypeRegistryException(SerializationInfo info, StreamingContext context) : base(info, context) {}
 
         /// <inheritdoc />
-        public SolTypeRegistryException(SolSourceLocation location, string message, Exception inner) : base(location, message, inner) {}
+        public SolTypeRegistryException(SourceLocation location, string message, Exception inner) : base(location, message, inner) {}
     }
 }

@@ -1,4 +1,5 @@
 ﻿using System;
+using Irony.Parsing;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
 
@@ -12,7 +13,7 @@ namespace SolScript.Interpreter.Statements
     public class Statement_Self : SolStatement, IWrittenInClass
     {
         /// <inheritdoc />
-        public Statement_Self(SolAssembly assembly, SolSourceLocation location, string writtenInClass) : base(assembly, location)
+        public Statement_Self(SolAssembly assembly, SourceLocation location, string writtenInClass) : base(assembly, location)
         {
             WrittenInClass = writtenInClass;
         }

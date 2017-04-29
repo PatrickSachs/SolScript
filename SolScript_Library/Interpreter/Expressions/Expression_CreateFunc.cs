@@ -17,12 +17,11 @@ namespace SolScript.Interpreter.Expressions
         /// <param name="type">The function return type.</param>
         /// <param name="parameterAllowOptional">Are optional function parameters allowed?</param>
         /// <param name="parameters">The function parameters.</param>
-        public Expression_CreateFunc(SolAssembly assembly, SolSourceLocation location, SolChunk chunk, SolType type, bool parameterAllowOptional, params SolParameter[] parameters)
-            : base(assembly, location)
+        public Expression_CreateFunc(SolChunk chunk, SolType type, SolParameterInfo parameters)
         {
             Chunk = chunk;
             Type = type;
-            Parameters = new SolParameterInfo(parameters, parameterAllowOptional);
+            Parameters = parameters;
         }
 
         /// <summary>

@@ -353,10 +353,10 @@ namespace SolScript.Interpreter
                         try {
                             // Get Variable Annotation Function
                             SolClassDefinition.MetaFunctionLink link;
-                            if (annotation.TryGetMetaFunction(SolMetaKey.__a_set_variable, out link)) {
+                            if (annotation.TryGetMetaFunction(SolMetaFunction.__a_set_variable, out link)) {
                                 SolTable table;
                                 try {
-                                    table = SolMetaKey.__a_set_variable.Cast(link.GetFunction(annotation).Call(context, value, rawValue)).NotNull();
+                                    table = SolMetaFunction.__a_set_variable.Cast(link.GetFunction(annotation).Call(context, value, rawValue)).NotNull();
                                 } catch (SolRuntimeException ex) {
                                     return new VarOperation(null, VariableState.FailedRuntimeError, ex);
                                 }
@@ -395,10 +395,10 @@ namespace SolScript.Interpreter
                         // Get Variable Annotation Function
                         try {
                             SolClassDefinition.MetaFunctionLink link;
-                            if (annotation.TryGetMetaFunction(SolMetaKey.__a_get_variable, out link)) {
+                            if (annotation.TryGetMetaFunction(SolMetaFunction.__a_get_variable, out link)) {
                                 SolTable table;
                                 try {
-                                    table = SolMetaKey.__a_get_variable.Cast(link.GetFunction(annotation).Call(context, value, result.Value)).NotNull();
+                                    table = SolMetaFunction.__a_get_variable.Cast(link.GetFunction(annotation).Call(context, value, result.Value)).NotNull();
                                 } catch (SolRuntimeException ex) {
                                     return new VarOperation(null, VariableState.FailedRuntimeError, ex);
                                 }
@@ -453,9 +453,8 @@ namespace SolScript.Interpreter
             /// <inheritdoc />
             protected override VarOperation TryGetValue_Impl()
             {
-                DynamicReference.GetState referenceState;
-                object reference = m_Reference.GetReference(out referenceState);
-                if (referenceState != DynamicReference.GetState.Retrieved) {
+                object reference;
+                if (!m_Reference.TryGet(out reference)) {
                     return new VarOperation(null, VariableState.FailedCouldNotResolveNativeReference, null);
                 }
                 object nativeValue;
@@ -488,9 +487,8 @@ namespace SolScript.Interpreter
             /// <inheritdoc />
             protected override VarOperation TryAssignValue_Impl(SolValue value)
             {
-                DynamicReference.GetState referenceState;
-                object reference = m_Reference.GetReference(out referenceState);
-                if (referenceState != DynamicReference.GetState.Retrieved) {
+                object reference;
+                if (m_Reference.TryGet(out reference)) {
                     return new VarOperation(null, VariableState.FailedCouldNotResolveNativeReference, null);
                 }
                 object nativeValue;

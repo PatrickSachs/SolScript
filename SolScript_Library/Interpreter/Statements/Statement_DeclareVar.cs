@@ -1,4 +1,5 @@
-﻿using JetBrains.Annotations;
+﻿using Irony.Parsing;
+using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Types;
@@ -19,7 +20,7 @@ namespace SolScript.Interpreter.Statements
         /// <param name="name">The variable name.</param>
         /// <param name="type">The variable type.</param>
         /// <param name="valueGetter">The optional inital value. (null if none)</param>
-        public Statement_DeclareVar([NotNull] SolAssembly assembly, SolSourceLocation location, string name, SolType type, [CanBeNull] SolExpression valueGetter)
+        public Statement_DeclareVar([NotNull] SolAssembly assembly, SourceLocation location, string name, SolType type, [CanBeNull] SolExpression valueGetter)
             : base(assembly, location)
         {
             Name = name;

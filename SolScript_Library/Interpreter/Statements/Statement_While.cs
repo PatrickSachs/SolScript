@@ -6,7 +6,7 @@ using SolScript.Utility;
 
 namespace SolScript.Interpreter.Statements {
     public class Statement_While : SolStatement {
-        public Statement_While([NotNull] SolAssembly assembly, SolSourceLocation location, SolExpression condition, SolChunk chunk) : base(assembly, location) {
+        public Statement_While([NotNull] SolAssembly assembly, SourceLocation location, SolExpression condition, SolChunk chunk) : base(assembly, location) {
             Chunk = chunk;
             Condition = condition;
         }

@@ -39,8 +39,8 @@ namespace SolScript.Compiler
             var fieldNames = new PSUtility.Enumerables.Dictionary<string, SolFieldDefinition>();
             while (inheritanceChain.Count != 0) {
                 SolClassDefinition current = inheritanceChain.Pop();
-                var thisFuncNames = new HashSet<string>();
-                var thisFieldNames = new HashSet<string>();
+                var thisFuncNames = new PSUtility.Enumerables.HashSet<string>();
+                var thisFieldNames = new PSUtility.Enumerables.HashSet<string>();
                 foreach (SolFunctionDefinition function in current.Functions) {
                     ValidateFunction(function);
                     // Every function name may only exist once for each inheritance level.
@@ -119,9 +119,9 @@ namespace SolScript.Compiler
         /// <exception cref="SolCompilerException">Invalid meta function.</exception>
         private void ValidateMetaFunctions(SolClassDefinition definition)
         {
-            foreach (KeyValuePair<SolMetaKey, SolClassDefinition.MetaFunctionLink> metaFunction in definition.DeclaredMetaFunctions) {
+            foreach (KeyValuePair<SolMetaFunction, SolClassDefinition.MetaFunctionLink> metaFunction in definition.DeclaredMetaFunctions) {
                 SolFunctionDefinition functionDefinition = metaFunction.Value.Definition;
-                SolMetaKey meta = metaFunction.Key;
+                SolMetaFunction meta = metaFunction.Key;
                 if (functionDefinition.AccessModifier != SolAccessModifier.Internal) {
                     throw new SolCompilerException(functionDefinition.Location, $"The meta function \"{FuncStr(functionDefinition)}\" must be internal.");
                 }
@@ -157,7 +157,7 @@ namespace SolScript.Compiler
             // todo: expand this method to fully validate everything. relocate code from the class check. see summary for more detail.
             if (definition.AccessModifier == SolAccessModifier.Local) {
                 // Local function
-                if (definition.MemberModifier != SolMemberModifier.None) {
+                if (definition.MemberModifier != SolMemberModifier.Default) {
                     throw new SolCompilerException(definition.Location,
                         "The function \"" + FuncStr(definition) + "\" has local access and thus cannot have the " + definition.MemberModifier + " member modifier.");
                 }
@@ -165,7 +165,7 @@ namespace SolScript.Compiler
                 // Internal / Public function
                 if (definition.DefinedIn == null) {
                     // Global functions
-                    if (definition.MemberModifier != SolMemberModifier.None) {
+                    if (definition.MemberModifier != SolMemberModifier.Default) {
                         throw new SolCompilerException(definition.Location,
                             "The function \"" + FuncStr(definition) + "\" is a global function and thus cannot have the " + definition.MemberModifier + " member modifier.");
                     }

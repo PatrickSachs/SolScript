@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Irony.Parsing;
 using JetBrains.Annotations;
 using PSUtility.Enumerables;
 using SolScript.Interpreter.Exceptions;
@@ -20,7 +21,7 @@ namespace SolScript.Interpreter.Statements
         /// <param name="location">The location in source code.</param>
         /// <param name="typeName">The name of the class that should be created.</param>
         /// <param name="arguments">The constructor arguments.</param>
-        public Statement_New([NotNull] SolAssembly assembly, SolSourceLocation location, string typeName, params SolExpression[] arguments) : base(assembly, location)
+        public Statement_New([NotNull] SolAssembly assembly, SourceLocation location, string typeName, params SolExpression[] arguments) : base(assembly, location)
         {
             m_Arguments = new Array<SolExpression>(arguments);
             TypeName = typeName;

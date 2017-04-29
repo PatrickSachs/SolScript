@@ -1,4 +1,4 @@
-﻿using System;
+﻿/*using System;
 using JetBrains.Annotations;
 
 namespace SolScript.Interpreter.Library {
@@ -12,4 +12,4 @@ namespace SolScript.Interpreter.Library {
         public readonly string LibraryName;
         public readonly SolTypeMode Mode;
     }
-}
+}*/

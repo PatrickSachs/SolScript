@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using Irony.Parsing;
 using JetBrains.Annotations;
 using PSUtility.Enumerables;
 using SolScript.Interpreter.Exceptions;
@@ -19,7 +20,7 @@ namespace SolScript.Interpreter.Expressions
         ///     Not the same amount of <paramref name="keys" /> and <paramref name="values" />
         ///     passed.
         /// </exception>
-        public Expression_TableConstructor(SolAssembly assembly, SolSourceLocation location, SolExpression[] keys, SolExpression[] values) : base(assembly, location)
+        public Expression_TableConstructor(SolAssembly assembly, SourceLocation location, SolExpression[] keys, SolExpression[] values) : base(assembly, location)
         {
             if (keys.Length != values.Length) {
                 throw new ArgumentException($"Not the same amount of keys({keys.Length}) and values({values.Length}) has been passed.", nameof(keys));

@@ -33,7 +33,7 @@ namespace SolScript.Interpreter.Types.Marshal
             IEnumerable enumerable = (IEnumerable) value;
             SolTable table = new SolTable();
             foreach (object enumerableValue in enumerable) {
-                table.Append(SolMarshal.MarshalFromNative(assembly, enumerableValue));
+                table.Append(SolMarshal.MarshalFromNative(assembly, enumerableValue?.GetType() ?? typeof(object), enumerableValue));
             }
             return table;
         }

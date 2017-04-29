@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Irony.Parsing;
+using SolScript.Interpreter;
 
 namespace SolScript.Parser.Terminals
 {
@@ -8,7 +9,7 @@ namespace SolScript.Parser.Terminals
     {
         public SolScriptCommentTerminal(string name)
             : base(name, TokenCategory.Comment)
-        { 
+        {
             //assign max priority
             Priority = TerminalPriority.High;
         }
@@ -16,40 +17,40 @@ namespace SolScript.Parser.Terminals
         private const string START_SYMBOL = "//";
 
         #region overrides
+
         public override void Init(GrammarData grammarData)
         {
             base.Init(grammarData);
             SetFlag(TermFlags.IsMultiline);
 
-            if (this.EditorInfo == null)
-            {
-                this.EditorInfo = new TokenEditorInfo(TokenType.Comment, TokenColor.Comment, TokenTriggers.None);
+            if (EditorInfo == null) {
+                EditorInfo = new TokenEditorInfo(TokenType.Comment, TokenColor.Comment, TokenTriggers.None);
             }
         }
-        
+
         public override Token TryMatch(ParsingContext context, ISourceStream source)
         {
             Token result;
-            if (context.VsLineScanState.Value != 0)
-            {
+            if (context.VsLineScanState.Value != 0) {
                 byte commentLevel = context.VsLineScanState.TokenSubType;
                 result = CompleteMatch(context, source, commentLevel);
-            }
-            else
-            {
+            } else {
                 //we are starting from scratch
                 byte commentLevel = 0;
-                if (!BeginMatch(context, source, ref commentLevel))
+                if (!BeginMatch(context, source, ref commentLevel)) {
                     return null;
+                }
 
                 result = CompleteMatch(context, source, commentLevel);
             }
 
-            if (result != null)
+            if (result != null) {
                 return result;
+            }
 
-            if (context.Mode == ParseMode.VsLineScan)
+            if (context.Mode == ParseMode.VsLineScan) {
                 return CreateIncompleteToken(context, source);
+            }
 
             return source.CreateToken(new Terminal("Unclosed comment block"));
         }
@@ -57,9 +58,9 @@ namespace SolScript.Parser.Terminals
         private Token CreateIncompleteToken(ParsingContext context, ISourceStream source)
         {
             source.PreviewPosition = source.Text.Length;
-            Token result = source.CreateToken(this.OutputTerminal);
+            Token result = source.CreateToken(OutputTerminal);
             result.Flags |= TokenFlags.IsIncomplete;
-            context.VsLineScanState.TerminalIndex = this.MultilineIndex;
+            context.VsLineScanState.TerminalIndex = MultilineIndex;
             return result;
         }
 
@@ -80,48 +81,31 @@ namespace SolScript.Parser.Terminals
 
         private Token CompleteMatch(ParsingContext context, ISourceStream source, byte commentLevel)
         {
-            if (commentLevel == 0)
-            {
-                var line_breaks = new char[] { '\n', '\r', '\v' };
-                var firstCharPos = source.Text.IndexOfAny(line_breaks, source.PreviewPosition);
-                if (firstCharPos > 0)
-                {
-                    source.PreviewPosition = firstCharPos;
-                }
-                else
-                {
-                    source.PreviewPosition = source.Text.Length;
-                }
+            if (commentLevel == 0) {
+                var line_breaks = new[] {'\n', '\r', '\v'};
+                int firstCharPos = source.Text.IndexOfAny(line_breaks, source.PreviewPosition);
+                source.PreviewPosition = firstCharPos > 0 ? firstCharPos : source.Text.Length;
 
-                return source.CreateToken(this.OutputTerminal);
+                return source.CreateToken(OutputTerminal);
             }
 
-            while (!source.EOF())
-            {
+            while (!source.EOF()) {
                 string text = source.Text.Substring(source.PreviewPosition);
                 //var matches = Regex.Matches(text, @"\](=*)\]");
-                var matches = Regex.Matches(text, @"\*/");
-                foreach (Match match in matches)
-                {
-                    if (match.Groups[1].Value.Length == (int)commentLevel - 1)
-                    {
+                MatchCollection matches = Regex.Matches(text, @"\*/");
+                foreach (Match match in matches) {
+                    if (match.Groups[1].Value.Length == commentLevel - 1) {
                         source.PreviewPosition += match.Index + match.Length;
 
-                        if (context.VsLineScanState.Value != 0)
-                        {
+                        if (context.VsLineScanState.Value != 0) {
                             //We are using line-mode and begin terminal was on previous line.
-                            SourceLocation tokenStart = new SourceLocation();
-                            tokenStart.Position = 0;
-
+                            SourceLocation tokenStart = new SourceLocation(SolSourceLocation.NATIVE_FILE, 0, 0, 0);
                             string lexeme = source.Text.Substring(0, source.PreviewPosition);
 
                             context.VsLineScanState.Value = 0;
                             return new Token(this, tokenStart, lexeme, null);
                         }
-                        else
-                        {
-                            return source.CreateToken(this.OutputTerminal);
-                        }
+                        return source.CreateToken(OutputTerminal);
                     }
                 }
 
@@ -135,10 +119,9 @@ namespace SolScript.Parser.Terminals
 
         public override IList<string> GetFirsts()
         {
-            return new string[] { START_SYMBOL };
+            return new[] {START_SYMBOL};
         }
+
         #endregion
     }
 }
-
-

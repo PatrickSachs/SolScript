@@ -43,9 +43,8 @@ namespace SolScript.Interpreter.Types.Implementation
         /// <exception cref="InvalidOperationException">A critical internal error occured.</exception>
         protected override SolValue Call_Impl(SolExecutionContext context, params SolValue[] args)
         {
-            DynamicReference.GetState getState;
-            object target = m_Instance.GetReference(out getState);
-            if (getState != DynamicReference.GetState.Retrieved) {
+            object target;
+            if (!m_Instance.TryGet(out target)) {
                 throw new InvalidOperationException($"Failed to retieve native object reference for native lamda function \"{m_Method.Name}\".");
             }
             object[] nativeArgs;
@@ -73,13 +72,8 @@ namespace SolScript.Interpreter.Types.Implementation
         /// <exception cref="SolMarshallingException">No matching SolType for a parameter type.</exception>
         public static SolNativeLamdaFunction CreateFrom([NotNull] SolAssembly assembly, [NotNull] MethodInfo method, [NotNull] DynamicReference instance)
         {
-            SolParameterBuilder[] parameters;
-            Type[] marshalTypes;
-            bool allowOptional;
-            bool sendContext;
-            InternalHelper.GetParameterBuilders(method.GetParameters(), out parameters, out marshalTypes, out allowOptional, out sendContext);
             SolType returnType = InternalHelper.GetMemberReturnType(assembly, method);
-            SolParameterInfo parameterInfo = new SolParameterInfo.Native(parameters.Select(p => p.Get(assembly)).ToArray(), marshalTypes, allowOptional, sendContext);
+            SolParameterInfo parameterInfo = InternalHelper.GetParameterInfo(assembly, method.GetParameters());
             return new SolNativeLamdaFunction(assembly, parameterInfo, returnType, method, instance);
         }
     }

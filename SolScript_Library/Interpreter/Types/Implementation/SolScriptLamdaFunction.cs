@@ -1,4 +1,5 @@
-﻿using JetBrains.Annotations;
+﻿using Irony.Parsing;
+using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
 
 namespace SolScript.Interpreter.Types.Implementation
@@ -20,7 +21,7 @@ namespace SolScript.Interpreter.Types.Implementation
         ///     The parent variables of the function. Set this to a non-null value if the function was
         ///     e.g. declared inside  another function and thus needs to have access to that functions variable scope.
         /// </param>
-        public SolScriptLamdaFunction([NotNull] SolAssembly assembly, SolSourceLocation location, [NotNull] SolParameterInfo parameterInfo,
+        public SolScriptLamdaFunction([NotNull] SolAssembly assembly, SourceLocation location, [NotNull] SolParameterInfo parameterInfo,
             SolType returnType, [NotNull] SolChunk chunk, [CanBeNull] IVariables parentVariables)
             : base(assembly, location, parameterInfo, returnType)
         {

@@ -1,12 +1,20 @@
-﻿using SolScript.Interpreter.Types;
+﻿using Irony.Parsing;
+using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter.Expressions
 {
+    /// <summary>
+    /// Subclassing this expression allows an expression to return terminators. This is used to implement return, break and continue.
+    /// </summary>
+    // todo: remove terminating expressions entirely and make them statements. Not too big of a deal.
     public abstract class TerminatingSolExpression : SolExpression
     {
-        public TerminatingSolExpression(SolAssembly assembly, SolSourceLocation location) : base(assembly, location) {}
-        
-     
+        /// <inheritdoc />
+        protected TerminatingSolExpression(SolAssembly assembly, SourceLocation location) : base(assembly, location) {}
+
+        /// <inheritdoc />
+        protected TerminatingSolExpression() {}
+
         /// <inheritdoc />
         public sealed override SolValue Evaluate(SolExecutionContext context, IVariables parentVariables)
         {

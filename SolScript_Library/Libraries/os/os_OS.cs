@@ -11,7 +11,7 @@ using SolScript.Utility;
 
 namespace SolScript.Libraries.os
 {
-    [SolLibraryClass(os.NAME, SolTypeMode.Singleton)]
+    [SolTypeDescriptor(os.NAME, SolTypeMode.Singleton, typeof(os_OS))]
     [SolLibraryName(TYPE)]
     [PublicAPI]
     public class os_OS

@@ -14,7 +14,7 @@ namespace SolScript.Libraries.std
     /// <summary>
     ///     The <see cref="std_BinaryStream" /> is used to write primitive data in binary form.
     /// </summary>
-    [SolLibraryClass(std.NAME, SolTypeMode.Default)]
+    [SolTypeDescriptor(std.NAME, SolTypeMode.Default, typeof(std_BinaryStream))]
     [SolLibraryName(TYPE)]
     [PublicAPI]
     public class std_BinaryStream : std_Stream

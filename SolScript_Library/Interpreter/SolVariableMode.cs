@@ -7,7 +7,7 @@ namespace SolScript.Interpreter
 
     /// <summary>
     ///     The <see cref="SolVariableMode" /> enum is used to retrieve <see cref="IVariables" /> for a certain variable mode using
-    ///     <see cref="SolClass.GetVariables" />.
+    ///     <see cref="SolClass.GetVariables(SolAccessModifier, SolVariableMode, string)" />.
     /// </summary>
     /// <remarks>Be cautious when using the ordinal values of this enum as if does not follow the typical 0, 1, 2 pattern!</remarks>
     public enum SolVariableMode

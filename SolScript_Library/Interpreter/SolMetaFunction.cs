@@ -6,9 +6,9 @@ using SolScript.Utility;
 namespace SolScript.Interpreter
 {
     /// <summary>
-    ///     The <see cref="SolMetaKey" /> class is used to provide a type-safe way to access meta functions.
+    ///     The <see cref="SolMetaFunction" /> class is used to provide a type-safe way to access meta functions.
     /// </summary>
-    public abstract class SolMetaKey
+    public abstract class SolMetaFunction
     {
         /// <summary>
         ///     Creates a new meta key instance using the given parameters.
@@ -16,7 +16,7 @@ namespace SolScript.Interpreter
         /// <param name="name">The function name.</param>
         /// <param name="type">The function return type.</param>
         /// <param name="parameterData">The parameter types of the meta function. (null if any are allowed)</param>
-        internal SolMetaKey(string name, SolType type, [CanBeNull] ParameterData parameterData)
+        internal SolMetaFunction(string name, SolType type, [CanBeNull] ParameterData parameterData)
         {
             Name = name;
             Type = type;
@@ -52,7 +52,7 @@ namespace SolScript.Interpreter
             if (obj.GetType() != GetType()) {
                 return false;
             }
-            return Equals_Impl((SolMetaKey) obj);
+            return Equals_Impl((SolMetaFunction) obj);
         }
 
         /// <inheritdoc />
@@ -68,14 +68,14 @@ namespace SolScript.Interpreter
         /// <summary>
         ///     Equality comparison implementation. Does not check for null.
         /// </summary>
-        protected virtual bool Equals_Impl(SolMetaKey other)
+        protected virtual bool Equals_Impl(SolMetaFunction other)
         {
             return Type.Equals(other.Type) && string.Equals(Name, other.Name);
         }
 
         /// <inheritdoc cref="Equals(object)" />
         [Pure]
-        public bool Equals(SolMetaKey other)
+        public bool Equals(SolMetaFunction other)
         {
             if (ReferenceEquals(null, other)) {
                 return false;
@@ -129,91 +129,91 @@ namespace SolScript.Interpreter
         /// <summary>
         ///     The constructor.
         /// </summary>
-        public static readonly SolMetaKey<SolNil> __new = new SolMetaKey<SolNil>(nameof(__new), true, null);
+        public static readonly SolMetaFunction<SolNil> __new = new SolMetaFunction<SolNil>(nameof(__new), true, null);
 
         /// <summary>
         ///     Converts the class to a string.
         /// </summary>
-        public static readonly SolMetaKey<SolString> __to_string = new SolMetaKey<SolString>(nameof(__to_string), false, ParameterData.Empty);
+        public static readonly SolMetaFunction<SolString> __to_string = new SolMetaFunction<SolString>(nameof(__to_string), false, ParameterData.Empty);
 
         /// <summary>
         ///     Counts the class.
         /// </summary>
-        public static readonly SolMetaKey<SolNumber> __getn = new SolMetaKey<SolNumber>(nameof(__getn), false, ParameterData.Empty);
+        public static readonly SolMetaFunction<SolNumber> __getn = new SolMetaFunction<SolNumber>(nameof(__getn), false, ParameterData.Empty);
 
         /// <summary>
         ///     Checks if a class is equal to something.
         /// </summary>
-        public static readonly SolMetaKey<SolBool> __is_equal = new SolMetaKey<SolBool>(nameof(__is_equal), false, ParameterData.AnyFirstArgument);
+        public static readonly SolMetaFunction<SolBool> __is_equal = new SolMetaFunction<SolBool>(nameof(__is_equal), false, ParameterData.AnyFirstArgument);
 
         /// <summary>
         ///     Iterates the class.
         /// </summary>
-        public static readonly SolMetaKey<SolTable> __iterate = new SolMetaKey<SolTable>(nameof(__iterate), false, ParameterData.Empty);
+        public static readonly SolMetaFunction<SolTable> __iterate = new SolMetaFunction<SolTable>(nameof(__iterate), false, ParameterData.Empty);
 
         /// <summary>
         ///     Gets the modulo of a class and something else.
         /// </summary>
-        public static readonly SolMetaKey<SolNumber> __mod = new SolMetaKey<SolNumber>(nameof(__mod), false, ParameterData.AnyFirstArgument);
+        public static readonly SolMetaFunction<SolNumber> __mod = new SolMetaFunction<SolNumber>(nameof(__mod), false, ParameterData.AnyFirstArgument);
 
         /// <summary>
         ///     Expotentiates a class by something.
         /// </summary>
-        public static readonly SolMetaKey<SolNumber> __exp = new SolMetaKey<SolNumber>(nameof(__exp), false, ParameterData.AnyFirstArgument);
+        public static readonly SolMetaFunction<SolNumber> __exp = new SolMetaFunction<SolNumber>(nameof(__exp), false, ParameterData.AnyFirstArgument);
 
         /// <summary>
         ///     Divides a class by something.
         /// </summary>
-        public static readonly SolMetaKey<SolNumber> __div = new SolMetaKey<SolNumber>(nameof(__div), false, ParameterData.AnyFirstArgument);
+        public static readonly SolMetaFunction<SolNumber> __div = new SolMetaFunction<SolNumber>(nameof(__div), false, ParameterData.AnyFirstArgument);
 
         /// <summary>
         ///     Adds something to a class.
         /// </summary>
-        public static readonly SolMetaKey<SolNumber> __add = new SolMetaKey<SolNumber>(nameof(__add), false, ParameterData.AnyFirstArgument);
+        public static readonly SolMetaFunction<SolNumber> __add = new SolMetaFunction<SolNumber>(nameof(__add), false, ParameterData.AnyFirstArgument);
 
         /// <summary>
         ///     Subtracts something from a class.
         /// </summary>
-        public static readonly SolMetaKey<SolNumber> __sub = new SolMetaKey<SolNumber>(nameof(__sub), false, ParameterData.AnyFirstArgument);
+        public static readonly SolMetaFunction<SolNumber> __sub = new SolMetaFunction<SolNumber>(nameof(__sub), false, ParameterData.AnyFirstArgument);
 
         /// <summary>
         ///     Multiplies a class by something.
         /// </summary>
-        public static readonly SolMetaKey<SolNumber> __mul = new SolMetaKey<SolNumber>(nameof(__mul), false, ParameterData.AnyFirstArgument);
+        public static readonly SolMetaFunction<SolNumber> __mul = new SolMetaFunction<SolNumber>(nameof(__mul), false, ParameterData.AnyFirstArgument);
 
         /// <summary>
         ///     Concatenates something to a class.
         /// </summary>
-        public static readonly SolMetaKey<SolString> __concat = new SolMetaKey<SolString>(nameof(__concat), false, ParameterData.AnyFirstArgument);
+        public static readonly SolMetaFunction<SolString> __concat = new SolMetaFunction<SolString>(nameof(__concat), false, ParameterData.AnyFirstArgument);
 
         /// <summary>
         ///     Called before the constructor.
         /// </summary>
-        public static readonly SolMetaKey<SolTable> __a_pre_new = new SolMetaKey<SolTable>(nameof(__a_pre_new), false, ParameterData.AnyFirstAndSecondArgument);
+        public static readonly SolMetaFunction<SolTable> __a_pre_new = new SolMetaFunction<SolTable>(nameof(__a_pre_new), false, ParameterData.AnyFirstAndSecondArgument);
 
         /// <summary>
         ///     Called after the constructor.
         /// </summary>
-        public static readonly SolMetaKey<SolTable> __a_post_new = new SolMetaKey<SolTable>(nameof(__a_post_new), false, ParameterData.AnyFirstAndSecondArgument);
+        public static readonly SolMetaFunction<SolTable> __a_post_new = new SolMetaFunction<SolTable>(nameof(__a_post_new), false, ParameterData.AnyFirstAndSecondArgument);
 
         /// <summary>
         ///     Called whenever the linked variable/field is received.
         /// </summary>
-        public static readonly SolMetaKey<SolTable> __a_get_variable = new SolMetaKey<SolTable>(nameof(__a_get_variable), false, ParameterData.AnyFirstAndSecondArgument);
+        public static readonly SolMetaFunction<SolTable> __a_get_variable = new SolMetaFunction<SolTable>(nameof(__a_get_variable), false, ParameterData.AnyFirstAndSecondArgument);
 
         /// <summary>
         ///     Called whenever the linked variable/field is set.
         /// </summary>
-        public static readonly SolMetaKey<SolTable> __a_set_variable = new SolMetaKey<SolTable>(nameof(__a_set_variable), false, ParameterData.AnyFirstAndSecondArgument);
+        public static readonly SolMetaFunction<SolTable> __a_set_variable = new SolMetaFunction<SolTable>(nameof(__a_set_variable), false, ParameterData.AnyFirstAndSecondArgument);
 
         // ReSharper restore InconsistentNaming
 
         #endregion
     }
 
-    /// <inheritdoc cref="SolMetaKey" />
+    /// <inheritdoc cref="SolMetaFunction" />
     /// <typeparam name="T">This generic parameter defines the return type of the meta function.</typeparam>
-    public sealed class SolMetaKey<T> : SolMetaKey where T : SolValue
+    public sealed class SolMetaFunction<T> : SolMetaFunction where T : SolValue
     {
         /// <summary>
         ///     Creates a new meta key instance using the given parameters.
@@ -221,14 +221,14 @@ namespace SolScript.Interpreter
         /// <param name="name">The function name.</param>
         /// <param name="canBeNil">Can the function return nil?</param>
         /// <param name="parameterData">The parameter types of the meta function. (null if any are allowed)</param>
-        internal SolMetaKey(string name, bool canBeNil, ParameterData parameterData) : base(name, new SolType(SolValue.PrimitiveTypeNameOf<T>(), canBeNil), parameterData) {}
+        internal SolMetaFunction(string name, bool canBeNil, ParameterData parameterData) : base(name, new SolType(SolType.PrimitiveTypeNameOf<T>(), canBeNil), parameterData) {}
 
         /// <summary>
         ///     Casts the given <see cref="SolValue" /> to the return value type specified in <typeparamref name="T" />.
         /// </summary>
         /// <param name="value">The value to cast.</param>
         /// <returns>The casted value.</returns>
-        /// <remarks>If the <see cref="SolMetaKey.Type" /> can be nil, this method by return <c>null</c> if a nil value was passed.</remarks>
+        /// <remarks>If the <see cref="SolMetaFunction.Type" /> can be nil, this method by return <c>null</c> if a nil value was passed.</remarks>
         [CanBeNull]
         public T Cast(SolValue value)
         {

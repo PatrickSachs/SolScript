@@ -3,7 +3,7 @@ using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter.Expressions {
     public class Expression_Return : TerminatingSolExpression {
-        public Expression_Return(SolAssembly assembly, SolSourceLocation location, SolExpression returnExpression) : base(assembly, location) {
+        public Expression_Return(SolExpression returnExpression) {
             ReturnExpression = returnExpression;
         }
 

@@ -5,7 +5,7 @@ using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter.Statements {
     public class Statement_Do : SolStatement {
-        public Statement_Do([NotNull] SolAssembly assembly, SolSourceLocation location, SolChunk chunk) : base(assembly, location) {
+        public Statement_Do([NotNull] SolAssembly assembly, SourceLocation location, SolChunk chunk) : base(assembly, location) {
             Chunk = chunk;
         }
 

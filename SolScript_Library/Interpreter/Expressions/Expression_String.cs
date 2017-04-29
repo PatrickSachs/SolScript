@@ -1,4 +1,4 @@
-﻿using Irony.Parsing;
+﻿/*using Irony.Parsing;
 using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter.Expressions {
@@ -22,4 +22,4 @@ namespace SolScript.Interpreter.Expressions {
 
         #endregion
     }
-}
+}*/

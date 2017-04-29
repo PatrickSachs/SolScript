@@ -1,24 +1,78 @@
-﻿using System;
+﻿using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
-using SolScript.Interpreter.Types.Interfaces;
 
 namespace SolScript.Interpreter.Expressions
 {
     /// <summary>
     ///     This expression is used to get a variable.
     /// </summary>
-    public class Expression_GetVariable : SolExpression, IWrittenInClass
+    public class Expression_GetVariable : SolExpression//, IWrittenInClass
     {
+        /// <summary>
+        ///     Used by the parser.
+        /// </summary>
+        public Expression_GetVariable() {}
+
+        /// <summary>
+        ///     Creates a new variable getter expression.
+        /// </summary>
+        /// <param name="variable">The variable to get.</param>
+        public Expression_GetVariable(AVariable variable)
+        {
+            Variable = variable;
+        }
+
+        /// <summary>
+        ///     The variable.
+        /// </summary>
+        public AVariable Variable { get; [UsedImplicitly] internal set; }
+
+        /*#region IWrittenInClass Members
+        /// <inheritdoc />
+        public string WrittenInClass { get; [UsedImplicitly] internal set; }
+        #endregion
+        */
+
+        #region Overrides
+
+        /// <inheritdoc />
+        /// <exception cref="SolRuntimeException">An errir occured while getting the variable.</exception>
+        public override SolValue Evaluate(SolExecutionContext context, IVariables parentVariables)
+        {
+            context.CurrentLocation = Location;
+            try {
+                return Variable.Get(context, parentVariables);
+            } catch (SolVariableException ex) {
+                throw new SolRuntimeException(context, "Could not obtain the value of the desired variable.", ex);
+            }
+        }
+
+        /// <inheritdoc />
+        protected override string ToString_Impl()
+        {
+            return Variable.ToString();
+        }
+
+        #endregion
+
+        /*private SourceRef m_Source;
+
+        /// <summary>
+        /// Used by the parser.
+        /// </summary>
+        public Expression_GetVariable()
+        {
+
+        }
+
         /// <summary>
         ///     Creates the expression.
         /// </summary>
-        /// <param name="assembly">The assembly.</param>
-        /// <param name="location">The location in code.</param>
         /// <param name="source">The source used to actually get the variable.</param>
         /// <param name="writtenInClass">The class name this expression was written in.</param>
         /// <exception cref="InvalidOperationException">The variable source is already linked to another expression.</exception>
-        public Expression_GetVariable(SolAssembly assembly, SolSourceLocation location, SourceRef source, string writtenInClass) : base(assembly, location)
+        public Expression_GetVariable(SourceRef source, string writtenInClass)
         {
             if (source.LinkedExpression != null && source.LinkedExpression != this) {
                 throw new InvalidOperationException("The variable source is already linked to another expression - " + source.LinkedExpression);
@@ -31,37 +85,19 @@ namespace SolScript.Interpreter.Expressions
         /// <summary>
         ///     The source used to actually get the variable.
         /// </summary>
-        public readonly SourceRef Source;
-
-        #region IWrittenInClass Members
-
-        /// <inheritdoc />
-        public string WrittenInClass { get; }
-
-        #endregion
-
-        #region Overrides
-
-        /// <inheritdoc />
-        /// <exception cref="SolRuntimeException">An errir occured while getting the variable.</exception>
-        public override SolValue Evaluate(SolExecutionContext context, IVariables parentVariables)
-        {
-            context.CurrentLocation = Location;
-            try {
-                return Source.Get(context, parentVariables);
-            } catch (SolVariableException ex) {
-                throw new SolRuntimeException(context, "Could not obtain the value of the desired variable.", ex);
+        /// <exception cref="ArgumentException" accessor="set">The variable source is already linked to another expression.</exception>
+        public SourceRef Source {
+            get { return m_Source; }
+            [UsedImplicitly] internal set
+            {
+                if (value.LinkedExpression != null && value.LinkedExpression != this)
+                {
+                    throw new ArgumentException("The variable source is already linked to another expression - " + value.LinkedExpression, nameof(value));
+                }
+                m_Source = value;
             }
-        }
-
-        /// <inheritdoc />
-        protected override string ToString_Impl()
-        {
-            return Source.ToString();
-        }
-
-        #endregion
-
+        }*/
+        /*
         #region Nested type: IndexedVariable
 
         /// <summary>
@@ -114,7 +150,7 @@ namespace SolScript.Interpreter.Expressions
                     // Kind of funny how this little null coalescing operator handles the "deciding part" of access rights.
                     SolClass.Inheritance inheritance = LinkedExpression.WrittenInClass != null ? solClass.FindInheritance(LinkedExpression.WrittenInClass) : null;
                     SolValue value = inheritance?.GetVariables(SolAccessModifier.Local, SolVariableMode.All).Get(keyString.Value)
-                                     ?? solClass.InheritanceChain.GetVariables(SolAccessModifier.None, SolVariableMode.All).Get(keyString.Value);
+                                     ?? solClass.InheritanceChain.GetVariables(SolAccessModifier.Global, SolVariableMode.All).Get(keyString.Value);
                     return value;
                 }
                 IValueIndexable indexable = indexableRaw as IValueIndexable;
@@ -206,5 +242,6 @@ namespace SolScript.Interpreter.Expressions
         }
 
         #endregion
+        */
     }
 }

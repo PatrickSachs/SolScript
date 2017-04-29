@@ -16,7 +16,7 @@ namespace SolScript.Libraries.std
     ///     The <see cref="std_Stream" /> is the base class for implementation streams. Streams allow you to dynamically access
     ///     and write data at runtime.
     /// </summary>
-    [SolLibraryClass(std.NAME, SolTypeMode.Default), SolLibraryName(TYPE), PublicAPI]
+    [SolTypeDescriptor(std.NAME, SolTypeMode.Default, typeof(std_Stream)), SolLibraryName(TYPE), PublicAPI]
     public class std_Stream
     {
         /// <summary>

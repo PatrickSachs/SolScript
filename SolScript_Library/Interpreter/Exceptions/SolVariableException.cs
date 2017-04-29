@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.Serialization;
+using Irony.Parsing;
 
 namespace SolScript.Interpreter.Exceptions
 {
@@ -10,10 +11,10 @@ namespace SolScript.Interpreter.Exceptions
     public class SolVariableException : SolException
     {
         /// <inheritdoc />
-        public SolVariableException(SolSourceLocation location, string message) : base(location, message) {}
+        public SolVariableException(SourceLocation location, string message) : base(location, message) {}
 
         /// <inheritdoc />
-        public SolVariableException(SolSourceLocation location, string message, Exception inner) : base(location, message, inner) {}
+        public SolVariableException(SourceLocation location, string message, Exception inner) : base(location, message, inner) {}
 
         /// <inheritdoc />
         /// <exception cref="SerializationException">

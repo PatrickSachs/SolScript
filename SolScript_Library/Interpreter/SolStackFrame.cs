@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using Irony.Parsing;
 using JetBrains.Annotations;
 using SolScript.Interpreter.Types;
 using SolScript.Interpreter.Types.Implementation;
@@ -14,7 +15,7 @@ namespace SolScript.Interpreter
         /// <summary>
         ///     The location in the code from where the function was called.
         /// </summary>
-        public readonly SolSourceLocation Location;
+        public readonly SourceLocation Location;
 
         /// <summary>
         ///     The function that has been called during this frame.
@@ -30,7 +31,7 @@ namespace SolScript.Interpreter
         /// </summary>
         /// <param name="location">The location of the stack frame in code.</param>
         /// <param name="function">The function the frame related to.</param>
-        public SolStackFrame(SolSourceLocation location, SolFunction function)
+        public SolStackFrame(SourceLocation location, SolFunction function)
         {
             Location = location;
             Function = function;

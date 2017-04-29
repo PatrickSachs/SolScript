@@ -1,4 +1,4 @@
-﻿using SolScript.Interpreter.Types;
+﻿/*using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter.Expressions
 {
@@ -7,16 +7,23 @@ namespace SolScript.Interpreter.Expressions
     /// </summary>
     public class Expression_Number : SolExpression
     {
+        public Expression_Number()
+        {
+            
+        }
+
         /// <inheritdoc />
         public Expression_Number(SolAssembly assembly, SolSourceLocation location, SolNumber value) : base(assembly, location)
         {
-            Value = value;
+            MutableValue = value;
         }
+
+        internal SolNumber MutableValue;
 
         /// <summary>
         ///     The number this expression evaluates to.
         /// </summary>
-        public readonly SolNumber Value;
+        public SolNumber Value => MutableValue;
 
         #region Overrides
 
@@ -34,4 +41,4 @@ namespace SolScript.Interpreter.Expressions
 
         #endregion
     }
-}
+}*/

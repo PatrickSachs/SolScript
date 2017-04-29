@@ -1,4 +1,6 @@
-﻿namespace SolScript.Interpreter.Types
+﻿using Irony.Parsing;
+
+namespace SolScript.Interpreter.Types
 {
     /// <summary>
     ///     Base class for all functions that were defined by a <see cref="SolFunctionDefinition" />.
@@ -14,7 +16,7 @@
         public abstract SolFunctionDefinition Definition { get; }
 
         /// <inheritdoc />
-        public override SolSourceLocation Location => Definition.Location;
+        public override SourceLocation Location => Definition.Location;
 
         /// <inheritdoc />
         public override SolParameterInfo ParameterInfo => Definition.ParameterInfo;

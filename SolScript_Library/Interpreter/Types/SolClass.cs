@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Irony.Parsing;
 using JetBrains.Annotations;
 using PSUtility.Enumerables;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Library;
 using SolScript.Interpreter.Types.Interfaces;
+using SolScript.Properties;
 using SolScript.Utility;
 
 namespace SolScript.Interpreter.Types
@@ -43,6 +45,18 @@ namespace SolScript.Interpreter.Types
         // Internal array containing the annotations.
         internal Array<SolClass> AnnotationsArray;
 
+        internal DynamicReference DescribedObjectReference;
+
+
+        /// <summary>
+        ///     The native object representing this exact <see cref="Inheritance" />.
+        /// </summary>
+        /*/// <remarks>
+        ///     NOT THE DESCRIBED OBJECT - THIS IS THE DESCRIPTOR OBJECT. IF THE DESCRIPTOR OBJECT DIFFERS FROM THE DESCRIBED
+        ///     OBJECT CAST TO THE <see cref="ISolTypeDescriptor" /> INTERFACE.
+        /// </remarks>*/
+        internal DynamicReference DescriptorObjectReference;
+
         /// <summary>
         ///     The annotations on this class instance.
         /// </summary>
@@ -52,6 +66,20 @@ namespace SolScript.Interpreter.Types
         ///     The assembly this class is in.
         /// </summary>
         public SolAssembly Assembly => InheritanceChain.Definition.Assembly;
+
+        /// <summary>
+        ///     Gets the native object described by this class.
+        /// </summary>
+        public object DescribedNativeObject {
+            get {
+                object obj;
+                if (!DescribedObjectReference.TryGet(out obj))
+                {
+                    throw new InvalidOperationException("Cannot obtain descibed native object.");
+                }
+                return obj;
+            }
+        }
 
         /// <inheritdoc />
         public override bool IsClass => true;
@@ -89,7 +117,7 @@ namespace SolScript.Interpreter.Types
                     throw new SolVariableException(InheritanceChain.Definition.Location,
                         $"Tried to get-index a variable in {Type} with a {key.Type} value. Classes can only be indexed directly or by strings.");
                 }
-                return GetVariables(SolAccessModifier.None, SolVariableMode.All).Get(keySolStr.Value);
+                return GetVariables(SolAccessModifier.Global, SolVariableMode.All).Get(keySolStr.Value);
             }
             set {
                 SolString keySolStr = key as SolString;
@@ -97,7 +125,7 @@ namespace SolScript.Interpreter.Types
                     throw new SolVariableException(InheritanceChain.Definition.Location,
                         $"Tried to set-index a variable in {Type} with a {key.Type} value. Classes can only be indexed directly or by strings.");
                 }
-                GetVariables(SolAccessModifier.None, SolVariableMode.All).Assign(keySolStr.Value, value);
+                GetVariables(SolAccessModifier.Global, SolVariableMode.All).Assign(keySolStr.Value, value);
             }
         }
 
@@ -109,35 +137,76 @@ namespace SolScript.Interpreter.Types
         /// <exception cref="SolMarshallingException"> The value cannot be converted. </exception>
         public override object ConvertTo(Type type)
         {
-            Inheritance inheritance = FindInheritance(type);
+            /*
+             Supports conversion to:
+             - SolClassDefinition
+             - Its described type 
+             - Its object type
+             */
+            SolClassDefinition definition = InheritanceChain.Definition;
+            if (type == typeof(SolClassDefinition)) {
+                return definition;
+            }
+            // Check for the described object first as it is more likely that we wish to pass around references to
+            // that. Besides I can't see a case where the two types would conflict in their native inheritance.
+            if (definition.DescribedType == type || definition.DescribedType.IsSubclassOf(type)) {
+                object nativeObject;
+                if (DescribedObjectReference.TryGet(out nativeObject)) {
+                    SolMarshal.GetAssemblyCache(Assembly).StoreReference(nativeObject.NotNull(), this);
+                    return nativeObject;
+                }
+                throw new SolMarshallingException(Type, type, Resources.Err_InvalidClassDescribedObjectReference.ToString(Type));
+            }
+            if (definition.DescriptorType != definition.DescribedType && (definition.DescriptorType == type || definition.DescriptorType.IsSubclassOf(type))) {
+                object nativeObject;
+                if (DescriptorObjectReference.TryGet(out nativeObject)) {
+                    SolMarshal.GetAssemblyCache(Assembly).StoreReference(nativeObject.NotNull(), this);
+                    return nativeObject;
+                }
+                throw new SolMarshallingException(Type, type, Resources.Err_InvalidClassDescriptorObjectReference.ToString(Type));
+            }
+            return base.ConvertTo(type);
+            /*Inheritance inheritance = FindInheritance(type, InheritanceFindModes.ObjectType | InheritanceFindModes.DescibedType);
             if (inheritance != null) {
                 DynamicReference.GetState getState;
-                object nativeObject = inheritance.NativeReference.GetReference(out getState);
+                object nativeObject = inheritance.NativeReference.TryGet(out getState);
                 if (getState != DynamicReference.GetState.Retrieved) {
                     throw new SolMarshallingException(type, "The native reference of inheritance level \"" + inheritance.Definition.Type + "\" could not be resolved.");
                 }
                 if (nativeObject == null) {
                     return null;
                 }
+                SolClassDefinition definition = inheritance.Definition;
+                // If the object is of a different type than the one described we can only obtain the 
+                // object itself through the interface.
+                if (definition.DescribedType != definition.DescriptorType) {
+                    ISolTypeDescriptor descriptor;
+                    try {
+                        descriptor = (ISolTypeDescriptor) nativeObject;
+                    } catch (InvalidCastException ex) {
+                        throw new SolMarshallingException(Type, type, Resources.Err_DescriptorNotFound.ToString(Type, definition.DescribedType, definition.DescriptorType), ex);
+                    }
+                    // todo: should the descriptor described object be cached? -- can be changed by user
+                    return descriptor.Object;
+                }
                 // The value/class relation is cached in case the value will be marshalled back to SolScript.
                 SolMarshal.GetAssemblyCache(Assembly).StoreReference(nativeObject, this);
                 return nativeObject;
-            }
-            return base.ConvertTo(type);
+            }*/
         }
 
         /// <exception cref="InvalidOperationException">A critical internal error occured while calling this function.</exception>
         /// <exception cref="SolRuntimeException">An error occured while calling this function.</exception>
         protected override string ToString_Impl(SolExecutionContext context)
         {
-            context = context ?? new SolExecutionContext(Assembly, SolMetaKey.__to_string.Name + " native call");
+            context = context ?? new SolExecutionContext(Assembly, SolMetaFunction.__to_string.Name + " native call");
             try {
                 SolClassDefinition.MetaFunctionLink link;
-                if (TryGetMetaFunction(SolMetaKey.__to_string, out link)) {
-                    return SolMetaKey.__to_string.Cast(link.GetFunction(this).Call(context)).NotNull().Value;
+                if (TryGetMetaFunction(SolMetaFunction.__to_string, out link)) {
+                    return SolMetaFunction.__to_string.Cast(link.GetFunction(this).Call(context)).NotNull().Value;
                 }
             } catch (SolVariableException ex) {
-                throw new SolRuntimeException(context, "Failed to resolve the " + SolMetaKey.__to_string.Name + " meta function.", ex);
+                throw new SolRuntimeException(context, "Failed to resolve the " + SolMetaFunction.__to_string.Name + " meta function.", ex);
             }
             return "class#" + Id + "<" + Type + ">";
         }
@@ -147,8 +216,8 @@ namespace SolScript.Interpreter.Types
         public override SolNumber GetN(SolExecutionContext context)
         {
             SolClassDefinition.MetaFunctionLink link;
-            if (TryGetMetaFunction(SolMetaKey.__getn, out link)) {
-                return SolMetaKey.__getn.Cast(link.GetFunction(this).Call(context));
+            if (TryGetMetaFunction(SolMetaFunction.__getn, out link)) {
+                return SolMetaFunction.__getn.Cast(link.GetFunction(this).Call(context));
             }
             return base.GetN(context);
         }
@@ -166,8 +235,8 @@ namespace SolScript.Interpreter.Types
         public override bool IsEqual(SolExecutionContext context, SolValue other)
         {
             SolClassDefinition.MetaFunctionLink link;
-            if (TryGetMetaFunction(SolMetaKey.__is_equal, out link)) {
-                return SolMetaKey.__is_equal.Cast(link.GetFunction(this).Call(context, other)).NotNull().Value;
+            if (TryGetMetaFunction(SolMetaFunction.__is_equal, out link)) {
+                return SolMetaFunction.__is_equal.Cast(link.GetFunction(this).Call(context, other)).NotNull().Value;
             }
             SolClass otherType = other as SolClass;
             return otherType != null && Id == otherType.Id;
@@ -178,8 +247,8 @@ namespace SolScript.Interpreter.Types
         public override SolString Concatenate(SolExecutionContext context, SolValue other)
         {
             SolClassDefinition.MetaFunctionLink link;
-            if (TryGetMetaFunction(SolMetaKey.__concat, out link)) {
-                return SolMetaKey.__concat.Cast(link.GetFunction(this).Call(context, other));
+            if (TryGetMetaFunction(SolMetaFunction.__concat, out link)) {
+                return SolMetaFunction.__concat.Cast(link.GetFunction(this).Call(context, other));
             }
             return base.Concatenate(context, other);
         }
@@ -189,8 +258,8 @@ namespace SolScript.Interpreter.Types
         public override SolNumber Add(SolExecutionContext context, SolValue other)
         {
             SolClassDefinition.MetaFunctionLink link;
-            if (TryGetMetaFunction(SolMetaKey.__add, out link)) {
-                return SolMetaKey.__add.Cast(link.GetFunction(this).Call(context, other));
+            if (TryGetMetaFunction(SolMetaFunction.__add, out link)) {
+                return SolMetaFunction.__add.Cast(link.GetFunction(this).Call(context, other));
             }
             return base.Add(context, other);
         }
@@ -200,8 +269,8 @@ namespace SolScript.Interpreter.Types
         public override SolValue Subtract(SolExecutionContext context, SolValue other)
         {
             SolClassDefinition.MetaFunctionLink link;
-            if (TryGetMetaFunction(SolMetaKey.__sub, out link)) {
-                return SolMetaKey.__sub.Cast(link.GetFunction(this).Call(context, other));
+            if (TryGetMetaFunction(SolMetaFunction.__sub, out link)) {
+                return SolMetaFunction.__sub.Cast(link.GetFunction(this).Call(context, other));
             }
             return base.Subtract(context, other);
         }
@@ -211,8 +280,8 @@ namespace SolScript.Interpreter.Types
         public override SolValue Multiply(SolExecutionContext context, SolValue other)
         {
             SolClassDefinition.MetaFunctionLink link;
-            if (TryGetMetaFunction(SolMetaKey.__mul, out link)) {
-                return SolMetaKey.__mul.Cast(link.GetFunction(this).Call(context, other));
+            if (TryGetMetaFunction(SolMetaFunction.__mul, out link)) {
+                return SolMetaFunction.__mul.Cast(link.GetFunction(this).Call(context, other));
             }
             return base.Multiply(context, other);
         }
@@ -222,8 +291,8 @@ namespace SolScript.Interpreter.Types
         public override SolValue Divide(SolExecutionContext context, SolValue other)
         {
             SolClassDefinition.MetaFunctionLink link;
-            if (TryGetMetaFunction(SolMetaKey.__div, out link)) {
-                return SolMetaKey.__div.Cast(link.GetFunction(this).Call(context, other));
+            if (TryGetMetaFunction(SolMetaFunction.__div, out link)) {
+                return SolMetaFunction.__div.Cast(link.GetFunction(this).Call(context, other));
             }
             return base.Divide(context, other);
         }
@@ -233,8 +302,8 @@ namespace SolScript.Interpreter.Types
         public override SolValue Exponentiate(SolExecutionContext context, SolValue other)
         {
             SolClassDefinition.MetaFunctionLink link;
-            if (TryGetMetaFunction(SolMetaKey.__exp, out link)) {
-                return SolMetaKey.__exp.Cast(link.GetFunction(this).Call(context, other));
+            if (TryGetMetaFunction(SolMetaFunction.__exp, out link)) {
+                return SolMetaFunction.__exp.Cast(link.GetFunction(this).Call(context, other));
             }
             return base.Exponentiate(context, other);
         }
@@ -244,8 +313,8 @@ namespace SolScript.Interpreter.Types
         public override SolValue Modulo(SolExecutionContext context, SolValue other)
         {
             SolClassDefinition.MetaFunctionLink link;
-            if (TryGetMetaFunction(SolMetaKey.__mod, out link)) {
-                return SolMetaKey.__mod.Cast(link.GetFunction(this).Call(context, other));
+            if (TryGetMetaFunction(SolMetaFunction.__mod, out link)) {
+                return SolMetaFunction.__mod.Cast(link.GetFunction(this).Call(context, other));
             }
             return base.Modulo(context, other);
         }
@@ -255,8 +324,8 @@ namespace SolScript.Interpreter.Types
         public override IEnumerable<SolValue> Iterate(SolExecutionContext context)
         {
             SolClassDefinition.MetaFunctionLink link;
-            if (TryGetMetaFunction(SolMetaKey.__iterate, out link)) {
-                return SolMetaKey.__iterate.Cast(link.GetFunction(this).Call(context)).NotNull().Iterate(context);
+            if (TryGetMetaFunction(SolMetaFunction.__iterate, out link)) {
+                return SolMetaFunction.__iterate.Cast(link.GetFunction(this).Call(context)).NotNull().Iterate(context);
             }
             return base.Iterate(context);
         }
@@ -330,7 +399,7 @@ namespace SolScript.Interpreter.Types
         ///     The meta function could be found but was in an invalid state(e.g. wrong type, accessor...).
         /// </exception>
         [ContractAnnotation("link:null => false")]
-        internal bool TryGetMetaFunction(SolMetaKey meta, out SolClassDefinition.MetaFunctionLink link)
+        internal bool TryGetMetaFunction(SolMetaFunction meta, out SolClassDefinition.MetaFunctionLink link)
         {
             return InheritanceChain.Definition.TryGetMetaFunction(meta, out link);
         }
@@ -355,13 +424,24 @@ namespace SolScript.Interpreter.Types
         ///     Finds the inheritance link that is assignable to the given native type.
         /// </summary>
         /// <param name="nativeType">The native type.</param>
+        /// <param name="mode">
+        ///     The mode for getting the inheritance. Supports flags. (If both desribed and object types are set
+        ///     described takes priority over object.)
+        /// </param>
         /// <returns>The inheritance link, or null. </returns>
-        internal Inheritance FindInheritance(Type nativeType)
+        internal Inheritance FindInheritance(Type nativeType, InheritanceFindModes mode)
         {
             Inheritance active = InheritanceChain;
             while (active != null) {
-                if (nativeType.IsAssignableFrom(active.Definition.NativeType)) {
-                    return active;
+                if ((mode & InheritanceFindModes.DescibedType) == InheritanceFindModes.DescibedType) {
+                    if (nativeType.IsAssignableFrom(active.Definition.DescribedType)) {
+                        return active;
+                    }
+                }
+                if ((mode & InheritanceFindModes.ObjectType) == InheritanceFindModes.ObjectType) {
+                    if (nativeType.IsAssignableFrom(active.Definition.DescriptorType)) {
+                        return active;
+                    }
                 }
                 active = active.BaseInheritance;
             }
@@ -405,7 +485,7 @@ namespace SolScript.Interpreter.Types
             try {
                 SolClassDefinition.MetaFunctionLink link;
                 // If the constructor could not be found, we add a dummy function in order to have a stack trace.
-                ctorFunction = TryGetMetaFunction(SolMetaKey.__new, out link) ? link.GetFunction(this) : SolFunction.Dummy(Assembly);
+                ctorFunction = TryGetMetaFunction(SolMetaFunction.__new, out link) ? link.GetFunction(this) : SolFunction.Dummy(Assembly);
             } catch (SolVariableException ex) {
                 throw new SolRuntimeException(callingContext, $"The constructor of \"{Type}\" was in an invalid state.", ex);
             }
@@ -416,8 +496,8 @@ namespace SolScript.Interpreter.Types
                 SolValue[] rawArgs = args;
                 try {
                     SolClassDefinition.MetaFunctionLink preLink;
-                    if (annotation.TryGetMetaFunction(SolMetaKey.__a_pre_new, out preLink)) {
-                        SolTable metaTable = SolMetaKey.__a_pre_new.Cast(preLink.GetFunction(annotation).Call(callingContext, new SolTable(args), new SolTable(rawArgs))).NotNull();
+                    if (annotation.TryGetMetaFunction(SolMetaFunction.__a_pre_new, out preLink)) {
+                        SolTable metaTable = SolMetaFunction.__a_pre_new.Cast(preLink.GetFunction(annotation).Call(callingContext, new SolTable(args), new SolTable(rawArgs))).NotNull();
                         SolValue metaNewArgsRaw;
                         if (metaTable.TryGet(SolString.ValueOf("new_args"), out metaNewArgsRaw)) {
                             SolTable metaNewArgs = metaNewArgsRaw as SolTable;
@@ -442,7 +522,7 @@ namespace SolScript.Interpreter.Types
             foreach (SolClass annotation in AnnotationsArray) {
                 try {
                     SolClassDefinition.MetaFunctionLink postLink;
-                    if (annotation.TryGetMetaFunction(SolMetaKey.__a_post_new, out postLink)) {
+                    if (annotation.TryGetMetaFunction(SolMetaFunction.__a_post_new, out postLink)) {
                         postLink.GetFunction(annotation).Call(callingContext, new SolTable(args));
                     }
                 } catch (SolVariableException ex) {
@@ -462,10 +542,10 @@ namespace SolScript.Interpreter.Types
             // Creates the ... creators. Yay.
             static Inheritance()
             {
-                s_Creators[(int) SolVariableMode.All + (int) SolAccessModifier.None] = i => new All_Globals(i);
+                s_Creators[(int) SolVariableMode.All + (int) SolAccessModifier.Global] = i => new All_Globals(i);
                 s_Creators[(int) SolVariableMode.All + (int) SolAccessModifier.Internal] = i => new All_Internals(i);
                 s_Creators[(int) SolVariableMode.All + (int) SolAccessModifier.Local] = i => new All_Locals(i);
-                s_Creators[(int) SolVariableMode.Base + (int) SolAccessModifier.None] = i => new Base_Globals(i);
+                s_Creators[(int) SolVariableMode.Base + (int) SolAccessModifier.Global] = i => new Base_Globals(i);
                 s_Creators[(int) SolVariableMode.Base + (int) SolAccessModifier.Internal] = i => new Base_Internals(i);
                 s_Creators[(int) SolVariableMode.Base + (int) SolAccessModifier.Local] = i => new Base_Locals(i);
             }
@@ -486,7 +566,7 @@ namespace SolScript.Interpreter.Types
                 Instance = instance;
                 BaseInheritance = baseInheritance;
                 Definition = definition;
-                NativeReference = DynamicReference.FailedReference.Instance;
+                //DescriptorObject = DynamicReference.FailedReference.Instance;
                 m_DeclaredLocalVariables = new DeclaredLocalClassInheritanceVariables(this);
                 m_DeclaredInternalVariables = new DeclaredInternalClassInheritanceVariables(this);
                 m_DeclaredGlobalVariables = new DeclaredGlobalClassInheritanceVariables(this);
@@ -497,7 +577,8 @@ namespace SolScript.Interpreter.Types
             /// <summary>
             ///     The base inheritance(The inheritance this one extends).
             /// </summary>
-            [CanBeNull] public readonly Inheritance BaseInheritance;
+            [CanBeNull]
+            public readonly Inheritance BaseInheritance;
 
             /// <summary>
             ///     The definition of this exact <see cref="Inheritance" /> element. Not just the parent class definition of the class.
@@ -508,11 +589,6 @@ namespace SolScript.Interpreter.Types
             ///     The class instance this <see cref="Inheritance" /> belongs to.
             /// </summary>
             public readonly SolClass Instance;
-
-            /// <summary>
-            ///     The native object representing this exact <see cref="Inheritance" />.
-            /// </summary>
-            public DynamicReference NativeReference;
 
             // Indexing works by (int)SolVariableMode + (int)AccessModifier
             private readonly IVariables[] l_variables = new IVariables[6];
@@ -527,7 +603,7 @@ namespace SolScript.Interpreter.Types
             {
                 int index = (int) access + (int) mode;
                 switch (index) {
-                    case (int) SolAccessModifier.None + (int) SolVariableMode.Declarations:
+                    case (int) SolAccessModifier.Global + (int) SolVariableMode.Declarations:
                         return m_DeclaredGlobalVariables;
                     case (int) SolAccessModifier.Local + (int) SolVariableMode.Declarations:
                         return m_DeclaredLocalVariables;
@@ -878,7 +954,7 @@ namespace SolScript.Interpreter.Types
                 #region Overrides
 
                 /// <inheritdoc />
-                protected override SolSourceLocation GetLocation()
+                protected override SourceLocation GetLocation()
                 {
                     return VarInheritance.Definition.Location;
                 }
@@ -887,6 +963,17 @@ namespace SolScript.Interpreter.Types
             }
 
             #endregion
+        }
+
+        #endregion
+
+        #region Nested type: InheritanceFindModes
+
+        [Flags]
+        internal enum InheritanceFindModes
+        {
+            ObjectType,
+            DescibedType
         }
 
         #endregion
@@ -1044,7 +1131,7 @@ namespace SolScript.Interpreter.Types
             ///     Gets the location of this variable source used for errors.
             /// </summary>
             /// <returns>The location.</returns>
-            protected abstract SolSourceLocation GetLocation();
+            protected abstract SourceLocation GetLocation();
 
             /// <summary>
             ///     Gets all <see cref="IVariables" />s that declare the values.

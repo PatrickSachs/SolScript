@@ -2,6 +2,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using Irony.Parsing;
 using JetBrains.Annotations;
 using PSUtility.Enumerables;
 using SolScript.Interpreter;
@@ -15,7 +16,7 @@ namespace SolScript.Libraries.std
     /// <summary>
     ///     The <see cref="std_Reflect" /> singleton is used to access information about language elements at runtime.
     /// </summary>
-    [SolLibraryClass(std.NAME, SolTypeMode.Singleton)]
+    [SolTypeDescriptor(std.NAME, SolTypeMode.Singleton, typeof(std_Reflect))]
     [SolLibraryName(TYPE)]
     [PublicAPI]
     public class std_Reflect : INativeClassSelf
@@ -34,13 +35,13 @@ namespace SolScript.Libraries.std
         };
 
         private static readonly IReadOnlyDictionary<SolAccessModifier, SolString> s_AccessModifierNames = new PSUtility.Enumerables.Dictionary<SolAccessModifier, SolString> {
-            [SolAccessModifier.None] = "none",
+            [SolAccessModifier.Global] = "none",
             [SolAccessModifier.Local] = "local",
             [SolAccessModifier.Internal] = "internal"
         };
 
         private static readonly IReadOnlyDictionary<SolMemberModifier, SolString> s_MemberModifierNames = new PSUtility.Enumerables.Dictionary<SolMemberModifier, SolString> {
-            [SolMemberModifier.None] = "none",
+            [SolMemberModifier.Default] = "none",
             [SolMemberModifier.Abstract] = "abstract",
             [SolMemberModifier.Override] = "override"
         };
@@ -166,8 +167,8 @@ namespace SolScript.Libraries.std
             }
             return new SolTable {
                 [Str_name] = SolString.ValueOf("function#" + function.Id),
-                [Str_access_modifier] = s_AccessModifierNames[SolAccessModifier.None],
-                [Str_member_modifier] = s_MemberModifierNames[SolMemberModifier.None],
+                [Str_access_modifier] = s_AccessModifierNames[SolAccessModifier.Global],
+                [Str_member_modifier] = s_MemberModifierNames[SolMemberModifier.Default],
                 [Str_defined_in] = SolNil.Instance,
                 [Str_type] = SolString.ValueOf(function.ReturnType.Type),
                 [Str_can_be_nil] = SolBool.ValueOf(function.ReturnType.CanBeNil),
@@ -421,7 +422,7 @@ namespace SolScript.Libraries.std
 
         #region Native Helpers
 
-        private SolTable GetSourceLocationTable(SolSourceLocation location)
+        private SolTable GetSourceLocationTable(SourceLocation location)
         {
             return new SolTable {
                 [Str_file] = SolString.ValueOf(location.File).Intern(),

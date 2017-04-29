@@ -1,9 +1,7 @@
 ﻿using System.Collections.Generic;
+using Irony.Parsing;
 using JetBrains.Annotations;
 using PSUtility.Enumerables;
-using SolScript.Interpreter.Builders;
-using SolScript.Interpreter.Exceptions;
-using SolScript.Utility;
 
 namespace SolScript.Interpreter
 {
@@ -12,7 +10,23 @@ namespace SolScript.Interpreter
     /// </summary>
     public sealed class SolFieldDefinition : SolAnnotateableDefinitionBase
     {
-        /// <summary>
+        /// <inheritdoc />
+        public SolFieldDefinition(SolAssembly assembly, SourceLocation location) : base(assembly, location)
+        {
+            DeclaredAnnotations = ReadOnlyList<SolAnnotationDefinition>.FromDelegate(() => m_DeclaredAnnotationsList);
+        }
+
+        internal SolFieldDefinition()
+        {
+            DeclaredAnnotations = ReadOnlyList<SolAnnotationDefinition>.FromDelegate(() => m_DeclaredAnnotationsList);
+        }
+
+        private readonly IList<SolAnnotationDefinition> m_DeclaredAnnotationsList = new PSUtility.Enumerables.List<SolAnnotationDefinition>();
+
+        /// <inheritdoc />
+        public override IReadOnlyList<SolAnnotationDefinition> DeclaredAnnotations { get; }
+
+        /*/// <summary>
         ///     Creates a new field definition for a field located in a class.
         /// </summary>
         /// <param name="assembly">The assembly to use for type lookups and register the definition to.</param>
@@ -35,37 +49,45 @@ namespace SolScript.Interpreter
             Name = builder.Name;
             AccessModifier = builder.AccessModifier;
             Type = builder.FieldType.Get(assembly);
-            DeclaredAnnotations = InternalHelper.AnnotationsFromData(assembly, builder.Annotations);
+            DeclaredAnnotationsList = InternalHelper.AnnotationsFromData(assembly, builder.Annotations);
             Initializer = builder.IsNative ? new SolFieldInitializerWrapper(builder.NativeField) : new SolFieldInitializerWrapper(builder.ScriptField);
-        }
+        }*/
 
         /// <summary>
         ///     The field's access modifier.
         /// </summary>
-        public readonly SolAccessModifier AccessModifier;
+        public SolAccessModifier AccessModifier { get; internal set; }
 
         /// <summary>
         ///     The class this field was defined in. This is null for global fields.
         /// </summary>
-        [CanBeNull] public readonly SolClassDefinition DefinedIn;
+        [CanBeNull]
+        public SolClassDefinition DefinedIn { get; internal set; }
 
         /// <summary>
         ///     This class wraps the initializer of the field. Make sure to check the
         ///     <see cref="SolFieldInitializerWrapper.FieldType" /> before obtaining an actual reference.
         /// </summary>
-        public readonly SolFieldInitializerWrapper Initializer;
+        public SolFieldInitializerWrapper Initializer { get; internal set; }
 
         /// <summary>
         ///     The name of the field.
         /// </summary>
-        public readonly string Name;
+        public string Name { get; internal set; }
 
         /// <summary>
         ///     The data type of the field.
         /// </summary>
-        public readonly SolType Type;
+        public SolType Type { get; internal set; }
+
+        #region Overrides
 
         /// <inheritdoc />
-        public override IReadOnlyList<SolAnnotationDefinition> DeclaredAnnotations { get; }
+        internal override void AddAnnotation(SolAnnotationDefinition annotation)
+        {
+            m_DeclaredAnnotationsList.Add(annotation);
+        }
+
+        #endregion
     }
 }

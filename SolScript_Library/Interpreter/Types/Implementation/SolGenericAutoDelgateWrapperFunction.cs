@@ -1,4 +1,5 @@
 using System;
+using Irony.Parsing;
 using SolScript.Interpreter.Exceptions;
 
 namespace SolScript.Interpreter.Types.Implementation
@@ -26,7 +27,7 @@ namespace SolScript.Interpreter.Types.Implementation
         public override SolType ReturnType { get; }
 
         /// <inheritdoc />
-        public override SolSourceLocation Location => SolSourceLocation.Native();
+        public override SourceLocation Location => SolSourceLocation.Native();
 
         #region Overrides
 

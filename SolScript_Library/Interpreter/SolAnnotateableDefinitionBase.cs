@@ -1,6 +1,5 @@
-﻿using PSUtility.Enumerables;
-using SolScript.Interpreter.Exceptions;
-using SolScript.Utility;
+﻿using Irony.Parsing;
+using PSUtility.Enumerables;
 
 namespace SolScript.Interpreter
 {
@@ -9,12 +8,20 @@ namespace SolScript.Interpreter
     /// </summary>
     public abstract class SolAnnotateableDefinitionBase : SolDefinitionBase
     {
+        /// <inheritdoc />
+        internal SolAnnotateableDefinitionBase(SolAssembly assembly, SourceLocation location) : base(assembly, location) {}
         // No 3rd party definitions.
-        internal SolAnnotateableDefinitionBase(SolAssembly assembly, SolSourceLocation location) : base(assembly, location) {}
+        internal SolAnnotateableDefinitionBase() {}
 
         /// <summary>
         ///     All annotations declared in this definition.
         /// </summary>
         public abstract IReadOnlyList<SolAnnotationDefinition> DeclaredAnnotations { get; }
+
+        /// <summary>
+        ///     Internal helper method to add an annotation to this definition.
+        /// </summary>
+        /// <param name="annotation">The annotation.</param>
+        internal abstract void AddAnnotation(SolAnnotationDefinition annotation);
     }
 }

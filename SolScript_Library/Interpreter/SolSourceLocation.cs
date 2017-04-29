@@ -7,7 +7,7 @@ namespace SolScript.Interpreter
     /// <summary>
     ///     A SolSourceLocation is used to represent a certain location in the source file of a specific file.
     /// </summary>
-    public struct SolSourceLocation
+    internal static class SolSourceLocation
     {
         /// <summary>
         ///     The file name used when the location refers to native code.
@@ -22,9 +22,9 @@ namespace SolScript.Interpreter
         ///     A source location with Position, Line and Column set to -1. The file name is either an empty string,
         ///     or the one passed as argument.
         /// </returns>
-        public static SolSourceLocation Empty([CanBeNull] string file = null)
+        public static SourceLocation Empty([CanBeNull] string file = null)
         {
-            return new SolSourceLocation(file ?? string.Empty, -1, -1, -1);
+            return new SourceLocation(file ?? string.Empty, -1, -1, -1);
         }
 
         /// <summary>
@@ -33,12 +33,12 @@ namespace SolScript.Interpreter
         /// <returns>
         ///     A source location with Position, Line and Column set to -1. The file name is set to <see cref="NATIVE_FILE" />.
         /// </returns>
-        public static SolSourceLocation Native()
+        public static SourceLocation Native()
         {
-            return new SolSourceLocation(NATIVE_FILE, -1, -1, -1);
+            return new SourceLocation(NATIVE_FILE, -1, -1, -1);
         }
 
-        /// <summary>
+        /*/// <summary>
         ///     Creates a new SolSourceLocation struct from a file string and an Irony SourceLocation struct.
         /// </summary>
         /// <param name="file">The file name.</param>
@@ -153,6 +153,6 @@ namespace SolScript.Interpreter
                 return -1;
             }
             return x.Position == y.Position ? 0 : 1;
-        }
+        }*/
     }
 }

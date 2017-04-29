@@ -1,4 +1,5 @@
 ﻿using System;
+using Irony.Parsing;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Types;
@@ -10,24 +11,29 @@ namespace SolScript.Interpreter.Statements
     ///     The assign var statement is used to assign values to variables. It can be chained due to also being an expression.
     /// </summary>
     public class Statement_AssignVar : SolStatement, IWrittenInClass
-
     {
+        /// <inheritdoc />
+        public Statement_AssignVar(SolAssembly assembly, SourceLocation location, AVariable target, SolExpression valueGetter, string writtenInClass) : base(assembly, location)
+        {
+            Target = target;
+            ValueGetter = valueGetter;
+            WrittenInClass = writtenInClass;
+        }
+
         /// <summary>
         ///     Creates a new statement.
         /// </summary>
-        /// <param name="assembly">The assembly.</param>
-        /// <param name="location">The location in code.</param>
         /// <param name="target">The operation used to actually assign the value.</param>
         /// <param name="valueGetter">The expression used to obtain the value that should be assigned.</param>
         /// <param name="writtenInClass">The class name this statement was written in.</param>
         /// <exception cref="InvalidOperationException">The target source is already linked to another statement.</exception>
-        public Statement_AssignVar(SolAssembly assembly, SolSourceLocation location, TargetRef target, SolExpression valueGetter, string writtenInClass) : base(assembly, location)
+        public Statement_AssignVar(AVariable target, SolExpression valueGetter, string writtenInClass)
         {
-            if (target.LinkedStatement != null && Target.LinkedStatement != this) {
+            /*if (target.LinkedStatement != null && Target.LinkedStatement != this) {
                 throw new InvalidOperationException("The variable target is already linked to another statement - " + target.LinkedStatement);
-            }
+            }*/
             Target = target;
-            Target.LinkedStatement = this;
+            //Target.LinkedStatement = this;
             ValueGetter = valueGetter;
             WrittenInClass = writtenInClass;
         }
@@ -35,7 +41,7 @@ namespace SolScript.Interpreter.Statements
         /// <summary>
         ///     The operation used to actually assign the value.
         /// </summary>
-        public readonly TargetRef Target;
+        public readonly AVariable Target;
 
         /// <summary>
         ///     The expression used to obtain the value that should be assigned.
@@ -73,7 +79,7 @@ namespace SolScript.Interpreter.Statements
         }
 
         #endregion
-
+/*
         #region Nested type: IndexedVariable
 
         /// <summary>
@@ -124,7 +130,7 @@ namespace SolScript.Interpreter.Statements
                     // Kind of funny how this little null coalescing operator handles the "deciding part" of access rights.
                     SolClass.Inheritance inheritance = LinkedStatement.WrittenInClass != null ? solClass.FindInheritance(LinkedStatement.WrittenInClass) : null;
                     value = inheritance?.GetVariables(SolAccessModifier.Local, SolVariableMode.All).Assign(keyString.Value, value)
-                            ?? solClass.InheritanceChain.GetVariables(SolAccessModifier.None, SolVariableMode.All).Assign(keyString.Value, value);
+                            ?? solClass.InheritanceChain.GetVariables(SolAccessModifier.Global, SolVariableMode.All).Assign(keyString.Value, value);
                     return value;
                 }
                 IValueIndexable indexable = indexableRaw as IValueIndexable;
@@ -210,5 +216,6 @@ namespace SolScript.Interpreter.Statements
         }
 
         #endregion
+*/
     }
 }

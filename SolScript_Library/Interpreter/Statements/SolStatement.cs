@@ -1,4 +1,6 @@
-﻿using SolScript.Interpreter.Expressions;
+﻿using System;
+using Irony.Parsing;
+using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter.Statements
@@ -8,17 +10,29 @@ namespace SolScript.Interpreter.Statements
     ///     stand alone inside a <see cref="SolChunk" /> and may or may not be made out of several <see cref="SolExpression" />
     ///     s(e.g. a function call can stand alone in a chunk and takes several expressions as arguments).
     /// </summary>
-    public abstract class SolStatement : ISourceLocateable
+    public abstract class SolStatement : ISourceLocateable//, ISourceLocationInjector
     {
         /// <summary>
-        ///     Creates a new <see cref="SolStatement" />.
+        ///     Creates a new statement.
         /// </summary>
         /// <param name="assembly">The assembly this statement is in.</param>
-        /// <param name="location">The location in the source this statement is at.</param>
-        protected SolStatement(SolAssembly assembly, SolSourceLocation location)
+        /// <param name="location">The location of this statement.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="assembly" /> is null.</exception>
+        protected SolStatement(SolAssembly assembly, SourceLocation location)
         {
+            if (assembly == null) {
+                throw new ArgumentNullException(nameof(assembly));
+            }
             Assembly = assembly;
-            Location = location;
+            InjectSourceLocation(location);
+        }
+
+        /// <summary>
+        ///     Used by the parser.
+        /// </summary>
+        internal SolStatement()
+        {
+            Assembly = SolAssembly.CurrentlyParsing;
         }
 
         /// <summary>
@@ -29,7 +43,7 @@ namespace SolScript.Interpreter.Statements
         #region ISourceLocateable Members
 
         /// <inheritdoc />
-        public SolSourceLocation Location { get; }
+        public SourceLocation Location { get; private set; }
 
         #endregion
 
@@ -57,5 +71,11 @@ namespace SolScript.Interpreter.Statements
         /// </summary>
         /// <returns>The string.</returns>
         protected abstract string ToString_Impl();
+
+        /// <inheritdoc />
+        public void InjectSourceLocation(SourceLocation location)
+        {
+            Location = location;
+        }
     }
 }

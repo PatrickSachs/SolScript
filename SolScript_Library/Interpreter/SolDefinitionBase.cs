@@ -1,15 +1,26 @@
-﻿namespace SolScript.Interpreter
+﻿using System;
+using Irony.Parsing;
+
+namespace SolScript.Interpreter
 {
     /// <summary>
     ///     This is the base class for all definitions in SolScript.
     /// </summary>
-    public abstract class SolDefinitionBase : ISourceLocateable
+    public abstract class SolDefinitionBase : ISourceLocateable//, ISourceLocationInjector
     {
-        // No 3rd party definitions.
-        internal SolDefinitionBase(SolAssembly assembly, SolSourceLocation location)
+        internal SolDefinitionBase(SolAssembly assembly, SourceLocation location)
         {
+            if (assembly == null) {
+                throw new ArgumentNullException(nameof(assembly));
+            }
             Assembly = assembly;
-            Location = location;
+            InjectSourceLocation(location);
+        }
+
+        // No 3rd party definitions.
+        internal SolDefinitionBase()
+        {
+            Assembly = SolAssembly.CurrentlyParsing;
         }
 
         /// <summary>
@@ -20,10 +31,16 @@
         #region ISourceLocateable Members
 
         /// <summary>
-        ///     Where in the SolScript code has this definiton been defined?
+        ///     Where in the SolScript code has this definition been defined?
         /// </summary>
-        public SolSourceLocation Location { get; }
+        public SourceLocation Location { get; internal set; }
 
         #endregion
+
+        /// <inheritdoc />
+        public void InjectSourceLocation(SourceLocation location)
+        {
+            Location = location;
+        }
     }
 }

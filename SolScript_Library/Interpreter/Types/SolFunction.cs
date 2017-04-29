@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Linq;
 using System.Reflection;
+using Irony.Parsing;
 using JetBrains.Annotations;
+using PSUtility.Enumerables;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types.Implementation;
 
@@ -74,7 +76,7 @@ namespace SolScript.Interpreter.Types
         #region ISourceLocateable Members
 
         /// <inheritdoc />
-        public abstract SolSourceLocation Location { get; }
+        public abstract SourceLocation Location { get; }
 
         #endregion
 
@@ -107,7 +109,7 @@ namespace SolScript.Interpreter.Types
             if (type.IsGenericType) {
                 Type openGenericType = type.GetGenericTypeDefinition();
                 if (openGenericType == typeof(AutoDelegate<>)) {
-                    return s_CreateAutoDelegateMethod.MakeGenericMethod(type.GetGenericArguments()).Invoke(this, new object[0]);
+                    return s_CreateAutoDelegateMethod.MakeGenericMethod(type.GetGenericArguments()).Invoke(this, EmptyArray<object>.Value);
                 }
             }
             return base.ConvertTo(type);
@@ -138,8 +140,7 @@ namespace SolScript.Interpreter.Types
         /// </summary>
         /// <param name="assembly">The assembly this function belongs to.</param>
         /// <returns>The dummy function.</returns>
-        public static SolFunction Dummy(SolAssembly assembly)
-            => new SolScriptLamdaFunction(assembly, SolSourceLocation.Native(), SolParameterInfo.Any, SolType.AnyNil, new SolChunk(assembly, SolSourceLocation.Native(), null), null);
+        public static SolFunction Dummy(SolAssembly assembly) => new SolScriptLamdaFunction(assembly, SolSourceLocation.Native(), SolParameterInfo.Any, SolType.AnyNil, new SolChunk(assembly, SolSourceLocation.Native(), null), null);
 
         /// <summary>
         ///     Creates a delegate you can use to call the function.

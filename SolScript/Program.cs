@@ -2,9 +2,11 @@
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
+using Irony.Parsing;
 using SolScript.Interpreter;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
+using SolScript.Interpreter.Types.Classes;
 using SolScript.Libraries.os;
 using SolScript.Libraries.std;
 
@@ -104,11 +106,8 @@ namespace SolScript
                     string entryRaw = Console.ReadLine()?.Trim().ToLower();
                     try {
                         if (entryRaw == "0" || entryRaw == "class") {
-                            SolAssembly script = null;
-                            try {
-                                CreateAssembly(dirRaw, out script);
-                            } catch (SolInterpreterException) {}
-                            if (script.Errors.Count > 0) {
+                            SolAssembly script;
+                            if (!CreateAssembly(dirRaw, out script)) {
                                 bool isDone = false;
                                 Console.WriteLine("================== ERRORS ==================");
                                 foreach (SolError error in script.Errors) {
@@ -126,11 +125,8 @@ namespace SolScript
                             script.New("Main", new ClassCreationOptions.Customizable().SetCallingContext(new SolExecutionContext(script, "Command Line Interpreter")),
                                 SolString.ValueOf("Hello from the command line :)"), new SolNumber(42));
                         } else if (entryRaw == "1" || entryRaw == "function") {
-                            SolAssembly script = null;
-                            try {
-                                CreateAssembly(dirRaw, out script);
-                            } catch (SolInterpreterException) {}
-                            if (script.Errors.Count > 0) {
+                            SolAssembly script;
+                            if (!CreateAssembly(dirRaw, out script)) {
                                 bool isDone = false;
                                 Console.WriteLine("================== ERRORS ==================");
                                 foreach (SolError error in script.Errors) {
@@ -145,10 +141,10 @@ namespace SolScript
                                     goto Done;
                                 }
                             }
-                            SolValue main = script.GlobalVariables.Get("main");
+                            SolValue main = script.GetVariables(SolAccessModifier.Global).Get("main");
                             SolFunction mainFunction = main as SolFunction;
                             if (mainFunction == null) {
-                                throw new SolVariableException(SolSourceLocation.Native(), "No main() function exists.");
+                                throw new SolVariableException(SourceLocation.Empty, "main is not a function - " + main);
                             }
                             SolValue returnValue = mainFunction.Call(new SolExecutionContext(script, "Command Line Interpreter"));
                             Console.WriteLine("main() returned: " + returnValue);
@@ -207,28 +203,12 @@ namespace SolScript
         }
 
         /// <exception cref="SolInterpreterException">Catch this and then check the error property.</exception>
-        private static void CreateAssembly(string dir, out SolAssembly script)
+        private static bool CreateAssembly(string dir, out SolAssembly script)
         {
-            script = SolAssembly.FromDirectory(new SolAssemblyOptions("Command Line Assembly"), dir);
-            CheckForError(script);
-            script
-                .IncludeLibrary(std.GetLibrary())
-                .IncludeLibrary(os.GetLibrary())
-                .IncludeLibrary(test.test.GetLibrary());
-            script.FinalizeRegistry();
-            CheckForError(script);
-            script.GenerateDefinitions();
-            CheckForError(script);
-            script.Create();
-            CheckForError(script);
-        }
-
-        /// <exception cref="SolInterpreterException">Catch this and then check the error property.</exception>
-        private static void CheckForError(SolAssembly assembly)
-        {
-            if (assembly.State == SolAssembly.AssemblyState.Error) {
-                throw new SolInterpreterException(SolSourceLocation.Native(), "_error");
-            }
+            return SolAssembly.Create()
+                .IncludeLibraries(std.GetLibrary(), os.GetLibrary())
+                .IncludeSourceFiles(Directory.GetFiles(dir, "*.sol", SearchOption.AllDirectories))
+                .TryBuild(new SolAssemblyOptions("Command Line Assembly"), out script);
         }
 
         public static bool IsValidFilename(string testName)

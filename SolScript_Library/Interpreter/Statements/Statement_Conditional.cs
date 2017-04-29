@@ -1,7 +1,10 @@
-﻿using JetBrains.Annotations;
+﻿using System;
+using System.Collections.Generic;
+using JetBrains.Annotations;
 using PSUtility.Enumerables;
 using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Types;
+using SolScript.Utility;
 
 namespace SolScript.Interpreter.Statements
 {
@@ -12,15 +15,19 @@ namespace SolScript.Interpreter.Statements
     public class Statement_Conditional : SolStatement
     {
         /// <summary>
+        ///     Used by the parser.
+        /// </summary>
+        [Obsolete(InternalHelper.O_PARSER_MSG, InternalHelper.O_PARSER_ERR), UsedImplicitly]
+        public Statement_Conditional() {}
+
+        /// <summary>
         ///     Creates a new conditional statement.
         /// </summary>
-        /// <param name="assembly">The assembly.</param>
-        /// <param name="location">The source code location.</param>
         /// <param name="if">An array of all if branches.</param>
         /// <param name="else">The (optional) fallback else branch.</param>
-        public Statement_Conditional(SolAssembly assembly, SolSourceLocation location, Array<IfBranch> @if, [CanBeNull] SolChunk @else) : base(assembly, location)
+        public Statement_Conditional(Array<IfBranch> @if, [CanBeNull] SolChunk @else)
         {
-            m_If = @if;
+            If = @if;
             Else = @else;
         }
 
@@ -28,14 +35,22 @@ namespace SolScript.Interpreter.Statements
         ///     The chunk that will be executed if no if statement applies.
         /// </summary>
         [CanBeNull]
-        public readonly SolChunk Else;
+        public SolChunk Else { get;[UsedImplicitly] internal set; }
 
-        private readonly Array<IfBranch> m_If;
+        //internal IfBranch If;
+        internal Array<IfBranch> If;
 
-        /// <summary>
+        /*/// <summary>
         ///     A read only list of all possible if branches.
         /// </summary>
-        public IReadOnlyList<IfBranch> If => m_If;
+        public IEnumerable<IfBranch> Branches {
+            get {
+                yield return If;
+                foreach (IfBranch branch in ElseIf) {
+                    yield return branch;
+                }
+            }
+        }*/
 
         #region Overrides
 

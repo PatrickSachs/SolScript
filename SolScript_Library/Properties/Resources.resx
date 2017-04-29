@@ -1,0 +1,236 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Err_DuplicateClassField" xml:space="preserve">
+    <value>The class "{0}" has multiple fields with the name "{1}". Overloading is not supported.</value>
+    <comment>0: Class Name // 1: Field Name</comment>
+  </data>
+  <data name="Err_DuplicateClassFunction" xml:space="preserve">
+    <value>The class "{0}" has multiple functions with the name "{1}". Overloading is not supported.</value>
+    <comment>0: Class Name // 1: Function Name</comment>
+  </data>
+  <data name="Err_FactoryInvalidNodeName" xml:space="preserve">
+    <value>{0} : The node name "{1}" is not allowed for this element. Allowed is/are: "{2}"</value>
+    <comment>0: Location // 1: Actual Name // 2: Allowed Name(s)</comment>
+  </data>
+  <data name="Err_FactoryMissingChild" xml:space="preserve">
+    <value>{0} : The node "{1}" does not have a child node with the name "{1}".</value>
+    <comment>0: Location // 1: Node Name // 2: Missing Name</comment>
+  </data>
+  <data name="Err_FailedToBuildNativeConstructor" xml:space="preserve">
+    <value>Failed to build function from native constructor "{0}".</value>
+    <comment>0: Full Native Constructor Name</comment>
+  </data>
+  <data name="Err_FailedToBuildNativeField" xml:space="preserve">
+    <value>Failed to build field from native field "{0}".</value>
+    <comment>0: Full Native Field Name</comment>
+  </data>
+  <data name="Err_FailedToBuildNativeFunction" xml:space="preserve">
+    <value>Failed to build function from native method "{0}".</value>
+    <comment>0: Full Native Method Name</comment>
+  </data>
+  <data name="Err_FailedToBuildNativeParameter" xml:space="preserve">
+    <value>Failed to build parameter from native parameter "{0}".</value>
+    <comment>0: Full Native Parameter Name</comment>
+  </data>
+  <data name="Err_NoClassConstructor" xml:space="preserve">
+    <value>The class "{0}" does not have a constructor.</value>
+    <comment>0: Class Name</comment>
+  </data>
+  <data name="Err_SourceFileIOError" xml:space="preserve">
+    <value>An I/O error occured while reading source file "{0}".</value>
+    <comment>0: File Name</comment>
+  </data>
+  <data name="Err_SourceFileIsInvalid" xml:space="preserve">
+    <value>The source file "{0}" is invalid.</value>
+    <comment>0: File Name</comment>
+  </data>
+  <data name="Err_NotSubclassOf" xml:space="preserve">
+    <value>The given type "{0}" is not a subclass of "{1}".</value>
+    <comment>0: Actual Type // 1: Desired Type</comment>
+  </data>
+  <data name="Err_ClassDefinitionNotValid" xml:space="preserve">
+    <value>The class definition "{0}" is not valid.</value>
+    <comment>0: Class Name</comment>
+  </data>
+  <data name="Err_DescriptorNotFound" xml:space="preserve">
+    <value>The class "{0}" representing the native type "{1}" is described by the "{2}" type. However, the descriptor does not implement the ISolTypeDescriptor interface which is required for type descriptors describing another type then itself.</value>
+    <comment>0: Class Name // 1: Described Type // 2: Descriptor Type</comment>
+  </data>
+  <data name="Err_DuplicateClass" xml:space="preserve">
+    <value>The class "{0}" exists multiple times.</value>
+    <comment>0: Class Name</comment>
+  </data>
+  <data name="Err_DuplicateGlobalField" xml:space="preserve">
+    <value>There are multiple global fields with the name "{1}". Overloading is not supported.</value>
+    <comment>1: Field Name</comment>
+  </data>
+  <data name="Err_DuplicateGlobalFunction" xml:space="preserve">
+    <value>There are multiple global fields with the name "{1}". Overloading is not supported.</value>
+    <comment>1: Function Name</comment>
+  </data>
+  <data name="Err_FailedToCreateGlobalFieldAnnotations" xml:space="preserve">
+    <value>Failed to create annotations on global field "{1}".</value>
+    <comment>0: Field Name</comment>
+  </data>
+  <data name="Err_FailedToCreateGlobalFunctionAnnotations" xml:space="preserve">
+    <value>Failed to create annotations on global function "{1}".</value>
+    <comment>0: Function Name</comment>
+  </data>
+  <data name="Err_FailedToDeclareGlobalField" xml:space="preserve">
+    <value>Failed to declare global field "{0}".</value>
+    <comment>0: Field Name</comment>
+  </data>
+  <data name="Err_FailedToDeclareGlobalFunction" xml:space="preserve">
+    <value>Failed to declare global function "{0}".</value>
+    <comment>0: Function Name</comment>
+  </data>
+  <data name="Err_GlobalFunctionCannotBeNativeConstructor" xml:space="preserve">
+    <value>Tried to build the global function "{0}" from a constructor of native type "{1}". Constructors cannot be global functions.</value>
+    <comment>0: Function Name // 1: Native Type Name</comment>
+  </data>
+  <data name="Err_InvalidClassDescribedObjectReference" xml:space="preserve">
+    <value>The reference to the described object of class "{0}" is invalid.</value>
+    <comment>0: Class Name</comment>
+  </data>
+  <data name="Err_InvalidClassDescriptorObjectReference" xml:space="preserve">
+    <value>The reference to the descriptor object of class "{1}" is invalid.</value>
+    <comment>0: Class Name</comment>
+  </data>
+  <data name="Err_InvalidIndexerType" xml:space="preserve">
+    <value>Tried to index a "{0}" value by a "{1}" value.</value>
+    <comment>0: Indexed Type // 1: Indexer Type</comment>
+  </data>
+  <data name="Err_InvalidIndexType" xml:space="preserve">
+    <value>Tried to index a "{0}" value.</value>
+    <comment>0: Indexed Type</comment>
+  </data>
+  <data name="Err_NotValidInGlobal" xml:space="preserve">
+    <value>The {0} operator is not valid in global context.</value>
+    <comment>0: Operation Name</comment>
+  </data>
+  <data name="Err_DuplicateClassDescribed" xml:space="preserve">
+    <value>The class "{0}" is described multiple times.</value>
+    <comment>0: Described Type</comment>
+  </data>
+  <data name="Err_DuplicateClassDescriptor" xml:space="preserve">
+    <value>The class descriptor "{0}" describes multiple classes.</value>
+    <comment>0: Descriptor Type</comment>
+  </data>
+</root>

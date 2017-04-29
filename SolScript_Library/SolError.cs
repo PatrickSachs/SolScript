@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Text;
+using Irony.Parsing;
 using JetBrains.Annotations;
-using SolScript.Interpreter;
 
 namespace SolScript
 {
@@ -19,7 +19,7 @@ namespace SolScript
         /// <param name="message"> The human readable error message.</param>
         /// <param name="isWarning">Is this error a warning?</param>
         /// <param name="exception"> The exception that caused this error. </param>
-        public SolError(SolSourceLocation location, ErrorId id, string message, bool isWarning = false, [CanBeNull] Exception exception = null)
+        public SolError(SourceLocation location, ErrorId id, string message, bool isWarning = false, [CanBeNull] Exception exception = null)
         {
             Location = location;
             Id = id;
@@ -29,19 +29,16 @@ namespace SolScript
         }
 
         /// <summary>
-        ///     The location this error occured at.
+        ///     The exception that caused this error. The exception may or may not be completely useless to you and is mainly meant
+        ///     for internal debugging purposes.
         /// </summary>
-        public SolSourceLocation Location { get; }
+        [CanBeNull]
+        public Exception Exception { get; }
 
         /// <summary>
         ///     The <see cref="ErrorId" /> which can be used for help lookup.
         /// </summary>
         public ErrorId Id { get; }
-
-        /// <summary>
-        ///     The human readable error message.
-        /// </summary>
-        public string Message { get; }
 
         /// <summary>
         ///     Is this error a warning?
@@ -50,24 +47,29 @@ namespace SolScript
         public bool IsWarning { get; }
 
         /// <summary>
-        ///     The exception that caused this error. The exception may or may not be completely useless to you and is mainly meant
-        ///     for internal debugging purposes.
+        ///     The location this error occured at.
         /// </summary>
-        [CanBeNull]
-        public Exception Exception { get; }
+        public SourceLocation Location { get; }
 
-        /// <inheritdoc />
-        protected bool Equals(SolError other)
-        {
-            return Location.Equals(other.Location) && Id == other.Id && string.Equals(Message, other.Message) && IsWarning == other.IsWarning && Equals(Exception, other.Exception);
-        }
+        /// <summary>
+        ///     The human readable error message.
+        /// </summary>
+        public string Message { get; }
+
+        #region Overrides
 
         /// <inheritdoc />
         public override bool Equals(object obj)
         {
-            if (ReferenceEquals(null, obj)) return false;
-            if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != this.GetType()) return false;
+            if (ReferenceEquals(null, obj)) {
+                return false;
+            }
+            if (ReferenceEquals(this, obj)) {
+                return true;
+            }
+            if (obj.GetType() != GetType()) {
+                return false;
+            }
             return Equals((SolError) obj);
         }
 
@@ -100,6 +102,14 @@ namespace SolScript
                 builder.Append(')');
             }
             return builder.ToString();
+        }
+
+        #endregion
+
+        /// <inheritdoc />
+        protected bool Equals(SolError other)
+        {
+            return Location.Equals(other.Location) && Id == other.Id && string.Equals(Message, other.Message) && IsWarning == other.IsWarning && Equals(Exception, other.Exception);
         }
     }
 }

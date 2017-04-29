@@ -1,4 +1,7 @@
-﻿using JetBrains.Annotations;
+﻿using System;
+using System.Collections.Generic;
+using Irony.Parsing;
+using JetBrains.Annotations;
 using PSUtility.Enumerables;
 using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Statements;
@@ -11,24 +14,33 @@ namespace SolScript.Interpreter
     ///     A chunk is a series of statements running in their own variable context. Blocks are typically used as the body of
     ///     functions or generally inside isolated blocks such as iterator bodies.
     /// </summary>
-    public class SolChunk : ISourceLocateable
+    public class SolChunk : ISourceLocateable//, ISourceLocationInjector
     {
+        /// <summary>
+        ///     Used by the parser.
+        /// </summary>
+        [Obsolete(InternalHelper.O_PARSER_MSG, InternalHelper.O_PARSER_ERR)]
+        public SolChunk()
+        {
+            Assembly = SolAssembly.CurrentlyParsing;
+            Id = s_NextId++;
+        }
+
         /// <summary>
         ///     Creates a new chunk.
         /// </summary>
-        /// <param name="assembly">The assembly.</param>
-        /// <param name="location">The source location.</param>
+        /// <param name="location">The code location of this chunk.</param>
         /// <param name="returnExpression">The optional return/break/continue expression.</param>
         /// <param name="statements">The statements in this chunk.</param>
-        public SolChunk(SolAssembly assembly, SolSourceLocation location, [CanBeNull] TerminatingSolExpression returnExpression, params SolStatement[] statements)
+        /// <param name="assembly">The assembly of this chunk</param>
+        public SolChunk(SolAssembly assembly, SourceLocation location, [CanBeNull] TerminatingSolExpression returnExpression, params SolStatement[] statements)
         {
             Assembly = assembly;
-            Id = s_NextId++;
             ReturnExpression = returnExpression;
-            m_Statements = new Array<SolStatement>(statements);
-            Location = location;
+            StatementsList = new System.Collections.Generic.List<SolStatement>(statements);
+            InjectSourceLocation(location);
         }
-
+        
         // The id of the next chunk.
         private static uint s_NextId;
 
@@ -42,23 +54,24 @@ namespace SolScript.Interpreter
         /// </summary>
         public readonly uint Id;
 
-        // The statement array.
-        private readonly Array<SolStatement> m_Statements;
-
         /// <summary>
         ///     The optional return/continue/break expression.
         /// </summary>
-        [CanBeNull] public readonly TerminatingSolExpression ReturnExpression;
+        [CanBeNull]
+        public readonly TerminatingSolExpression ReturnExpression;
+
+        // The statement array.
+        internal IList<SolStatement> StatementsList;
 
         /// <summary>
         ///     The statements in this chunk.
         /// </summary>
-        public IReadOnlyList<SolStatement> Statements => m_Statements;
+        public IEnumerable<SolStatement> Statements => StatementsList;
 
         #region ISourceLocateable Members
 
         /// <inheritdoc />
-        public SolSourceLocation Location { get; }
+        public SourceLocation Location { get; private set; }
 
         #endregion
 
@@ -87,7 +100,7 @@ namespace SolScript.Interpreter
         /// <returns>The return value(or nil if no return statement).</returns>
         public SolValue Execute(SolExecutionContext context, IVariables variables, out Terminators terminators)
         {
-            foreach (SolStatement statement in m_Statements) {
+            foreach (SolStatement statement in StatementsList) {
                 SolValue value = statement.Execute(context, variables, out terminators);
                 // If either return, break, or continue occured we break out of the current chunk.
                 if (terminators != Terminators.None) {
@@ -100,6 +113,12 @@ namespace SolScript.Interpreter
             }
             terminators = Terminators.None;
             return SolNil.Instance;
+        }
+
+        /// <inheritdoc />
+        public void InjectSourceLocation(SourceLocation location)
+        {
+            Location = location;
         }
     }
 }

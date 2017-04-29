@@ -1,10 +1,120 @@
-﻿using JetBrains.Annotations;
+﻿using System;
+using JetBrains.Annotations;
 using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter
 {
     public struct SolType
     {
+        /// <inheritdoc cref="PrimitiveTypeNameOf" />
+        /// <typeparam name="T">The primitive type.</typeparam>
+        public static string PrimitiveTypeNameOf<T>() where T : SolValue
+        {
+            return PrimitiveTypeNameOf(typeof(T));
+        }
+
+        /// <summary>
+        ///     Gets the primitive type name of the given native SolScript type.
+        /// </summary>
+        /// <param name="type">The primitive type.</param>
+        /// <returns>The primitive type name.</returns>
+        /// <remarks>
+        ///     This does not support your own custom classes, only primitive classes are supported(General rule of thumb:
+        ///     Everything that extends the <see cref="SolValue" /> native class works).
+        /// </remarks>
+        /// <exception cref="InvalidOperationException">Not a valid primitive type.</exception>
+        public static string PrimitiveTypeNameOf(Type type)
+        {
+            string name;
+            if (!TryGetPrimitiveTypeNameOf(type, out name)) {
+                throw new InvalidOperationException("The native type \"" + type + "\" is not a legal primitive SolScript type.");
+            }
+            return name;
+        }
+
+        /// <summary>
+        ///     Checks if the given type name is a primitive type.
+        /// </summary>
+        /// <param name="name">The type name.</param>
+        /// <param name="includeWildcards">Should wildcards such as <c>any</c> and <c>class</c> be considered as primitive type?</param>
+        /// <returns>true if type is primitive, false if not.</returns>
+        public static bool IsPrimitiveType(string name, bool includeWildcards = true)
+        {
+            switch (name) {
+                case SolNil.TYPE:
+                    return true;
+                case SolNumber.TYPE:
+                    return true;
+                case SolBool.TYPE:
+                    return true;
+                case SolString.TYPE:
+                    return true;
+                case SolTable.TYPE:
+                    return true;
+                case SolFunction.TYPE:
+                    return true;
+                default:
+                    if (includeWildcards) {
+                        if (name == SolValue.ANY_TYPE) {
+                            return true;
+                        }
+                        if (name == SolValue.CLASS_TYPE) {
+                            return true;
+                        }
+                    }
+                    return false;
+            }
+        }
+
+        /// <summary>
+        ///     Gets the primitive type name of the given native SolScript type.
+        /// </summary>
+        /// <param name="type">The primitive type.</param>
+        /// <param name="name">The primitive type name. Only valid if the method returned true. </param>
+        /// <returns>true if the type represents a primitive type, false if not.</returns>
+        /// <remarks>
+        ///     This does not support your own custom classes, only primitive classes are supported(General rule of thumb:
+        ///     Everything that extends the <see cref="SolValue" /> native class works).
+        /// </remarks>
+        [ContractAnnotation("name:null => false")]
+        public static bool TryGetPrimitiveTypeNameOf(Type type, [CanBeNull] out string name)
+        {
+            if (type == typeof(SolValue)) {
+                name = SolValue.ANY_TYPE;
+                return true;
+            }
+            if (type == typeof(SolClass)) {
+                name = SolValue.CLASS_TYPE;
+                return true;
+            }
+            if (type == typeof(SolNil)) {
+                name = SolNil.TYPE;
+                return true;
+            }
+            if (type == typeof(SolNumber)) {
+                name = SolNumber.TYPE;
+                return true;
+            }
+            if (type == typeof(SolBool)) {
+                name = SolBool.TYPE;
+                return true;
+            }
+            if (type == typeof(SolString)) {
+                name = SolString.TYPE;
+                return true;
+            }
+            if (type == typeof(SolTable)) {
+                name = SolTable.TYPE;
+                return true;
+            }
+            if (type == typeof(SolFunction) || type.IsSubclassOf(typeof(SolFunction))) {
+                name = SolFunction.TYPE;
+                return true;
+            }
+            name = null;
+            return false;
+        }
+
         public static SolType AnyNil => new SolType("any", true);
 
         public SolType(string type, bool canBeNil)
@@ -13,8 +123,8 @@ namespace SolScript.Interpreter
             CanBeNil = canBeNil;
         }
 
-        public readonly string Type;
-        public readonly bool CanBeNil;
+        public string Type { get; [UsedImplicitly] internal set; }
+        public bool CanBeNil { get; [UsedImplicitly] internal set; }
 
         /// <summary>
         ///     Checks if this type is compatible with another type. Note: If you

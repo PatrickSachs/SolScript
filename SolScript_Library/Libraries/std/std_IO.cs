@@ -16,7 +16,7 @@ namespace SolScript.Libraries.std
     /// <summary>
     ///     The IO module is used for simple input-output operations.
     /// </summary>
-    [SolLibraryClass(std.NAME, SolTypeMode.Singleton)]
+    [SolTypeDescriptor(std.NAME, SolTypeMode.Singleton, typeof(std_IO))]
     [SolLibraryName(TYPE)]
     [PublicAPI]
     public class std_IO : INativeClassSelf
@@ -69,7 +69,7 @@ namespace SolScript.Libraries.std
         /// <summary>Writes <paramref name="data" /> to the standard output.</summary>
         /// <para name="data">
         ///     The data to write. The data will automatically be converted to a string using a
-        ///     <see cref="SolMetaKey.__to_string" /> call.
+        ///     <see cref="SolMetaFunction.__to_string" /> call.
         /// </para>
         /// <returns>The <see cref="std_IO" /> singleton itself.</returns>
         /// <exception cref="SolRuntimeException">An error occured while writing or the type is invalid.</exception>

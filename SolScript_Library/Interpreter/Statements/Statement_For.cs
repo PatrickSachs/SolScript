@@ -5,7 +5,7 @@ using SolScript.Utility;
 
 namespace SolScript.Interpreter.Statements {
     public class Statement_For : SolStatement {
-        public Statement_For(SolAssembly assembly, SolSourceLocation location, SolStatement initialization, 
+        public Statement_For(SolAssembly assembly, SourceLocation location, SolStatement initialization, 
             SolExpression condition, SolStatement afterthought, SolChunk chunk) 
             : base(assembly, location) {
             Initialization = initialization;

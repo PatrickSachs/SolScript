@@ -39,7 +39,7 @@ namespace SolScript.Interpreter.Types.Implementation
         /// <exception cref="InvalidOperationException">A critical internal error occured. Execution may have to be halted.</exception>
         protected override SolValue Call_Impl(SolExecutionContext context, params SolValue[] args)
         {
-            SolClass.Inheritance inheritance = ClassInstance.InheritanceChain;
+            /*SolClass.Inheritance inheritance = ClassInstance.InheritanceChain;
             SolClass.Inheritance nativeStart = null;
             while (inheritance != null) {
                 if (nativeStart == null && inheritance.Definition.NativeType != null) {
@@ -54,15 +54,15 @@ namespace SolScript.Interpreter.Types.Implementation
                     break;
                 }
                 inheritance = inheritance.BaseInheritance;
-            }
-            // We can only call the most derived native constructor of a class since the constructor sets 
+            }*/
+            /*// We can only call the most derived native constructor of a class since the constructor sets 
             // the native object to the entire native part of the inheritance chain.
             // This is required since functions are registered in the inheritance chain element they were
             // declared in and thus try to access the native object of that level.
             if (nativeStart == null || inheritance != nativeStart) {
                 throw new SolRuntimeException(context,
                     "Cannot call this native constructor function for class \"" + Definition.DefinedIn.NotNull().Type + "\" on a class of type \"" + ClassInstance.Type + "\".");
-            }
+            }*/
             if (ClassInstance.IsInitialized) {
                 throw new SolRuntimeException(context, "Cannot call constructor of an initialized \"" + ClassInstance.Type + "\" class instance.");
             }
@@ -72,27 +72,51 @@ namespace SolScript.Interpreter.Types.Implementation
             } catch (SolMarshallingException ex) {
                 throw new SolRuntimeException(context, "Could to marshal the function parameters to native objects: " + ex.Message, ex);
             }
-            object nativeInstance = InternalHelper.SandboxInvokeMethod(context, Definition.Chunk.GetNativeConstructor(), null, values).NotNull();
-            DynamicReference reference = new DynamicReference.FixedReference(nativeInstance);
-            SolClass.Inheritance setting = nativeStart;
-            while (setting != null) {
-                setting.NativeReference = reference;
-                setting = setting.BaseInheritance;
+            SolClassDefinition classDefinition = Definition.DefinedIn.NotNull();
+            
+            object descriptorObject = InternalHelper.SandboxInvokeMethod(context, Definition.Chunk.GetNativeConstructor(), null, values).NotNull();
+            object describedObject;
+            ClassInstance.DescriptorObjectReference = new DynamicReference.FixedReference(descriptorObject);
+            if (classDefinition.DescribedType != classDefinition.DescriptorType)
+            {
+                // todo: be able to specifcy ctor/factory in descriptor
+                describedObject = Activator.CreateInstance(classDefinition.DescribedType);
+                ClassInstance.DescribedObjectReference = new DynamicReference.FixedReference(describedObject); ;
+            } else {
+                ClassInstance.DescribedObjectReference = ClassInstance.DescriptorObjectReference;
+                describedObject = descriptorObject;
             }
-            //if (nativeInstance != null) {
-                SolMarshal.GetAssemblyCache(Assembly).StoreReference(nativeInstance, ClassInstance);
-            //}
+            /*SolClass.Inheritance setting = nativeStart;
+            while (setting != null) {
+                setting.NativeReference = nativeObjectReference;
+                setting = setting.BaseInheritance;
+            }*/
+            SolMarshal.GetAssemblyCache(Assembly).StoreReference(descriptorObject, ClassInstance);
             // Assigning self after storing in assembly cache.
-            INativeClassSelf self = nativeInstance as INativeClassSelf;
-            if (self != null) {
-                self.Self = ClassInstance;
+            SetSelf(describedObject as INativeClassSelf, ClassInstance);
+            if (!ReferenceEquals(descriptorObject, describedObject))
+            {
+                SetSelf(descriptorObject as INativeClassSelf, ClassInstance);
             }
             return SolNil.Instance;
         }
 
         #endregion
 
-        #region Nested type: StaticAttributeRef
+        private static void SetSelf(INativeClassSelf self, SolClass cls)
+        {
+            if (self != null)
+            {
+                if (self.Self != null)
+                {
+                    throw new SolMarshallingException("Type native Self value of native class \"" + self.GetType().Name + "\"(SolClass \"" + cls.Type
+                        + "\") is not null. This is either an indicator for a duplicate native class or corrupted marshalling data.");
+                }
+                self.Self = cls;
+            }
+        }
+
+        /*#region Nested type: StaticAttributeRef
 
         /// <summary>
         ///     Gets a static attribute from a type.
@@ -148,6 +172,6 @@ namespace SolScript.Interpreter.Types.Implementation
             #endregion
         }
 
-        #endregion
+        #endregion*/
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.Serialization;
 using System.Text;
+using Irony.Parsing;
 
 namespace SolScript.Interpreter.Exceptions
 {
@@ -14,14 +15,14 @@ namespace SolScript.Interpreter.Exceptions
         /// <summary>
         ///     Creates an empty exception.
         /// </summary>
-        protected SolException(SolSourceLocation location) : this(location, UNSPECIFIED_ERROR) {}
+        protected SolException(SourceLocation location) : this(location, UNSPECIFIED_ERROR) {}
 
         /// <summary>
         ///     Creates an exception with the given message.
         /// </summary>
         /// <param name="location">The location in code this exception relates to.</param>
         /// <param name="message">The error message.</param>
-        protected SolException(SolSourceLocation location, string message) : base(location + " : " + message)
+        protected SolException(SourceLocation location, string message) : base(location + " : " + message)
         {
             Location = location;
             RawMessage = message;
@@ -33,7 +34,7 @@ namespace SolScript.Interpreter.Exceptions
         /// <param name="location">The location in code this exception relates to.</param>
         /// <param name="message">The error message.</param>
         /// <param name="inner">The inner exception.</param>
-        protected SolException(SolSourceLocation location, string message, Exception inner) : base(location + " : " + message, inner)
+        protected SolException(SourceLocation location, string message, Exception inner) : base(location + " : " + message, inner)
         {
             Location = location;
             RawMessage = message;
@@ -59,7 +60,7 @@ namespace SolScript.Interpreter.Exceptions
             int column = info.GetInt32(SER_COLUMN);
             string file = info.GetString(SER_FILE);
             RawMessage = info.GetString(SER_RAW);
-            Location = new SolSourceLocation(file, position, line, column);
+            Location = new SourceLocation(file, position, line, column);
         }
 
         private const string UNSPECIFIED_ERROR = "An unspecified error occured.";
@@ -77,7 +78,7 @@ namespace SolScript.Interpreter.Exceptions
         #region ISourceLocateable Members
 
         /// <inheritdoc />
-        public SolSourceLocation Location { get; }
+        public SourceLocation Location { get; }
 
         #endregion
 

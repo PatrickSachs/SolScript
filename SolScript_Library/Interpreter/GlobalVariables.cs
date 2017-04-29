@@ -5,7 +5,7 @@ namespace SolScript.Interpreter
 {
     /// <summary>
     ///     These <see cref="IVariables" /> are used for global variables marked with the
-    ///     <see cref="SolAccessModifier.None" /> <see cref="SolAccessModifier" />.
+    ///     <see cref="SolAccessModifier.Global" /> <see cref="SolAccessModifier" />.
     /// </summary>
     public class GlobalVariable : GlobalVariablesBase
     {
@@ -25,7 +25,7 @@ namespace SolScript.Interpreter
         protected override AdditionalMemberInfo GetAdditionalMember(string name)
         {
             SolClassDefinition definition;
-            if (Assembly.IsSingleton(name, out definition)) {
+            if (Assembly.TryGetClass(name, out definition) && definition.TypeMode == SolTypeMode.Singleton) {
                 // Singletons are created in two steps. First the instance is created and registered, then the ctor is being called.
                 // This is due to the reason that inside the ctor the singleton might try to refer to itself which would lead to
                 // infinite recursion.

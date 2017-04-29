@@ -8,27 +8,32 @@ namespace SolScript.Interpreter.Expressions
     public class Expression_Binary : SolExpression
     {
         /// <inheritdoc />
-        public Expression_Binary(SolAssembly assembly, SolSourceLocation location, OperationRef operation, SolExpression first, SolExpression second) : base(assembly, location)
+        public Expression_Binary()
+        {
+        }
+
+        /// <inheritdoc />
+        public Expression_Binary(OperationRef operation, SolExpression first, SolExpression second)
         {
             Operation = operation;
             First = first;
             Second = second;
         }
-
+        
         /// <summary>
         ///     The first expression.
         /// </summary>
-        public readonly SolExpression First;
+        public SolExpression First { get; internal set; }
 
         /// <summary>
         ///     The operation resolving the two expressions.
         /// </summary>
-        public readonly OperationRef Operation;
+        public OperationRef Operation { get; internal set; }
 
         /// <summary>
         ///     The second expression.
         /// </summary>
-        public readonly SolExpression Second;
+        public SolExpression Second { get; internal set; }
 
         #region Overrides
 

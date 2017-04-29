@@ -8,7 +8,7 @@
         /// <summary>
         ///     The function is a "normal" function.
         /// </summary>
-        None,
+        Default,
 
         /// <summary>
         ///     The function as an abstract function, requiring implementation in a subclass.

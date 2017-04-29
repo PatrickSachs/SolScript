@@ -1,4 +1,7 @@
-﻿using SolScript.Interpreter.Types;
+﻿using System;
+using JetBrains.Annotations;
+using SolScript.Interpreter.Types;
+using SolScript.Utility;
 
 namespace SolScript.Interpreter.Expressions
 {
@@ -9,9 +12,15 @@ namespace SolScript.Interpreter.Expressions
     /// <seealso cref="Expression_Unary" />
     public sealed class Expression_Tertiary : SolExpression
     {
+        /// <summary>
+        ///     Used by the compiler.
+        /// </summary>
+        [Obsolete(InternalHelper.O_PARSER_MSG, InternalHelper.O_PARSER_ERR)]
+        [UsedImplicitly]
+        public Expression_Tertiary() {}
+
         /// <inheritdoc />
-        public Expression_Tertiary(SolAssembly assembly, SolSourceLocation location,
-            OperationRef operation, SolExpression first, SolExpression second, SolExpression third) : base(assembly, location)
+        public Expression_Tertiary(OperationRef operation, SolExpression first, SolExpression second, SolExpression third)
         {
             Operation = operation;
             First = first;
@@ -22,22 +31,22 @@ namespace SolScript.Interpreter.Expressions
         /// <summary>
         ///     The first expression.
         /// </summary>
-        public readonly SolExpression First;
+        public SolExpression First { get; [UsedImplicitly] internal set; }
 
         /// <summary>
         ///     The operation resolving the three expressions.
         /// </summary>
-        public readonly OperationRef Operation;
+        public OperationRef Operation { get; [UsedImplicitly] internal set; }
 
         /// <summary>
         ///     The second expression.
         /// </summary>
-        public readonly SolExpression Second;
+        public SolExpression Second { get; [UsedImplicitly] internal set; }
 
         /// <summary>
         ///     The thrid expression.
         /// </summary>
-        public readonly SolExpression Third;
+        public SolExpression Third { get; [UsedImplicitly] internal set; }
 
         #region Overrides
 

@@ -52,6 +52,9 @@
       <HintPath>..\packages\MathNet.Numerics.3.18.0\lib\net35\MathNet.Numerics.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="NodeParser">
+      <HintPath>..\Libraries\NodeParser.dll</HintPath>
+    </Reference>
     <Reference Include="PSUtility">
       <HintPath>..\Libraries\PSUtility.dll</HintPath>
     </Reference>
@@ -65,20 +68,26 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Interpreter\Builders\SolTypeBuilder.cs" />
     <Compile Include="Interpreter\Exceptions\SolCompilerException.cs" />
-    <Compile Include="Interpreter\Expressions\Expression_Bool.cs" />
+    <Compile Include="Interpreter\Expressions\Expression_Literal.cs" />
     <Compile Include="Interpreter\Expressions\Expression_Tertiary.cs" />
     <Compile Include="Interpreter\GlobalVariablesBase.cs" />
     <Compile Include="Interpreter\INativeClassSelf.cs" />
+    <Compile Include="Interpreter\Library\NativeFieldPostProcessor.cs" />
+    <Compile Include="Interpreter\Library\NativeMethodPostProcessor.cs" />
+    <Compile Include="Interpreter\Library\SolTypeDescriptorAttribute.cs" />
+    <Compile Include="Interpreter\SolClassDefinitionReference.cs" />
+    <Compile Include="Interpreter\SolMetaKeys.cs" />
     <Compile Include="Interpreter\SolVariableMode.cs" />
     <Compile Include="Interpreter\SolMemberModifier.cs" />
-    <Compile Include="Interpreter\SolParameterBuilder.cs" />
     <Compile Include="Interpreter\Statements\Statement_Base.cs" />
     <Compile Include="Interpreter\Statements\Statement_Self.cs" />
+    <Compile Include="Interpreter\Types\Classes\ANativeTypeDescriptor.cs" />
+    <Compile Include="Interpreter\Types\Classes\TypeTypeDescriptor.cs" />
     <Compile Include="Interpreter\Types\GlobalSolFunction.cs" />
     <Compile Include="Interpreter\Types\Implementation\SolLamdaFunction.cs" />
     <Compile Include="Interpreter\Types\Implementation\SolNativeLamdaFunction.cs" />
+    <Compile Include="Interpreter\AVariable.cs" />
     <Compile Include="Libraries\std\std_BinaryStream.cs" />
     <Compile Include="Libraries\std\std_TextStream.cs" />
     <Compile Include="MiscUtil\BigEndianBitConverter.cs" />
@@ -86,12 +95,15 @@
     <Compile Include="MiscUtil\EndianBitConverter.cs" />
     <Compile Include="MiscUtil\Endianness.cs" />
     <Compile Include="MiscUtil\LittleEndianBitConverter.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
     <Compile Include="SolError.cs" />
     <Compile Include="Compiler\SolCompiler.cs" />
     <Compile Include="ErrorId.cs" />
     <Compile Include="Interpreter\SolAccessModifier.cs" />
-    <Compile Include="Interpreter\Builders\IAnnotateableBuilder.cs" />
-    <Compile Include="Interpreter\Builders\SolBuilderBase.cs" />
     <Compile Include="Interpreter\Exceptions\SolRuntimeNativeException.cs" />
     <Compile Include="Interpreter\IPriority.cs" />
     <Compile Include="Interpreter\PriorityComparer.cs" />
@@ -159,16 +171,12 @@
     <Compile Include="Interpreter\SolAnnotationDefinition.cs" />
     <Compile Include="Interpreter\SolDefinitionBase.cs" />
     <Compile Include="Interpreter\SolFieldInitializerWrapper.cs" />
-    <Compile Include="Interpreter\SolMetaKey.cs" />
+    <Compile Include="Interpreter\SolMetaFunction.cs" />
     <Compile Include="Interpreter\SolChunkWrapper.cs" />
     <Compile Include="Interpreter\SolParameterInfo.cs" />
-    <Compile Include="Interpreter\Builders\SolClassBuilder.cs" />
     <Compile Include="Interpreter\SolClassDefinition.cs" />
-    <Compile Include="Interpreter\Builders\SolFieldBuilder.cs" />
     <Compile Include="Interpreter\SolFieldDefinition.cs" />
-    <Compile Include="Interpreter\Builders\SolFunctionBuilder.cs" />
     <Compile Include="Interpreter\SolFunctionDefinition.cs" />
-    <Compile Include="Interpreter\Builders\SolConstructWithMembersBuilder.cs" />
     <Compile Include="Interpreter\SolSourceLocation.cs" />
     <Compile Include="Interpreter\SolStackFrame.cs" />
     <Compile Include="Interpreter\Statements\Statement_DeclareVar.cs" />
@@ -232,10 +240,18 @@
     <Compile Include="Parser\Terminals\SolScriptLongStringTerminal.cs" />
     <Compile Include="NamespaceDoc.cs" />
     <Compile Include="SolErrorCollection.cs" />
+    <Compile Include="Utility\NodeRecursionMode.cs" />
+    <Compile Include="Utility\Result.cs" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="License.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

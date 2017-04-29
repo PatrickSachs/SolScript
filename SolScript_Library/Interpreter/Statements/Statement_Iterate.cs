@@ -5,7 +5,7 @@ using SolScript.Utility;
 
 namespace SolScript.Interpreter.Statements {
     public class Statement_Iterate : SolStatement {
-        public Statement_Iterate(SolAssembly assembly, SolSourceLocation location, SolExpression iteratorGetter, string iteratorName,
+        public Statement_Iterate(SolAssembly assembly, SourceLocation location, SolExpression iteratorGetter, string iteratorName,
             SolChunk chunk) : base(assembly, location) {
             IteratorGetter = iteratorGetter;
             IteratorName = iteratorName;

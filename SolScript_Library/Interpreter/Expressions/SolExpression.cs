@@ -1,4 +1,4 @@
-﻿using System.Text;
+﻿using Irony.Parsing;
 using SolScript.Interpreter.Statements;
 using SolScript.Interpreter.Types;
 
@@ -11,17 +11,25 @@ namespace SolScript.Interpreter.Expressions
     ///     number literal itself would have very little purpose, so it needs to stand inside of a statement, e.g. the
     ///     parameters of a function call).
     /// </summary>
-    public abstract class SolExpression : ISourceLocateable
+    public abstract class SolExpression : ISourceLocateable //, ISourceLocationInjector
     {
+        /// <summary>
+        ///     Creates a new expression.
+        /// </summary>
+        /// <param name="assembly">The assembly this expression is in.</param>
+        /// <param name="location">The source location of this expression.</param>
+        protected SolExpression(SolAssembly assembly, SourceLocation location)
+        {
+            Assembly = assembly;
+            InjectSourceLocation(location);
+        }
+
         /// <summary>
         ///     Creates a new <see cref="SolExpression" />.
         /// </summary>
-        /// <param name="assembly">The assembly this expression is located in.</param>
-        /// <param name="location">The location in code this expression is located at.</param>
-        protected SolExpression(SolAssembly assembly, SolSourceLocation location)
+        protected SolExpression()
         {
-            Assembly = assembly;
-            Location = location;
+            Assembly = SolAssembly.CurrentlyParsing;
         }
 
         /// <summary>
@@ -29,10 +37,12 @@ namespace SolScript.Interpreter.Expressions
         /// </summary>
         public readonly SolAssembly Assembly;
 
+        internal SourceLocation LocationMutable;
+
         #region ISourceLocateable Members
 
         /// <inheritdoc />
-        public SolSourceLocation Location { get; }
+        public SourceLocation Location => LocationMutable;
 
         #endregion
 
@@ -49,7 +59,6 @@ namespace SolScript.Interpreter.Expressions
         /// </summary>
         /// <param name="context">The currently active execution context.</param>
         /// <param name="parentVariables">The current variable context for this expression.</param>
-        /// <param name="terminators">The terminators. Terminators are used to break or continue in e.g. iterators.</param>
         /// <returns>The result of the expression.</returns>
         public abstract SolValue Evaluate(SolExecutionContext context, IVariables parentVariables);
 
@@ -58,5 +67,12 @@ namespace SolScript.Interpreter.Expressions
         /// </summary>
         /// <returns>The string.</returns>
         protected abstract string ToString_Impl();
+
+        /// <inheritdoc />
+        public void InjectSourceLocation(SourceLocation location)
+        {
+            LocationMutable = location;
+            //SolDebug.WriteLine("Injected " + location + " into " + this + ".");
+        }
     }
 }

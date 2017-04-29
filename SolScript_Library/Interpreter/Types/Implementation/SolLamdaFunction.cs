@@ -1,3 +1,5 @@
+using Irony.Parsing;
+
 namespace SolScript.Interpreter.Types.Implementation
 {
     /// <summary>
@@ -8,7 +10,7 @@ namespace SolScript.Interpreter.Types.Implementation
     public abstract class SolLamdaFunction : SolFunction
     {
         // No third party primitives
-        internal SolLamdaFunction(SolAssembly assembly, SolSourceLocation location, SolParameterInfo parameterInfo, SolType returnType)
+        internal SolLamdaFunction(SolAssembly assembly, SourceLocation location, SolParameterInfo parameterInfo, SolType returnType)
         {
             Assembly = assembly;
             ParameterInfo = parameterInfo;
@@ -26,6 +28,6 @@ namespace SolScript.Interpreter.Types.Implementation
         public override SolType ReturnType { get; }
 
         /// <inheritdoc />
-        public override SolSourceLocation Location { get; }
+        public override SourceLocation Location { get; }
     }
 }

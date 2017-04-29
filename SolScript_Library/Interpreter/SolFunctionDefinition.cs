@@ -1,10 +1,7 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
+using Irony.Parsing;
 using JetBrains.Annotations;
 using PSUtility.Enumerables;
-using SolScript.Interpreter.Builders;
-using SolScript.Interpreter.Exceptions;
-using SolScript.Utility;
 
 namespace SolScript.Interpreter
 {
@@ -15,7 +12,22 @@ namespace SolScript.Interpreter
     /// </summary>
     public sealed class SolFunctionDefinition : SolAnnotateableDefinitionBase
     {
-        /// <summary>
+        internal SolFunctionDefinition(SolAssembly assembly, SourceLocation location) : base(assembly, location)
+        {
+            DeclaredAnnotations = ReadOnlyList<SolAnnotationDefinition>.FromValue(m_DeclaredAnnotationsList);
+        }
+
+        internal SolFunctionDefinition()
+        {
+            DeclaredAnnotations = ReadOnlyList<SolAnnotationDefinition>.FromValue(m_DeclaredAnnotationsList);
+        }
+
+        private readonly IList<SolAnnotationDefinition> m_DeclaredAnnotationsList = new PSUtility.Enumerables.List<SolAnnotationDefinition>();
+
+        /// <inheritdoc />
+        public override IReadOnlyList<SolAnnotationDefinition> DeclaredAnnotations { get; }
+
+        /*/// <summary>
         ///     Creates a new function definition for a function declared in a class.
         /// </summary>
         /// <param name="assembly">The assembly to use for type lookups and register the definition to.</param>
@@ -26,7 +38,7 @@ namespace SolScript.Interpreter
         {
             DefinedIn = definedIn;
         }
-
+        
         /// <summary>
         ///     Creates a new function definition for a global function.
         /// </summary>
@@ -38,7 +50,7 @@ namespace SolScript.Interpreter
             Name = builder.Name;
             AccessModifier = builder.AccessModifier;
             MemberModifier = builder.MemberModifier;
-            DeclaredAnnotations = InternalHelper.AnnotationsFromData(assembly, builder.Annotations);
+            m_DeclaredAnnotations = InternalHelper.AnnotationsFromData(assembly, builder.Annotations);
             ReturnType = builder.ReturnType.Get(assembly);
             var parameters = new SolParameter[builder.Parameters.Count];
             for (int i = 0; i < parameters.Length; i++) {
@@ -51,46 +63,54 @@ namespace SolScript.Interpreter
                 ParameterInfo = new SolParameterInfo(parameters, builder.AllowOptionalParameters);
                 Chunk = new SolChunkWrapper(builder.ScriptChunk);
             }
-        }
+        }*/
 
         /// <summary>
         ///     The access modifier for this function which decide from where the function can be accessed.
         /// </summary>
-        public readonly SolAccessModifier AccessModifier;
+        public SolAccessModifier AccessModifier { get; internal set; }
 
         /// <summary>
         ///     The wrapper around the actual code of the function. The function may either be a chunk declared in your code or a
         ///     native method/constructor.
         /// </summary>
-        public readonly SolChunkWrapper Chunk;
-        
+        public SolChunkWrapper Chunk { get; internal set; }
+
         /// <summary>
         ///     The class this definition was defined in. If the function is a global function this value is null.
         /// </summary>
-        [CanBeNull] public readonly SolClassDefinition DefinedIn;
+        [CanBeNull]
+        public SolClassDefinition DefinedIn { get; internal set; }
 
         /// <summary>
         ///     The member modifier specifying the type of function.
         /// </summary>
         /// <seealso cref="SolMemberModifier" />
-        public readonly SolMemberModifier MemberModifier;
+        public SolMemberModifier MemberModifier { get; internal set; }
 
         /// <summary>
         ///     The name of this function.
         /// </summary>
-        public readonly string Name;
+        public string Name { get; internal set; }
 
         /// <summary>
         ///     Information about parameters of the function.
         /// </summary>
-        public readonly SolParameterInfo ParameterInfo;
+        public SolParameterInfo ParameterInfo { get; [UsedImplicitly] internal set; }
 
         /// <summary>
         ///     The return type of the function.
         /// </summary>
-        public readonly SolType ReturnType;
+        public SolType ReturnType { get; internal set; }
+
+        #region Overrides
 
         /// <inheritdoc />
-        public override IReadOnlyList<SolAnnotationDefinition> DeclaredAnnotations { get; }
+        internal override void AddAnnotation(SolAnnotationDefinition annotation)
+        {
+            m_DeclaredAnnotationsList.Add(annotation);
+        }
+
+        #endregion
     }
 }

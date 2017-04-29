@@ -1,4 +1,5 @@
 ﻿using System;
+using Irony.Parsing;
 using JetBrains.Annotations;
 using PSUtility.Enumerables;
 using SolScript.Interpreter.Exceptions;
@@ -21,12 +22,12 @@ namespace SolScript.Interpreter.Statements
         /// <param name="statementDefinedInClass">The class name the statement was defined in. (Obsolete; value not used)</param>
         /// <param name="functionGetter">The statement used to get the function.</param>
         /// <param name="args">The function argument expressions.</param>
-        public Statement_CallFunction(SolAssembly assembly, SolSourceLocation location, string statementDefinedInClass,
+        public Statement_CallFunction(SolAssembly assembly, SourceLocation location, string statementDefinedInClass,
             SolExpression functionGetter, Array<SolExpression> args) : base(assembly, location)
         {
             FunctionGetter = functionGetter;
             m_Arguments = args;
-            StatementDefinedInClassName = statementDefinedInClass;
+            //StatementDefinedInClassName = statementDefinedInClass;
         }
 
         /// <summary>
@@ -34,7 +35,7 @@ namespace SolScript.Interpreter.Statements
         /// </summary>
         public readonly SolExpression FunctionGetter;
 
-        // WARNING: This could have been defined __ anywhere__ not even necessarily within the class inheritance tree!
+        /*// WARNING: This could have been defined __ anywhere__ not even necessarily within the class inheritance tree!
         /// <summary>
         ///     This defines where the STATEMENT CALLING the function has been defined, and NOT where the FUNCTION ITSELF has been
         ///     defined.
@@ -45,7 +46,7 @@ namespace SolScript.Interpreter.Statements
         ///     <see cref="SolClassFunction.ClassInstance" />.
         /// </remarks>
         [CanBeNull, Obsolete]
-        public readonly string StatementDefinedInClassName;
+        public readonly string StatementDefinedInClassName;*/
 
         // Raw argument array.
         private readonly Array<SolExpression> m_Arguments;

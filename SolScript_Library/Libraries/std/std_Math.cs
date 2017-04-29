@@ -13,7 +13,7 @@ namespace SolScript.Libraries.std
     /// <summary>
     ///     The <see cref="std_Math" /> class provides several standard mathematical operation.
     /// </summary>
-    [SolLibraryClass(std.NAME, SolTypeMode.Singleton)]
+    [SolTypeDescriptor(std.NAME, SolTypeMode.Singleton, typeof(std_Math))]
     [SolLibraryName(TYPE)]
     [PublicAPI]
     public class std_Math : INativeClassSelf

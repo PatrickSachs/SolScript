@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using PSUtility.Enumerables;
 using SolScript.Utility;
@@ -112,6 +113,18 @@ namespace SolScript
             SolErrorCollection collection = new SolErrorCollection();
             adder = new Adder(collection);
             return collection;
+        }
+
+        /// <inheritdoc />
+        public void CopyTo(Array array, int index)
+        {
+            ArrayUtility.Copy(this, 0, array, index, Count);
+        }
+
+        /// <inheritdoc />
+        public void CopyTo(Array<SolError> array, int index)
+        {
+            ArrayUtility.Copy(this, 0, array, index, Count);
         }
 
         #region Nested type: Adder

@@ -73,6 +73,10 @@ namespace SolScript.Interpreter
         ///     The default creation options, returning true for every property except <see cref="EnforceCreation" />.
         /// </summary>
         public static ClassCreationOptions Default() => DefaultOptions.Instance;
+        /// <summary>
+        ///     The default creation options, returning true for every property except <see cref="EnforceCreation" />.
+        /// </summary>
+        public static ClassCreationOptions Enforce() => EnforceOptions.Instance;
 
         /// <inheritdoc cref="Default()" />
         /// <param name="callingContext">Additionally allows you to specify the conext from which the class was created.</param>
@@ -200,14 +204,23 @@ namespace SolScript.Interpreter
 
         #endregion
 
+        private class EnforceOptions : DefaultOptions
+        {
+            private EnforceOptions() { }
+            public new static readonly EnforceOptions Instance = new EnforceOptions();
+
+            /// <inheritdoc />
+            public override bool EnforceCreation => true;
+        }
+
         #region Nested type: DefaultOptions
 
         /// <summary>
         ///     The default and immutable class creation options.
         /// </summary>
-        private sealed class DefaultOptions : ClassCreationOptions
+        private class DefaultOptions : ClassCreationOptions
         {
-            private DefaultOptions() {}
+            protected DefaultOptions() {}
             public static readonly DefaultOptions Instance = new DefaultOptions();
 
             /// <inheritdoc />

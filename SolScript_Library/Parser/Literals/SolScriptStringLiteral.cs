@@ -55,7 +55,7 @@ namespace SolScript.Parser.Literals
                     if (segment.Length >= 3) {
                         //Verify that a numeric escape is 3 characters
                         string value = segment.Substring(0, 3);
-                        int dummy = 0;
+                        int dummy;
                         success = int.TryParse(value, out dummy);
                     }
 

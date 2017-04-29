@@ -202,7 +202,7 @@ namespace SolScript.Interpreter.Types
         }
 
         /// <summary> Converts the value to a culture specfifc string. </summary>
-        protected override string ToString_Impl([CanBeNull] SolExecutionContext context)
+        protected override string ToString_Impl(SolExecutionContext context)
         {
             StringBuilder builder = new StringBuilder();
             builder.AppendLine("table#" + m_Id + " {");
@@ -348,6 +348,18 @@ namespace SolScript.Interpreter.Types
         public bool Contains(SolValue key)
         {
             return m_Table.ContainsKey(key);
+        }
+
+        /// <inheritdoc />
+        public void CopyTo(Array array, int index)
+        {
+            ArrayUtility.Copy(this, 0, array, index, Count);
+        }
+
+        /// <inheritdoc />
+        public void CopyTo(Array<KeyValuePair<SolValue, SolValue>> array, int index)
+        {
+            ArrayUtility.Copy(this, 0, array, index, Count);
         }
     }
 }

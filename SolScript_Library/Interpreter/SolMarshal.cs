@@ -1,29 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 using PSUtility.Enumerables;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
 using SolScript.Interpreter.Types.Marshal;
+using SolScript.Utility;
 
 namespace SolScript.Interpreter
 {
     public static class SolMarshal
     {
-        private class Comparer : IComparer<ISolNativeMarshaller>
-        {
-            public static Comparer Instance = new Comparer();
-
-            private Comparer() { }
-
-            /// <inheritdoc />
-            public int Compare(ISolNativeMarshaller x, ISolNativeMarshaller y)
-            {
-                return PriorityComparer.Instance.Compare(x, y);
-            }
-        }
-
         static SolMarshal()
         {
             NativeMarshallers.Add(new NativeNumericMarshaller());
@@ -51,7 +38,7 @@ namespace SolScript.Interpreter
 
         private static readonly System.Collections.Generic.List<ISolNativeMarshaller> NativeMarshallers = new System.Collections.Generic.List<ISolNativeMarshaller>();
 
-        private static readonly System.Collections.Generic.Dictionary<SolAssembly, AssemblyCache> s_AssemblyCaches = new System.Collections.Generic.Dictionary<SolAssembly, AssemblyCache>();
+        //private static readonly System.Collections.Generic.Dictionary<SolAssembly, AssemblyCache> s_AssemblyCaches = new System.Collections.Generic.Dictionary<SolAssembly, AssemblyCache>();
 
         private static readonly ClassCreationOptions NativeClassCreationOptions = new ClassCreationOptions.Customizable().SetEnforceCreation(true).SetCallConstructor(false);
 
@@ -124,10 +111,12 @@ namespace SolScript.Interpreter
                 SolValue value = values[valueStart + i];
                 object nativeValue;
                 if (type == typeof(SolValue) || type.IsSubclassOf(typeof(SolValue))) {
-                    if (type.IsInstanceOfType(value)) {
-                        nativeValue = value;
-                    } else {
-                        string toSolType = SolValue.PrimitiveTypeNameOf(type);
+                    if (!type.IsInstanceOfType(value)) {
+                        throw new SolMarshallingException(value.Type, type, "Cannot assign types.");
+                    }
+                    nativeValue = value;
+                    /*else {
+                        string toSolType = SolType.PrimitiveTypeNameOf(type);
                         if (!allowCasting) {
                             throw new SolMarshallingException(value.Type, type, "Cannot implicitly convert types. Explicit casting is required.");
                         }
@@ -147,7 +136,7 @@ namespace SolScript.Interpreter
                                 throw new NotImplementedException("todo: cast sol value");
                             }
                         }
-                    }
+                    }*/
                 } else {
                     nativeValue = value.ConvertTo(type);
                 }
@@ -204,8 +193,8 @@ namespace SolScript.Interpreter
                 default: {
                     SolClassDefinition definition;
                     if (assembly.TryGetClass(type, out definition)) {
-                        if (definition.NativeType != null) {
-                            return definition.NativeType;
+                        if (definition.DescribedType != null) {
+                            return definition.DescribedType;
                         }
                         return typeof(object);
                     }
@@ -240,9 +229,25 @@ namespace SolScript.Interpreter
         ///     returns the most derived type.
         /// </remarks>
         /// <exception cref="SolMarshallingException">Failed to marshal the given value.</exception>
+        [Obsolete("use generic  -- keep in mind to get the correct type and use type overload!!", true)]
         public static SolValue MarshalFromNative(SolAssembly assembly, [CanBeNull] object value)
         {
             return MarshalFromNative(assembly, value?.GetType() ?? typeof(void), value);
+        }
+
+        /// <summary>
+        ///     Marshals the given native object to a <see cref="SolValue" /> useable in SolScript.
+        /// </summary>
+        /// <param name="assembly">The assembly to use for type lookups.</param>
+        /// <typeparam name="T">
+        ///     The type of the native object.
+        /// </typeparam>
+        /// <param name="value">The value to marshal.</param>
+        /// <returns>The marshalled <see cref="SolValue" />.</returns>
+        /// <exception cref="SolMarshallingException">Failed to marshal the given value.</exception>
+        public static SolValue MarshalFromNative<T>(SolAssembly assembly, [CanBeNull] T value)
+        {
+            return MarshalFromNative(assembly, typeof(T), value);
         }
 
         /// <summary>
@@ -284,26 +289,38 @@ namespace SolScript.Interpreter
                             $"Cannot marshal native type \"{type}\" to SolScript: A error occured while creating its representing class instance of type \"" + classDef.Type + "\".", ex);
                     }
                     // Assign the native object to all inheritance levels.
-                    SolClass.Inheritance inheritance = solClass.InheritanceChain;
-                    DynamicReference reference = new DynamicReference.FixedReference(value);
-                    while (inheritance != null) {
-                        inheritance.NativeReference = reference;
-                        inheritance = inheritance.BaseInheritance;
+                    //SolClass.Inheritance inheritance = solClass.InheritanceChain;
+                    DynamicReference described = new DynamicReference.FixedReference(value);
+                    object descriptorObj;
+                    solClass.DescribedObjectReference = described;
+                    if (classDef.DescribedType == classDef.DescriptorType) {
+                        solClass.DescribedObjectReference = described;
+                        descriptorObj = value;
+                    } else {
+                        descriptorObj = Activator.CreateInstance(classDef.DescriptorType);
+                        solClass.DescriptorObjectReference = new DynamicReference.FixedReference(descriptorObj);
                     }
                     cache.StoreReference(value, solClass);
                     // Assigning self after storing in assembly cache.
-                    INativeClassSelf self = value as INativeClassSelf;
-                    if (self != null) {
-                        if (self.Self != null) {
-                            throw new SolMarshallingException("Type native Self value of native class \"" + type.Name + "\"(SolClass \"" + solClass.Type 
-                                + "\") is not null. This is either an indicator for a duplicate native class or corrupted marshalling data.");
-                        }
-                        self.Self = solClass;
+                    SetSelf(value as INativeClassSelf, solClass);
+                    if (!ReferenceEquals(descriptorObj, value)) {
+                        SetSelf(descriptorObj as INativeClassSelf, solClass);
                     }
                 }
                 return solClass;
             }
             throw new SolMarshallingException(type, "No native marshaller has been registered for this type.");
+        }
+
+        private static void SetSelf(INativeClassSelf self, SolClass cls)
+        {
+            if (self != null) {
+                if (self.Self != null) {
+                    throw new SolMarshallingException("Type native Self value of native class \"" + self.GetType().Name + "\"(SolClass \"" + cls.Type
+                                                      + "\") is not null. This is either an indicator for a duplicate native class or corrupted marshalling data.");
+                }
+                self.Self = cls;
+            }
         }
 
         /// <summary>
@@ -316,7 +333,7 @@ namespace SolScript.Interpreter
         public static SolType GetSolType(SolAssembly assembly, Type type)
         {
             if (type == typeof(SolValue) || type.IsSubclassOf(typeof(SolValue))) {
-                return new SolType(SolValue.PrimitiveTypeNameOf(type), true);
+                return new SolType(SolType.PrimitiveTypeNameOf(type), true);
             }
             foreach (ISolNativeMarshaller nativeMarshaller in NativeMarshallers) {
                 if (nativeMarshaller.DoesHandle(assembly, type)) {
@@ -335,9 +352,9 @@ namespace SolScript.Interpreter
         internal static AssemblyCache GetAssemblyCache(SolAssembly assembly)
         {
             AssemblyCache cache;
-            if (!s_AssemblyCaches.TryGetValue(assembly, out cache)) {
-                cache = new AssemblyCache(assembly);
-                s_AssemblyCaches[assembly] = cache;
+            if (!assembly.TryGetMetaValue(SolMetaKeys.SolMarshalAssemblyCache, out cache)) {
+                cache = new AssemblyCache();
+                assembly.TrySetMetaValue(SolMetaKeys.SolMarshalAssemblyCache, cache);
             }
             return cache;
         }
@@ -345,37 +362,27 @@ namespace SolScript.Interpreter
         #region Nested type: AssemblyCache
 
         /// <summary>
-        ///     The assembly cache is used to weakly store native objects and their
+        ///     The assembly cache is used to weakly store native objects(the descriptor object) and their
         ///     respective SolClass representations.
         /// </summary>
         internal class AssemblyCache
         {
-            private class Comparer : IEqualityComparer<object> {
-                public static readonly Comparer Instance = new Comparer();
-                private Comparer() { }
-                /// <inheritdoc />
-                public bool Equals(object x, object y)
-                {
-                    return ReferenceEquals(x, y);
-                }
-
-                /// <inheritdoc />
-                public int GetHashCode(object obj)
-                {
-                    return obj.GetHashCode();
-                }
-            }
-
-            public AssemblyCache([NotNull] SolAssembly assembly)
+            /// <summary>
+            ///     Creates a new assembly cache.
+            /// </summary>
+            public AssemblyCache()
             {
-                Assembly = assembly;
-                m_NativeToSol = new WeakTable<object, SolClass>(Comparer.Instance);
+                m_NativeToSol = new WeakTable<object, SolClass>(InternalHelper.ReferenceEqualityComparer<object>.Instance);
             }
 
-            [NotNull] public readonly SolAssembly Assembly;
-
+            // The weakly stored objects and classes.
             private readonly WeakTable<object, SolClass> m_NativeToSol;
 
+            /// <summary>
+            ///     Stores the class of a given native object.
+            /// </summary>
+            /// <param name="value">The native object.</param>
+            /// <param name="solClass">The associated class.</param>
             public void StoreReference([NotNull] object value, [NotNull] SolClass solClass)
             {
                 // todo: determine if conditional weak table doesnt cause issues
@@ -384,12 +391,37 @@ namespace SolScript.Interpreter
                 m_NativeToSol.TryInsert(value, solClass);
             }
 
+            /// <summary>
+            ///     Gets the class representing the given object.
+            /// </summary>
+            /// <param name="value">The native object.</param>
+            /// <returns>The class, or null.</returns>
             [CanBeNull]
             public SolClass GetReference([NotNull] object value)
             {
                 SolClass solClass;
                 return m_NativeToSol.TryGet(value, out solClass) ? solClass : null;
             }
+        }
+
+        #endregion
+
+        #region Nested type: Comparer
+
+        private class Comparer : IComparer<ISolNativeMarshaller>
+        {
+            private Comparer() {}
+            public static readonly Comparer Instance = new Comparer();
+
+            #region IComparer<ISolNativeMarshaller> Members
+
+            /// <inheritdoc />
+            public int Compare(ISolNativeMarshaller x, ISolNativeMarshaller y)
+            {
+                return PriorityComparer.Instance.Compare(x, y);
+            }
+
+            #endregion
         }
 
         #endregion

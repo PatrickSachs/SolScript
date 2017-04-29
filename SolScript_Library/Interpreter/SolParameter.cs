@@ -8,6 +8,15 @@ namespace SolScript.Interpreter
     /// </summary>
     public class SolParameter
     {
+        /// <summary>
+        ///     Used by the parser.
+        /// </summary>
+        public SolParameter()
+        {
+            Name = "$unnamed";
+            Type = SolType.AnyNil;
+        }
+
         /// <summary> Creates a new parameter using the type "any!". </summary>
         /// <param name="name"> The name </param>
         public SolParameter([NotNull] string name)
@@ -26,10 +35,11 @@ namespace SolScript.Interpreter
         }
 
         /// <summary> The name of this parameter. </summary>
-        [NotNull] public readonly string Name;
+        [NotNull]
+        public string Name { get; [UsedImplicitly] internal set; }
 
         /// <summary> The type of this parameter. </summary>
-        public readonly SolType Type;
+        public SolType Type { get; [UsedImplicitly] internal set; }
 
         #region Overrides
 

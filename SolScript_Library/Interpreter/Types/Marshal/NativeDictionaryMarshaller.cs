@@ -33,8 +33,10 @@ namespace SolScript.Interpreter.Types.Marshal
             IDictionaryEnumerator enumerator = dictionary.GetEnumerator();
             SolTable table = new SolTable();
             while (enumerator.MoveNext()) {
-                SolValue sKey = SolMarshal.MarshalFromNative(assembly, enumerator.Key);
-                SolValue sValue = SolMarshal.MarshalFromNative(assembly, enumerator.Value);
+                object eKey = enumerator.Key;
+                object eValue = enumerator.Value;
+                SolValue sKey = SolMarshal.MarshalFromNative(assembly, eKey?.GetType() ?? typeof(object), eKey);
+                SolValue sValue = SolMarshal.MarshalFromNative(assembly, eValue?.GetType() ?? typeof(object), eValue);
                 table[sKey] = sValue;
             }
             return table;

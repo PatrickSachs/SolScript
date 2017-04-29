@@ -17,7 +17,7 @@ namespace SolScript.Libraries.std
     /// <summary>
     ///     Provides some helper methods related to <see cref="SolString" />s.
     /// </summary>
-    [SolLibraryClass(std.NAME, SolTypeMode.Singleton), SolLibraryName(TYPE), PublicAPI]
+    [SolTypeDescriptor(std.NAME, SolTypeMode.Singleton, typeof(std_String)), SolLibraryName(TYPE), PublicAPI]
     public class std_String
     {
         [SolLibraryVisibility(std.NAME, true)]

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using JetBrains.Annotations;
 using PSUtility.Enumerables;
 using SolScript.Interpreter.Exceptions;
@@ -17,14 +16,22 @@ namespace SolScript.Interpreter
     public class SolParameterInfo : IReadOnlyList<SolParameter>
     {
         /// <summary>
+        /// Used by the parser.
+        /// </summary>
+        public SolParameterInfo()
+        {
+            
+        }
+
+        /// <summary>
         ///     Creates a new <see cref="SolParameterInfo" /> object from the given parameters-.
         /// </summary>
         /// <param name="parameters">The parameter array.</param>
         /// <param name="allowOptional">Should optional arguments be allowed?</param>
-        public SolParameterInfo(SolParameter[] parameters, bool allowOptional)
+        public SolParameterInfo(IEnumerable<SolParameter> parameters, bool allowOptional)
         {
             AllowOptional = allowOptional;
-            m_Parameters = new Array<SolParameter>(parameters);
+            ParametersList = new PSUtility.Enumerables.List<SolParameter>(parameters);
         }
 
         /// <summary>
@@ -32,20 +39,26 @@ namespace SolScript.Interpreter
         /// </summary>
         public static readonly SolParameterInfo Any = new SolParameterInfo(EmptyArray<SolParameter>.Value, true);
 
+        /// <summary>
+        ///     Allows no values to be passed to this <see cref="SolParameterInfo" />.
+        /// </summary>
+        public static readonly SolParameterInfo None = new SolParameterInfo(EmptyArray<SolParameter>.Value, false);
+
         // The parameter array.
-        private readonly Array<SolParameter> m_Parameters;
+        [UsedImplicitly]
+        internal IList<SolParameter> ParametersList;
 
         /// <summary>
         ///     Are optional additional("args") arguments allowed?
         /// </summary>
-        public bool AllowOptional { get; }
+        public bool AllowOptional { get; [UsedImplicitly] internal set; }
 
         #region IReadOnlyList<SolParameter> Members
 
         /// <summary>
         ///     How many parameters are registered in this parameter info(excluding the possibly infinite optional ones)?
         /// </summary>
-        public int Count => m_Parameters.Length;
+        public int Count => ParametersList.Count;
 
         /// <summary>
         ///     Access the parameter at index <see cref="index" />.
@@ -59,7 +72,7 @@ namespace SolScript.Interpreter
                 if (index >= Count || index < 0) {
                     throw new ArgumentOutOfRangeException("Cannot acces parameter " + index + " in a parameter collection with " + Count + " parameters.");
                 }
-                return m_Parameters[index];
+                return ParametersList[index];
             }
         }
 
@@ -72,13 +85,13 @@ namespace SolScript.Interpreter
         /// <inheritdoc />
         public IEnumerator<SolParameter> GetEnumerator()
         {
-            return m_Parameters.GetEnumerator();
+            return ParametersList.GetEnumerator();
         }
 
         /// <inheritdoc />
         public bool Contains(SolParameter item)
         {
-            return m_Parameters.Contains(item);
+            return ParametersList.Contains(item);
         }
 
         #endregion
@@ -104,17 +117,11 @@ namespace SolScript.Interpreter
         public override int GetHashCode()
         {
             unchecked {
-                return ((m_Parameters?.GetHashCode() ?? 0) * 397) ^ AllowOptional.GetHashCode();
+                return ((ParametersList?.GetHashCode() ?? 0) * 397) ^ AllowOptional.GetHashCode();
             }
         }
 
         #endregion
-
-        /// <summary>
-        ///     Creates an array from this parameter info class.
-        /// </summary>
-        /// <remarks>A clone of the parameters array.</remarks>
-        public Array<SolParameter> ToArray() => m_Parameters.Clone();
 
         /// <summary>
         ///     Verifies if the passed arguments are fitting for the parameters defined in this parameter info.
@@ -134,16 +141,16 @@ namespace SolScript.Interpreter
                 if (i < arguments.Length) {
                     // The parameter has still been passed.
                     SolValue arg = arguments[i];
-                    if (!m_Parameters[i].Type.IsCompatible(assembly, arg.Type)) {
-                        throw new SolVariableException(SolSourceLocation.Native(), 
-                            $"Parameter \"{m_Parameters[i].Name}\" expected a value of type \"{m_Parameters[i].Type}\", but recceived a value of the incompatible type \"{arg.Type}\".");
+                    if (!ParametersList[i].Type.IsCompatible(assembly, arg.Type)) {
+                        throw new SolVariableException(SolSourceLocation.Native(),
+                            $"Parameter \"{ParametersList[i].Name}\" expected a value of type \"{ParametersList[i].Type}\", but recceived a value of the incompatible type \"{arg.Type}\".");
                     }
                     newArguments.Add(arg);
                 } else {
                     // The parameter has no longer been passed and will thus be treated as nil.
-                    if (!m_Parameters[i].Type.CanBeNil) {
-                        throw new SolVariableException(SolSourceLocation.Native(), 
-                            $"Parameter \"{m_Parameters[i].Name}\" expected a value of type \"{m_Parameters[i].Type}\", but did not recceive a value at all. No implicit nil value can be passed since the parameter does not accept nil values.");
+                    if (!ParametersList[i].Type.CanBeNil) {
+                        throw new SolVariableException(SolSourceLocation.Native(),
+                            $"Parameter \"{ParametersList[i].Name}\" expected a value of type \"{ParametersList[i].Type}\", but did not recceive a value at all. No implicit nil value can be passed since the parameter does not accept nil values.");
                     }
                     newArguments.Add(SolNil.Instance);
                 }
@@ -159,10 +166,8 @@ namespace SolScript.Interpreter
                 if (arguments.Length == Count + 1 && arguments[Count].Type == SolTable.TYPE) {
                     SolTable tableArg = (SolTable) arguments[Count];
                     newArguments.AddRange(tableArg.IterateArray());
-                } else
-                {
-                    for (int i = Count; i < arguments.Length; i++)
-                    {
+                } else {
+                    for (int i = Count; i < arguments.Length; i++) {
                         newArguments.Add(arguments[i]);
                     }
                 }
@@ -193,7 +198,19 @@ namespace SolScript.Interpreter
         // Equals implementation. Does not check for null.
         private bool Equals_Impl(SolParameterInfo other)
         {
-            return Equals(m_Parameters, other.m_Parameters) && AllowOptional == other.AllowOptional;
+            return Equals(ParametersList, other.ParametersList) && AllowOptional == other.AllowOptional;
+        }
+
+        /// <inheritdoc />
+        public void CopyTo(Array array, int index)
+        {
+            ArrayUtility.Copy(ParametersList, 0, array, index, ParametersList.Count);
+        }
+
+        /// <inheritdoc />
+        public void CopyTo(Array<SolParameter> array, int index)
+        {
+            ArrayUtility.Copy(ParametersList, 0, array, index, ParametersList.Count);
         }
 
         #region Nested type: Native
@@ -245,9 +262,9 @@ namespace SolScript.Interpreter
             private readonly Type[] m_NativeTypes;
 
             /// <summary>
-            ///     Should the current executiong conext be passed as first argument to the native method?
+            ///     A clone of the native type array.
             /// </summary>
-            public bool SendContext { get; }
+            public Type[] NativeTypes => (Type[]) m_NativeTypes.Clone();
 
             /// <summary>
             ///     The element type of the optional native array(e.g Int32 and not Int32[]). Only valid if
@@ -256,9 +273,9 @@ namespace SolScript.Interpreter
             public Type OptionalType { get; }
 
             /// <summary>
-            ///     A clone of the native type array.
+            ///     Should the current executiong conext be passed as first argument to the native method?
             /// </summary>
-            public Type[] NativeTypes => (Type[]) m_NativeTypes.Clone();
+            public bool SendContext { get; }
 
             /// <summary>
             ///     Marshals the given arguments to their native counterparts.

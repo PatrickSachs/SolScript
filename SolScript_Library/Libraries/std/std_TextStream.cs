@@ -14,7 +14,7 @@ namespace SolScript.Libraries.std
     /// <summary>
     ///     The <see cref="std_TextStream" /> is used to write and read data in text(string) form.
     /// </summary>
-    [SolLibraryClass(std.NAME, SolTypeMode.Default)]
+    [SolTypeDescriptor(std.NAME, SolTypeMode.Default, typeof(std_TextStream))]
     [SolLibraryName(TYPE)]
     [PublicAPI]
     public class std_TextStream : std_Stream

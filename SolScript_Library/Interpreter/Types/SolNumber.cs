@@ -7,16 +7,26 @@ namespace SolScript.Interpreter.Types
 {
     public sealed class SolNumber : SolValue
     {
+        public SolNumber() : this(0) {}
+
         public SolNumber(double value)
         {
-            Value = value;
+            MutableValue = value;
         }
 
         public const string TYPE = "number";
 
-        public readonly double Value;
+        /// <summary>
+        ///     The mutable backing value. This field must be mutable in order for sarcasm to be able to assign its value.
+        /// </summary>
+        internal double MutableValue;
 
         public override string Type => TYPE;
+
+        /// <summary>
+        ///     The current value represented by this number.
+        /// </summary>
+        public double Value => MutableValue;
 
         #region Overrides
 

@@ -10,58 +10,89 @@ namespace SolScript.Interpreter
     /// </summary>
     public abstract class DynamicReference
     {
-        #region GetState enum
-
-        public enum GetState
-        {
-            Retrieved,
-            NotRetrieved
-        }
-
-        #endregion
-
-        #region SetState enum
-
-        /// <summary>
-        ///     Has the reference been set?
-        /// </summary>
-        public enum SetState
-        {
-            /// <summary>
-            ///     The variable has been set.
-            /// </summary>
-            Assigned,
-
-            /// <summary>
-            ///     The variables has not been set.
-            /// </summary>
-            NotAssigned
-        }
-
-        #endregion
-
         /// <summary>
         ///     Gets the reference, or null if the reference does not exist/cannot be
         ///     retrieved.
         /// </summary>
-        /// <returns> The reference, or null. </returns>
-        /// <param name="refState">
-        ///     Contains detailed information about the success of the
+        /// <returns>
+        ///     Contains information about the success of the
         ///     retrieval.
+        /// </returns>
+        /// <param name="obj">
+        ///     The reference, or null.
         /// </param>
-        [CanBeNull]
-        public abstract object GetReference(out GetState refState);
+        public abstract bool TryGet([CanBeNull] out object obj);
 
         /// <summary>
         ///     Sets the value associated with this reference, or nothing if the
         ///     reference cannot be resolved.
         /// </summary>
         /// <param name="value"> The value to assign. </param>
-        /// <param name="refState">
-        ///     Contains detailed information about the success of the
+        /// <returns>
+        ///     Contains information about the success of the
         ///     assignment.
-        /// </param>
-        public abstract void SetReference([CanBeNull] object value, out SetState refState);
+        /// </returns>
+        public abstract bool TrySet([CanBeNull] object value);
+
+        #region Nested type: ClassDescribedObject
+
+        public class ClassDescribedObject : DynamicReference
+        {
+            public ClassDescribedObject(SolClass theClass)
+            {
+                m_TheClass = theClass;
+            }
+
+            private readonly SolClass m_TheClass;
+
+            #region Overrides
+
+            /// <inheritdoc />
+            public override bool TryGet(out object obj)
+            {
+                return m_TheClass.DescribedObjectReference.TryGet(out obj);
+            }
+
+            /// <inheritdoc />
+            public override bool TrySet(object value)
+            {
+                return m_TheClass.DescribedObjectReference.TrySet(value);
+            }
+
+            #endregion
+        }
+
+        #endregion
+
+        #region Nested type: ClassDescriptorObject
+
+        public class ClassDescriptorObject : DynamicReference
+        {
+            public ClassDescriptorObject(SolClass theClass)
+            {
+                m_TheClass = theClass;
+            }
+
+            private readonly SolClass m_TheClass;
+
+            #region Overrides
+
+            /// <inheritdoc />
+            public override bool TryGet(out object obj)
+            {
+                return m_TheClass.DescriptorObjectReference.TryGet(out obj);
+            }
+
+            /// <inheritdoc />
+            public override bool TrySet(object value)
+            {
+                return m_TheClass.DescriptorObjectReference.TrySet(value);
+            }
+
+            #endregion
+        }
+
+        #endregion
 
         #region Nested type: FailedReference
 
@@ -80,16 +111,16 @@ namespace SolScript.Interpreter
             #region Overrides
 
             /// <inheritdoc />
-            public override object GetReference(out GetState refState)
+            public override bool TryGet(out object obj)
             {
-                refState = GetState.NotRetrieved;
-                return null;
+                obj = null;
+                return false;
             }
 
             /// <inheritdoc />
-            public override void SetReference(object value, out SetState refState)
+            public override bool TrySet(object value)
             {
-                refState = SetState.NotAssigned;
+                return false;
             }
 
             #endregion
@@ -118,48 +149,17 @@ namespace SolScript.Interpreter
             #region Overrides
 
             /// <inheritdoc />
-            public override object GetReference(out GetState refState)
+            public override bool TryGet(out object obj)
             {
-                refState = GetState.Retrieved;
-                return m_Value;
+                obj = m_Value;
+                return true;
             }
 
             /// <inheritdoc />
-            public override void SetReference(object value, out SetState refState)
+            public override bool TrySet(object value)
             {
-                refState = SetState.Assigned;
                 m_Value = value;
-            }
-
-            #endregion
-        }
-
-        #endregion
-
-        #region Nested type: InheritanceNative
-
-        internal class InheritanceNative : DynamicReference
-        {
-            public InheritanceNative(SolClass.Inheritance inheritance)
-            {
-                m_Inheritance = inheritance;
-            }
-
-            private readonly SolClass.Inheritance m_Inheritance;
-
-            #region Overrides
-
-            /// <inheritdoc />
-            public override object GetReference(out GetState refState)
-            {
-                return m_Inheritance.NativeReference.GetReference(out refState);
-            }
-
-            /// <inheritdoc />
-            public override void SetReference(object value, out SetState refState)
-            {
-                m_Inheritance.NativeReference = new FixedReference(value);
-                refState = SetState.Assigned;
+                return true;
             }
 
             #endregion
@@ -178,33 +178,59 @@ namespace SolScript.Interpreter
             private NullReference() {}
 
             /// <summary>
-            ///     The singleton instance.
+            ///     The singleton instance of the null reference.
             /// </summary>
             public static readonly NullReference Instance = new NullReference();
 
             #region Overrides
 
-            /// <summary>
-            ///     Gets the reference, or null if the reference does not exist/cannot be
-            ///     retrieved.
-            /// </summary>
-            /// <returns> The reference, or null. </returns>
-            [CanBeNull]
-            public override object GetReference(out GetState refState)
+            /// <inheritdoc />
+            public override bool TryGet(out object obj)
             {
-                refState = GetState.Retrieved;
-                return null;
+                obj = null;
+                return true;
             }
 
-            /// <summary> Sets the value associated with this reference. </summary>
-            public override void SetReference([CanBeNull] object value, out SetState refState)
+            /// <inheritdoc />
+            public override bool TrySet(object value)
             {
-                refState = SetState.NotAssigned;
+                return false;
             }
 
             #endregion
         }
 
         #endregion
+
+        /*#region Nested type: InheritanceNative
+
+        internal class InheritanceNative : DynamicReference
+        {
+            public InheritanceNative(SolClass.Inheritance inheritance)
+            {
+                m_Inheritance = inheritance;
+            }
+
+            private readonly SolClass.Inheritance m_Inheritance;
+
+            #region Overrides
+
+            /// <inheritdoc />
+            public override object TryGet(out GetState refState)
+            {
+                return m_Inheritance.NativeReference.TryGet(out refState);
+            }
+
+            /// <inheritdoc />
+            public override void TrySet(object value, out SetState refState)
+            {
+                m_Inheritance.NativeReference = new FixedReference(value);
+                refState = SetState.Assigned;
+            }
+
+            #endregion
+        }
+
+        #endregion*/
     }
 }

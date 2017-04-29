@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Reflection;
 using PSUtility.Enumerables;
 using SolScript.Interpreter.Exceptions;
@@ -187,19 +188,19 @@ namespace SolScript.Interpreter
             SolFunctionDefinition functionDefinition;
             if (Inheritance.Definition.TryGetFunction(name, true, out functionDefinition) && ValidateFunctionDefinition(functionDefinition)) {
                 SolFunction function;
-                ICustomAttributeProvider provider;
+                //ICustomAttributeProvider provider;
                 switch (functionDefinition.Chunk.ChunkType) {
                     case SolChunkWrapper.Type.ScriptChunk:
                         function = new SolScriptClassFunction(Inheritance.Instance, functionDefinition);
-                        provider = null;
+                        //provider = null;
                         break;
                     case SolChunkWrapper.Type.NativeMethod:
                         function = new SolNativeClassMemberFunction(Inheritance.Instance, functionDefinition);
-                        provider = functionDefinition.Chunk.GetNativeMethod();
+                        //provider = functionDefinition.Chunk.GetNativeMethod();
                         break;
                     case SolChunkWrapper.Type.NativeConstructor:
                         function = new SolNativeClassConstructorFunction(Inheritance.Instance, functionDefinition);
-                        provider = functionDefinition.Chunk.GetNativeConstructor();
+                        //provider = functionDefinition.Chunk.GetNativeConstructor();
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -209,8 +210,11 @@ namespace SolScript.Interpreter
                 if (functionDefinition.DeclaredAnnotations.Count > 0) {
                     SolClass[] annotations;
                     try {
-                        annotations = InternalHelper.CreateAnnotations(new SolExecutionContext(Assembly, "Function \"" + name + "\" annotation creator"),
-                            Inheritance.GetVariables(SolAccessModifier.Local, SolVariableMode.All), functionDefinition.DeclaredAnnotations, provider);
+                        SolExecutionContext context = new SolExecutionContext(Assembly, "Function \"" + name + "\" annotation creator");
+                        IVariables variables = Inheritance.GetVariables(SolAccessModifier.Local, SolVariableMode.All);
+                        annotations = functionDefinition.DeclaredAnnotations
+                            .Select(a => a.Assembly.New(a.Definition, ClassCreationOptions.Enforce(), a.Arguments.Evaluate(context, variables)))
+                            .ToArray();
                     } catch (SolTypeRegistryException ex) {
                         throw new SolVariableException(functionDefinition.Location, "Failed to create an annotation for function \"" + Inheritance.Definition.Type + "." + name + "\".", ex);
                     }

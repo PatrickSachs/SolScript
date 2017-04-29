@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Irony.Parsing;
 using PSUtility.Enumerables;
-using SolScript.Interpreter.Builders;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Types;
@@ -11,7 +10,7 @@ using SolScript.Utility;
 
 namespace SolScript.Interpreter.Statements
 {
-    public class StatementFactory
+    internal class StatementFactory
     {
         public StatementFactory(SolAssembly assembly)
         {
@@ -23,40 +22,48 @@ namespace SolScript.Interpreter.Statements
         private readonly Stack<MetaItem> m_MetaStack = new Stack<MetaItem>();
         public string ActiveFile { get; set; }
 
+        internal class TreeData
+        {
+            public readonly IList<SolClassDefinition> Classes = new PSUtility.Enumerables.List<SolClassDefinition>();
+            public readonly IList<SolFunctionDefinition> Functions = new PSUtility.Enumerables.List<SolFunctionDefinition>();
+            public readonly IList<SolFieldDefinition> Fields = new PSUtility.Enumerables.List<SolFieldDefinition>();
+        }
+
         /// <exception cref="SolInterpreterException">An error occured.</exception>
-        public void InterpretTree(ParseTree tree, SolConstructWithMembersBuilder globals, out IReadOnlyList<SolClassBuilder> classes)
+        public TreeData InterpretTree(ParseTree tree)
         {
             ActiveFile = tree.FileName;
-            var classesList = new PSUtility.Enumerables.List<SolClassBuilder>();
-            classes = classesList;
+            TreeData data = new TreeData();
             foreach (ParseTreeNode rootedNode in tree.Root.ChildNodes) {
                 switch (rootedNode.Term.Name) {
                     case "FunctionWithAccess": {
-                        SolFunctionBuilder functionBuilder = GetFunctionWithAccess(rootedNode, delegate { });
-                        globals.AddFunction(functionBuilder);
+                        data.Functions.Add(GetFunctionWithAccess(rootedNode));
                         break;
                     }
                     case "FieldWithAccess": {
-                        globals.AddField(GetFieldWithAccess(rootedNode));
+                        data.Fields.Add(GetFieldWithAccess(rootedNode));
                         break;
                     }
                     case "ClassDefinition": {
-                        classesList.Add(GetClassDefinition(rootedNode));
+                            data.Classes.Add(GetClassDefinition(rootedNode));
                         break;
                     }
                     default: {
-                        throw new SolInterpreterException(new SolSourceLocation(ActiveFile, rootedNode.Span.Location), $"Not supported root node id \"{rootedNode.Term.Name}\".");
+                        throw new SolInterpreterException(rootedNode.Span.Location, $"Not supported root node id \"{rootedNode.Term.Name}\".");
                     }
                 }
             }
+            return data;
         }
 
-        public SolParameterBuilder[] GetParameters(ParseTreeNode node, out bool allowOptional)
+        #region Parameters
+
+        public SolParameterInfo GetParameters(ParseTreeNode node)
         {
             ParseTreeNode parametersListNode = node.ChildNodes[0];
-            if (parametersListNode.ChildNodes.Count == 0) {
-                allowOptional = false;
-                return EmptyArray<SolParameterBuilder>.Value;
+            if (parametersListNode.ChildNodes.Count == 0)
+            {
+                return SolParameterInfo.None;
             }
             // Tree for args:
             // - ParameterList
@@ -67,16 +74,48 @@ namespace SolScript.Interpreter.Statements
             ParseTreeNode optionalNode = parametersListNode.ChildNodes.FindChildByName("...");
             ParseTreeNode explicitNode =
                 parametersListNode.ChildNodes.FindChildByName("ExplicitParameterList");
-            allowOptional = optionalNode != null;
-            return explicitNode == null
-                ? EmptyArray<SolParameterBuilder>.Value
-                : GetExplicitParameters(explicitNode);
+            if (explicitNode == null)
+            {
+                return optionalNode == null ? SolParameterInfo.None : SolParameterInfo.Any;
+            }
+            return new SolParameterInfo(GetExplicitParameters(explicitNode), optionalNode != null);
         }
 
-        public SolClassBuilder GetClassDefinition(ParseTreeNode node)
+
+        public SolParameter[] GetExplicitParameters(ParseTreeNode node)
+        {
+            if (node.Term.Name != "ExplicitParameterList")
+            {
+                throw new SolInterpreterException(node.Span.Location, "Invalid explicit parameter list node id \"" + node.Term.Name + "\".");
+            }
+            ParseTreeNodeList childNodes = node.ChildNodes;
+            var parameterArray = new SolParameter[childNodes.Count];
+            for (int i = 0; i < childNodes.Count; i++)
+            {
+                parameterArray[i] = GetParameter(childNodes[i]);
+            }
+            return parameterArray;
+        }
+
+        public SolParameter GetParameter(ParseTreeNode node)
+        {
+            if (node.Term.Name != "Parameter")
+            {
+                throw new SolInterpreterException(node.Span.Location, "Invalid parameter node id \"" + node.Term.Name + "\".");
+            }
+            string name = node.ChildNodes[0].Token.Text;
+            // Parameter->(<name>, TypeRef_opt)
+            ParseTreeNode typeRefOpt = node.ChildNodes[1];
+            return new SolParameter(name, GetTypeRef(typeRefOpt));
+        }
+
+
+        #endregion
+
+        public SolClassDefinition GetClassDefinition(ParseTreeNode node)
         {
             if (node.Term.Name != "ClassDefinition") {
-                throw new SolInterpreterException(new SolSourceLocation(ActiveFile, node.Span.Location), "Invalid class node id \"" + node.Term.Name + "\".");
+                throw new SolInterpreterException(node.Span.Location, "Invalid class node id \"" + node.Term.Name + "\".");
             }
             // ===================================================================
             // ClassDefinition
@@ -115,8 +154,11 @@ namespace SolScript.Interpreter.Statements
             }
 
             string className = node.ChildNodes[3].Token.Text;
-            SolClassBuilder classBuilder = new SolClassBuilder(className, typeMode).SetLocation(new SolSourceLocation(ActiveFile, node.Span.Location));
-            m_MetaStack.Push(new MetaItem {ActiveClass = classBuilder});
+            SolClassDefinition classDefinition = new SolClassDefinition();
+            classDefinition.Type = className;
+            classDefinition.TypeMode = typeMode;
+            classDefinition.InjectSourceLocation(node.Span.Location);
+            m_MetaStack.Push(new MetaItem {ActiveClass = classDefinition });
             // ===================================================================
             // == Annotations
             // AnnotationList
@@ -126,7 +168,7 @@ namespace SolScript.Interpreter.Statements
             //   - _identifier
             //   - Arguments_trans
             ParseTreeNode annotationsListNode = node.ChildNodes[0];
-            InsertAnnotations(annotationsListNode, classBuilder);
+            InsertAnnotations(annotationsListNode, classDefinition);
             // Push class builder to meta, so that instance functions can determine that they are instance functions.
             // ===================================================================
             // ClassDefinition_Mixins_opt
@@ -136,7 +178,7 @@ namespace SolScript.Interpreter.Statements
             //  - _identifier
             ParseTreeNode mixinsNode = node.ChildNodes[4];
             if (mixinsNode.ChildNodes.Count != 0) {
-                classBuilder.SetBaseClass(mixinsNode.ChildNodes[1].Token.Text);
+                classDefinition.BaseClassReference = new SolClassDefinitionReference(Assembly, mixinsNode.ChildNodes[1].Token.Text);
             }
             // ===================================================================
             ParseTreeNode bodyMemberListNode = node.ChildNodes[5].ChildNodes[0];
@@ -148,35 +190,32 @@ namespace SolScript.Interpreter.Statements
                 switch (classMemberNode.Term.Name) {
                     // ===================================================================
                     case "FieldWithAccess": {
-                        classBuilder.AddField(GetFieldWithAccess(classMemberNode));
+                        var fieldDefinition = GetFieldWithAccess(classMemberNode);
+                        if (classDefinition.FieldLookup.ContainsKey(fieldDefinition.Name)) {
+                            throw new SolInterpreterException(classMemberNode.Span.Location, "The field \"" + fieldDefinition.Name + "\" exists multiple times within the class \"" + classDefinition.Type +"\".");
+                        }
+                            classDefinition.AssignFieldDirect(fieldDefinition);
                         break;
                     }
                     // ===================================================================
                     case "FunctionWithAccess": {
-                        SolFunctionBuilder functionBuilder = GetFunctionWithAccess(classMemberNode,
-                            delegate(SolFunctionBuilder builder) {
-                                if (builder.Name == "__new") {
-                                    // todo: should this be done here or checked with other meta functions in perhaps the compiler later on? (probably!)
-                                    SolType returnType = builder.ReturnType.Get(Assembly);
-                                    if (!returnType.CanBeNil || returnType.Type != "any" && returnType.Type != "nil") {
-                                        throw new SolInterpreterException(builder.Location,
-                                            "The constructor on class \"" + builder.Name + "\" specified \"" + returnType + "\" as return type. A constructor function must not specify a return type.");
-                                    }
-                                    builder.SetReturnType(SolTypeBuilder.Fixed(new SolType(SolNil.TYPE, true)));
-                                }
-                            });
-                        classBuilder.AddFunction(functionBuilder);
+                        SolFunctionDefinition functionDefinition = GetFunctionWithAccess(classMemberNode);
+                            if (classDefinition.FunctionLookup.ContainsKey(functionDefinition.Name))
+                            {
+                                throw new SolInterpreterException(classMemberNode.Span.Location, "The function \"" + functionDefinition.Name + "\" exists multiple times within the class \"" + classDefinition.Type + "\".");
+                            }
+                            classDefinition.AssignFunctionDirect(functionDefinition);
                         break;
                     }
                     // ===================================================================
                     default: {
-                        throw new SolInterpreterException(new SolSourceLocation(ActiveFile, classMemberNode.Span.Location), $"Invalid class member node id \"{classMemberNode.Term.Name}\".");
+                        throw new SolInterpreterException(classMemberNode.Span.Location, $"Invalid class member node id \"{classMemberNode.Term.Name}\".");
                     }
                 }
             }
             // ===================================================================
             m_MetaStack.Pop();
-            return classBuilder;
+            return classDefinition;
         }
 
         /// <summary>
@@ -239,7 +278,7 @@ namespace SolScript.Interpreter.Statements
         /// </param>
         /// <returns>The created function builder.</returns>
         /// <remarks></remarks>
-        public SolFunctionBuilder GetFunctionWithAccess(ParseTreeNode node, Action<SolFunctionBuilder> generator)
+        public SolFunctionDefinition GetFunctionWithAccess(ParseTreeNode node)
         {
             // todo: annotations in statement factory on functions with access (the name sucks btw)
             // 0 -> AnnotationList
@@ -260,52 +299,34 @@ namespace SolScript.Interpreter.Statements
 
             string funcName = funcNameNode.Token.Text;
             SolType funcType = GetTypeRef(typeNode);
-            ParseTreeNode parametersListNode = parametersNode.ChildNodes[0];
-            bool allowOptional;
-            SolParameterBuilder[] parameters;
+            SolParameterInfo parameters = GetParameters(parametersNode);
             SolChunk chunk = GetChunk(bodyNode.ChildNodes[0]);
-            if (parametersListNode.ChildNodes.Count == 0) {
-                // This cannot be parsed in one step.
-                // Tree for no args:
-                // - "()"
-                parameters = new SolParameterBuilder[0];
-                allowOptional = false;
-            } else {
-                // Tree for args:
-                // - ParameterList
-                //  - ExplicitParameterList
-                //   - Parameter
-                //   - Parameter
-                //  ...
-                ParseTreeNode optionalNode = parametersListNode.ChildNodes.FindChildByName("...");
-                ParseTreeNode explicitNode = parametersListNode.ChildNodes.FindChildByName("ExplicitParameterList");
-                allowOptional = optionalNode != null;
-                parameters = explicitNode == null ? new SolParameterBuilder[0] : GetExplicitParameters(explicitNode);
-            }
-            SolFunctionBuilder functionBuilder = SolFunctionBuilder.NewScriptFunction(funcName, chunk, new SolSourceLocation(ActiveFile, node.Span.Location))
-                .SetAccessModifier(accessModifier)
-                .SetMemberModifier(memberModifier)
-                .SetParameters(parameters)
-                .SetAllowOptionalParameters(allowOptional)
-                .SetReturnType(SolTypeBuilder.Fixed(funcType));
-            InsertAnnotations(annotationsListNode, functionBuilder);
-            generator(functionBuilder);
-            return functionBuilder;
+            SolFunctionDefinition functionDefinition = new SolFunctionDefinition {
+                Name = funcName,
+                AccessModifier = accessModifier,
+                MemberModifier = memberModifier,
+                ParameterInfo = parameters,
+                Chunk = new SolChunkWrapper(chunk),
+                ReturnType = funcType
+            };
+            functionDefinition.InjectSourceLocation(node.Span.Location);
+            InsertAnnotations(annotationsListNode, functionDefinition);
+            return functionDefinition;
         }
 
-        private void InsertAnnotations(ParseTreeNode node, IAnnotateableBuilder builder)
+        private void InsertAnnotations(ParseTreeNode node, SolAnnotateableDefinitionBase builder)
         {
             if (node.Term.Name != "AnnotationList") {
-                throw new SolInterpreterException(new SolSourceLocation(ActiveFile, node.Span.Location), "Invalid annotation list: " + node.Term.Name);
+                throw new SolInterpreterException(node.Span.Location, "Invalid annotation list: " + node.Term.Name);
             }
             foreach (ParseTreeNode annotationNode in node.ChildNodes) {
                 string name = annotationNode.ChildNodes[1].Token.Text;
                 SolExpression[] expressions = annotationNode.ChildNodes.Count == 3 ? GetExpressions(annotationNode.ChildNodes[2]) : EmptyArray<SolExpression>.Value;
-                builder.AddAnnotation(new SolAnnotationBuilder(new SolSourceLocation(ActiveFile, node.Span.Location), name, expressions));
+                builder.AddAnnotation(new SolAnnotationDefinition(new SolClassDefinitionReference(Assembly, name), expressions));
             }
         }
 
-        public SolFieldBuilder GetFieldWithAccess(ParseTreeNode node)
+        public SolFieldDefinition GetFieldWithAccess(ParseTreeNode node)
         {
             // 0 AnnotationList 
             // 1 AccessModifier_opt
@@ -323,31 +344,45 @@ namespace SolScript.Interpreter.Statements
             SolExpression init = assignmentOpt.ChildNodes.Count != 0
                 ? GetExpression(assignmentOpt.ChildNodes[0])
                 : null;
+            SolFieldDefinition fieldDefinition = new SolFieldDefinition {
+                Name = fieldName,
+                Initializer = new SolFieldInitializerWrapper(init),
+                AccessModifier = accessModifier,
+                Type = fieldType
+            };
+            fieldDefinition.InjectSourceLocation(node.Span.Location);
+            /*
             SolFieldBuilder fieldBuilder = SolFieldBuilder.NewScriptField(fieldName, init, init?.Location ?? new SolSourceLocation(ActiveFile, assignmentOpt.Span.Location))
                 .SetFieldType(SolTypeBuilder.Fixed(fieldType))
                 .SetAccessModifier(accessModifier)
-                .SetMemberModifier(memberModifier);
-            InsertAnnotations(annotationsListNode, fieldBuilder);
-            return fieldBuilder;
+                .SetMemberModifier(memberModifier);*/
+            InsertAnnotations(annotationsListNode, fieldDefinition);
+            return fieldDefinition;
         }
 
         private SolMemberModifier GetMemberModifier(ParseTreeNode node)
         {
             if (node.Term.Name == "MemberModifier_opt") {
                 if (node.ChildNodes.Count != 1) {
-                    return SolMemberModifier.None;
+                    return SolMemberModifier.Default;
                 }
                 node = node.ChildNodes[0];
             }
-            switch (node.Token.Text) {
-                case "override": {
-                    return SolMemberModifier.Override;
-                }
+            switch (node.Token.Text)
+            {
+                case "default":
+                    {
+                        return SolMemberModifier.Default;
+                    }
+                case "override":
+                    {
+                        return SolMemberModifier.Override;
+                    }
                 case "abstract": {
                     return SolMemberModifier.Abstract;
                 }
                 default: {
-                    throw new SolInterpreterException(new SolSourceLocation(ActiveFile, node.Span.Location), "Invalid member modifier node name \"" + node.Token.Text + "\".");
+                    throw new SolInterpreterException(node.Span.Location, "Invalid member modifier node name \"" + node.Token.Text + "\".");
                 }
             }
         }
@@ -356,19 +391,25 @@ namespace SolScript.Interpreter.Statements
         {
             if (node.Term.Name == "AccessModifier_opt") {
                 if (node.ChildNodes.Count != 1) {
-                    return SolAccessModifier.None;
+                    return SolAccessModifier.Global;
                 }
                 node = node.ChildNodes[0];
             }
-            switch (node.Token.Text) {
-                case "local": {
-                    return SolAccessModifier.Local;
-                }
+            switch (node.Token.Text)
+            {
+                case "global":
+                    {
+                        return SolAccessModifier.Global;
+                    }
+                case "local":
+                    {
+                        return SolAccessModifier.Local;
+                    }
                 case "internal": {
                     return SolAccessModifier.Internal;
                 }
                 default: {
-                    throw new SolInterpreterException(new SolSourceLocation(ActiveFile, node.Span.Location), "Invalid access modifier node name \"" + node.Token.Text + "\".");
+                    throw new SolInterpreterException(node.Span.Location, "Invalid access modifier node name \"" + node.Token.Text + "\".");
                 }
             }
         }
@@ -376,7 +417,7 @@ namespace SolScript.Interpreter.Statements
         public SolChunk GetChunk(ParseTreeNode node)
         {
             if (node.Term.Name != "Chunk") {
-                throw new SolInterpreterException(new SolSourceLocation(ActiveFile, node.Span.Location), "Invalid chunk node id \"" + node.Term.Name + "\".");
+                throw new SolInterpreterException(node.Span.Location, "Invalid chunk node id \"" + node.Term.Name + "\".");
             }
             ParseTreeNode chunkEndNode = node.ChildNodes[1];
             TerminatingSolExpression returnValue;
@@ -393,8 +434,9 @@ namespace SolScript.Interpreter.Statements
                     case "return": {
                         SolExpression returnExpression = lastStatement.ChildNodes.Count > 1
                             ? GetExpression(lastStatement.ChildNodes[1])
-                            : new Expression_Nil(Assembly, new SolSourceLocation(ActiveFile, lastStatement.Span.Location));
-                        returnValue = new Expression_Return(Assembly, new SolSourceLocation(ActiveFile, lastStatement.Span.Location), returnExpression);
+                            : Expression_Nil.InstanceOf(Assembly);
+                        returnValue = new Expression_Return(returnExpression);
+                            returnValue.InjectSourceLocation(lastStatement.Span.Location);
                         break;
                     }
                     case "break": {
@@ -406,12 +448,14 @@ namespace SolScript.Interpreter.Statements
                         break;
                     }
                     default: {
-                        throw new SolInterpreterException(new SolSourceLocation(ActiveFile, lastStatement.ChildNodes[0].Span.Location),
+                        throw new SolInterpreterException(lastStatement.ChildNodes[0].Span.Location,
                             "Invalid chunk last statement node id \"" + lastStatement.ChildNodes[0].Term.Name + "\".");
                     }
                 }
             }
-            return new SolChunk(Assembly, new SolSourceLocation(ActiveFile, node.Span.Location), returnValue, GetStatements(node.ChildNodes[0]));
+            SolChunk chunk = new SolChunk(Assembly, node.Span.Location, returnValue, GetStatements(node.ChildNodes[0]));
+            chunk.InjectSourceLocation(node.Span.Location);
+            return chunk;
         }
 
         public SolExpression[] GetExpressions(ParseTreeNode node)
@@ -427,7 +471,7 @@ namespace SolScript.Interpreter.Statements
         public SolExpression BinaryExpression(ParseTreeNode node)
         {
             if (node.Term.Name != "Expression_Binary") {
-                throw new SolInterpreterException(new SolSourceLocation(ActiveFile, node.Span.Location), "Invalid binary expression root node id \"" + node.Term.Name + "\".");
+                throw new SolInterpreterException(node.Span.Location, "Invalid binary expression root node id \"" + node.Term.Name + "\".");
             }
 
             ParseTreeNode leftNode = node.ChildNodes[0];
@@ -505,19 +549,21 @@ namespace SolScript.Interpreter.Statements
                     break;
                 }
                 default: {
-                    throw new SolInterpreterException(new SolSourceLocation(ActiveFile, opNode.Span.Location), "Invalid binary operation node id \"" + opNode.Term.Name + "\".");
+                    throw new SolInterpreterException(opNode.Span.Location, "Invalid binary operation node id \"" + opNode.Term.Name + "\".");
                 }
             }
             SolExpression left = GetExpression(leftNode);
             SolExpression right = GetExpression(rightNode);
-            return new Expression_Binary(Assembly, new SolSourceLocation(ActiveFile, node.Span.Location), operation, left, right);
+            var bin = new Expression_Binary(operation, left, right);
+            bin.InjectSourceLocation(node.Span.Location);
+            return bin;
         }
 
         public SolExpression GetExpression(ParseTreeNode node)
         {
 #if DEBUG
             if (node.Term.Name != "Expression") {
-                throw new SolInterpreterException(new SolSourceLocation(ActiveFile, node.Span.Location), "Invalid expression root node id \"" + node.Term.Name + "\".");
+                throw new SolInterpreterException(node.Span.Location, "Invalid expression root node id \"" + node.Term.Name + "\".");
             }
 #endif
             ParseTreeNode expressionNode = node.ChildNodes[0];
@@ -527,21 +573,21 @@ namespace SolScript.Interpreter.Statements
                     try {
                         text = expressionNode.Token.ValueString /*.UnEscape()*/;
                     } catch (ArgumentException ex) {
-                        throw new SolInterpreterException(new SolSourceLocation(ActiveFile, expressionNode.Span.Location), "Failed to parse string: " + ex.Message, ex);
+                        throw new SolInterpreterException(expressionNode.Span.Location, "Failed to parse string: " + ex.Message, ex);
                     }
-                    return new Expression_String(Assembly, new SolSourceLocation(ActiveFile, expressionNode.Span.Location), text);
+                    return new Expression_Literal(SolString.ValueOf(text));
                 } // _string
                 case "_long_string": {
                     string text;
                     try {
                         text = expressionNode.Token.ValueString;
                     } catch (ArgumentException ex) {
-                        throw new SolInterpreterException(new SolSourceLocation(ActiveFile, expressionNode.Span.Location), "Failed to parse long string: " + ex.Message, ex);
+                        throw new SolInterpreterException(expressionNode.Span.Location, "Failed to parse long string: " + ex.Message, ex);
                     }
-                    return new Expression_String(Assembly, new SolSourceLocation(ActiveFile, expressionNode.Span.Location), text);
+                    return new Expression_Literal(SolString.ValueOf(text));
                 } // _string
                 case "_number": {
-                    return new Expression_Number(Assembly, new SolSourceLocation(ActiveFile, expressionNode.Span.Location), new SolNumber(double.Parse(expressionNode.Token.ValueString)));
+                    return new Expression_Literal(new SolNumber((double)expressionNode.Token.Value));
                 } // _number
                 case "Expression_Parenthetical": {
                     // This node is not transient since that would enable Expression->Expression 
@@ -552,7 +598,7 @@ namespace SolScript.Interpreter.Statements
                 case "Expression_GetVariable": {
                     // Expression_GetVariable->Variable->(Named/IndexedVariable)
                     ParseTreeNode underlying = expressionNode.ChildNodes[0].ChildNodes[0];
-                    Expression_GetVariable.SourceRef source;
+                    AVariable source;
                     switch (underlying.Term.Name) {
                         case "IndexedVariable": {
                             // IndexedVariable->(Expression, Expression/_identifier)
@@ -566,7 +612,7 @@ namespace SolScript.Interpreter.Statements
                                     // We are using identifiers instead of names variables since named variables retrieve their 
                                     // value from the context directly. However we want to retrieve a value from the table using 
                                     // the given key.
-                                    key = new Expression_String(Assembly, new SolSourceLocation(ActiveFile, expressionNode.Span.Location), keyGetter.Token.Text);
+                                    key = new Expression_Literal(SolString.ValueOf(keyGetter.Token.Text));
                                     break;
                                 }
                                 // todo: recursion inside binary-exp might be problematic.
@@ -575,24 +621,24 @@ namespace SolScript.Interpreter.Statements
                                     break;
                                 }
                                 default: {
-                                    throw new SolInterpreterException(new SolSourceLocation(ActiveFile, keyGetter.Span.Location),
+                                    throw new SolInterpreterException(keyGetter.Span.Location,
                                         "Invalid indexed variable getter node id \"" + keyGetter.Term.Name + "\".");
                                 }
                             }
-                            source = new Expression_GetVariable.IndexedVariable(indexable, key);
+                            source =  new AVariable.Indexed(indexable, key);
                             break;
                         }
                         case "NamedVariable": {
                             ParseTreeNode identifier = underlying.ChildNodes[0];
-                            source = new Expression_GetVariable.NamedVariable(identifier.Token.Text);
+                            source = new AVariable.Named(identifier.Token.Text);
                             break;
                         }
                         default: {
-                            throw new SolInterpreterException(new SolSourceLocation(ActiveFile, underlying.Span.Location), "Invalid variable getter node id \"" + underlying.Term.Name + "\".");
+                            throw new SolInterpreterException(underlying.Span.Location, "Invalid variable getter node id \"" + underlying.Term.Name + "\".");
                         }
                     }
-                    MetaItem meta = m_MetaStack.Count != 0 ? m_MetaStack.Peek() : null;
-                    return new Expression_GetVariable(Assembly, new SolSourceLocation(ActiveFile, expressionNode.Span.Location), source, meta?.ActiveClass.Name);
+                    //MetaItem meta = m_MetaStack.Count != 0 ? m_MetaStack.Peek() : null;
+                    return new Expression_GetVariable(source);
                 }
                 case "Expression_Unary": {
                     string op = expressionNode.ChildNodes[0].Token.Text;
@@ -615,25 +661,27 @@ namespace SolScript.Interpreter.Statements
                             operationRef = Expression_Unary.PlusOperation.Instance;
                             break;
                         }
-                        case "++": {
+                        /*case "++": {
                             operationRef = Expression_Unary.PlusPlusOperation.Instance;
                             break;
                         }
                         case "--": {
                             operationRef = Expression_Unary.MinusMinusOperation.Instance;
                             break;
-                        }
+                        }*/
                         default: {
-                            throw new SolInterpreterException(new SolSourceLocation(ActiveFile, expressionNode.ChildNodes[0].Span.Location),
+                            throw new SolInterpreterException(expressionNode.ChildNodes[0].Span.Location,
                                 "Invalid unary expression node id \"" + expressionNode.ChildNodes[0].Term.Name + "\".");
                         }
                     }
                     // todo: recursion inside unary-exp might be problematic.
                     SolExpression expression = GetExpression(expressionNode.ChildNodes[1]);
-                    return new Expression_Unary(Assembly, new SolSourceLocation(ActiveFile, expressionNode.Span.Location)) {
+                    var unar = new Expression_Unary {
                         Operation = operationRef,
                         ValueGetter = expression
                     };
+                        unar.InjectSourceLocation(expressionNode.Span.Location);
+                    return unar;
                 }
                 case "Expression_Binary": {
                     return BinaryExpression(expressionNode);
@@ -642,22 +690,24 @@ namespace SolScript.Interpreter.Statements
                     SolExpression condition = GetExpression(expressionNode.ChildNodes[0]);
                     SolExpression trueValue = GetExpression(expressionNode.ChildNodes[2]);
                     SolExpression falseValue = GetExpression(expressionNode.ChildNodes[4]);
-                    return new Expression_Tertiary(Assembly, new SolSourceLocation(ActiveFile, expressionNode.Span.Location), Expression_Tertiary.Conditional.Instance, condition, trueValue, falseValue);
+                    var ter= new Expression_Tertiary(Expression_Tertiary.Conditional.Instance, condition, trueValue, falseValue);
+                        ter.InjectSourceLocation(expressionNode.Span.Location);
+                    return ter;
                 }
                 case "Expression_Statement": {
                     SolStatement statement = GetStatement(expressionNode);
-                    return new Expression_Statement(Assembly, new SolSourceLocation(ActiveFile, expressionNode.Span.Location)) {
-                        Statement = statement
-                    };
+                    var expr = new Expression_Statement(statement);
+                        expr.InjectSourceLocation(expressionNode.Span.Location);
+                    return expr;
                 }
                 case "Expression_CreateFunc": {
-                    bool allowOptional;
-                    SolParameterBuilder[] parameters = GetParameters(expressionNode.ChildNodes[1], out allowOptional);
+                    SolParameterInfo parameters = GetParameters(expressionNode.ChildNodes[1]);
                     SolType type = GetTypeRef(expressionNode.ChildNodes[2]);
                     SolChunk chunk = GetChunk(expressionNode.ChildNodes[3].ChildNodes[0]);
-                    return new Expression_CreateFunc(Assembly, new SolSourceLocation(ActiveFile, expressionNode.Span.Location),
-                        chunk, type, allowOptional, parameters.Select(p => p.Get(Assembly)).ToArray());
-                }
+                        var expr = new Expression_CreateFunc(chunk, type, parameters); ;
+                        expr.InjectSourceLocation(expressionNode.Span.Location);
+                        return expr;
+                    }
                 case "Expression_TableConstructor": {
                     ParseTreeNode fieldListNode = expressionNode.ChildNodes[0];
                     int fieldCount = fieldListNode.ChildNodes.Count;
@@ -678,7 +728,7 @@ namespace SolScript.Interpreter.Statements
                         switch (fieldNode.ChildNodes.Count) {
                             case 1: {
                                 ParseTreeNode valueNode = fieldNode.ChildNodes[0];
-                                key = new Expression_Number(Assembly, new SolSourceLocation(ActiveFile, fieldNode.Span.Location), new SolNumber(nextN++));
+                                key = new Expression_Literal(new SolNumber(nextN++));
                                 value = GetExpression(valueNode);
                                 break;
                             }
@@ -687,8 +737,7 @@ namespace SolScript.Interpreter.Statements
                                 ParseTreeNode valueNode = fieldNode.ChildNodes[2];
                                 switch (keyNode.Term.Name) {
                                     case "_identifier": {
-                                        key = new Expression_String(Assembly, new SolSourceLocation(ActiveFile, keyNode.Span.Location),
-                                            keyNode.Token.Text);
+                                        key = new Expression_Literal(SolString.ValueOf(keyNode.Token.Text));
                                         break;
                                     }
                                     case "Expression": {
@@ -696,41 +745,45 @@ namespace SolScript.Interpreter.Statements
                                         break;
                                     }
                                     default: {
-                                        throw new SolInterpreterException(new SolSourceLocation(ActiveFile, keyNode.Span.Location), "Invalid table key node id \"" + keyNode.Term.Name + "\".");
+                                        throw new SolInterpreterException(keyNode.Span.Location, "Invalid table key node id \"" + keyNode.Term.Name + "\".");
                                     }
                                 }
                                 value = GetExpression(valueNode);
                                 break;
                             }
                             default: {
-                                throw new SolInterpreterException(new SolSourceLocation(ActiveFile, fieldNode.Span.Location),
+                                throw new SolInterpreterException(fieldNode.Span.Location,
                                     "Invalid table initializer format. A table field must either be in the form of 'X = Y' or 'X'.");
                             }
                         }
                         keys[i] = key;
                         values[i] = value;
                     }
-                    return new Expression_TableConstructor(Assembly, new SolSourceLocation(ActiveFile, expressionNode.Span.Location), keys, values);
+                    return new Expression_TableConstructor(Assembly, expressionNode.Span.Location, keys, values);
                 }
                 case "Expression_Bool": {
                     switch (expressionNode.ChildNodes[0].Term.Name) {
                         case "true": {
-                            return new Expression_Bool(Assembly, new SolSourceLocation(ActiveFile, expressionNode.Span.Location), SolBool.True);
+                            var expr = new Expression_Literal(SolBool.True);
+                                    expr.InjectSourceLocation(expressionNode.Span.Location);
+                            return expr;
                         }
                         case "false": {
-                            return new Expression_Bool(Assembly, new SolSourceLocation(ActiveFile, expressionNode.Span.Location), SolBool.False);
-                        }
+                                    var expr= new Expression_Literal(SolBool.False);
+                                    expr.InjectSourceLocation(expressionNode.Span.Location);
+                                    return expr;
+                                }
                         default: {
-                            throw new SolInterpreterException(new SolSourceLocation(ActiveFile, expressionNode.Span.Location),
+                            throw new SolInterpreterException(expressionNode.Span.Location,
                                 "Invalid bool expression \"" + expressionNode.ChildNodes[0].Term.Name + "\".");
                         }
                     }
                 }
                 case "Expression_Nil": {
-                    return new Expression_Nil(Assembly, new SolSourceLocation(ActiveFile, expressionNode.Span.Location));
+                    return Expression_Nil.InstanceOf(Assembly);
                 }
                 default: {
-                    throw new SolInterpreterException(new SolSourceLocation(ActiveFile, expressionNode.Span.Location), "Invalid expression node id \"" + expressionNode.Term.Name + "\".");
+                    throw new SolInterpreterException( expressionNode.Span.Location, "Invalid expression node id \"" + expressionNode.Term.Name + "\".");
                 }
             }
         }
@@ -738,7 +791,7 @@ namespace SolScript.Interpreter.Statements
         public SolStatement[] GetStatements(ParseTreeNode node)
         {
             if (node.Term.Name != "StatementList") {
-                throw new SolInterpreterException(new SolSourceLocation(ActiveFile, node.Span.Location), "Invalid statement list node id \"" + node.Term.Name + "\".");
+                throw new SolInterpreterException(node.Span.Location, "Invalid statement list node id \"" + node.Term.Name + "\".");
             }
             var array = new SolStatement[node.ChildNodes.Count];
             for (int i = 0; i < array.Length; i++) {
@@ -751,7 +804,7 @@ namespace SolScript.Interpreter.Statements
         {
 #if DEBUG
             if (node.Term.Name != "Statement" && node.Term.Name != "Expression_Statement") {
-                throw new SolInterpreterException(new SolSourceLocation(ActiveFile, node.Span.Location), "Invalid statement root node id \"" + node.Term.Name + "\".");
+                throw new SolInterpreterException(node.Span.Location, "Invalid statement root node id \"" + node.Term.Name + "\".");
             }
 #endif
             // Statement->(All different statement types)
@@ -773,7 +826,7 @@ namespace SolScript.Interpreter.Statements
                         initialValue = GetExpression(statementNode.ChildNodes[3]);
                     }
                     SolType type = GetTypeRef(typeRefNode);
-                    return new Statement_DeclareVar(Assembly, new SolSourceLocation(ActiveFile, statementNode.Span.Location), variableNode.Token.Text, type, initialValue);
+                    return new Statement_DeclareVar(Assembly, statementNode.Span.Location, variableNode.Token.Text, type, initialValue);
                 } // Statement_DeclareVar
                 case "Statement_AssignVar": {
                     // Statement_AssignVar
@@ -781,16 +834,16 @@ namespace SolScript.Interpreter.Statements
                     //  - Expression
                     ParseTreeNode variableNode = statementNode.ChildNodes[0];
                     ParseTreeNode expressionNode = statementNode.ChildNodes[1];
-                    Statement_AssignVar.TargetRef variable = GetVariableAssignmentTarget(variableNode);
+                    AVariable variable = GetVariableAssignmentTarget(variableNode);
                     SolExpression expression = GetExpression(expressionNode);
                     MetaItem meta = m_MetaStack.Count != 0 ? m_MetaStack.Peek() : null;
-                    return new Statement_AssignVar(Assembly, new SolSourceLocation(ActiveFile, statementNode.Span.Location), variable, expression, meta?.ActiveClass.Name);
+                    return new Statement_AssignVar(Assembly, statementNode.Span.Location, variable, expression, meta?.ActiveClass.Type);
                 } // Statement_DeclareVar
                 case "Statement_CallFunction": {
                     SolExpression expression = GetExpression(statementNode.ChildNodes[0]);
                     SolExpression[] arguments = statementNode.ChildNodes[1].ChildNodes.Count != 0 ? GetExpressions(statementNode.ChildNodes[1]) : EmptyArray<SolExpression>.Value;
                     MetaItem meta = m_MetaStack.Count != 0 ? m_MetaStack.Peek() : null;
-                    return new Statement_CallFunction(Assembly, new SolSourceLocation(ActiveFile, statementNode.Span.Location), meta?.ActiveClass.Name, expression, new Array<SolExpression>(arguments));
+                    return new Statement_CallFunction(Assembly, statementNode.Span.Location, meta?.ActiveClass.Type, expression, new Array<SolExpression>(arguments));
                 } // Statement_CallFunction
                 case "Statement_For": {
                     // Statement_For
@@ -810,7 +863,7 @@ namespace SolScript.Interpreter.Statements
                     SolExpression condition = GetExpression(conditionNode);
                     SolStatement after = GetStatement(afterNode);
                     SolChunk chunk = GetChunk(chunkNode);
-                    return new Statement_For(Assembly, new SolSourceLocation(ActiveFile, statementNode.Span.Location), init, condition, after, chunk);
+                    return new Statement_For(Assembly,statementNode.Span.Location, init, condition, after, chunk);
                 } // Statement_For
                 case "Statement_Iterate": {
                     // Statement_Iterate
@@ -830,7 +883,7 @@ namespace SolScript.Interpreter.Statements
                     string iterName = identifierNode.Token.Text;
                     SolExpression iterExp = GetExpression(expressionNode);
                     SolChunk chunk = GetChunk(chunkNode);
-                    return new Statement_Iterate(Assembly, new SolSourceLocation(ActiveFile, statementNode.Span.Location), iterExp, iterName, chunk);
+                    return new Statement_Iterate(Assembly,  statementNode.Span.Location, iterExp, iterName, chunk);
                 } // Statement_Iterate
                 case "Statement_Do": {
                     // Statement_Do
@@ -839,7 +892,7 @@ namespace SolScript.Interpreter.Statements
                     //  - "end"
                     ParseTreeNode chunkNode = statementNode.ChildNodes[1];
                     SolChunk chunk = GetChunk(chunkNode);
-                    return new Statement_Do(Assembly, new SolSourceLocation(ActiveFile, statementNode.Span.Location), chunk);
+                    return new Statement_Do(Assembly,  statementNode.Span.Location, chunk);
                 } // Statement_Do
                 case "Statement_While": {
                     // Statement_While
@@ -854,7 +907,7 @@ namespace SolScript.Interpreter.Statements
                     SolDebug.WriteLine(chunkNode.ToString());
                     SolExpression conditionExp = GetExpression(conditionNode);
                     SolChunk chunk = GetChunk(chunkNode);
-                    return new Statement_While(Assembly, new SolSourceLocation(ActiveFile, statementNode.Span.Location), conditionExp, chunk);
+                    return new Statement_While(Assembly, statementNode.Span.Location, conditionExp, chunk);
                 } // Statement_Iterate
                 case "Statement_Conditional": {
                     ParseTreeNode elseIfListNode = statementNode.ChildNodes[2];
@@ -866,7 +919,9 @@ namespace SolScript.Interpreter.Statements
                         branches[i + 1] = GetIfOrElseIfBranch(elseIfNode);
                     }
                     SolChunk elseChunk = elseNode.ChildNodes.Count != 0 ? GetChunk(elseNode.ChildNodes[0]) : null;
-                    return new Statement_Conditional(Assembly, new SolSourceLocation(ActiveFile, statementNode.Span.Location), new Array<Statement_Conditional.IfBranch>(branches), elseChunk);
+                    var st = new Statement_Conditional(new Array<Statement_Conditional.IfBranch>(branches), elseChunk);
+                        st.InjectSourceLocation(statementNode.Span.Location);
+                    return st;
                 } // Statement_Conditional
                 case "Statement_New": {
                     // 0: "new"
@@ -874,7 +929,7 @@ namespace SolScript.Interpreter.Statements
                     // 2: ExpressionList
                     string typeName = statementNode.ChildNodes[1].Token.Text;
                     SolExpression[] expressions = GetExpressions(statementNode.ChildNodes[2]);
-                    return new Statement_New(Assembly, new SolSourceLocation(ActiveFile, statementNode.Span.Location), typeName, expressions);
+                    return new Statement_New(Assembly, statementNode.Span.Location, typeName, expressions);
                 } // Statement_New
                 case "Statement_Self": {
                     // 0: "self"
@@ -882,9 +937,9 @@ namespace SolScript.Interpreter.Statements
                     try {
                         meta = m_MetaStack.Peek();
                     } catch (InvalidOperationException ex) {
-                        throw new SolInterpreterException(new SolSourceLocation(ActiveFile, statementNode.Span.Location), "Can only use self keywords inside classes.", ex);
+                        throw new SolInterpreterException(statementNode.Span.Location, "Can only use self keywords inside classes.", ex);
                     }
-                    return new Statement_Self(Assembly, new SolSourceLocation(ActiveFile, statementNode.Span.Location), meta.ActiveClass.Name);
+                    return new Statement_Self(Assembly, statementNode.Span.Location, meta.ActiveClass.Type);
                 } // Statement_Self
                 case "Statement_Base": {
                     // 0: "base"
@@ -893,12 +948,12 @@ namespace SolScript.Interpreter.Statements
                     try {
                         meta = m_MetaStack.Peek();
                     } catch (InvalidOperationException ex) {
-                        throw new SolInterpreterException(new SolSourceLocation(ActiveFile, statementNode.Span.Location), "Can only use base keywords inside classes.", ex);
+                        throw new SolInterpreterException(statementNode.Span.Location, "Can only use base keywords inside classes.", ex);
                     }
                     SolExpression expression;
                     switch (statementNode.ChildNodes[1].Term.Name) {
                         case "_identifier": {
-                            expression = new Expression_String(Assembly, new SolSourceLocation(ActiveFile, statementNode.ChildNodes[1].Span.Location), statementNode.ChildNodes[1].Token.ValueString);
+                            expression = new Expression_Literal(SolString.ValueOf(statementNode.ChildNodes[1].Token.ValueString));
                             break;
                         }
                         case "Expression": {
@@ -906,14 +961,14 @@ namespace SolScript.Interpreter.Statements
                             break;
                         }
                         default: {
-                            throw new SolInterpreterException(new SolSourceLocation(ActiveFile, statementNode.ChildNodes[1].Span.Location),
+                            throw new SolInterpreterException(statementNode.ChildNodes[1].Span.Location,
                                 "Invalid base accessor: " + statementNode.ChildNodes[1].Term.Name);
                         }
                     }
-                    return new Statement_Base(Assembly, new SolSourceLocation(ActiveFile, statementNode.Span.Location), meta.ActiveClass.Name, expression);
+                    return new Statement_Base(Assembly, statementNode.Span.Location, expression);
                 } // Statement_Base
                 default: {
-                    throw new SolInterpreterException(new SolSourceLocation(ActiveFile, statementNode.Span.Location), "Invalid statement node id \"" + statementNode.Term.Name + "\".");
+                    throw new SolInterpreterException(statementNode.Span.Location, "Invalid statement node id \"" + statementNode.Term.Name + "\".");
                 } // default
             }
         }
@@ -928,7 +983,7 @@ namespace SolScript.Interpreter.Statements
             };
         }
 
-        public Expression_GetVariable.SourceRef GetVariableSourceTarget(ParseTreeNode node /*, bool local*/)
+        /*public Expression_GetVariable.SourceRef GetVariableSourceTarget(ParseTreeNode node)
         {
             switch (node.Term.Name) {
                 case "Variable": {
@@ -965,7 +1020,7 @@ namespace SolScript.Interpreter.Statements
                     throw new SolInterpreterException(new SolSourceLocation(ActiveFile, node.Span.Location), "Invalid variable source target node id \"" + node.Term.Name + "\".");
                 }
             }
-        }
+        }*/
 
         private void GetIndexedVariableExpressions(ParseTreeNode node, out SolExpression indexable, out SolExpression key)
         {
@@ -977,7 +1032,7 @@ namespace SolScript.Interpreter.Statements
                     // We are using identifiers instead of names variables since named variables retrieve their 
                     // value from the context directly. However we want to retrieve a value from the table using 
                     // the given key.
-                    key = new Expression_String(Assembly, new SolSourceLocation(ActiveFile, keyNode.Span.Location), keyNode.Token.Text);
+                    key = new Expression_Literal(SolString.ValueOf(keyNode.Token.Text));
                     break;
                 }
                 case "Expression": {
@@ -985,12 +1040,12 @@ namespace SolScript.Interpreter.Statements
                     break;
                 }
                 default: {
-                    throw new SolInterpreterException(new SolSourceLocation(ActiveFile, keyNode.Span.Location), "Invalid variable key getter node id \"" + keyNode.Term.Name + "\".");
+                    throw new SolInterpreterException(keyNode.Span.Location, "Invalid variable key getter node id \"" + keyNode.Term.Name + "\".");
                 }
             }
         }
 
-        public Statement_AssignVar.TargetRef GetVariableAssignmentTarget(ParseTreeNode node /*, bool local*/)
+        public AVariable GetVariableAssignmentTarget(ParseTreeNode node /*, bool local*/)
         {
             switch (node.Term.Name) {
                 case "Variable": {
@@ -998,16 +1053,16 @@ namespace SolScript.Interpreter.Statements
                     return GetVariableAssignmentTarget(node.ChildNodes[0]);
                 }
                 case "NamedVariable": {
-                    return new Statement_AssignVar.NamedVariable(node.ChildNodes[0].Token.Text);
+                    return new AVariable.Named(node.ChildNodes[0].Token.Text);
                 }
                 case "IndexedVariable": {
                     SolExpression indexable;
                     SolExpression key;
                     GetIndexedVariableExpressions(node, out indexable, out key);
-                    return new Statement_AssignVar.IndexedVariable(indexable, key);
+                    return new AVariable.Indexed(indexable, key);
                 }
                 default: {
-                    throw new SolInterpreterException(new SolSourceLocation(ActiveFile, node.Span.Location), "Invalid variable assignment target node id \"" + node.Term.Name + "\".");
+                    throw new SolInterpreterException(node.Span.Location, "Invalid variable assignment target node id \"" + node.Term.Name + "\".");
                 }
             }
         }
@@ -1024,7 +1079,7 @@ namespace SolScript.Interpreter.Statements
                 case "TypeRef":
                     break;
                 default:
-                    throw new SolInterpreterException(new SolSourceLocation(ActiveFile, node.Span.Location), "Invalid type reference node id \"" + node.Term.Name + "\".");
+                    throw new SolInterpreterException(node.Span.Location, "Invalid type reference node id \"" + node.Term.Name + "\".");
             }
             // TypeRef->(":", TypeInfo)
             ParseTreeNode typeInfo = node.ChildNodes[0];
@@ -1043,39 +1098,11 @@ namespace SolScript.Interpreter.Statements
             return new SolType(type, nullableStr[0] == '?');
         }
 
-        public SolParameterBuilder[] GetExplicitParameters(ParseTreeNode node)
-        {
-#if DEBUG
-            if (node.Term.Name != "ExplicitParameterList") {
-                throw new SolInterpreterException(new SolSourceLocation(ActiveFile, node.Span.Location), "Invalid explicit parameter list node id \"" + node.Term.Name + "\".");
-            }
-#endif
-            ParseTreeNodeList childNodes = node.ChildNodes;
-            var parameterArray = new SolParameterBuilder[childNodes.Count];
-            for (int i = 0; i < childNodes.Count; i++) {
-                parameterArray[i] = GetParameter(childNodes[i]);
-            }
-            return parameterArray;
-        }
-
-        public SolParameterBuilder GetParameter(ParseTreeNode node)
-        {
-#if DEBUG
-            if (node.Term.Name != "Parameter") {
-                throw new SolInterpreterException(new SolSourceLocation(ActiveFile, node.Span.Location), "Invalid parameter node id \"" + node.Term.Name + "\".");
-            }
-#endif
-            string name = node.ChildNodes[0].Token.Text;
-            // Parameter->(<name>, TypeRef_opt)
-            ParseTreeNode typeRefOpt = node.ChildNodes[1];
-            return new SolParameterBuilder(name, SolTypeBuilder.Fixed(GetTypeRef(typeRefOpt)));
-        }
-
         #region Nested type: MetaItem
 
         private class MetaItem
         {
-            public SolClassBuilder ActiveClass;
+            public SolClassDefinition ActiveClass;
         }
 
         #endregion

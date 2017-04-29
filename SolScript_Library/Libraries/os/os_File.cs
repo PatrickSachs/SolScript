@@ -15,7 +15,7 @@ namespace SolScript.Libraries.os
     ///     This class represents a file Handle in the <see cref="os" /> standard library. A file handle is used to create
     ///     new os, read existing os or append data to os.
     /// </summary>
-    [SolLibraryClass(os.NAME, SolTypeMode.Default)]
+    [SolTypeDescriptor(os.NAME, SolTypeMode.Default, typeof(os_File))]
     [SolLibraryName(TYPE)]
     [PublicAPI]
     public class os_File

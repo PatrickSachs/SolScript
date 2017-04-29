@@ -56,50 +56,50 @@ namespace SolScript.Interpreter
         private readonly MemberInfo m_Member;
         private readonly PropertyInfo m_Property;
 
+        /// <summary> Can we read the value of this field/property? </summary>
+        public bool CanRead => m_Field != null || m_Property.CanRead;
+
+        /// <summary> Can we write a value to this field/property? </summary>
+        public bool CanWrite => m_Field != null ? !m_Field.IsLiteral : m_Property.CanWrite;
+
+        /// <summary> The type of this field/property. </summary>
+        public Type DataType => m_Field != null ? m_Field.FieldType : m_Property.PropertyType;
+
+        /// <inheritdoc />
+        public override Type DeclaringType => m_Member.DeclaringType;
+
+        /// <summary> Does reading from this field/property require an index. </summary>
+        public bool IsIndexed { get; }
+
         /// <summary>
         ///     Gets a value indicating if this field or property has a special name.
         /// </summary>
         public bool IsSpecialName => m_Field?.IsSpecialName ?? m_Property.IsSpecialName;
 
         /// <inheritdoc />
-        public override Type DeclaringType => m_Member.DeclaringType;
+        public override MemberTypes MemberType => m_Member.MemberType;
 
         /// <inheritdoc />
         public override string Name => m_Member.Name;
 
-        /// <summary> Can we write a value to this field/property? </summary>
-        public bool CanWrite => m_Field != null ? !m_Field.IsLiteral : m_Property.CanWrite;
-
-        /// <summary> Can we read the value of this field/property? </summary>
-        public bool CanRead => m_Field != null || m_Property.CanRead;
-
-        /// <summary> Is this this field/property private? </summary>
-        public bool IsPrivate { get; private set; }
-
-        /// <summary> Is this field/property public? </summary>
-        public bool IsPublic { get; private set; }
-
-        public bool IsProtected { get; private set; }
+        /// <inheritdoc />
+        public override Type ReflectedType => m_Member.ReflectedType;
 
         /// <summary>
         ///     Is this field/property internal?
         /// </summary>
         public bool IsInternal { get; private set; }
 
+        /// <summary> Is this this field/property private? </summary>
+        public bool IsPrivate { get; private set; }
+
+        public bool IsProtected { get; private set; }
+
+        /// <summary> Is this field/property public? </summary>
+        public bool IsPublic { get; private set; }
+
         /// <summary> Is this field/property static? </summary>
         public bool IsStatic { get; private set; }
-
-        /// <summary> The type of this field/property. </summary>
-        public Type DataType => m_Field != null ? m_Field.FieldType : m_Property.PropertyType;
-
-        /// <summary> Does reading from this field/property require an index. </summary>
-        public bool IsIndexed { get; }
-
-        /// <inheritdoc />
-        public override MemberTypes MemberType => m_Member.MemberType;
-
-        /// <inheritdoc />
-        public override Type ReflectedType => m_Member.ReflectedType;
 
         #region Overrides
 
@@ -179,30 +179,28 @@ namespace SolScript.Interpreter
         #endregion
 
         /// <summary> Gets all fields/properties of the given type. </summary>
+        /// <param name="type">The type to get the fields and properties of.</param>
+        /// <param name="flags">The binding flags used to obtain the fields and properties</param>
+        /// <param name="includeFields">Should fields be included?</param>
+        /// <param name="includeProperties">Should properties be included?</param>
+        /// <returns>An enumerable of field and property info wrappers.</returns>
         [Pure]
-        public static IEnumerable<FieldOrPropertyInfo> Get([NotNull] Type type, bool includeFields = true,
+        public static IEnumerable<FieldOrPropertyInfo> Get([NotNull] Type type, BindingFlags flags, bool includeFields = true,
             bool includeProperties = true)
         {
-            while (type != null && type != typeof(object)) {
-                if (includeFields) {
-                    FieldInfo[] fieldInfos =
-                        type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static |
-                                       BindingFlags.Instance | BindingFlags.DeclaredOnly);
-                    foreach (FieldInfo fieldInfo in fieldInfos) {
-                        FieldOrPropertyInfo field = new FieldOrPropertyInfo(fieldInfo);
-                        yield return field;
-                    }
+            if (includeFields) {
+                FieldInfo[] fieldInfos = type.GetFields(flags);
+                foreach (FieldInfo fieldInfo in fieldInfos) {
+                    FieldOrPropertyInfo field = new FieldOrPropertyInfo(fieldInfo);
+                    yield return field;
                 }
-                if (includeProperties) {
-                    PropertyInfo[] propertyInfos =
-                        type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static |
-                                           BindingFlags.Instance | BindingFlags.DeclaredOnly);
-                    foreach (PropertyInfo propertyInfo in propertyInfos) {
-                        FieldOrPropertyInfo field = new FieldOrPropertyInfo(propertyInfo);
-                        yield return field;
-                    }
+            }
+            if (includeProperties) {
+                PropertyInfo[] propertyInfos = type.GetProperties(flags);
+                foreach (PropertyInfo propertyInfo in propertyInfos) {
+                    FieldOrPropertyInfo field = new FieldOrPropertyInfo(propertyInfo);
+                    yield return field;
                 }
-                type = type.BaseType;
             }
         }
 
@@ -378,8 +376,7 @@ namespace SolScript.Interpreter
         /// <param name="inherit"> Inherit from base types? </param>
         /// <returns> The attribute instance, or null </returns>
         /// <exception cref="TypeLoadException">A custom attribute type cannot be loaded. </exception>
-        [CanBeNull]
-        [Pure]
+        [CanBeNull, Pure]
         public T GetCustomAttribute<T>(bool inherit = true) where T : Attribute
         {
             T[] attributes = GetCustomAttributes<T>(inherit);
@@ -394,8 +391,7 @@ namespace SolScript.Interpreter
         /// <returns> The attribute instance, or null </returns>
         /// <exception cref="TypeLoadException">A custom attribute type cannot be loaded. </exception>
         /// <exception cref="ArgumentNullException">If <paramref name="attributeType" /> is null.</exception>
-        [CanBeNull]
-        [Pure]
+        [CanBeNull, Pure]
         public Attribute GetCustomAttribute(Type attributeType, bool inherit = true)
         {
             Attribute[] attributes = GetCustomAttributesCasted(attributeType, inherit);
@@ -412,8 +408,7 @@ namespace SolScript.Interpreter
         ///     of this type were found.
         /// </returns>
         /// <exception cref="TypeLoadException">A custom attribute type cannot be loaded. </exception>
-        [NotNull]
-        [Pure]
+        [NotNull, Pure]
         public T[] GetCustomAttributes<T>(bool inherit = true) where T : Attribute
         {
             return (T[]) (m_Field != null
