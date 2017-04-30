@@ -27,7 +27,7 @@
         /// <inheritdoc />
         protected override string ToString_Impl(SolExecutionContext context)
         {
-            return "function#" + Id + "<" + ClassInstance.InheritanceChain.Definition.Type + "." + Definition.Name + "#"+Definition.DefinedIn.Type+">";
+            return "function#" + Id + "<" + ClassInstance.InheritanceChain.Definition.Type+"#"+ClassInstance.Id + "." + Definition.Name + "/"+Definition.DefinedIn.Type+">";
         }
 
         #endregion

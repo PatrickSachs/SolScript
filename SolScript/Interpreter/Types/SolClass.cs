@@ -14,7 +14,7 @@ namespace SolScript.Interpreter.Types
 {
     /// <summary>
     ///     This class represents a class in SolScript. If you wish to create you own classes have a look at the
-    ///     <see cref="SolLibraryClassAttribute" /> attribute.<br />
+    ///     [<see cref="SolTypeDescriptorAttribute" />] attribute.<br />
     ///     Classes can be instantiated using the
     ///     <see cref="SolAssembly.New(string, ClassCreationOptions, SolValue[])" /> method.
     /// </summary>
@@ -36,26 +36,9 @@ namespace SolScript.Interpreter.Types
             InheritanceChain = inheritance;
         }
 
-        // The next class id.
-        private static uint s_NextId;
-        // The unique id of this class. (Until we overflow the uint max size at least.)
-        public readonly uint Id;
-        // The inheritance chain. This is where all the fancy magic happens.
-        internal readonly Inheritance InheritanceChain;
-        // Internal array containing the annotations.
-        internal Array<SolClass> AnnotationsArray;
+        #region Fields & Properties
 
-        internal DynamicReference DescribedObjectReference;
-
-
-        /// <summary>
-        ///     The native object representing this exact <see cref="Inheritance" />.
-        /// </summary>
-        /*/// <remarks>
-        ///     NOT THE DESCRIBED OBJECT - THIS IS THE DESCRIPTOR OBJECT. IF THE DESCRIPTOR OBJECT DIFFERS FROM THE DESCRIBED
-        ///     OBJECT CAST TO THE <see cref="ISolTypeDescriptor" /> INTERFACE.
-        /// </remarks>*/
-        internal DynamicReference DescriptorObjectReference;
+        #region Public
 
         /// <summary>
         ///     The annotations on this class instance.
@@ -70,8 +53,10 @@ namespace SolScript.Interpreter.Types
         /// <summary>
         ///     Gets the native object described by this class.
         /// </summary>
-        public object DescribedNativeObject {
-            get {
+        public object DescribedNativeObject
+        {
+            get
+            {
                 object obj;
                 if (!DescribedObjectReference.TryGet(out obj))
                 {
@@ -87,10 +72,10 @@ namespace SolScript.Interpreter.Types
         /// <inheritdoc />
         public override string Type => InheritanceChain.Definition.Type;
 
-        /// <summary>
+        /*/// <summary>
         ///     The type mode of this class, explaining if the class is a singleton, sealed, class, etc.
         /// </summary>
-        public SolTypeMode TypeMode => InheritanceChain.Definition.TypeMode;
+        public SolTypeMode TypeMode => InheritanceChain.Definition.TypeMode;*/
 
         /// <summary>
         ///     Is this class initialized? A class counts as initialized as soon as
@@ -98,6 +83,30 @@ namespace SolScript.Interpreter.Types
         /// </summary>
         public bool IsInitialized { get; internal set; }
 
+        /// <summary>
+        /// The class definition of this class.
+        /// </summary>
+        public SolClassDefinition Definition => InheritanceChain.Definition;
+
+        #endregion
+
+        #region Non Public
+
+        // The next class id.
+        private static uint s_NextId;
+        // The unique id of this class. (Until we overflow the uint max size at least.)
+        public readonly uint Id;
+        // The inheritance chain. This is where all the fancy magic happens.
+        internal readonly Inheritance InheritanceChain;
+        // Internal array containing the annotations.
+        internal Array<SolClass> AnnotationsArray;
+        internal DynamicReference DescribedObjectReference;
+        internal DynamicReference DescriptorObjectReference;
+
+        #endregion
+
+        #endregion
+        
         #region IValueIndexable Members
 
         /// <summary>
@@ -386,7 +395,6 @@ namespace SolScript.Interpreter.Types
             }
             return inheritance.GetVariables(access, mode);
         }
-
 
         /// <summary>
         ///     Tries to get a meta function of this class.

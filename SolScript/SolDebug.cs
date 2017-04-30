@@ -39,7 +39,7 @@ namespace SolScript
             prefix = prefix + new string(' ', indent < 0 ? 0 : indent);
             string str = prefix + (indent > 0 ? " -> " : "->") + message;
             Debug.WriteLine(str);
-            Console.WriteLine(str);
+            //Console.WriteLine(str);
         }
     }
 }

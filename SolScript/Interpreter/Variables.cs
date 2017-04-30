@@ -26,7 +26,7 @@ namespace SolScript.Interpreter
             Assembly = assembly;
         }
 
-        private readonly PSUtility.Enumerables.Dictionary<string, Base> m_Variables = new PSUtility.Enumerables.Dictionary<string, Base>();
+        private readonly PSDictionary<string, Base> m_Variables = new PSDictionary<string, Base>();
 
         [CanBeNull] private IVariables m_ParentContext;
 
@@ -308,7 +308,7 @@ namespace SolScript.Interpreter
                     throw new InvalidOperationException("Annotations have already been assigned to variable \"" + Name + "\".");
                 }
                 foreach (SolClass annotation in annotations) {
-                    if (annotation.TypeMode != SolTypeMode.Annotation) {
+                    if (annotation.Definition.TypeMode != SolTypeMode.Annotation) {
                         throw new InvalidOperationException("Tried to assign class \"" + annotation.Type + "\" to variable \"" + Name + "\" as annotations. The class is not an annotation.");
                     }
                 }

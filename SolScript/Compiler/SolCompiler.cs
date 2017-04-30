@@ -34,13 +34,13 @@ namespace SolScript.Compiler
         public void ValidateClass(SolClassDefinition definition)
         {
             Stack<SolClassDefinition> inheritanceChain = definition.GetInheritanceReversed();
-            var funcNames = new PSUtility.Enumerables.Dictionary<string, SolFunctionDefinition>();
-            var abstracts = new PSUtility.Enumerables.Dictionary<string, SolFunctionDefinition>();
-            var fieldNames = new PSUtility.Enumerables.Dictionary<string, SolFieldDefinition>();
+            var funcNames = new PSDictionary<string, SolFunctionDefinition>();
+            var abstracts = new PSDictionary<string, SolFunctionDefinition>();
+            var fieldNames = new PSDictionary<string, SolFieldDefinition>();
             while (inheritanceChain.Count != 0) {
                 SolClassDefinition current = inheritanceChain.Pop();
-                var thisFuncNames = new PSUtility.Enumerables.HashSet<string>();
-                var thisFieldNames = new PSUtility.Enumerables.HashSet<string>();
+                var thisFuncNames = new PSHashSet<string>();
+                var thisFieldNames = new PSHashSet<string>();
                 foreach (SolFunctionDefinition function in current.Functions) {
                     ValidateFunction(function);
                     // Every function name may only exist once for each inheritance level.

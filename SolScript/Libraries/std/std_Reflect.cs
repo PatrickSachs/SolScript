@@ -1,5 +1,6 @@
 ﻿// ReSharper disable InconsistentNaming
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Irony.Parsing;
@@ -16,17 +17,16 @@ namespace SolScript.Libraries.std
     /// <summary>
     ///     The <see cref="std_Reflect" /> singleton is used to access information about language elements at runtime.
     /// </summary>
-    [SolTypeDescriptor(std.NAME, SolTypeMode.Singleton, typeof(std_Reflect))]
-    [SolLibraryName(TYPE)]
-    [PublicAPI]
+    [SolTypeDescriptor(std.NAME, SolTypeMode.Singleton, typeof(std_Reflect)), SolLibraryName(TYPE), PublicAPI]
     public class std_Reflect : INativeClassSelf
     {
         /// <summary>
         ///     The type name is "Reflect".
         /// </summary>
-        [SolLibraryVisibility(std.NAME, false)] public const string TYPE = "Reflect";
+        [SolLibraryVisibility(std.NAME, false)]
+        public const string TYPE = "Reflect";
 
-        private static readonly IReadOnlyDictionary<SolTypeMode, SolString> s_TypeModeNames = new PSUtility.Enumerables.Dictionary<SolTypeMode, SolString> {
+        private static readonly IReadOnlyDictionary<SolTypeMode, SolString> s_TypeModeNames = new PSDictionary<SolTypeMode, SolString> {
             [SolTypeMode.Default] = "none",
             [SolTypeMode.Abstract] = "abstract",
             [SolTypeMode.Annotation] = "annotation",
@@ -34,13 +34,13 @@ namespace SolScript.Libraries.std
             [SolTypeMode.Singleton] = "singleton"
         };
 
-        private static readonly IReadOnlyDictionary<SolAccessModifier, SolString> s_AccessModifierNames = new PSUtility.Enumerables.Dictionary<SolAccessModifier, SolString> {
+        private static readonly IReadOnlyDictionary<SolAccessModifier, SolString> s_AccessModifierNames = new PSDictionary<SolAccessModifier, SolString> {
             [SolAccessModifier.Global] = "none",
             [SolAccessModifier.Local] = "local",
             [SolAccessModifier.Internal] = "internal"
         };
 
-        private static readonly IReadOnlyDictionary<SolMemberModifier, SolString> s_MemberModifierNames = new PSUtility.Enumerables.Dictionary<SolMemberModifier, SolString> {
+        private static readonly IReadOnlyDictionary<SolMemberModifier, SolString> s_MemberModifierNames = new PSDictionary<SolMemberModifier, SolString> {
             [SolMemberModifier.Default] = "none",
             [SolMemberModifier.Abstract] = "abstract",
             [SolMemberModifier.Override] = "override"
@@ -297,8 +297,7 @@ namespace SolScript.Libraries.std
         ///         </item>
         ///     </list>
         /// </remarks>
-        [SolContract(SolTable.TYPE, false)]
-        [PublicAPI]
+        [SolContract(SolTable.TYPE, false), PublicAPI]
         public SolTable get_class_info(SolExecutionContext context, [SolContract(SolValue.ANY_TYPE, false)] SolValue value)
         {
             SolClassDefinition definition = GetClassDefinition(context, value);
@@ -418,6 +417,25 @@ namespace SolScript.Libraries.std
             }
             SolType typeCheck = new SolType(type, false);
             return SolTable.Of(instance.Annotations.Where(a => typeCheck.IsCompatible(context.Assembly, a.Type)));
+        }
+
+        /// <summary>
+        ///     Creates a new instance of the given class. Instance creation is enforced.
+        /// </summary>
+        /// <param name="context" />
+        /// <param name="className">The class name.</param>
+        /// <param name="args">The constructor.</param>
+        /// <returns>The class.</returns>
+        [SolContract(SolValue.CLASS_TYPE, false)]
+        public SolClass create_instance(SolExecutionContext context, [SolContract(SolString.TYPE, false)] SolString className, params SolValue[] args)
+        {
+            try {
+                return context.Assembly.New(className, ClassCreationOptions.Enforce(), args);
+            } catch (ArgumentException ex) {
+                throw new SolRuntimeException(context, "The class \"" + className + "\" cannot be instantiated.", ex);
+            } catch (SolTypeRegistryException ex) {
+                throw new SolRuntimeException(context, "An error occured while creating an instance of class \"" + className + "\".", ex);
+            }
         }
 
         #region Native Helpers

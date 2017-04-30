@@ -24,9 +24,9 @@ namespace SolScript.Interpreter.Statements
 
         internal class TreeData
         {
-            public readonly IList<SolClassDefinition> Classes = new PSUtility.Enumerables.List<SolClassDefinition>();
-            public readonly IList<SolFunctionDefinition> Functions = new PSUtility.Enumerables.List<SolFunctionDefinition>();
-            public readonly IList<SolFieldDefinition> Fields = new PSUtility.Enumerables.List<SolFieldDefinition>();
+            public readonly IPSList<SolClassDefinition> Classes = new PSList<SolClassDefinition>();
+            public readonly IPSList<SolFunctionDefinition> Functions = new PSList<SolFunctionDefinition>();
+            public readonly IPSList<SolFieldDefinition> Fields = new PSList<SolFieldDefinition>();
         }
 
         /// <exception cref="SolInterpreterException">An error occured.</exception>

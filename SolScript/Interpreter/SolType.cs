@@ -172,7 +172,7 @@ namespace SolScript.Interpreter
                 // If we only accept a specific class we check if the class extends the
                 // type somewhere in the inheritance hierarchy. We do not check for
                 // exact type equality since this was already done in step one.
-                if (classDef.DoesExtendInHierarchy(Type)) {
+                if (classDef.Extends(Type)) {
                     return true;
                 }
             }
@@ -214,7 +214,7 @@ namespace SolScript.Interpreter
                 // If the types are not the same the values is not compatible unless it is a mixin of another @class.
                 SolClassDefinition classDef;
                 if (assembly.TryGetClass(type.Type, out classDef)) {
-                    if (classDef.DoesExtendInHierarchy(type.Type)) {
+                    if (classDef.Extends(type.Type)) {
                         return false;
                     }
                 } else {

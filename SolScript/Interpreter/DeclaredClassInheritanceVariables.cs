@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using PSUtility.Enumerables;
@@ -205,7 +206,7 @@ namespace SolScript.Interpreter
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
-                SolDebug.WriteLine("Created function instance '" + name + "' for class '" + Inheritance.Instance.Type + "' - " + function + " [level: " + GetType().Name + "]");
+                SolDebug.WriteLine("Created function " + function + " [level: " + GetType().Name + "]");
                 Members.Declare(name, new SolType(SolFunction.TYPE, false));
                 if (functionDefinition.DeclaredAnnotations.Count > 0) {
                     SolClass[] annotations;

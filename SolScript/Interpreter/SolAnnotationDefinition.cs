@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using JetBrains.Annotations;
+using PSUtility.Enumerables;
 using SolScript.Interpreter.Expressions;
 using SolScript.Properties;
 using SolScript.Utility;
@@ -34,7 +35,7 @@ namespace SolScript.Interpreter
             if (arguments == null) {
                 throw new ArgumentNullException(nameof(arguments));
             }
-            Arguments = new PSUtility.Enumerables.List<SolExpression>(arguments);
+            Arguments = new PSList<SolExpression>(arguments);
             m_Reference = type;
             //Arguments = ReadOnlyList<SolExpression>.FromDelegate(() => ArgumentsList ?? EmptyReadOnlyList<SolExpression>.Value);
         }

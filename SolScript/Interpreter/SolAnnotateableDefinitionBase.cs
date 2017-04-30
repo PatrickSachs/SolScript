@@ -1,4 +1,5 @@
-﻿using Irony.Parsing;
+﻿using System.Collections.Generic;
+using Irony.Parsing;
 using PSUtility.Enumerables;
 
 namespace SolScript.Interpreter

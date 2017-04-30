@@ -22,7 +22,7 @@ namespace SolScript.Interpreter
             DeclaredAnnotations = ReadOnlyList<SolAnnotationDefinition>.FromValue(m_DeclaredAnnotationsList);
         }
 
-        private readonly IList<SolAnnotationDefinition> m_DeclaredAnnotationsList = new PSUtility.Enumerables.List<SolAnnotationDefinition>();
+        private readonly IList<SolAnnotationDefinition> m_DeclaredAnnotationsList = new PSList<SolAnnotationDefinition>();
 
         /// <inheritdoc />
         public override IReadOnlyList<SolAnnotationDefinition> DeclaredAnnotations { get; }

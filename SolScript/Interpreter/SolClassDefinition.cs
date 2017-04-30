@@ -48,7 +48,7 @@ namespace SolScript.Interpreter
         /// <summary>
         ///     Raw access to the annotations of this class.
         /// </summary>
-        private readonly IList<SolAnnotationDefinition> m_DeclaredAnnotationsList = new System.Collections.Generic.List<SolAnnotationDefinition>();
+        private readonly IList<SolAnnotationDefinition> m_DeclaredAnnotationsList = new List<SolAnnotationDefinition>();
 
         /*/// <summary>
         ///     Raw access to all members of this class.
@@ -60,12 +60,12 @@ namespace SolScript.Interpreter
         internal IList<SolDefinitionBase> DeclaredMembersList;*/
 
         // The fields of this definition.
-        private readonly PSUtility.Enumerables.Dictionary<string, SolFieldDefinition> m_Fields = new PSUtility.Enumerables.Dictionary<string, SolFieldDefinition>();
+        private readonly PSDictionary<string, SolFieldDefinition> m_Fields = new PSDictionary<string, SolFieldDefinition>();
         // The functions of this definition.
-        private readonly PSUtility.Enumerables.Dictionary<string, SolFunctionDefinition> m_Functions = new PSUtility.Enumerables.Dictionary<string, SolFunctionDefinition>();
+        private readonly PSDictionary<string, SolFunctionDefinition> m_Functions = new PSDictionary<string, SolFunctionDefinition>();
 
         // Lazily generated meta functions.
-        private PSUtility.Enumerables.Dictionary<SolMetaFunction, MetaFunctionLink> l_meta_functions;
+        private PSDictionary<SolMetaFunction, MetaFunctionLink> l_meta_functions;
 
         /// <summary>
         ///     All meta functions on this class. This includes meta functions declared at all inheritance levels.
@@ -114,7 +114,7 @@ namespace SolScript.Interpreter
                 if (!DidBuildMetaFunctions) {
                     BuildMetaFunctions();
                 }
-                var dic = new PSUtility.Enumerables.Dictionary<SolMetaFunction, MetaFunctionLink>();
+                var dic = new PSDictionary<SolMetaFunction, MetaFunctionLink>();
                 foreach (KeyValuePair<SolMetaFunction, MetaFunctionLink> m in l_meta_functions.Where(p => p.Value.Definition.DefinedIn == this)) {
                     dic.Add(m.Key, m.Value);
                 }
@@ -232,7 +232,7 @@ namespace SolScript.Interpreter
         {
             //Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher,
             //    "Class meta functions can only be built once the class bodies have been generated.");
-            l_meta_functions = new PSUtility.Enumerables.Dictionary<SolMetaFunction, MetaFunctionLink>();
+            l_meta_functions = new PSDictionary<SolMetaFunction, MetaFunctionLink>();
             FindAndRegisterMetaFunction(SolMetaFunction.__new);
             FindAndRegisterMetaFunction(SolMetaFunction.__to_string);
             FindAndRegisterMetaFunction(SolMetaFunction.__getn);
@@ -292,33 +292,46 @@ namespace SolScript.Interpreter
             return false;
         }
 
+
+        /// <summary>
+        ///     Checks if this class extends the given class definition.
+        /// </summary>
+        /// <param name="definition">The class definition.</param>
+        /// <returns>true if the class extends the given class, false if not.</returns>
+        public bool Extends(SolClassDefinition definition)
+        {
+            SolClassDefinition active = BaseClass;
+            while (active != null) {
+                if (active == definition) {
+                    return true;
+                }
+                active = active.BaseClass;
+            }
+            return false;
+        }
+
         /// <summary> Checks if the class does extend the given class at some point. </summary>
         /// <param name="className">The class name.</param>
-        /// <exception cref="InvalidOperationException">Invalid state.</exception>
         /// <remarks>
         ///     Warning: A class does not extend itself and will thus return false if
-        ///     the own class name is passed.<br />Requires <see cref="SolAssembly.AssemblyState.GeneratedClassBodies" /> or higher
-        ///     state.
+        ///     the own class name is passed.
         /// </remarks>
-        public bool DoesExtendInHierarchy(string className)
+        public bool Extends(string className)
         {
             SolClassDefinition definedIn;
-            return DoesExtendInHierarchy(className, out definedIn);
+            return Extends(className, out definedIn);
         }
 
         /// <summary> Checks if the class does extend the given class at some point. </summary>
         /// <param name="className">The class name.</param>
         /// <param name="definedIn">The class definition of the extended class. Only valid if the method returned true.</param>
-        /// <exception cref="InvalidOperationException">Invalid state.</exception>
         /// <remarks>
         ///     Warning: A class does not extend itself and will thus return false if
-        ///     the own class name is passed.<br></br>Requires <see cref="SolAssembly.AssemblyState.GeneratedClassBodies" /> or
-        ///     higher state.
+        ///     the own class name is passed.
         /// </remarks>
         [ContractAnnotation("definedIn:null => false")]
-        public bool DoesExtendInHierarchy(string className, [CanBeNull] out SolClassDefinition definedIn)
+        public bool Extends(string className, [CanBeNull] out SolClassDefinition definedIn)
         {
-            //Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher, "Class bodies need to be generated before inheritance can be checked.");
             definedIn = BaseClass;
             while (definedIn != null) {
                 if (definedIn.Type == className) {

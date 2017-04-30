@@ -67,10 +67,10 @@ namespace SolScript.Interpreter
 
         private string m_Name;
         private string m_SourceFilePattern;
-        public static ps.ISet<NativeFieldPostProcessor> DefaultFieldPostProcessors { get; } = new ps.HashSet<NativeFieldPostProcessor>();
-        public static ps.ISet<NativeMethodPostProcessor> DefaultMethodPostProcessors { get; } = new ps.HashSet<NativeMethodPostProcessor>();
-        public ps.ISet<NativeFieldPostProcessor> FieldPostProcessors { get; } = new ps.HashSet<NativeFieldPostProcessor>();
-        public ps.ISet<NativeMethodPostProcessor> MethodPostProcessors { get; } = new ps.HashSet<NativeMethodPostProcessor>();
+        public static ps.ISet<NativeFieldPostProcessor> DefaultFieldPostProcessors { get; } = new ps.PSHashSet<NativeFieldPostProcessor>();
+        public static ps.ISet<NativeMethodPostProcessor> DefaultMethodPostProcessors { get; } = new ps.PSHashSet<NativeMethodPostProcessor>();
+        public ps.ISet<NativeFieldPostProcessor> FieldPostProcessors { get; } = new ps.PSHashSet<NativeFieldPostProcessor>();
+        public ps.ISet<NativeMethodPostProcessor> MethodPostProcessors { get; } = new ps.PSHashSet<NativeMethodPostProcessor>();
 
         public static NativeFieldPostProcessor DefaultFallbackFieldPostProcessor {
             get { return s_DefaultFallbackFieldPostProcessor; }

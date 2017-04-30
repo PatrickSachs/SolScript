@@ -188,15 +188,15 @@ namespace SolScript.Interpreter
             return m_ClassDefinitions.TryGetValue(className, out definition);
         }
 
-        /// <exception cref="InvalidOperationException">Invalid state.</exception>
+        /// <exception cref="ArgumentException">The class cannot be instantiated and creation is not enforced.</exception>
         /// <exception cref="SolTypeRegistryException">An error occured while creating the instance.</exception>
         private SolClass New_Impl(SolClassDefinition definition, ClassCreationOptions options, params SolValue[] constructorArguments)
         {
             //AssertState(AssemblyState.GeneratedClassBodies, AssertMatch.ExactOrHigher, "Cannot create class instances without having generated the class bodies.");
             if (!options.EnforceCreation && !definition.CanBeCreated()) {
-                throw new InvalidOperationException($"The class \"{definition.Type}\" cannot be instantiated.");
+                throw new ArgumentException($"The class \"{definition.Type}\" cannot be instantiated.");
             }
-            var annotations = new ps.List<SolClass>();
+            var annotations = new ps.PSList<SolClass>();
             SolClass instance = new SolClass(definition);
             // The context is required to actually initialize the fields.
             SolExecutionContext creationContext = options.CallingContext ?? new SolExecutionContext(this, definition.Type + "#" + instance.Id + " creation context");
@@ -307,13 +307,12 @@ namespace SolScript.Interpreter
         /// <param name="constructorArguments">The arguments for the constructor function call.</param>
         /// <returns>The created class instance.</returns>
         /// <exception cref="SolTypeRegistryException">An error occured while creating the instance.</exception>
-        /// <exception cref="InvalidOperationException"> The class definitions have not been generated yet. </exception>
-        /// <exception cref="InvalidOperationException"> No class with <paramref name="name" /> exists. </exception>
+        /// <exception cref="ArgumentException"> No class with <paramref name="name" /> exists. -or- The class cannot be instantiated and creation is not enforced. </exception>
         public SolClass New(string name, ClassCreationOptions options, params SolValue[] constructorArguments)
         {
             SolClassDefinition definition;
             if (!m_ClassDefinitions.TryGetValue(name, out definition)) {
-                throw new InvalidOperationException($"The class \"{name}\" does not exist.");
+                throw new ArgumentException($"The class \"{name}\" does not exist.");
             }
             return New(definition, options, constructorArguments);
         }
@@ -328,12 +327,11 @@ namespace SolScript.Interpreter
         /// </param>
         /// <param name="constructorArguments">The arguments for the constructor function call.</param>
         /// <exception cref="SolTypeRegistryException">An error occured while creating the instance.</exception>
-        /// <exception cref="InvalidOperationException"> The class definitions have not been generated yet. </exception>
-        /// <exception cref="InvalidOperationException"> The <paramref name="definition" /> belongs to a different assembly. </exception>
+        /// <exception cref="ArgumentException"> The <paramref name="definition" /> belongs to a different assembly. -or- The class cannot be instantiated and creation is not enforced. </exception>
         public SolClass New(SolClassDefinition definition, ClassCreationOptions options, params SolValue[] constructorArguments)
         {
             if (!ReferenceEquals(definition.Assembly, this)) {
-                throw new InvalidOperationException($"Cannot create class \"{definition.Type}\"(Assembly: \"{definition.Assembly.Name}\") in Assembly \"{Name}\".");
+                throw new ArgumentException($"Cannot create class \"{definition.Type}\"(Assembly: \"{definition.Assembly.Name}\") in Assembly \"{Name}\".");
             }
             SolClass instance = New_Impl(definition, options, constructorArguments);
             return instance;
@@ -354,9 +352,9 @@ namespace SolScript.Interpreter
                 m_Libraries.Add(lang.GetLibrary());
             }
 
-            private readonly ps.HashSet<SolLibrary> m_Libraries = new ps.HashSet<SolLibrary>();
-            private readonly ps.HashSet<string> m_SrcFileNames = new ps.HashSet<string>();
-            private readonly ps.List<string> m_SrcStrings = new ps.List<string>();
+            private readonly ps.PSHashSet<SolLibrary> m_Libraries = new ps.PSHashSet<SolLibrary>();
+            private readonly ps.PSHashSet<string> m_SrcFileNames = new ps.PSHashSet<string>();
+            private readonly ps.PSList<string> m_SrcStrings = new ps.PSList<string>();
             private SolAssembly m_Assembly;
 
             private SolAssemblyOptions m_Options;
@@ -364,12 +362,12 @@ namespace SolScript.Interpreter
             /// <summary>
             ///     The source files referenced by this builder.
             /// </summary>
-            public ps.IReadOnlySet<string> SourceFiles => m_SrcFileNames;
+            public gen.IReadOnlySet<string> SourceFiles => m_SrcFileNames;
 
             /// <summary>
             ///     The source strings referenced by this builder.
             /// </summary>
-            public ps.IReadOnlyList<string> SourceStrings => m_SrcStrings;
+            public gen.IReadOnlyList<string> SourceStrings => m_SrcStrings;
 
             /// <summary>
             ///     Includes new source files in this builder.
@@ -537,7 +535,7 @@ namespace SolScript.Interpreter
             /// <returns>true if everything worked as expected, false if an error occured.</returns>
             private bool TryBuildScripts()
             {
-                var trees = new ps.List<ParseTree>();
+                var trees = new ps.PSList<ParseTree>();
                 Irony.Parsing.Parser parser = new Irony.Parsing.Parser(Grammar);
 
                 // Scan the source strings & files for code.
@@ -656,7 +654,7 @@ namespace SolScript.Interpreter
             /// <returns>true if everything worked as expected, false if an error occured.</returns>
             private bool TryBuildLibraries()
             {
-                var globals = new ps.List<Type>();
+                var globals = new ps.PSList<Type>();
                 // Build the raw definition hulls.
                 foreach (SolLibrary library in m_Libraries) {
                     foreach (Assembly libraryAssembly in library.Assemblies) {
@@ -1074,13 +1072,13 @@ namespace SolScript.Interpreter
         ///     All global fields in key value pairs.
         /// </summary>
         /// <exception cref="InvalidOperationException">Invalid state. </exception>
-        public ps.IReadOnlyDictionary<string, SolFieldDefinition> GlobalFieldPairs => m_GlobalFields;
+        public gen.IReadOnlyDictionary<string, SolFieldDefinition> GlobalFieldPairs => m_GlobalFields;
 
         /// <summary>
         ///     All global functions in key value pairs.
         /// </summary>
         /// <exception cref="InvalidOperationException">Invalid state. </exception>
-        public ps.IReadOnlyDictionary<string, SolFunctionDefinition> GlobalFunctionPairs => m_GlobalFunctions;
+        public gen.IReadOnlyDictionary<string, SolFunctionDefinition> GlobalFunctionPairs => m_GlobalFunctions;
 
         /// <summary>
         ///     A descriptive name of this assembly(e.g. "Enemy AI Logic"). The name will be used during debugging and error
@@ -1115,14 +1113,14 @@ namespace SolScript.Interpreter
         #region Non Public
 
         // Stores all meta data provider objects.
-        private readonly ps.Dictionary<MetaKeyBase, object> m_MetaCache = new ps.Dictionary<MetaKeyBase, object>(MetaKeyBase.NameComparer);
-        private readonly ps.Dictionary<string, SolClassDefinition> m_ClassDefinitions = new ps.Dictionary<string, SolClassDefinition>();
+        private readonly ps.PSDictionary<MetaKeyBase, object> m_MetaCache = new ps.PSDictionary<MetaKeyBase, object>(MetaKeyBase.NameComparer);
+        private readonly ps.PSDictionary<string, SolClassDefinition> m_ClassDefinitions = new ps.PSDictionary<string, SolClassDefinition>();
         // Errors can be added here.
         private readonly SolErrorCollection.Adder m_ErrorAdder;
-        private readonly ps.Dictionary<string, SolFieldDefinition> m_GlobalFields = new ps.Dictionary<string, SolFieldDefinition>();
-        private readonly ps.Dictionary<string, SolFunctionDefinition> m_GlobalFunctions = new ps.Dictionary<string, SolFunctionDefinition>();
-        private readonly ps.Dictionary<Type, SolClassDefinition> m_DescribedClasses = new ps.Dictionary<Type, SolClassDefinition>();
-        private readonly ps.Dictionary<Type, SolClassDefinition> m_DescriptorClasses = new ps.Dictionary<Type, SolClassDefinition>();
+        private readonly ps.PSDictionary<string, SolFieldDefinition> m_GlobalFields = new ps.PSDictionary<string, SolFieldDefinition>();
+        private readonly ps.PSDictionary<string, SolFunctionDefinition> m_GlobalFunctions = new ps.PSDictionary<string, SolFunctionDefinition>();
+        private readonly ps.PSDictionary<Type, SolClassDefinition> m_DescribedClasses = new ps.PSDictionary<Type, SolClassDefinition>();
+        private readonly ps.PSDictionary<Type, SolClassDefinition> m_DescriptorClasses = new ps.PSDictionary<Type, SolClassDefinition>();
         // The options for creating this assembly.
         private readonly SolAssemblyOptions m_Options;
         // The lazy statement factory.

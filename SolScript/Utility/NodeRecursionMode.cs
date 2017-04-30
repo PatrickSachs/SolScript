@@ -14,19 +14,19 @@ namespace SolScript.Utility
         ///     All root elements will be searched before progressing to the child elements.
         /// </summary>
         Layer,
-        /// <summary>
+        /*/// <summary>
         ///     All root elements will be searched before progressing to the child elements.
         /// </summary>
-        LayerBackwards,
+        LayerBackwards,*/
 
         /// <summary>
         ///     All child elements will be searched before progression to the next root element.
         /// </summary>
         Direct,
 
-        /// <summary>
+        /*/// <summary>
         ///     All child elements will be searched before progression to the next root element.
         /// </summary>
-        DirectBackwards
+        DirectBackwards*/
     }
 }

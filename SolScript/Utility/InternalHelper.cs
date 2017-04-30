@@ -42,7 +42,7 @@ namespace SolScript.Utility
         internal const string O_PARSER_MSG = "Only used by the parser. Please use a different overload instead.";
         internal const bool O_PARSER_ERR = true;
 
-        private static readonly IReadOnlySet<Type> FuncGenericTypes = new PSUtility.Enumerables.HashSet<Type> {
+        private static readonly IReadOnlySet<Type> FuncGenericTypes = new PSHashSet<Type> {
             typeof(Func<>),
             typeof(Func<,>),
             typeof(Func<,,>),
@@ -50,7 +50,7 @@ namespace SolScript.Utility
             typeof(Func<,,,,>)
         };
 
-        private static readonly IReadOnlySet<Type> ActionGenericTypes = new PSUtility.Enumerables.HashSet<Type> {
+        private static readonly IReadOnlySet<Type> ActionGenericTypes = new PSHashSet<Type> {
             typeof(Action),
             typeof(Action<>),
             typeof(Action<,>),
@@ -308,7 +308,7 @@ namespace SolScript.Utility
                     if ((found = @this.Find(p => p.Term.Name == name)) != null) {
                         return found;
                     }
-                    var worker = new PSUtility.Enumerables.List<ParseTreeNode>(@this);
+                    var worker = new PSList<ParseTreeNode>(@this);
                     foreach (ParseTreeNode child in @this) {
                         ParseTreeNodeList childList = child.ChildNodes;
                         if (childList == null || childList.Count == 0) {

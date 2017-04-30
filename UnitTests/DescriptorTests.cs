@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using System.Diagnostics;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SolScript.Interpreter;
 using SolScript.Interpreter.Library;
 using SolScript.Interpreter.Types;
@@ -39,6 +40,42 @@ end", test.GetLibrary());
             Assert.IsTrue(ReferenceEquals(described, describedMarshalledBack));
             Assert.IsTrue(descriptor.Get() == described.Bool);
             Assert.IsTrue(ReferenceEquals(descriptor.Self, value));
+        }
+
+        /// <summary>
+        /// Tests if the marshalled classes are properly cached to ensure that one object is only represented by one class.
+        /// </summary>
+        [TestMethod]
+        public void MarshallingCache()
+        {
+            SolAssembly assembly = TestHelper.NewAssembly(nameof(MarshallingCache), @"
+function test(val1, val2)
+    return {
+        equals(val1, val2), 
+        reference_equals(val1, val2),
+        val1, val2
+    }
+end", test.GetLibrary());
+            SolFunction func = (SolFunction)assembly.GetVariables(SolAccessModifier.Global).Get("test");
+            SolExecutionContext context = new SolExecutionContext(assembly, "Test");
+            Described described = new Described();
+            
+            // Marshals twice, should rely on internal marshaller cache.
+            SolValue val1 = SolMarshal.MarshalFromNative(assembly, described);
+            SolValue val2 = SolMarshal.MarshalFromNative(assembly, described);
+            SolTable value = (SolTable)func.Call(context, val1, val2);
+
+            Assert.IsTrue((SolBool)value[0]);
+            Assert.IsTrue((SolBool)value[1]);
+            Assert.IsTrue(value[2].IsReferenceEqual(context, val1));
+            Assert.IsTrue(value[2].IsReferenceEqual(context, val2));
+            Assert.IsTrue(value[2].ConvertTo<Described>() == described);
+            Assert.IsTrue(value[3].IsReferenceEqual(context, val1));
+            Assert.IsTrue(value[3].IsReferenceEqual(context, val2));
+            Assert.IsTrue(value[3].ConvertTo<Described>() == described);
+            Assert.IsTrue(value[3].IsReferenceEqual(context, value[2]));
+            Assert.IsTrue(value[3].IsEqual(context, value[2]));
+            Assert.IsTrue(value[3].ConvertTo<Described>() == value[2].ConvertTo<Described>());
         }
 
         #region Test SolScript Classes

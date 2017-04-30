@@ -89,6 +89,12 @@ namespace SolScript.Interpreter.Types
             return other == this;
         }
 
+        /// <inheritdoc />
+        public override bool IsReferenceEqual(SolExecutionContext context, SolValue other)
+        {
+            return IsEqual(context, other);
+        }
+
         #endregion
 
         /// <summary>
@@ -113,10 +119,22 @@ namespace SolScript.Interpreter.Types
             return @this.Value ? False : True;
         }
 
-        /// <inheritdoc />
-        public override bool IsReferenceEqual(SolExecutionContext context, SolValue other)
+        /// <summary>
+        ///     Returns the <see cref="Value" /> of the bool.
+        /// </summary>
+        /// <param name="this">The bool.</param>
+        public static implicit operator bool(SolBool @this)
         {
-            return IsEqual(context, other);
+            return @this.Value;
+        }
+
+        /// <summary>
+        ///     Creates a <see cref="SolBool" /> matching to the given bool value.
+        /// </summary>
+        /// <param name="this">The bool.</param>
+        public static implicit operator SolBool(bool @this)
+        {
+            return ValueOf(@this);
         }
     }
 }

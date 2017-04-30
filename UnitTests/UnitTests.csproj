@@ -35,6 +35,10 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="dotMemory.Unit, Version=103.0.0.0, Culture=neutral, PublicKeyToken=1010a0d8d6380325, processorArchitecture=MSIL">
+      <HintPath>..\packages\JetBrains.dotMemoryUnit.2.3.20160517.113140\lib\dotMemory.Unit.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Irony">
       <HintPath>..\Libraries\Irony.dll</HintPath>
     </Reference>
@@ -59,6 +63,7 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
+    <Compile Include="ClassTests.cs" />
     <Compile Include="DescriptorTests.cs" />
     <Compile Include="Libraries\LangLibraryTests.cs" />
     <Compile Include="TestHelper.cs" />
@@ -71,6 +76,9 @@
       <Project>{fa9b0a5f-98c6-48d6-a8c3-b47336b60990}</Project>
       <Name>SolScript</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
   </ItemGroup>
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">

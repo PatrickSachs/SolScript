@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using PSUtility.Enumerables;
 
 namespace SolScript.Utility
@@ -11,6 +12,6 @@ namespace SolScript.Utility
         /// <summary>
         ///     The list instance.
         /// </summary>
-        public static readonly IReadOnlyList<T> Value = new List<T>();
+        public static readonly IReadOnlyList<T> Value = new PSList<T>();
     }
 }

@@ -52,7 +52,7 @@ namespace SolScript.Interpreter.Types
         private static readonly SolString s_IteratorKey = SolString.ValueOf("key").Intern();
         private static readonly SolString s_IteratorValue = SolString.ValueOf("value").Intern();
         private readonly uint m_Id;
-        private readonly PSUtility.Enumerables.Dictionary<SolValue, SolValue> m_Table = new PSUtility.Enumerables.Dictionary<SolValue, SolValue>();
+        private readonly PSDictionary<SolValue, SolValue> m_Table = new PSDictionary<SolValue, SolValue>();
         private int m_N;
 
         /// <summary>

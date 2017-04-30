@@ -1,4 +1,5 @@
-﻿using JetBrains.Annotations;
+﻿using System.Collections.Generic;
+using JetBrains.Annotations;
 using PSUtility.Enumerables;
 using SolScript.Interpreter.Types;
 using SolScript.Utility;
