@@ -13,7 +13,7 @@ namespace PSUtility.Enumerables
     /// <typeparam name="TKey">The key type.</typeparam>
     /// <typeparam name="TValue">The value type.</typeparam>
     [PublicAPI]
-    public class PSDictionary<TKey, TValue> : Dictionary<TKey, TValue>, IReadOnlyDictionary<TKey, TValue>
+    public class PSDictionary<TKey, TValue> : Dictionary<TKey, TValue>, IPSDictionary<TKey, TValue>
     {
         // The lazy dictionary keys.
         private Collection<TKey> m_Keys;
@@ -62,6 +62,12 @@ namespace PSUtility.Enumerables
         ///     All values of this dictionary.
         /// </summary>
         public new IReadOnlyCollection<TValue> Values => m_Values ?? (m_Values = new Collection<TValue>(base.Values));
+
+        /// <inheritdoc />
+        IEnumerable<TKey> IPSDictionary<TKey, TValue>.Keys => Keys;
+
+        /// <inheritdoc />
+        IEnumerable<TValue> IPSDictionary<TKey, TValue>.Values => Values;
 
         /// <inheritdoc />
         IEnumerable<TKey> IReadOnlyDictionary<TKey, TValue>.Keys => Keys;

@@ -53,12 +53,15 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="PresentationCore" />
+    <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Enumerables\Array.cs" />
     <Compile Include="Enumerables\ArrayUtility.cs" />
     <Compile Include="Enumerables\Collection.cs" />
     <Compile Include="Enumerables\ComparisonUtility.cs" />
+    <Compile Include="Enumerables\IPSDictionary.cs" />
+    <Compile Include="Enumerables\IPSList.cs" />
     <Compile Include="Enumerables\PSDictionary.cs" />
     <Compile Include="Enumerables\EmptyArray.cs" />
     <Compile Include="Enumerables\EnumerableUtility.cs" />
