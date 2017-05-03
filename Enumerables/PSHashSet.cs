@@ -23,6 +23,22 @@ namespace PSUtility.Enumerables
             return m_ReadOnly;
         }
 
+        /// <summary>
+        ///     Adds a range of items to this hash set.
+        /// </summary>
+        /// <param name="items">The items to add.</param>
+        /// <returns>The amount of items added.</returns>
+        public int AddRange(scg.IEnumerable<T> items)
+        {
+            int added = 0;
+            foreach (T item in items) {
+                if (Add(item)) {
+                    added++;
+                }
+            }
+            return added;
+        }
+
         /*/// <summary>
         ///     Adds an item to this <see cref="PSHashSet{T}" />.
         /// </summary>
