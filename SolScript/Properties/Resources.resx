@@ -233,4 +233,8 @@
     <value>The class descriptor "{0}" describes multiple classes.</value>
     <comment>0: Descriptor Type</comment>
   </data>
+  <data name="Err_FailedToGetNativeClassObject" xml:space="preserve">
+    <value>Failed to get the native object of class "{0}".</value>
+    <comment>0: Class Name</comment>
+  </data>
 </root>

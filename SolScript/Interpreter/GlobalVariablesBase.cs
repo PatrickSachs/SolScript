@@ -76,7 +76,7 @@ namespace SolScript.Interpreter
 
         /// <inheritdoc />
         /// <exception cref="SolVariableException">Failed to get the annotations.</exception>
-        public IReadOnlyList<SolClass> GetAnnotations(string name)
+        public ReadOnlyList<SolClass> GetAnnotations(string name)
         {
             if (Members.IsDeclared(name)) {
                 return Members.GetAnnotations(name);

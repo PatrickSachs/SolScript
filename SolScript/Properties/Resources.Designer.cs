@@ -232,6 +232,15 @@ namespace SolScript.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Failed to get the native object of class &quot;{0}&quot;..
+        /// </summary>
+        internal static string Err_FailedToGetNativeClassObject {
+            get {
+                return ResourceManager.GetString("Err_FailedToGetNativeClassObject", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Tried to build the global function &quot;{0}&quot; from a constructor of native type &quot;{1}&quot;. Constructors cannot be global functions..
         /// </summary>
         internal static string Err_GlobalFunctionCannotBeNativeConstructor {

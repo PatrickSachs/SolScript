@@ -119,7 +119,7 @@ namespace SolScript.Interpreter
             /// <summary>
             ///     The parameter types of the meta function.
             /// </summary>
-            public IReadOnlyList<SolType> Types => m_Parameters;
+            public ReadOnlyList<SolType> Types => m_Parameters.AsReadOnly();
         }
 
         #endregion

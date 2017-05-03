@@ -232,7 +232,7 @@ namespace SolScript.Interpreter
 
         /// <inheritdoc />
         /// <exception cref="SolVariableException">Failed to get the annotations.</exception>
-        public IReadOnlyList<SolClass> GetAnnotations(string name)
+        public ReadOnlyList<SolClass> GetAnnotations(string name)
         {
             Base valueInfo;
             if (m_Variables.TryGetValue(name, out valueInfo))
@@ -288,7 +288,7 @@ namespace SolScript.Interpreter
             /// <summary>
             ///     The annotations on this variable.
             /// </summary>
-            public IReadOnlyList<SolClass> Annotations => l_annotations ?? EmptyReadOnlyList<SolClass>.Value;
+            public ReadOnlyList<SolClass> Annotations => l_annotations  != null ? l_annotations.AsReadOnly() : EmptyReadOnlyList<SolClass>.Value;
 
             /// <summary>
             ///     Does this variable wrapper have annotations? Only wrappers without annotations can be assigned new variables.

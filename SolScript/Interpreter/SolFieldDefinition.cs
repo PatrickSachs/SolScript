@@ -13,18 +13,16 @@ namespace SolScript.Interpreter
         /// <inheritdoc />
         public SolFieldDefinition(SolAssembly assembly, SourceLocation location) : base(assembly, location)
         {
-            DeclaredAnnotations = ReadOnlyList<SolAnnotationDefinition>.FromDelegate(() => m_DeclaredAnnotationsList);
         }
 
         internal SolFieldDefinition()
         {
-            DeclaredAnnotations = ReadOnlyList<SolAnnotationDefinition>.FromDelegate(() => m_DeclaredAnnotationsList);
         }
 
-        private readonly IList<SolAnnotationDefinition> m_DeclaredAnnotationsList = new PSList<SolAnnotationDefinition>();
+        private readonly PSList<SolAnnotationDefinition> m_DeclaredAnnotations = new PSList<SolAnnotationDefinition>();
 
         /// <inheritdoc />
-        public override IReadOnlyList<SolAnnotationDefinition> DeclaredAnnotations { get; }
+        public override ReadOnlyList<SolAnnotationDefinition> DeclaredAnnotations => m_DeclaredAnnotations.AsReadOnly();
 
         /*/// <summary>
         ///     Creates a new field definition for a field located in a class.
@@ -85,7 +83,7 @@ namespace SolScript.Interpreter
         /// <inheritdoc />
         internal override void AddAnnotation(SolAnnotationDefinition annotation)
         {
-            m_DeclaredAnnotationsList.Add(annotation);
+            m_DeclaredAnnotations.Add(annotation);
         }
 
         #endregion

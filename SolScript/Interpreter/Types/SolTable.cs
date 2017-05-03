@@ -14,7 +14,7 @@ namespace SolScript.Interpreter.Types
     ///     The table is used as pure data storage. It allows for key-value pair storage. A key of any type can be mapped to a
     ///     value of any type.
     /// </summary>
-    public sealed class SolTable : SolValue, IValueIndexable, IReadOnlyCollection<KeyValuePair<SolValue, SolValue>>
+    public sealed class SolTable : SolValue, IValueIndexable, IEnumerable<KeyValuePair<SolValue, SolValue>>
     {
         /// <summary>
         ///     Creates a new empty table.
@@ -55,13 +55,21 @@ namespace SolScript.Interpreter.Types
         private readonly PSDictionary<SolValue, SolValue> m_Table = new PSDictionary<SolValue, SolValue>();
         private int m_N;
 
+        /// <inheritdoc />
+        public int Count => m_Table.Count;
+
         /// <summary>
         ///     All keys in this table.
         /// </summary>
-        public IReadOnlyCollection<SolValue> Keys => m_Table.Keys;
+        public ReadOnlyCollection<SolValue> Keys => m_Table.Keys;
 
         /// <inheritdoc />
         public override string Type => TYPE;
+
+        /// <summary>
+        ///     All values in this table.
+        /// </summary>
+        public ReadOnlyCollection<SolValue> Values => m_Table.Values;
 
         /// <summary>
         ///     Wrapper around this[new <see cref="SolNumber" />(<paramref name="index" />)].
@@ -73,10 +81,7 @@ namespace SolScript.Interpreter.Types
             set { this[new SolNumber(index)] = value; }
         }
 
-        #region IReadOnlyCollection<KeyValuePair<SolValue,SolValue>> Members
-
-        /// <inheritdoc />
-        public int Count => m_Table.Count;
+        #region IEnumerable<KeyValuePair<SolValue,SolValue>> Members
 
         /// <summary> Returns an enumerator that iterates through the table. </summary>
         /// <returns> An enumerator that can be used to iterate through the table. </returns>
@@ -93,25 +98,6 @@ namespace SolScript.Interpreter.Types
         IEnumerator IEnumerable.GetEnumerator()
         {
             return GetEnumerator();
-        }
-
-        /// <inheritdoc />
-        public bool Contains(KeyValuePair<SolValue, SolValue> item)
-        {
-            SolValue value;
-            return m_Table.TryGetValue(item.Key, out value) && value.Equals(item.Value);
-        }
-
-        /// <inheritdoc />
-        public void CopyTo(Array array, int index)
-        {
-            ArrayUtility.Copy(this, 0, array, index, Count);
-        }
-
-        /// <inheritdoc />
-        public void CopyTo(Array<KeyValuePair<SolValue, SolValue>> array, int index)
-        {
-            ArrayUtility.Copy(this, 0, array, index, Count);
         }
 
         #endregion
@@ -187,7 +173,7 @@ namespace SolScript.Interpreter.Types
                         Type[] genericTypes = interfce.GetGenericArguments();
                         Type keyType = genericTypes[0];
                         Type valueType = genericTypes[1];
-                        Type genericDictionaryType = typeof(System.Collections.Generic.Dictionary<,>).MakeGenericType(keyType, valueType);
+                        Type genericDictionaryType = typeof(Dictionary<,>).MakeGenericType(keyType, valueType);
                         object dicionaryObj = InternalHelper.SandboxCreateObject<SolMarshallingException>(genericDictionaryType, new object[0], null);
                         IDictionary dictionary = (IDictionary) dicionaryObj;
                         foreach (KeyValuePair<SolValue, SolValue> pair in m_Table) {
@@ -283,7 +269,41 @@ namespace SolScript.Interpreter.Types
             return new SolNumber(m_N);
         }
 
+        /// <inheritdoc />
+        public override bool IsReferenceEqual(SolExecutionContext context, SolValue other)
+        {
+            return m_Id == (other as SolTable)?.m_Id;
+        }
+
         #endregion
+
+        /// <summary>
+        ///     Returns a read only dictionary representation of this table.
+        /// </summary>
+        /// <returns>The dictionary.</returns>
+        public ReadOnlyDictionary<SolValue, SolValue> AsReadOnly()
+        {
+            return m_Table.AsReadOnly();
+        }
+
+        /// <inheritdoc />
+        public bool Contains(KeyValuePair<SolValue, SolValue> item)
+        {
+            SolValue value;
+            return m_Table.TryGetValue(item.Key, out value) && value.Equals(item.Value);
+        }
+
+        /// <inheritdoc />
+        public void CopyTo(Array array, int index)
+        {
+            ArrayUtility.Copy(this, 0, array, index, Count);
+        }
+
+        /// <inheritdoc />
+        public void CopyTo(Array<KeyValuePair<SolValue, SolValue>> array, int index)
+        {
+            ArrayUtility.Copy(this, 0, array, index, Count);
+        }
 
         /// <summary>
         ///     Creates a table of the given generic enumerable.
@@ -392,12 +412,6 @@ namespace SolScript.Interpreter.Types
         public bool Contains(SolValue key)
         {
             return m_Table.ContainsKey(key);
-        }
-
-        /// <inheritdoc />
-        public override bool IsReferenceEqual(SolExecutionContext context, SolValue other)
-        {
-            return m_Id == (other as SolTable)?.m_Id;
         }
     }
 }

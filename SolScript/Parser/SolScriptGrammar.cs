@@ -7,7 +7,7 @@ using SolScript.Parser.Terminals;
 
 namespace SolScript.Parser
 {
-    [Language("SolScript", "0.1", "A truly stellar scripting language.")]
+    [Language("SolScript", "0.4.0", "A truly stellar scripting language.")]
     internal class SolScriptGrammar : Grammar
     {
         public SolScriptGrammar() :

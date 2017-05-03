@@ -14,18 +14,18 @@ namespace SolScript.Interpreter
     {
         internal SolFunctionDefinition(SolAssembly assembly, SourceLocation location) : base(assembly, location)
         {
-            DeclaredAnnotations = ReadOnlyList<SolAnnotationDefinition>.FromValue(m_DeclaredAnnotationsList);
+            DeclaredAnnotations = new ReadOnlyList<SolAnnotationDefinition>(m_DeclaredAnnotationsList);
         }
 
         internal SolFunctionDefinition()
         {
-            DeclaredAnnotations = ReadOnlyList<SolAnnotationDefinition>.FromValue(m_DeclaredAnnotationsList);
+            DeclaredAnnotations = new ReadOnlyList<SolAnnotationDefinition>(m_DeclaredAnnotationsList);
         }
 
         private readonly IList<SolAnnotationDefinition> m_DeclaredAnnotationsList = new PSList<SolAnnotationDefinition>();
 
         /// <inheritdoc />
-        public override IReadOnlyList<SolAnnotationDefinition> DeclaredAnnotations { get; }
+        public override ReadOnlyList<SolAnnotationDefinition> DeclaredAnnotations { get; }
 
         /*/// <summary>
         ///     Creates a new function definition for a function declared in a class.

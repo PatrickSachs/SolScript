@@ -55,7 +55,7 @@ namespace SolScript.Interpreter.Statements
         /// <summary>
         ///     Obtains the arguments used when calling the function.
         /// </summary>
-        public IReadOnlyList<SolExpression> Arguments => m_Arguments;
+        public ReadOnlyList<SolExpression> Arguments => m_Arguments.AsReadOnly();
 
         #region Overrides
 

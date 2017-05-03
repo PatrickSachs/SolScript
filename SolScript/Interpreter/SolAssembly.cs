@@ -362,12 +362,12 @@ namespace SolScript.Interpreter
             /// <summary>
             ///     The source files referenced by this builder.
             /// </summary>
-            public gen.IReadOnlySet<string> SourceFiles => m_SrcFileNames;
+            public ps.ReadOnlyHashSet<string> SourceFiles => m_SrcFileNames.AsReadOnly();
 
             /// <summary>
             ///     The source strings referenced by this builder.
             /// </summary>
-            public gen.IReadOnlyList<string> SourceStrings => m_SrcStrings;
+            public ps.ReadOnlyList<string> SourceStrings => m_SrcStrings.AsReadOnly();
 
             /// <summary>
             ///     Includes new source files in this builder.
@@ -1072,13 +1072,13 @@ namespace SolScript.Interpreter
         ///     All global fields in key value pairs.
         /// </summary>
         /// <exception cref="InvalidOperationException">Invalid state. </exception>
-        public gen.IReadOnlyDictionary<string, SolFieldDefinition> GlobalFieldPairs => m_GlobalFields;
+        public ps.ReadOnlyDictionary<string, SolFieldDefinition> GlobalFieldPairs => m_GlobalFields.AsReadOnly();
 
         /// <summary>
         ///     All global functions in key value pairs.
         /// </summary>
         /// <exception cref="InvalidOperationException">Invalid state. </exception>
-        public gen.IReadOnlyDictionary<string, SolFunctionDefinition> GlobalFunctionPairs => m_GlobalFunctions;
+        public ps.ReadOnlyDictionary<string, SolFunctionDefinition> GlobalFunctionPairs => m_GlobalFunctions.AsReadOnly();
 
         /// <summary>
         ///     A descriptive name of this assembly(e.g. "Enemy AI Logic"). The name will be used during debugging and error

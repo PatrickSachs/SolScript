@@ -17,7 +17,7 @@ namespace SolScript.Interpreter
         /// <summary>
         ///     All annotations declared in this definition.
         /// </summary>
-        public abstract IReadOnlyList<SolAnnotationDefinition> DeclaredAnnotations { get; }
+        public abstract ReadOnlyList<SolAnnotationDefinition> DeclaredAnnotations { get; }
 
         /// <summary>
         ///     Internal helper method to add an annotation to this definition.

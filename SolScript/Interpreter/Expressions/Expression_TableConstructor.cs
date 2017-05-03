@@ -36,13 +36,13 @@ namespace SolScript.Interpreter.Expressions
         ///     A read-only collection of all keys in this constructor. The matching value can be found in the
         ///     <see cref="Values" /> list at them same index.
         /// </summary>
-        public IReadOnlyList<SolExpression> Keys => m_Keys;
+        public ReadOnlyList<SolExpression> Keys => m_Keys.AsReadOnly();
 
         /// <summary>
         ///     A read-only collection of all values in this constructor. The matching key can be found in the <see cref="Keys" />
         ///     list at them same index.
         /// </summary>
-        public IReadOnlyList<SolExpression> Values => m_Values;
+        public ReadOnlyList<SolExpression> Values => m_Values.AsReadOnly();
 
         #region Overrides
 

@@ -42,24 +42,21 @@ namespace SolScript.Utility
         internal const string O_PARSER_MSG = "Only used by the parser. Please use a different overload instead.";
         internal const bool O_PARSER_ERR = true;
 
-        private static readonly IReadOnlySet<Type> FuncGenericTypes = new PSHashSet<Type> {
+        private static readonly ReadOnlyHashSet<Type> s_FuncGenericTypes = new PSHashSet<Type> {
             typeof(Func<>),
             typeof(Func<,>),
             typeof(Func<,,>),
             typeof(Func<,,,>),
             typeof(Func<,,,,>)
-        };
+        }.AsReadOnly();
 
-        private static readonly IReadOnlySet<Type> ActionGenericTypes = new PSHashSet<Type> {
+        private static readonly ReadOnlyHashSet<Type> s_ActionGenericTypes = new PSHashSet<Type> {
             typeof(Action),
             typeof(Action<>),
             typeof(Action<,>),
             typeof(Action<,,>),
             typeof(Action<,,,>)
-        };
-
-        public static readonly ClassCreationOptions AnnotationClassCreationOptions = new ClassCreationOptions.Customizable().SetEnforceCreation(true);
-        public static readonly ClassCreationOptions AnnotationClassCreationOptionsNoCtor = new ClassCreationOptions.Customizable().SetEnforceCreation(true).SetCallConstructor(false);
+        }.AsReadOnly();
 
         /*internal static SolSourceLocation Location(this ParseTreeNode @this, string file)
         {
@@ -127,7 +124,7 @@ namespace SolScript.Utility
             if (type.ContainsGenericParameters) {
                 throw new ArgumentException("The type is not an open generic type.", nameof(type));
             }
-            return ActionGenericTypes.Contains(type);
+            return s_ActionGenericTypes.Contains(type);
         }
 
         /// <summary>
@@ -174,7 +171,7 @@ namespace SolScript.Utility
             if (type.ContainsGenericParameters) {
                 throw new ArgumentException("The type is not an open geneic type.", nameof(type));
             }
-            return FuncGenericTypes.Contains(type);
+            return s_FuncGenericTypes.Contains(type);
         }
 
         /// <summary>
@@ -764,7 +761,7 @@ namespace SolScript.Utility
         internal static SolParameterInfo.Native GetParameterInfo(SolAssembly assembly, ParameterInfo[] parameterInfo)
         {
             if (parameterInfo.Length == 0) {
-                return new SolParameterInfo.Native(EmptyArray<SolParameter>.Value, EmptyArray<Type>.Value, false, false);
+                return SolParameterInfo.Native.None;
             }
             // If null     -> false 
             // if not null -> true (+ value = optional array element type)
@@ -808,7 +805,7 @@ namespace SolScript.Utility
         {
             if (definitions.Length == 0)
             {
-                return EmptyArray<SolClass>.Value;
+                return ArrayUtility.Empty<SolClass>();
             }
             SolClass[] classes = new SolClass[definitions.Length];
             for (int i = 0; i < definitions.Length; i++)
@@ -823,7 +820,7 @@ namespace SolScript.Utility
         {
             if (definitions.Count == 0)
             {
-                return EmptyArray<SolClass>.Value;
+                return ArrayUtility.Empty<SolClass>();
             }
             SolClass[] classes = new SolClass[definitions.Count];
             for (int i = 0; i < definitions.Count; i++)
@@ -834,11 +831,11 @@ namespace SolScript.Utility
             return classes;
         }
 
-        public static SolClass[] CreateAnnotations(this IReadOnlyList<SolAnnotationDefinition> definitions, SolExecutionContext context, IVariables variables)
+        public static SolClass[] CreateAnnotations(this ReadOnlyList<SolAnnotationDefinition> definitions, SolExecutionContext context, IVariables variables)
         {
             if (definitions.Count == 0)
             {
-                return EmptyArray<SolClass>.Value;
+                return ArrayUtility.Empty<SolClass>();
             }
             SolClass[] classes = new SolClass[definitions.Count];
             for (int i = 0; i < definitions.Count; i++)
@@ -860,7 +857,7 @@ namespace SolScript.Utility
         {
             if (expressions.Length == 0)
             {
-                return EmptyArray<SolValue>.Value;
+                return ArrayUtility.Empty<SolValue>();
             }
             var values = new SolValue[expressions.Length];
             for (int i = 0; i < values.Length; i++)
@@ -879,7 +876,7 @@ namespace SolScript.Utility
         {
             if (expressions.Count == 0)
             {
-                return EmptyArray<SolValue>.Value;
+                return ArrayUtility.Empty<SolValue>();
             }
             var values = new SolValue[expressions.Count];
             for (int i = 0; i < values.Length; i++)

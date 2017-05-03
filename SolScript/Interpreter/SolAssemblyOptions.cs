@@ -67,10 +67,10 @@ namespace SolScript.Interpreter
 
         private string m_Name;
         private string m_SourceFilePattern;
-        public static ps.ISet<NativeFieldPostProcessor> DefaultFieldPostProcessors { get; } = new ps.PSHashSet<NativeFieldPostProcessor>();
-        public static ps.ISet<NativeMethodPostProcessor> DefaultMethodPostProcessors { get; } = new ps.PSHashSet<NativeMethodPostProcessor>();
-        public ps.ISet<NativeFieldPostProcessor> FieldPostProcessors { get; } = new ps.PSHashSet<NativeFieldPostProcessor>();
-        public ps.ISet<NativeMethodPostProcessor> MethodPostProcessors { get; } = new ps.PSHashSet<NativeMethodPostProcessor>();
+        public static ps.PSHashSet<NativeFieldPostProcessor> DefaultFieldPostProcessors { get; } = new ps.PSHashSet<NativeFieldPostProcessor>();
+        public static ps.PSHashSet<NativeMethodPostProcessor> DefaultMethodPostProcessors { get; } = new ps.PSHashSet<NativeMethodPostProcessor>();
+        public ps.PSHashSet<NativeFieldPostProcessor> FieldPostProcessors { get; } = new ps.PSHashSet<NativeFieldPostProcessor>();
+        public ps.PSHashSet<NativeMethodPostProcessor> MethodPostProcessors { get; } = new ps.PSHashSet<NativeMethodPostProcessor>();
 
         public static NativeFieldPostProcessor DefaultFallbackFieldPostProcessor {
             get { return s_DefaultFallbackFieldPostProcessor; }
@@ -131,7 +131,7 @@ namespace SolScript.Interpreter
             get { return m_Name; }
             set {
                 if (value == null) {
-                    throw new ArgumentNullException(nameof(value), "Cannot set name to null.");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 m_Name = value;
             }
@@ -149,7 +149,7 @@ namespace SolScript.Interpreter
             get { return m_SourceFilePattern; }
             set {
                 if (value == null) {
-                    throw new ArgumentNullException(nameof(value), "Cannot set source file pattern to null.");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 m_SourceFilePattern = value;
             }
@@ -169,6 +169,16 @@ namespace SolScript.Interpreter
         }
 
         #endregion
+
+        /// <inheritdoc cref="ICloneable.Clone" />
+        public SolAssemblyOptions Clone()
+        {
+            SolAssemblyOptions options = new SolAssemblyOptions(m_Name) {
+                m_SourceFilePattern = m_SourceFilePattern,
+                WarningsAreErrors = WarningsAreErrors
+            };
+            return options;
+        }
 
         /// <summary>
         ///     Gets the post processor used for the given method.
@@ -198,16 +208,6 @@ namespace SolScript.Interpreter
                 }
             }
             return FallbackFieldPostProcessor;
-        }
-
-        /// <inheritdoc cref="ICloneable.Clone" />
-        public SolAssemblyOptions Clone()
-        {
-            SolAssemblyOptions options = new SolAssemblyOptions(m_Name) {
-                m_SourceFilePattern = m_SourceFilePattern,
-                WarningsAreErrors = WarningsAreErrors
-            };
-            return options;
         }
     }
 }

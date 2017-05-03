@@ -13,22 +13,20 @@ namespace SolScript.Interpreter
     ///     The <see cref="SolParameterInfo" /> is used to easliy access information about the parameters of a function. It
     ///     wraps the actual parameters aswell as information about parameters modifiers.
     /// </summary>
-    public class SolParameterInfo : IReadOnlyList<SolParameter>
+    public class SolParameterInfo : IEnumerable<SolParameter>
     {
         /// <summary>
-        /// Used by the parser.
+        ///     Used by the parser.
         /// </summary>
-        public SolParameterInfo()
-        {
-            
-        }
+        public SolParameterInfo() //: base(ArrayUtility.Empty<SolParameter>())
+        {}
 
         /// <summary>
         ///     Creates a new <see cref="SolParameterInfo" /> object from the given parameters-.
         /// </summary>
         /// <param name="parameters">The parameter array.</param>
         /// <param name="allowOptional">Should optional arguments be allowed?</param>
-        public SolParameterInfo(IEnumerable<SolParameter> parameters, bool allowOptional)
+        public SolParameterInfo(IEnumerable<SolParameter> parameters, bool allowOptional) //: base(new Array<SolParameter>(parameters))
         {
             AllowOptional = allowOptional;
             ParametersList = new PSList<SolParameter>(parameters);
@@ -37,23 +35,16 @@ namespace SolScript.Interpreter
         /// <summary>
         ///     Allows any value to be passed to this <see cref="SolParameterInfo" />.
         /// </summary>
-        public static readonly SolParameterInfo Any = new SolParameterInfo(EmptyArray<SolParameter>.Value, true);
+        public static readonly SolParameterInfo Any = new SolParameterInfo(ArrayUtility.Empty<SolParameter>(), true);
 
         /// <summary>
         ///     Allows no values to be passed to this <see cref="SolParameterInfo" />.
         /// </summary>
-        public static readonly SolParameterInfo None = new SolParameterInfo(EmptyArray<SolParameter>.Value, false);
+        public static readonly SolParameterInfo None = new SolParameterInfo(ArrayUtility.Empty<SolParameter>(), false);
 
         // The parameter array.
         [UsedImplicitly]
         internal IList<SolParameter> ParametersList;
-
-        /// <summary>
-        ///     Are optional additional("args") arguments allowed?
-        /// </summary>
-        public bool AllowOptional { get; [UsedImplicitly] internal set; }
-
-        #region IReadOnlyList<SolParameter> Members
 
         /// <summary>
         ///     How many parameters are registered in this parameter info(excluding the possibly infinite optional ones)?
@@ -76,6 +67,13 @@ namespace SolScript.Interpreter
             }
         }
 
+        /// <summary>
+        ///     Are optional additional("args") arguments allowed?
+        /// </summary>
+        public bool AllowOptional { get; [UsedImplicitly] internal set; }
+
+        #region IEnumerable<SolParameter> Members
+
         /// <inheritdoc />
         IEnumerator IEnumerable.GetEnumerator()
         {
@@ -86,12 +84,6 @@ namespace SolScript.Interpreter
         public IEnumerator<SolParameter> GetEnumerator()
         {
             return ParametersList.GetEnumerator();
-        }
-
-        /// <inheritdoc />
-        public bool Contains(SolParameter item)
-        {
-            return ParametersList.Contains(item);
         }
 
         #endregion
@@ -122,6 +114,12 @@ namespace SolScript.Interpreter
         }
 
         #endregion
+
+        /// <inheritdoc />
+        public bool Contains(SolParameter item)
+        {
+            return ParametersList.Contains(item);
+        }
 
         /// <summary>
         ///     Verifies if the passed arguments are fitting for the parameters defined in this parameter info.
@@ -258,6 +256,11 @@ namespace SolScript.Interpreter
                     m_NativeTypes = nativeTypes;
                 }
             }
+
+            /// <summary>
+            ///     Accepts no parameters.
+            /// </summary>
+            public new static readonly Native None = new Native(ArrayUtility.Empty<SolParameter>(), ArrayUtility.Empty<Type>(), false, false);
 
             private readonly Type[] m_NativeTypes;
 

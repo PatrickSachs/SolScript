@@ -2,14 +2,13 @@
 using System.Collections;
 using System.Collections.Generic;
 using PSUtility.Enumerables;
-using SolScript.Utility;
 
 namespace SolScript
 {
     /// <summary>
     ///     A <see cref="SolErrorCollection" /> is used to save <see cref="SolError" />s in an easily accessibly collection.
     /// </summary>
-    public sealed class SolErrorCollection : IReadOnlyList<SolError>
+    public sealed class SolErrorCollection : IEnumerable<SolError>
     {
         /// <summary>
         ///     Creates a new read-only collection from the given errors. Use <see cref="CreateCollection" /> if you wish to create
@@ -18,7 +17,7 @@ namespace SolScript
         /// <param name="errors">The errors.</param>
         public SolErrorCollection(IEnumerable<SolError> errors)
         {
-            m_Errors = new System.Collections.Generic.List<SolError>(errors);
+            m_Errors = new PSList<SolError>(errors);
         }
 
         /// <inheritdoc cref="SolErrorCollection(IEnumerable{SolError})" />
@@ -26,31 +25,13 @@ namespace SolScript
 
         private SolErrorCollection()
         {
-            m_Errors = new System.Collections.Generic.List<SolError>();
+            m_Errors = new PSList<SolError>();
         }
 
-        private readonly System.Collections.Generic.List<SolError> m_Errors;
+        private readonly PSList<SolError> m_Errors;
 
-        /// <summary>
-        ///     Are warnings treated as errors by this collection?
-        /// </summary>
-        public bool WarningsAreErrors { get; private set; }
-
-        /// <summary>
-        ///     Checks if this collection has any warnings. Errors do not count as warnings.
-        /// </summary>
-        public bool HasWarnings {
-            get {
-                if (Count > 0) {
-                    foreach (SolError error in m_Errors) {
-                        if (error.IsWarning) {
-                            return true;
-                        }
-                    }
-                }
-                return false;
-            }
-        }
+        /// <inheritdoc />
+        public int Count => m_Errors.Count;
 
         /// <summary>
         ///     Checks if this collection has any errors. Warnings count as errors if <see cref="WarningsAreErrors" /> is true.
@@ -71,7 +52,31 @@ namespace SolScript
             }
         }
 
-        #region IReadOnlyList<SolError> Members
+        /// <summary>
+        ///     Checks if this collection has any warnings. Errors do not count as warnings.
+        /// </summary>
+        public bool HasWarnings {
+            get {
+                if (Count > 0) {
+                    foreach (SolError error in m_Errors) {
+                        if (error.IsWarning) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+        }
+
+        /// <inheritdoc />
+        public SolError this[int index] => m_Errors[index];
+
+        /// <summary>
+        ///     Are warnings treated as errors by this collection?
+        /// </summary>
+        public bool WarningsAreErrors { get; private set; }
+
+        #region IEnumerable<SolError> Members
 
         /// <inheritdoc />
         IEnumerator IEnumerable.GetEnumerator()
@@ -85,19 +90,22 @@ namespace SolScript
             return m_Errors.GetEnumerator();
         }
 
-        /// <inheritdoc />
-        public int Count => m_Errors.Count;
+        #endregion
 
-        /// <inheritdoc />
-        public SolError this[int index] => m_Errors[index];
+        /// <summary>
+        ///     Creates a read only list from this error collection.
+        /// </summary>
+        /// <returns>The read only list.</returns>
+        public ReadOnlyList<SolError> AsReadOnly()
+        {
+            return m_Errors.AsReadOnly();
+        }
 
         /// <inheritdoc />
         public bool Contains(SolError item)
         {
             return m_Errors.Contains(item);
         }
-
-        #endregion
 
         /// <summary>
         ///     Creates a new error collection from the given parameters.

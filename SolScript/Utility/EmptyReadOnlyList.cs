@@ -12,6 +12,6 @@ namespace SolScript.Utility
         /// <summary>
         ///     The list instance.
         /// </summary>
-        public static readonly IReadOnlyList<T> Value = new PSList<T>();
+        public static readonly ReadOnlyList<T> Value = new ReadOnlyList<T>(ArrayUtility.Empty<T>());
     }
 }

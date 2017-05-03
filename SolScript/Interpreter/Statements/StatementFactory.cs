@@ -24,9 +24,9 @@ namespace SolScript.Interpreter.Statements
 
         internal class TreeData
         {
-            public readonly IPSList<SolClassDefinition> Classes = new PSList<SolClassDefinition>();
-            public readonly IPSList<SolFunctionDefinition> Functions = new PSList<SolFunctionDefinition>();
-            public readonly IPSList<SolFieldDefinition> Fields = new PSList<SolFieldDefinition>();
+            public readonly PSList<SolClassDefinition> Classes = new PSList<SolClassDefinition>();
+            public readonly PSList<SolFunctionDefinition> Functions = new PSList<SolFunctionDefinition>();
+            public readonly PSList<SolFieldDefinition> Fields = new PSList<SolFieldDefinition>();
         }
 
         /// <exception cref="SolInterpreterException">An error occured.</exception>
@@ -321,7 +321,9 @@ namespace SolScript.Interpreter.Statements
             }
             foreach (ParseTreeNode annotationNode in node.ChildNodes) {
                 string name = annotationNode.ChildNodes[1].Token.Text;
-                SolExpression[] expressions = annotationNode.ChildNodes.Count == 3 ? GetExpressions(annotationNode.ChildNodes[2]) : EmptyArray<SolExpression>.Value;
+                SolExpression[] expressions = annotationNode.ChildNodes.Count == 3 
+                    ? GetExpressions(annotationNode.ChildNodes[2]) 
+                    : ArrayUtility.Empty<SolExpression>();
                 builder.AddAnnotation(new SolAnnotationDefinition(new SolClassDefinitionReference(Assembly, name), expressions));
             }
         }
@@ -841,7 +843,9 @@ namespace SolScript.Interpreter.Statements
                 } // Statement_DeclareVar
                 case "Statement_CallFunction": {
                     SolExpression expression = GetExpression(statementNode.ChildNodes[0]);
-                    SolExpression[] arguments = statementNode.ChildNodes[1].ChildNodes.Count != 0 ? GetExpressions(statementNode.ChildNodes[1]) : EmptyArray<SolExpression>.Value;
+                    SolExpression[] arguments = statementNode.ChildNodes[1].ChildNodes.Count != 0 
+                            ? GetExpressions(statementNode.ChildNodes[1]) 
+                            : ArrayUtility.Empty<SolExpression>();
                     MetaItem meta = m_MetaStack.Count != 0 ? m_MetaStack.Peek() : null;
                     return new Statement_CallFunction(Assembly, statementNode.Span.Location, meta?.ActiveClass.Type, expression, new Array<SolExpression>(arguments));
                 } // Statement_CallFunction

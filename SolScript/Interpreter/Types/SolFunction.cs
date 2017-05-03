@@ -115,7 +115,7 @@ namespace SolScript.Interpreter.Types
             if (type.IsGenericType) {
                 Type openGenericType = type.GetGenericTypeDefinition();
                 if (openGenericType == typeof(AutoDelegate<>)) {
-                    return s_CreateAutoDelegateMethod.MakeGenericMethod(type.GetGenericArguments()).Invoke(this, EmptyArray<object>.Value);
+                    return s_CreateAutoDelegateMethod.MakeGenericMethod(type.GetGenericArguments()).Invoke(this, ArrayUtility.Empty<object>());
                 }
             }
             return base.ConvertTo(type);

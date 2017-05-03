@@ -4,6 +4,7 @@ using System.Linq;
 using Irony.Parsing;
 using JetBrains.Annotations;
 using PSUtility.Enumerables;
+using PSUtility.Strings;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Library;
 using SolScript.Interpreter.Types.Interfaces;
@@ -36,77 +37,6 @@ namespace SolScript.Interpreter.Types
             InheritanceChain = inheritance;
         }
 
-        #region Fields & Properties
-
-        #region Public
-
-        /// <summary>
-        ///     The annotations on this class instance.
-        /// </summary>
-        public IReadOnlyList<SolClass> Annotations => AnnotationsArray;
-
-        /// <summary>
-        ///     The assembly this class is in.
-        /// </summary>
-        public SolAssembly Assembly => InheritanceChain.Definition.Assembly;
-
-        /// <summary>
-        ///     Gets the native object described by this class.
-        /// </summary>
-        public object DescribedNativeObject
-        {
-            get
-            {
-                object obj;
-                if (!DescribedObjectReference.TryGet(out obj))
-                {
-                    throw new InvalidOperationException("Cannot obtain descibed native object.");
-                }
-                return obj;
-            }
-        }
-
-        /// <inheritdoc />
-        public override bool IsClass => true;
-
-        /// <inheritdoc />
-        public override string Type => InheritanceChain.Definition.Type;
-
-        /*/// <summary>
-        ///     The type mode of this class, explaining if the class is a singleton, sealed, class, etc.
-        /// </summary>
-        public SolTypeMode TypeMode => InheritanceChain.Definition.TypeMode;*/
-
-        /// <summary>
-        ///     Is this class initialized? A class counts as initialized as soon as
-        ///     the constructor is called.
-        /// </summary>
-        public bool IsInitialized { get; internal set; }
-
-        /// <summary>
-        /// The class definition of this class.
-        /// </summary>
-        public SolClassDefinition Definition => InheritanceChain.Definition;
-
-        #endregion
-
-        #region Non Public
-
-        // The next class id.
-        private static uint s_NextId;
-        // The unique id of this class. (Until we overflow the uint max size at least.)
-        public readonly uint Id;
-        // The inheritance chain. This is where all the fancy magic happens.
-        internal readonly Inheritance InheritanceChain;
-        // Internal array containing the annotations.
-        internal Array<SolClass> AnnotationsArray;
-        internal DynamicReference DescribedObjectReference;
-        internal DynamicReference DescriptorObjectReference;
-
-        #endregion
-
-        #endregion
-        
         #region IValueIndexable Members
 
         /// <summary>
@@ -352,6 +282,12 @@ namespace SolScript.Interpreter.Types
                 return false;
             }
             return Id == otherClass.Id;
+        }
+
+        /// <inheritdoc />
+        public override bool IsReferenceEqual(SolExecutionContext context, SolValue other)
+        {
+            return Id == (other as SolClass)?.Id;
         }
 
         #endregion
@@ -983,12 +919,6 @@ namespace SolScript.Interpreter.Types
             DescibedType
         }
 
-        /// <inheritdoc />
-        public override bool IsReferenceEqual(SolExecutionContext context, SolValue other)
-        {
-            return Id == (other as SolClass)?.Id;
-        }
-
         #endregion
 
         #region Nested type: VarBase
@@ -1045,7 +975,7 @@ namespace SolScript.Interpreter.Types
 
             /// <inheritdoc />
             /// <exception cref="SolVariableException">Failed to get the annotations.</exception>
-            public IReadOnlyList<SolClass> GetAnnotations(string name)
+            public ReadOnlyList<SolClass> GetAnnotations(string name)
             {
                 foreach (IVariables source in GetVariableSources()) {
                     if (source.IsDeclared(name)) {
@@ -1152,6 +1082,75 @@ namespace SolScript.Interpreter.Types
             /// <returns>The variable source enumerable.</returns>
             protected abstract IEnumerable<IVariables> GetVariableSources();
         }
+
+        #endregion
+
+        #region Fields & Properties
+
+        #region Public
+
+        /// <summary>
+        ///     The annotations on this class instance.
+        /// </summary>
+        public ReadOnlyList<SolClass> Annotations => AnnotationsArray.AsReadOnly();
+
+        /// <summary>
+        ///     The assembly this class is in.
+        /// </summary>
+        public SolAssembly Assembly => InheritanceChain.Definition.Assembly;
+
+        /// <summary>
+        ///     Gets the native object described by this class.
+        /// </summary>
+        /// <exception cref="InvalidOperationException" accessor="get">Cannot obtain the described native object.</exception>
+        public object DescribedNativeObject {
+            get {
+                object obj;
+                if (!DescribedObjectReference.TryGet(out obj)) {
+                    throw new InvalidOperationException(Resources.Err_FailedToGetNativeClassObject.FormatWith(Type));
+                }
+                return obj;
+            }
+        }
+
+        /// <inheritdoc />
+        public override bool IsClass => true;
+
+        /// <inheritdoc />
+        public override string Type => InheritanceChain.Definition.Type;
+
+        /*/// <summary>
+        ///     The type mode of this class, explaining if the class is a singleton, sealed, class, etc.
+        /// </summary>
+        public SolTypeMode TypeMode => InheritanceChain.Definition.TypeMode;*/
+
+        /// <summary>
+        ///     Is this class initialized? A class counts as initialized as soon as
+        ///     the constructor is called.
+        /// </summary>
+        public bool IsInitialized { get; internal set; }
+
+        /// <summary>
+        ///     The class definition of this class.
+        /// </summary>
+        public SolClassDefinition Definition => InheritanceChain.Definition;
+
+        #endregion
+
+        #region Non Public
+
+        // The next class id.
+        private static uint s_NextId;
+        // The unique id of this class. (Until we overflow the uint max size at least.)
+        public readonly uint Id;
+        // The inheritance chain. This is where all the fancy magic happens.
+        internal readonly Inheritance InheritanceChain;
+        // Internal array containing the annotations.
+        internal Array<SolClass> AnnotationsArray;
+        internal DynamicReference DescribedObjectReference;
+        internal DynamicReference DescriptorObjectReference;
+
+        #endregion
 
         #endregion
     }

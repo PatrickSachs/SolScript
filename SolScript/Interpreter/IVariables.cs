@@ -88,7 +88,7 @@ namespace SolScript.Interpreter
         /// <returns>The annotations.</returns>
         /// <exception cref="SolVariableException">Failed to get the annotations.</exception>
         [NotNull]
-        IReadOnlyList<SolClass> GetAnnotations([NotNull] string name);
+        ReadOnlyList<SolClass> GetAnnotations([NotNull] string name);
 
         /// <summary> Assigns a value to the variable with the given name. </summary>
         /// <exception cref="SolVariableException">

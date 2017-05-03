@@ -26,25 +26,25 @@ namespace SolScript.Libraries.std
         [SolLibraryVisibility(std.NAME, false)]
         public const string TYPE = "Reflect";
 
-        private static readonly IReadOnlyDictionary<SolTypeMode, SolString> s_TypeModeNames = new PSDictionary<SolTypeMode, SolString> {
-            [SolTypeMode.Default] = "none",
+        private static readonly ReadOnlyDictionary<SolTypeMode, SolString> s_TypeModeNames = new PSDictionary<SolTypeMode, SolString> {
+            [SolTypeMode.Default] = "default",
             [SolTypeMode.Abstract] = "abstract",
             [SolTypeMode.Annotation] = "annotation",
             [SolTypeMode.Sealed] = "sealed",
             [SolTypeMode.Singleton] = "singleton"
-        };
+        }.AsReadOnly();
 
-        private static readonly IReadOnlyDictionary<SolAccessModifier, SolString> s_AccessModifierNames = new PSDictionary<SolAccessModifier, SolString> {
-            [SolAccessModifier.Global] = "none",
+        private static readonly ReadOnlyDictionary<SolAccessModifier, SolString> s_AccessModifierNames = new PSDictionary<SolAccessModifier, SolString> {
+            [SolAccessModifier.Global] = "global",
             [SolAccessModifier.Local] = "local",
             [SolAccessModifier.Internal] = "internal"
-        };
+        }.AsReadOnly();
 
-        private static readonly IReadOnlyDictionary<SolMemberModifier, SolString> s_MemberModifierNames = new PSDictionary<SolMemberModifier, SolString> {
-            [SolMemberModifier.Default] = "none",
+        private static readonly ReadOnlyDictionary<SolMemberModifier, SolString> s_MemberModifierNames = new PSDictionary<SolMemberModifier, SolString> {
+            [SolMemberModifier.Default] = "default",
             [SolMemberModifier.Abstract] = "abstract",
             [SolMemberModifier.Override] = "override"
-        };
+        }.AsReadOnly();
 
         private static readonly SolString Str_name = SolString.ValueOf("name").Intern();
         private static readonly SolString Str_can_be_nil = SolString.ValueOf("can_be_nil").Intern();
@@ -344,7 +344,7 @@ namespace SolScript.Libraries.std
         /// <exception cref="SolRuntimeException">Failed to obtain the annotations.</exception>
         public SolTable get_global_annotations(SolExecutionContext context, SolString member, SolString type)
         {
-            IReadOnlyList<SolClass> annotations;
+            ReadOnlyList<SolClass> annotations;
             try {
                 annotations = context.Assembly.LocalVariables.GetAnnotations(member.Value);
             } catch (SolVariableException ex) {
@@ -368,7 +368,7 @@ namespace SolScript.Libraries.std
         /// <exception cref="SolRuntimeException">Failed to obtain the annotations.</exception>
         public SolTable get_member_annotations(SolExecutionContext context, SolClass instance, SolString member, SolString type)
         {
-            IReadOnlyList<SolClass> annotations = null;
+            ReadOnlyList<SolClass> annotations = null;
             // todo: var source that literally searches EVERYTHING.
             // Check if the member is a global/internal
             IVariables source = instance.InheritanceChain.GetVariables(SolAccessModifier.Internal, SolVariableMode.All);

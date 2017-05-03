@@ -38,7 +38,7 @@ namespace SolScript.Interpreter.Statements
         /// <summary>
         ///     The constructor arguments.
         /// </summary>
-        public IReadOnlyList<SolExpression> Arguments => m_Arguments;
+        public ReadOnlyList<SolExpression> Arguments => m_Arguments.AsReadOnly();
 
         #region Overrides
 

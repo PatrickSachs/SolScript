@@ -26,7 +26,7 @@ namespace SolScript.Interpreter.Library
         /// <summary>
         ///     All assemblies registered for this libarary.
         /// </summary>
-        public IReadOnlyList<Assembly> Assemblies => m_Assemblies;
+        public ReadOnlyList<Assembly> Assemblies => m_Assemblies.AsReadOnly();
 
         /// <summary>
         ///     The name of the library.

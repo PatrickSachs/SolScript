@@ -22,7 +22,6 @@ namespace SolScript.Interpreter
         /// <inheritdoc />
         public SolClassDefinition(SolAssembly assembly, SourceLocation location) : base(assembly, location)
         {
-            m_AnnotationReadonly = ReadOnlyList<SolAnnotationDefinition>.FromDelegate(() => m_DeclaredAnnotationsList);
         }
 
         /// <summary>
@@ -35,7 +34,6 @@ namespace SolScript.Interpreter
         //[Obsolete(InternalHelper.O_PARSER_MSG, InternalHelper.O_PARSER_ERR)]
         internal SolClassDefinition()
         {
-            m_AnnotationReadonly = ReadOnlyList<SolAnnotationDefinition>.FromDelegate(() => m_DeclaredAnnotationsList);
         }
 
         /// <summary>
@@ -43,12 +41,10 @@ namespace SolScript.Interpreter
         /// </summary>
         internal SolClassDefinitionReference BaseClassReference;
 
-        private readonly IReadOnlyList<SolAnnotationDefinition> m_AnnotationReadonly;
-
         /// <summary>
         ///     Raw access to the annotations of this class.
         /// </summary>
-        private readonly IList<SolAnnotationDefinition> m_DeclaredAnnotationsList = new List<SolAnnotationDefinition>();
+        private readonly PSList<SolAnnotationDefinition> m_DeclaredAnnotations = new PSList<SolAnnotationDefinition>();
 
         /*/// <summary>
         ///     Raw access to all members of this class.
@@ -70,12 +66,12 @@ namespace SolScript.Interpreter
         /// <summary>
         ///     All meta functions on this class. This includes meta functions declared at all inheritance levels.
         /// </summary>
-        public IReadOnlyDictionary<SolMetaFunction, MetaFunctionLink> AllMetaFunctions {
+        public ReadOnlyDictionary<SolMetaFunction, MetaFunctionLink> AllMetaFunctions {
             get {
                 if (!DidBuildMetaFunctions) {
                     BuildMetaFunctions();
                 }
-                return l_meta_functions;
+                return l_meta_functions.AsReadOnly();
             }
         }
 
@@ -99,17 +95,12 @@ namespace SolScript.Interpreter
         }
 
         /// <inheritdoc />
-        public override IReadOnlyList<SolAnnotationDefinition> DeclaredAnnotations {
-            get {
-                //Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher, "Annotations can only be accessed once the class body has been generated.");
-                return m_AnnotationReadonly;
-            }
-        }
+        public override ReadOnlyList<SolAnnotationDefinition> DeclaredAnnotations => m_DeclaredAnnotations.AsReadOnly();
 
         /// <summary>
         ///     The meta functions only declared in this class definition.
         /// </summary>
-        public IReadOnlyDictionary<SolMetaFunction, MetaFunctionLink> DeclaredMetaFunctions {
+        public ReadOnlyDictionary<SolMetaFunction, MetaFunctionLink> DeclaredMetaFunctions {
             get {
                 if (!DidBuildMetaFunctions) {
                     BuildMetaFunctions();
@@ -118,7 +109,7 @@ namespace SolScript.Interpreter
                 foreach (KeyValuePair<SolMetaFunction, MetaFunctionLink> m in l_meta_functions.Where(p => p.Value.Definition.DefinedIn == this)) {
                     dic.Add(m.Key, m.Value);
                 }
-                return dic;
+                return dic.AsReadOnly();
             }
         }
 
@@ -127,44 +118,24 @@ namespace SolScript.Interpreter
         ///     <see cref="TryGetField(string,bool,out SolScript.Interpreter.SolFieldDefinition)" /> overloads if you simply want a
         ///     handle on a field definition.
         /// </summary>
-        public IReadOnlyDictionary<string, SolFieldDefinition> FieldLookup {
-            get {
-                //Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher, "Fields can only be accessed once the class body has been generated.");
-                return m_Fields;
-            }
-        }
+        public ReadOnlyDictionary<string, SolFieldDefinition> FieldLookup => m_Fields.AsReadOnly();
 
         /// <summary>
         ///     All fields declared in this class.
         /// </summary>
-        public IReadOnlyCollection<SolFieldDefinition> Fields {
-            get {
-                //Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher, "Fields can only be accessed once the class body has been generated.");
-                return m_Fields.Values;
-            }
-        }
+        public ReadOnlyCollection<SolFieldDefinition> Fields => m_Fields.Values;
 
         /// <summary>
         ///     A lookup of the functions declared in this class. Consider using one of the
         ///     <see cref="TryGetFunction(string,bool,out SolScript.Interpreter.SolFunctionDefinition)" /> overloads if you simply
         ///     want a handle on a function definition.
         /// </summary>
-        public IReadOnlyDictionary<string, SolFunctionDefinition> FunctionLookup {
-            get {
-                //Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher, "Functions can only be accessed once the class body has been generated.");
-                return m_Functions;
-            }
-        }
+        public ReadOnlyDictionary<string, SolFunctionDefinition> FunctionLookup => m_Functions.AsReadOnly();
 
         /// <summary>
         ///     All functions declared in this class.
         /// </summary>
-        public IReadOnlyCollection<SolFunctionDefinition> Functions {
-            get {
-                //Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher, "Functions can only be accessed once the class body has been generated.");
-                return m_Functions.Values;
-            }
-        }
+        public ReadOnlyCollection<SolFunctionDefinition> Functions => m_Functions.Values;
 
         /// <summary>
         ///     The native type represented by this class definition.
@@ -201,7 +172,7 @@ namespace SolScript.Interpreter
         /// <inheritdoc />
         internal override void AddAnnotation(SolAnnotationDefinition annotation)
         {
-            m_DeclaredAnnotationsList.Add(annotation);
+            m_DeclaredAnnotations.Add(annotation);
         }
 
         #endregion
