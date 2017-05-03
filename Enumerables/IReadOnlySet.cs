@@ -1,4 +1,4 @@
-﻿// ReSharper disable once CheckNamespace
+﻿/*// ReSharper disable once CheckNamespace
 
 namespace System.Collections.Generic
 {
@@ -45,4 +45,4 @@ namespace System.Collections.Generic
         bool Overlaps(IEnumerable enumerable);
         bool SetEquals(IEnumerable enumerable);
     }
-}
+}*/

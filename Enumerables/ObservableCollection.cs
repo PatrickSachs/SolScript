@@ -5,7 +5,7 @@ using System.Collections.Specialized;
 
 namespace PSUtility.Enumerables
 {
-    public class ObservableCollection<T> : ICollection<T>, IReadOnlyObservableCollection<T>
+    public class ObservableCollection<T> : ICollection<T>
     {
         private readonly ICollection<T> m_BackingCollection;
 

@@ -13,6 +13,16 @@ namespace PSUtility.Enumerables
     public static class ArrayUtility
     {
         /// <summary>
+        ///     Gets an empty array of the given type. The array instance is cached.
+        /// </summary>
+        /// <typeparam name="T">The array type.</typeparam>
+        /// <returns>The array.</returns>
+        public static T[] Empty<T>()
+        {
+            return EmptyArray<T>.Value;
+        }
+
+        /// <summary>
         ///     Gets the element type of the given array.
         /// </summary>
         /// <param name="array">The array.</param>
@@ -69,24 +79,24 @@ namespace PSUtility.Enumerables
                 throw new ArgumentNullException(nameof(target));
             }
             if (sourceOffset < 0) {
-                throw new ArgumentOutOfRangeException(Resources.Err_SmallerThanZero.F(nameof(sourceOffset), sourceOffset));
+                throw new ArgumentOutOfRangeException(Resources.Err_SmallerThanZero.FormatWith(nameof(sourceOffset), sourceOffset));
             }
             if (offset < 0) {
-                throw new ArgumentOutOfRangeException(Resources.Err_SmallerThanZero.F(nameof(offset), offset));
+                throw new ArgumentOutOfRangeException(Resources.Err_SmallerThanZero.FormatWith(nameof(offset), offset));
             }
             if (count < 0) {
-                throw new ArgumentOutOfRangeException(Resources.Err_SmallerThanZero.F(nameof(count), count));
+                throw new ArgumentOutOfRangeException(Resources.Err_SmallerThanZero.FormatWith(nameof(count), count));
             }
             if (target.Rank != 1) {
-                throw new RankException(Resources.Err_InvalidArrayRank.F(target.Rank, 1));
+                throw new RankException(Resources.Err_InvalidArrayRank.FormatWith(target.Rank, 1));
             }
             if (!typeof(T).IsAssignableFrom(target.GetElementType())) {
-                throw new ArrayTypeMismatchException(Resources.Err_InvalidArrayType.F(target.GetElementType(), typeof(T)));
+                throw new ArrayTypeMismatchException(Resources.Err_InvalidArrayType.FormatWith(target.GetElementType(), typeof(T)));
             }
             int endSourceIndex = sourceOffset + count;
             int endTargetIndex = offset + count;
             if (target.Length < endTargetIndex) {
-                throw new ArgumentException(Resources.Err_ArrayTooSmall.F(target.Length, endTargetIndex), nameof(target));
+                throw new ArgumentException(Resources.Err_ArrayTooSmall.FormatWith(target.Length, endTargetIndex), nameof(target));
             }
             // Arrays can be copied using native methods.
             {
@@ -99,30 +109,30 @@ namespace PSUtility.Enumerables
                 }
                 if (sourceArray != null) {
                     if (sourceArray.Length < endSourceIndex) {
-                        throw new ArgumentException(Resources.Err_ArrayTooSmall.F(sourceArray.Length, endSourceIndex), nameof(source));
+                        throw new ArgumentException(Resources.Err_ArrayTooSmall.FormatWith(sourceArray.Length, endSourceIndex), nameof(source));
                     }
                     Array.Copy(sourceArray, sourceOffset, target, offset, count);
                     return;
                 }
             }
             // Lists provide better offset handling.
-            {
+            /*{
                 var sourceReadOnlyList = source as IReadOnlyList<T>;
                 if (sourceReadOnlyList != null) {
                     if (sourceReadOnlyList.Count < endSourceIndex) {
-                        throw new ArgumentException(Resources.Err_ArrayTooSmall.F(sourceReadOnlyList.Count, endSourceIndex), nameof(source));
+                        throw new ArgumentException(Resources.Err_ArrayTooSmall.FormatWith(sourceReadOnlyList.Count, endSourceIndex), nameof(source));
                     }
                     for (int i = 0; i < count; i++) {
                         target.SetValue(sourceReadOnlyList[sourceOffset + i], offset + i);
                     }
                     return;
                 }
-            }
+            }*/
             {
                 var sourceList = source as IList<T>;
                 if (sourceList != null) {
                     if (sourceList.Count < endSourceIndex) {
-                        throw new ArgumentException(Resources.Err_ArrayTooSmall.F(sourceList.Count, endSourceIndex), nameof(source));
+                        throw new ArgumentException(Resources.Err_ArrayTooSmall.FormatWith(sourceList.Count, endSourceIndex), nameof(source));
                     }
                     for (int i = 0; i < count; i++) {
                         target.SetValue(sourceList[sourceOffset + i], offset + i);
@@ -135,7 +145,7 @@ namespace PSUtility.Enumerables
             {
                 T[] sourceArray = source.ToArray();
                 if (sourceArray.Length != endSourceIndex) {
-                    throw new ArgumentException(Resources.Err_ArrayTooSmall.F(sourceArray.Length, endSourceIndex));
+                    throw new ArgumentException(Resources.Err_ArrayTooSmall.FormatWith(sourceArray.Length, endSourceIndex));
                 }
                 Array.Copy(sourceArray, sourceOffset, target, offset, count);
             }
@@ -179,6 +189,7 @@ namespace PSUtility.Enumerables
         {
             Copy(source.Cast<object>(), sourceOffset, target, offset, count);
         }
+
         /// <summary>
         ///     Copies <paramref name="count" /> elements from <paramref name="source" /> to the <paramref name="target" />
         ///     array.

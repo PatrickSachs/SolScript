@@ -13,12 +13,15 @@ namespace PSUtility.Enumerables
     /// <typeparam name="TKey">The key type.</typeparam>
     /// <typeparam name="TValue">The value type.</typeparam>
     [PublicAPI]
-    public class PSDictionary<TKey, TValue> : Dictionary<TKey, TValue>, IPSDictionary<TKey, TValue>
+    public class PSDictionary<TKey, TValue> : Dictionary<TKey, TValue> //, IPSDictionary<TKey, TValue>
     {
+        private readonly object m_SyncRoot = new object();
         // The lazy dictionary keys.
-        private Collection<TKey> m_Keys;
+        private ReadOnlyCollection<TKey> m_Keys;
+
+        private ReadOnlyDictionary<TKey, TValue> m_ReadOnly;
         // The lazy dictionary values.
-        private Collection<TValue> m_Values;
+        private ReadOnlyCollection<TValue> m_Values;
 
         /// <inheritdoc />
         public PSDictionary() {}
@@ -41,6 +44,16 @@ namespace PSUtility.Enumerables
         /// <inheritdoc />
         protected PSDictionary(SerializationInfo info, StreamingContext context) : base(info, context) {}
 
+        public object SyncRoot => m_SyncRoot;
+
+        public ReadOnlyDictionary<TKey, TValue> AsReadOnly()
+        {
+            if (m_ReadOnly == null) {
+                m_ReadOnly = new ReadOnlyDictionary<TKey, TValue>(this);
+            }
+            return m_ReadOnly;
+        }
+
         #region IReadOnlyDictionary<TKey,TValue> Members
 
         /// <inheritdoc />
@@ -56,14 +69,14 @@ namespace PSUtility.Enumerables
         /// <summary>
         ///     All keys of this dictionary.
         /// </summary>
-        public new IReadOnlyCollection<TKey> Keys => m_Keys ?? (m_Keys = new Collection<TKey>(base.Keys));
+        public new ReadOnlyCollection<TKey> Keys => m_Keys ?? (m_Keys = new ReadOnlyCollection<TKey>(base.Keys));
 
         /// <summary>
         ///     All values of this dictionary.
         /// </summary>
-        public new IReadOnlyCollection<TValue> Values => m_Values ?? (m_Values = new Collection<TValue>(base.Values));
+        public new ReadOnlyCollection<TValue> Values => m_Values ?? (m_Values = new ReadOnlyCollection<TValue>(base.Values));
 
-        /// <inheritdoc />
+        /*/// <inheritdoc />
         IEnumerable<TKey> IPSDictionary<TKey, TValue>.Keys => Keys;
 
         /// <inheritdoc />
@@ -73,7 +86,7 @@ namespace PSUtility.Enumerables
         IEnumerable<TKey> IReadOnlyDictionary<TKey, TValue>.Keys => Keys;
 
         /// <inheritdoc />
-        IEnumerable<TValue> IReadOnlyDictionary<TKey, TValue>.Values => Values;
+        IEnumerable<TValue> IReadOnlyDictionary<TKey, TValue>.Values => Values;*/
 
         /// <inheritdoc />
         /// <exception cref="ArrayTypeMismatchException">

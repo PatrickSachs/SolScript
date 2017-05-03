@@ -1,4 +1,4 @@
-﻿using System;
+﻿/*using System;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -80,4 +80,4 @@ namespace PSUtility.Enumerables
         void UnionWith(IEnumerable enumerable);
         new bool Contains(object element);
     }
-}
+}*/

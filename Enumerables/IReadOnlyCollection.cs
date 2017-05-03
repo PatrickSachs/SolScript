@@ -1,4 +1,4 @@
-﻿#if !NETFX_45
+﻿/*#if !NETFX_45
 
 // ReSharper disable once CheckNamespace
 
@@ -16,14 +16,16 @@ namespace System.Collections.Generic
         /// </summary>
         int Count { get; }
 
-        /*/// <summary>
+        *
+        /// <summary>
         ///     Checks if the <see cref="IReadOnlyCollection{T}" /> contains the given item.
         /// </summary>
         /// <param name="item">The item to find.</param>
         /// <returns>true if the item is contained in this collection, false if not.</returns>
-        bool Contains(T item);*/
+        bool Contains(T item);
 
-        /*/// <summary>
+        /
+        /// <summary>
         ///     Copies the elements of this collection to an array.
         /// </summary>
         /// <param name="array">The array.</param>
@@ -58,8 +60,8 @@ namespace System.Collections.Generic
         /// <exception cref="ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
         /// <exception cref="ArgumentException"><paramref name="array" /> is not long enough.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> is smaller than 0.</exception>
-        void CopyTo(Array<T> array, int index);*/
+        void CopyTo(Array<T> array, int index);*
     }
 }
 
-#endif
+#endif*/

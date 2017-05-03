@@ -1,4 +1,4 @@
-﻿
+﻿/*
 #if !NETFX_45
 
 // ReSharper disable once CheckNamespace
@@ -49,4 +49,4 @@ namespace System.Collections.Generic
     }
 }
 
-#endif
+#endif*/

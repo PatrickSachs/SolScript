@@ -1,20 +1,29 @@
-﻿using System;
-using System.Collections;
-using System.Linq;
-using JetBrains.Annotations;
+﻿using JetBrains.Annotations;
 
 namespace PSUtility.Enumerables
 {
     using scg = System.Collections.Generic;
 
     [PublicAPI]
-    public class PSHashSet<T> : scg.HashSet<T>, ISet<T>
+    public class PSHashSet<T> : scg.HashSet<T> //, ISet<T>
     {
         private readonly object m_SyncRoot = new object();
+
+        private ReadOnlyHashSet<T> m_ReadOnly;
         public PSHashSet() {}
         public PSHashSet(scg.IEnumerable<T> enumerable) : base(enumerable) {}
 
-        /// <summary>
+        public object SyncRoot => m_SyncRoot;
+
+        public ReadOnlyHashSet<T> AsReadOnly()
+        {
+            if (m_ReadOnly == null) {
+                m_ReadOnly = new ReadOnlyHashSet<T>(this);
+            }
+            return m_ReadOnly;
+        }
+
+        /*/// <summary>
         ///     Adds an item to this <see cref="PSHashSet{T}" />.
         /// </summary>
         /// <param name="item">The item.</param>
@@ -167,8 +176,9 @@ namespace PSUtility.Enumerables
             return SetEquals(enumerable.Cast<T>());
         }
 
-        /*/// <inheritdoc />
-        void scg.IReadOnlyCollection<T>.CopyTo(Array<T> array, int index) {}*/
+        *
+        /// <inheritdoc />
+        void scg.IReadOnlyCollection<T>.CopyTo(Array<T> array, int index) {}*
 
         /// <inheritdoc />
         public object SyncRoot => m_SyncRoot;
@@ -200,7 +210,7 @@ namespace PSUtility.Enumerables
             return added;
         }
 
-        /*private static scg.HashSet<T> ToGenHashSet(IEnumerable enumerable)
+        *private static scg.HashSet<T> ToGenHashSet(IEnumerable enumerable)
         {
             scg.HashSet<T> set;
             var hashSet = enumerable as HashSet<T>;
@@ -213,7 +223,7 @@ namespace PSUtility.Enumerables
                 }
             }
             return set;
-        }*/
+        }*
 
         /// <summary>
         ///     Copies the elements of this collection to an array.
@@ -241,6 +251,6 @@ namespace PSUtility.Enumerables
         bool ISet.Contains(object element)
         {
             return Contains((T) element);
-        }
+        }*/
     }
 }

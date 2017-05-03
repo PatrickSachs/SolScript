@@ -8,10 +8,12 @@ namespace PSUtility.Enumerables
     ///     Wraps an <see cref="Array" /> in an <see cref="IReadOnlyList{T}" />
     /// </summary>
     /// <typeparam name="T">The array type.</typeparam>
-    public class Array<T> : IReadOnlyList<T>, ICloneable
+    public class Array<T> : IEnumerable<T>, ICloneable //IReadOnlyList<T>,
     {
         // The array.
         internal T[] m_Array;
+
+        private ReadOnlyList<T> m_ReadOnly;
 
         /// <summary>
         ///     Creates a new array wrapper for the given array.
@@ -55,6 +57,14 @@ namespace PSUtility.Enumerables
 
         /// <inheritdoc cref="Count" />
         public int Length => m_Array.Length;
+
+        public ReadOnlyList<T> AsReadOnly()
+        {
+            if (m_ReadOnly == null) {
+                m_ReadOnly = new ReadOnlyList<T>(this);
+            }
+            return m_ReadOnly;
+        }
 
         #region Nested type: Enumerator
 

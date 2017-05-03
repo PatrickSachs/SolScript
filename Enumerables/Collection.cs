@@ -11,10 +11,20 @@ namespace PSUtility.Enumerables
     ///     wrap any standard collection inside of this collection or create a new one entirely.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class Collection<T> : ICollection<T>, IReadOnlyCollection<T>
+    public class Collection<T> : ICollection<T>//, IReadOnlyCollection<T>
     {
         // The wrapped collection.
         private readonly ICollection<T> m_Collection;
+
+        private ReadOnlyCollection<T> m_ReadOnly;
+
+        public ReadOnlyCollection<T> AsReadOnly()
+        {
+            if (m_ReadOnly == null) {
+                m_ReadOnly = new ReadOnlyCollection<T>(this);
+            }
+            return m_ReadOnly;
+        }
 
         /// <summary>
         ///     Wraps an already existing <see cref="ICollection{T}" /> inside a <see cref="Collection{T}" />.

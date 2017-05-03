@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Linq;
 using JetBrains.Annotations;
 
 namespace PSUtility.Enumerables
@@ -13,9 +11,96 @@ namespace PSUtility.Enumerables
     /// </summary>
     /// <typeparam name="T">The list type.</typeparam>
     [PublicAPI]
-    public class ReadOnlyList<T> : IReadOnlyList<T>
+    public class ReadOnlyList<T> : IEnumerable<T>
     {
-        private readonly Func<IReadOnlyList<T>> m_Delegate1;
+        private Array<T> m_Array;
+        private Func<IList<T>> m_Func;
+        private IList<T> m_Reference;
+
+        /// <inheritdoc />
+        /// <exception cref="ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
+        public ReadOnlyList(Array<T> array)
+        {
+            if (array == null) {
+                throw new ArgumentNullException(nameof(array));
+            }
+            m_Array = array;
+        }
+
+        /*protected virtual IList<T> List {
+            get {
+                if (m_Reference != null) {
+                    return m_Reference;
+                }
+                return m_Func();
+            }
+        }*/
+
+        /// <inheritdoc />
+        /// <exception cref="ArgumentNullException"><paramref name="reference" /> is <see langword="null" /></exception>
+        public ReadOnlyList(IList<T> reference)
+        {
+            if (reference == null) {
+                throw new ArgumentNullException(nameof(reference));
+            }
+            m_Reference = reference;
+        }
+
+        /// <inheritdoc />
+        /// <exception cref="ArgumentNullException"><paramref name="func" /> is <see langword="null" /></exception>
+        public ReadOnlyList(Func<IList<T>> func)
+        {
+            if (func == null) {
+                throw new ArgumentNullException(nameof(func));
+            }
+            m_Func = func;
+        }
+
+        /// <inheritdoc />
+        public int Count {
+            get {
+                if (m_Reference != null) {
+                    return m_Reference.Count;
+                }
+                if (m_Array != null) {
+                    return m_Array.Length;
+                }
+                return m_Func().Count;
+            }
+        }
+
+        /// <inheritdoc />
+        public T this[int index] {
+            get {
+                if (m_Reference != null) {
+                    return m_Reference[index];
+                }
+                if (m_Array != null) {
+                    return m_Array[index];
+                }
+                return m_Func()[index];
+            }
+        }
+
+        /// <inheritdoc />
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
+        /// <inheritdoc />
+        public IEnumerator<T> GetEnumerator()
+        {
+            if (m_Reference != null) {
+                return m_Reference.GetEnumerator();
+            }
+            if (m_Array != null) {
+                return m_Array.GetEnumerator();
+            }
+            return m_Func().GetEnumerator();
+        }
+
+        /*private readonly Func<IReadOnlyList<T>> m_Delegate1;
         private readonly Func<IList<T>> m_Delegate2;
         private readonly Mode m_Mode;
         private readonly IReadOnlyList<T> m_Value1;
@@ -249,6 +334,6 @@ namespace PSUtility.Enumerables
             ListDelegate,
             ReadOnlyList,
             List
-        }
+        }*/
     }
 }

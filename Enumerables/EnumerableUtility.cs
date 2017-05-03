@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
 
 namespace PSUtility.Enumerables
@@ -69,6 +70,30 @@ namespace PSUtility.Enumerables
         public static string JoinToString<T>(this IEnumerable<T> enumerable, Func<T, string> obtainer)
         {
             return JoinToString(enumerable, DEFAULT_JOINER, obtainer);
+        }
+
+        /// <summary>
+        /// Removes all elements matching the predicate from this collection.
+        /// </summary>
+        /// <typeparam name="T">The collection type.</typeparam>
+        /// <param name="collection">The collection to remove from.</param>
+        /// <param name="predicate">The removal predicate.</param>
+        /// <returns>The amount of elements removed.</returns>
+        public static int RemoveWhere<T>(this ICollection<T> collection, Func<T, bool> predicate)
+        {
+            if (collection.Count == 0) {
+                return 0;
+            }
+            var remove = collection.Where(predicate).ToList();
+            int removed = 0;
+            foreach (T toRemove in remove)
+            {
+                if (collection.Remove(toRemove))
+                {
+                    removed++;
+                }
+            }
+            return removed;
         }
 
         private const string DEFAULT_JOINER = ", ";

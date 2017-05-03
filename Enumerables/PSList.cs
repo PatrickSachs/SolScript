@@ -9,8 +9,10 @@ namespace PSUtility.Enumerables
     ///     <see cref="IReadOnlyList{T}" />.
     /// </summary>
     /// <typeparam name="T">The list type.</typeparam>
-    public class PSList<T> : List<T>, IPSList<T>
+    public class PSList<T> : List<T> //, IPSList<T>
     {
+        private ReadOnlyList<T> m_ReadOnly;
+
         /// <inheritdoc />
         public PSList() {}
 
@@ -20,6 +22,17 @@ namespace PSUtility.Enumerables
         /// <inheritdoc />
         public PSList([NotNull] IEnumerable<T> collection) : base(collection) {}
 
+        private readonly object m_SyncRoot = new object();
+        public object SyncRoot => m_SyncRoot;
+
+        public new ReadOnlyList<T> AsReadOnly()
+        {
+            if (m_ReadOnly == null) {
+                m_ReadOnly = new ReadOnlyList<T>(this);
+            }
+            return m_ReadOnly;
+        }
+        
         /// <summary>
         ///     Copies the elements of this collection to an array.
         /// </summary>

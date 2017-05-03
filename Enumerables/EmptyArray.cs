@@ -4,7 +4,7 @@
     ///     Useful in number of places that return an empty byte array to avoid unnecessary memory allocation.
     /// </summary>
     /// <typeparam name="T">The array type.</typeparam>
-    public static class EmptyArray<T>
+    internal static class EmptyArray<T>
     {
         /// <summary>
         ///     The array instance.

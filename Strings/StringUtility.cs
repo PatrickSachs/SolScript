@@ -33,9 +33,17 @@ namespace PSUtility.Strings
             return true;
         }
 
-        // Internal formatting method.
-        internal static string F(this string value, params object[] values)
+        /// <summary>
+        ///     Alias for calling <see cref="string.Format(string, object[])" />.
+        /// </summary>
+        /// <param name="value">The string to format.</param>
+        /// <param name="values">The values to format the string with.</param>
+        /// <returns>The formnatted string, or "null" if the string was null.</returns>
+        public static string FormatWith(this string value, params object[] values)
         {
+            if (value == null) {
+                return @"null";
+            }
             return string.Format(value, values);
         }
     }

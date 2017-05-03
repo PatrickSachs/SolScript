@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿/*using System.Collections.Generic;
 using System.Collections.Specialized;
 
 namespace PSUtility.Enumerables
@@ -12,4 +12,4 @@ namespace PSUtility.Enumerables
     {
         event NotifyCollectionChangedEventHandler CollectionChanged;
     }
-}
+}*/

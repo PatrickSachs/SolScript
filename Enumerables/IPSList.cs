@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+﻿/*using System.Collections.Generic;
 
 namespace PSUtility.Enumerables
 {
@@ -12,4 +12,4 @@ namespace PSUtility.Enumerables
         new int Count { get; }
         new T this[int index] { get; set; }
     }
-}
+}*/

@@ -49,7 +49,7 @@ namespace PSUtility.Enumerables
                     .MakeGenericMethod(genericArg)
                     .Invoke(null, new[] {Activator.CreateInstance(type)});
             }
-            throw new ArgumentException(Resources.Err_NotCollectionOrListType.F(type));
+            throw new ArgumentException(Resources.Err_NotCollectionOrListType.FormatWith(type));
         }
 
         private class ListImpl : IListCollectionWrapper
