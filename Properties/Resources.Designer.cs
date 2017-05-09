@@ -88,6 +88,15 @@ namespace PSUtility.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to The BiDictionary source dictionary is not applicable to a BiDictionary..
+        /// </summary>
+        internal static string Err_InvalidBiDictionarySource {
+            get {
+                return ResourceManager.GetString("Err_InvalidBiDictionarySource", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The type \&quot;{0}\&quot; is not a generic collection or non generic list type..
         /// </summary>
         internal static string Err_NotCollectionOrListType {

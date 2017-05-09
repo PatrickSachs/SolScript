@@ -100,6 +100,22 @@ namespace PSUtility.Enumerables
             return m_Func().GetEnumerator();
         }
 
+        public int IndexOf(T element)
+        {
+            if (m_Reference != null) {
+                return m_Reference.IndexOf(element);
+            }
+            if (m_Array != null) {
+                for (int i = 0; i < m_Array.Length; i++) {
+                    if (Equals(m_Array[i], element)) {
+                        return i;
+                    }
+                }
+                return -1;
+            }
+            return m_Func().IndexOf(element);
+        }
+
         /*private readonly Func<IReadOnlyList<T>> m_Delegate1;
         private readonly Func<IList<T>> m_Delegate2;
         private readonly Mode m_Mode;

@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using PSUtility.Properties;
-using PSUtility.Strings;
 
 namespace PSUtility.Enumerables
 {
@@ -11,12 +9,29 @@ namespace PSUtility.Enumerables
     ///     wrap any standard collection inside of this collection or create a new one entirely.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class Collection<T> : ICollection<T>//, IReadOnlyCollection<T>
+    public class Collection<T> : ICollection<T> //, IReadOnlyCollection<T>
     {
         // The wrapped collection.
         private readonly ICollection<T> m_Collection;
 
         private ReadOnlyCollection<T> m_ReadOnly;
+
+        /// <summary>
+        ///     Creates a new collection from a given enumerable.
+        /// </summary>
+        /// <param name="collection">The enumerable.</param>
+        public Collection(IEnumerable<T> collection)
+        {
+            m_Collection = new PSList<T>(collection);
+        }
+
+        /// <summary>
+        ///     Creates a new <see cref="Collection{T}" />.
+        /// </summary>
+        public Collection()
+        {
+            m_Collection = new PSList<T>();
+        }
 
         public ReadOnlyCollection<T> AsReadOnly()
         {
@@ -25,20 +40,6 @@ namespace PSUtility.Enumerables
             }
             return m_ReadOnly;
         }
-
-        /// <summary>
-        ///     Wraps an already existing <see cref="ICollection{T}" /> inside a <see cref="Collection{T}" />.
-        /// </summary>
-        /// <param name="collection">The collection to wrap.</param>
-        public Collection(ICollection<T> collection)
-        {
-            m_Collection = collection;
-        }
-
-        /// <summary>
-        ///     Creates a new <see cref="Collection{T}" />.
-        /// </summary>
-        public Collection() : this(new System.Collections.Generic.List<T>()) {}
 
         /// <summary>
         ///     Gets the collection wrapped inside of this wrapper.
@@ -120,7 +121,7 @@ namespace PSUtility.Enumerables
         /// </exception>
         /// <exception cref="ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
         /// <exception cref="ArgumentException"><paramref name="array" /> is not long enough.</exception>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is smaller than 0.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> is smaller than 0.</exception>
         public void CopyTo(Array array, int index)
         {
             ArrayUtility.Copy(this, 0, array, index, Count);
@@ -132,16 +133,16 @@ namespace PSUtility.Enumerables
         /// <param name="array">The array.</param>
         /// <param name="index">The start index of the array.</param>
         /// <exception cref="ArrayTypeMismatchException">
-        ///     The type of the source <see cref="IReadOnlyCollection{T}" /> is not assignable from <typeparamref name="T"/>.
+        ///     The type of the source <see cref="IReadOnlyCollection{T}" /> is not assignable from <typeparamref name="T" />.
         /// </exception>
         /// <exception cref="RankException">The source array is multidimensional.</exception>
         /// <exception cref="InvalidCastException">
         ///     At least one element in the source <see cref="Array" /> cannot be cast
-        ///     to <typeparamref name="T"/>.
+        ///     to <typeparamref name="T" />.
         /// </exception>
         /// <exception cref="ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
         /// <exception cref="ArgumentException"><paramref name="array" /> is not long enough.</exception>
-        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is smaller than 0.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> is smaller than 0.</exception>
         public void CopyTo(Array<T> array, int index)
         {
             ArrayUtility.Copy(this, 0, array, index, Count);

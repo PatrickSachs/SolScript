@@ -1,22 +1,40 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Collections.Specialized;
+using JetBrains.Annotations;
 
 namespace PSUtility.Enumerables
 {
+    /// <summary>
+    ///     A collection providing an
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    [PublicAPI]
     public class ObservableCollection<T> : ICollection<T>
     {
         private readonly ICollection<T> m_BackingCollection;
+        private ReadOnlyCollection<T> m_ReadOnly;
 
+        private ObservableCollection(ICollection<T> wrap)
+        {
+            m_BackingCollection = wrap;
+        }
+
+        /// <summary>
+        ///     Creates a new empty oberable collection.
+        /// </summary>
         public ObservableCollection()
         {
             m_BackingCollection = new Collection<T>();
         }
 
+        /// <summary>
+        ///     Creates a new obserable collection containing all elements in the given enumerable.
+        /// </summary>
+        /// <param name="enumerable">The enumerable.</param>
         public ObservableCollection(IEnumerable<T> enumerable)
         {
-            m_BackingCollection = new PSList<T>(enumerable);
+            m_BackingCollection = new Collection<T>(enumerable);
         }
 
         /// <inheritdoc />
@@ -29,14 +47,14 @@ namespace PSUtility.Enumerables
         public void Add(T item)
         {
             m_BackingCollection.Add(item);
-            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item));
+            OnCollectionChanged(CollectionChangedEventArgs.Add(item));
         }
 
         /// <inheritdoc />
         public void Clear()
         {
             m_BackingCollection.Clear();
-            OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Reset));
+            OnCollectionChanged(CollectionChangedEventArgs.Reset());
         }
 
         /// <inheritdoc />
@@ -66,7 +84,7 @@ namespace PSUtility.Enumerables
         public bool Remove(T item)
         {
             if (m_BackingCollection.Remove(item)) {
-                OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, item));
+                OnCollectionChanged(CollectionChangedEventArgs.Remove(item));
                 return true;
             }
             return false;
@@ -78,11 +96,32 @@ namespace PSUtility.Enumerables
         /// <inheritdoc />
         public bool IsReadOnly => m_BackingCollection.IsReadOnly;
 
-        /*/// <inheritdoc />
-        int IReadOnlyCollection<T>.Count => Count;
+        /// <summary>
+        ///     Wraps an already existing collection into an observable collection. Any modifcation done to this collection outside
+        ///     of the obserable collection will not raise events.
+        /// </summary>
+        /// <param name="wrap">The collection to wrap.</param>
+        /// <returns>The obserable collection.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="wrap" /> is <see langword="null" /></exception>
+        public static ObservableCollection<T> Wrap([NotNull] ICollection<T> wrap)
+        {
+            if (wrap == null) {
+                throw new ArgumentNullException(nameof(wrap));
+            }
+            return new ObservableCollection<T>(wrap);
+        }
 
-        /// <inheritdoc />
-        bool IReadOnlyCollection<T>.Contains(T item) => Contains(item);*/
+        /// <summary>
+        ///     Returns a read only collection representing this read only collection.
+        /// </summary>
+        /// <returns>The read onyl collection.</returns>
+        public ReadOnlyCollection<T> AsReadOnly()
+        {
+            if (m_ReadOnly == null) {
+                m_ReadOnly = new ReadOnlyCollection<T>(this);
+            }
+            return m_ReadOnly;
+        }
 
         /// <inheritdoc />
         /// <param name="array">The array.</param>
@@ -124,9 +163,12 @@ namespace PSUtility.Enumerables
             ArrayUtility.Copy(m_BackingCollection, 0, array, index, m_BackingCollection.Count);
         }
 
-        public event NotifyCollectionChangedEventHandler CollectionChanged;
+        /// <summary>
+        ///     This event is invoked whenever the collection changes.
+        /// </summary>
+        public event EventHandler<CollectionChangedEventArgs> CollectionChanged;
 
-        protected virtual void OnCollectionChanged(NotifyCollectionChangedEventArgs e)
+        protected void OnCollectionChanged(CollectionChangedEventArgs e)
         {
             CollectionChanged?.Invoke(this, e);
         }

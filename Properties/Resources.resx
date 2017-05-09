@@ -129,6 +129,9 @@
     <value>The array of element type {0} is not compatible with elements of type {1}.</value>
     <comment>0: Actual Element Type, 1: Desired Element Type</comment>
   </data>
+  <data name="Err_InvalidBiDictionarySource" xml:space="preserve">
+    <value>The BiDictionary source dictionary is not applicable to a BiDictionary.</value>
+  </data>
   <data name="Err_NotCollectionOrListType" xml:space="preserve">
     <value>The type \"{0}\" is not a generic collection or non generic list type.</value>
     <comment>0: Type Name</comment>
