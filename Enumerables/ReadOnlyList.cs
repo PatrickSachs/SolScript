@@ -13,6 +13,10 @@ namespace PSUtility.Enumerables
     [PublicAPI]
     public class ReadOnlyList<T> : IEnumerable<T>
     {
+        private static readonly ReadOnlyList<T> m_Empty = new ReadOnlyList<T>(ArrayUtility.Empty<T>());
+
+        public static ReadOnlyList<T> Empty() => m_Empty;
+
         private Array<T> m_Array;
         private Func<IList<T>> m_Func;
         private IList<T> m_Reference;

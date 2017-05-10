@@ -36,7 +36,7 @@ namespace PSUtility.Enumerables
         public ReadOnlyCollection<T> AsReadOnly()
         {
             if (m_ReadOnly == null) {
-                m_ReadOnly = new ReadOnlyCollection<T>(this);
+                m_ReadOnly = ReadOnlyCollection<T>.Wrap(this);
             }
             return m_ReadOnly;
         }

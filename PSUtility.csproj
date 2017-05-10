@@ -68,6 +68,7 @@
     <Compile Include="Enumerables\IPSDictionary.cs" />
     <Compile Include="Enumerables\IPSList.cs" />
     <Compile Include="Enumerables\CollectionChangedEventArgs.cs" />
+    <Compile Include="Enumerables\MultiDictionary.cs" />
     <Compile Include="Enumerables\PSDictionary.cs" />
     <Compile Include="Enumerables\EmptyArray.cs" />
     <Compile Include="Enumerables\EnumerableUtility.cs" />

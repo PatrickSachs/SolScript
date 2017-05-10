@@ -44,12 +44,30 @@ namespace PSUtility.Enumerables
         /// <inheritdoc />
         protected PSDictionary(SerializationInfo info, StreamingContext context) : base(info, context) {}
 
+        public new ReadOnlyCollection<TKey> Keys {
+            get {
+                if (m_Keys == null) {
+                    m_Keys = ReadOnlyCollection<TKey>.Wrap(base.Keys);
+                }
+                return m_Keys;
+            }
+        }
+
+        public new ReadOnlyCollection<TValue> Values {
+            get {
+                if (m_Values == null) {
+                    m_Values = ReadOnlyCollection<TValue>.Wrap(base.Values);
+                }
+                return m_Values;
+            }
+        }
+
         public object SyncRoot => m_SyncRoot;
 
         public ReadOnlyDictionary<TKey, TValue> AsReadOnly()
         {
             if (m_ReadOnly == null) {
-                m_ReadOnly = new ReadOnlyDictionary<TKey, TValue>(this);
+                m_ReadOnly = ReadOnlyDictionary<TKey, TValue>.Wrap(this);
             }
             return m_ReadOnly;
         }
@@ -66,15 +84,6 @@ namespace PSUtility.Enumerables
             return Equals(value, item.Value);
         }
 
-        /// <summary>
-        ///     All keys of this dictionary.
-        /// </summary>
-        public new ReadOnlyCollection<TKey> Keys => m_Keys ?? (m_Keys = new ReadOnlyCollection<TKey>(base.Keys));
-
-        /// <summary>
-        ///     All values of this dictionary.
-        /// </summary>
-        public new ReadOnlyCollection<TValue> Values => m_Values ?? (m_Values = new ReadOnlyCollection<TValue>(base.Values));
 
         /*/// <inheritdoc />
         IEnumerable<TKey> IPSDictionary<TKey, TValue>.Keys => Keys;
