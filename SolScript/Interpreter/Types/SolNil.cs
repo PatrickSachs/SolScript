@@ -34,6 +34,10 @@ namespace SolScript.Interpreter.Types
             if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>)) {
                 return Activator.CreateInstance(type);
             }
+            // Base overrides object to return itself.
+            if (type == typeof(object)) {
+                return null;
+            }
             return base.ConvertTo(type);
         }
 

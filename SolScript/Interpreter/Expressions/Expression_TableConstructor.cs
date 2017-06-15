@@ -1,12 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Text;
 using Irony.Parsing;
-using JetBrains.Annotations;
 using PSUtility.Enumerables;
+using PSUtility.Strings;
+using SolScript.Compiler;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
-using SolScript.Utility;
+using SolScript.Properties;
 
 namespace SolScript.Interpreter.Expressions
 {
@@ -50,7 +50,9 @@ namespace SolScript.Interpreter.Expressions
         /// <exception cref="SolRuntimeException">An error occured while evaluating the expression or assigning the table values.</exception>
         public override SolValue Evaluate(SolExecutionContext context, IVariables parentVariables)
         {
-            context.CurrentLocation = Location;
+            if (context != null) {
+                context.CurrentLocation = Location;
+            }
             SolTable table = new SolTable();
             for (int i = 0; i < m_Keys.Length; i++) {
                 SolValue key = m_Keys[i].Evaluate(context, parentVariables);
@@ -77,6 +79,41 @@ namespace SolScript.Interpreter.Expressions
             }
             builder.AppendLine("}");
             return builder.ToString();
+        }
+
+        /// <inheritdoc />
+        public override ValidationResult Validate(SolValidationContext context)
+        {
+            bool success = true;
+            for (int i = 0; i < m_Keys.Length; i++) {
+                SolExpression key = m_Keys[i];
+                SolExpression value = m_Values[i];
+                ValidationResult keyResult = key.Validate(context);
+                // Evalualte all keys/values even if one fails.
+                if (!keyResult) {
+                    context.Errors.Add(new SolError(Location, CompilerResources.Err_TableConstructorKeyError.FormatWith(i)));
+                    success = false;
+                }
+                ValidationResult valueResult = value.Validate(context);
+                if (!valueResult) {
+                    context.Errors.Add(new SolError(Location, CompilerResources.Err_TableConstructorValueError.FormatWith(i)));
+                    success = false;
+                }
+            }
+            return new ValidationResult(success, new SolType(SolTable.TYPE, false));
+        }
+
+        /// <inheritdoc />
+        public override bool IsConstant {
+            get {
+                foreach (SolExpression expression in Keys) {
+                    if (!expression.IsConstant) return false;
+                }
+                foreach (SolExpression expression in Values) {
+                    if (!expression.IsConstant) return false;
+                }
+                return true;
+            }
         }
 
         #endregion

@@ -2,6 +2,7 @@
 using Irony.Parsing;
 using JetBrains.Annotations;
 using PSUtility.Enumerables;
+using SolScript.Compiler;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Types;
@@ -65,6 +66,53 @@ namespace SolScript.Interpreter.Statements
         {
             return
                 $"new {TypeName}({m_Arguments.JoinToString()})";
+        }
+
+        /// <inheritdoc />
+        public override ValidationResult Validate(SolValidationContext context)
+        {
+            SolClassDefinition def;
+            if (!Assembly.TryGetClass(TypeName, out def)) {
+                return ValidationResult.Failure();
+            }
+            if (!def.CanBeCreated()) {
+                return ValidationResult.Failure();
+            }
+            SolFunctionDefinition ctor;
+            try
+            {
+                SolClassDefinition.MetaFunctionLink ctorMetaFunc;
+                if (!def.TryGetMetaFunction(SolMetaFunction.__new, out ctorMetaFunc) && Arguments.Count != 0) {
+                    return ValidationResult.Failure();
+                }
+                ctor = ctorMetaFunc?.Definition;
+            } catch (SolVariableException) {
+                return ValidationResult.Failure();
+            }
+            if (ctor != null) {
+                var parmInfo = ctor.ParameterInfo;
+                if (Arguments.Count > parmInfo.Count && !parmInfo.AllowOptional) {
+                    return ValidationResult.Failure();
+                }
+                // todo: default values for arguments/parameters
+                if (Arguments.Count < parmInfo.Count) {
+                    return ValidationResult.Failure();
+                }
+                for (int i = 0; i < Arguments.Count; i++) {
+                    SolExpression argument = Arguments[i];
+                    var argRes = argument.Validate(context);
+                    if (!argRes) {
+                        return ValidationResult.Failure();
+                    }
+                    if (i < parmInfo.Count) {
+                        SolParameter p = parmInfo[i];
+                        if (!p.Type.IsCompatible(Assembly, argRes.Type)) {
+                            return ValidationResult.Failure();
+                        }
+                    }
+                }
+            }
+            return new ValidationResult(true, new SolType(TypeName, false));
         }
 
         #endregion

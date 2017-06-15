@@ -72,6 +72,7 @@ namespace SolScript.Parser
             KeyTerm AND = Keyword("and");
             KeyTerm OR = Keyword("or");
             KeyTerm LOCAL = Keyword("local");
+            KeyTerm GLOBAL = Keyword("global");
             KeyTerm VAR = Keyword("var");
             KeyTerm INTERNAL = Keyword("internal");
             KeyTerm EXTENDS = Keyword("extends");
@@ -199,6 +200,7 @@ namespace SolScript.Parser
                 ;
             AccessModifier_opt.Rule =
                 Empty
+                | GLOBAL
                 | INTERNAL
                 | LOCAL
                 ;
@@ -244,6 +246,9 @@ namespace SolScript.Parser
             FieldWithAccess.Rule =
                 AnnotationList + AccessModifier_opt + MemberModifier_opt + _identifier + TypeRef_opt + Assignment_opt
                 ;
+            /*FieldWithAccess.ErrorRule = 
+                ToTerm("global")
+                ;*/
             FunctionWithAccess.Rule =
                 AnnotationList + AccessModifier_opt + MemberModifier_opt + FUNCTION + _identifier + FunctionParameters + TypeRef_opt + FunctionBody
                 ;
@@ -464,7 +469,7 @@ namespace SolScript.Parser
             // todo: find a better way to parse tertiary expressions
             Expression_Tertiary.Rule =
                 (Expression + ToTerm("?") + Expression + ToTerm(":") + Expression)
-                | (ToTerm("(") + Expression + ToTerm("?") + Expression + ToTerm(":") + Expression + ToTerm("("))
+                | (ToTerm("(") + Expression + ToTerm("?") + Expression + ToTerm(":") + Expression + ToTerm(")"))
                 ;
             Expression_Unary.Rule =
                 Expression_Unary_Operand_trans + Expression

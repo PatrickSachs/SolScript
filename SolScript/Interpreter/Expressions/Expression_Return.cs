@@ -1,4 +1,5 @@
 ﻿using Irony.Parsing;
+using SolScript.Compiler;
 using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter.Expressions {
@@ -19,6 +20,15 @@ namespace SolScript.Interpreter.Expressions {
         protected override string ToString_Impl() {
             return "return " + ReturnExpression;
         }
+
+        /// <inheritdoc />
+        public override ValidationResult Validate(SolValidationContext context)
+        {
+            return ReturnExpression.Validate(context);
+        }
+
+        /// <inheritdoc />
+        public override bool IsConstant => ReturnExpression.IsConstant;
 
         #endregion
     }

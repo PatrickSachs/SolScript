@@ -158,8 +158,8 @@ namespace SolScript.Libraries.std
                     [Str_access_modifier] = s_AccessModifierNames[definition.AccessModifier],
                     [Str_member_modifier] = s_MemberModifierNames[definition.MemberModifier],
                     [Str_defined_in] = definition.DefinedIn != null ? (SolValue) SolString.ValueOf(definition.DefinedIn.Type) : SolNil.Instance,
-                    [Str_type] = SolString.ValueOf(definition.ReturnType.Type),
-                    [Str_can_be_nil] = SolBool.ValueOf(definition.ReturnType.CanBeNil),
+                    [Str_type] = SolString.ValueOf(definition.Type.Type),
+                    [Str_can_be_nil] = SolBool.ValueOf(definition.Type.CanBeNil),
                     [Str_parameters] = GetParametersTable(definition.ParameterInfo),
                     [Str_annotations] = GetAnnotationsTable(definition.DeclaredAnnotations),
                     [Str_source_location] = GetSourceLocationTable(definition.Location)
@@ -305,8 +305,8 @@ namespace SolScript.Libraries.std
                 [Str_type] = SolString.ValueOf(definition.Type),
                 [Str_base_type] = definition.BaseClass != null ? (SolValue) SolString.ValueOf(definition.BaseClass.Type) : SolNil.Instance,
                 [Str_mode] = s_TypeModeNames[definition.TypeMode],
-                [Str_fields] = GetFieldsTable(definition.Fields),
-                [Str_functions] = GetFunctionsTable(definition.Functions),
+                [Str_fields] = GetFieldsTable(definition.DeclaredFields),
+                [Str_functions] = GetFunctionsTable(definition.DeclaredFunctions),
                 [Str_annotations] = GetAnnotationsTable(definition.DeclaredAnnotations),
                 [Str_source_location] = GetSourceLocationTable(definition.Location)
             };

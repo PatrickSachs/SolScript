@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using Irony.Parsing;
+using SolScript.Compiler;
 using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter.Expressions
@@ -15,6 +15,7 @@ namespace SolScript.Interpreter.Expressions
 
         // The singleton holder.
         private static readonly Dictionary<SolAssembly, Expression_Nil> s_Lookup = new Dictionary<SolAssembly, Expression_Nil>();
+        private static readonly ValidationResult s_ValidationResult = new ValidationResult(true, new SolType(SolNil.TYPE, true));
 
         #region Overrides
 
@@ -28,6 +29,12 @@ namespace SolScript.Interpreter.Expressions
         protected override string ToString_Impl()
         {
             return "nil";
+        }
+
+        /// <inheritdoc />
+        public override ValidationResult Validate(SolValidationContext context)
+        {
+            return s_ValidationResult;
         }
 
         #endregion
@@ -49,5 +56,8 @@ namespace SolScript.Interpreter.Expressions
             }
             return s_Lookup[assembly] = new Expression_Nil(assembly);
         }
+
+        /// <inheritdoc />
+        public override bool IsConstant => true;
     }
 }

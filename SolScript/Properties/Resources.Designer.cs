@@ -142,6 +142,15 @@ namespace SolScript.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to The expression &quot;{0}&quot; is not a constant..
+        /// </summary>
+        internal static string Err_ExpressionIsNotConstant {
+            get {
+                return ResourceManager.GetString("Err_ExpressionIsNotConstant", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to {0} : The node name &quot;{1}&quot; is not allowed for this element. Allowed is/are: &quot;{2}&quot;.
         /// </summary>
         internal static string Err_FactoryInvalidNodeName {

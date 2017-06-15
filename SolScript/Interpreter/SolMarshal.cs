@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using JetBrains.Annotations;
 using PSUtility.Enumerables;
+using SolScript.Interpreter;
 using SolScript.Interpreter.Exceptions;
+using SolScript.Interpreter.Library;
 using SolScript.Interpreter.Types;
 using SolScript.Interpreter.Types.Marshal;
 using SolScript.Utility;
@@ -11,6 +13,31 @@ namespace SolScript.Interpreter
 {
     public static class SolMarshal
     {
+        #region NativeClassRepresentation enum
+
+        /// <summary>
+        ///     How should the type of a native class be represented? (Used by <see cref="SolMarshal.GetNativeType" /> method)
+        /// </summary>
+        public enum NativeClassRepresentation
+        {
+            /// <summary>
+            ///     Not at all - Native types should be returned as SolClass type.
+            /// </summary>
+            SolClass,
+
+            /// <summary>
+            ///     The described type should be returned. (Return value can be null for script defined classes!)
+            /// </summary>
+            DescribedType,
+
+            /// <summary>
+            ///     The descriptor type should be returned. (Return value can be null for script defined classes!)
+            /// </summary>
+            DescriptorType
+        }
+
+        #endregion
+
         static SolMarshal()
         {
             NativeMarshallers.Add(new NativeNumericMarshaller());
@@ -36,7 +63,7 @@ namespace SolScript.Interpreter
         public const int PRIORITY_LOW = -500;
         public const int PRIORITY_VERY_LOW = -1000;
 
-        private static readonly System.Collections.Generic.List<ISolNativeMarshaller> NativeMarshallers = new System.Collections.Generic.List<ISolNativeMarshaller>();
+        private static readonly List<ISolNativeMarshaller> NativeMarshallers = new List<ISolNativeMarshaller>();
 
         //private static readonly System.Collections.Generic.Dictionary<SolAssembly, AssemblyCache> s_AssemblyCaches = new System.Collections.Generic.Dictionary<SolAssembly, AssemblyCache>();
 
@@ -68,7 +95,7 @@ namespace SolScript.Interpreter
         /// <exception cref="SolMarshallingException">Failed to marshal the value.</exception>
         public static T MarshalFromSol<T>(SolValue value)
         {
-            return (T)MarshalFromSol(value, typeof(T));
+            return (T) MarshalFromSol(value, typeof(T));
         }
 
         /// <inheritdoc cref="MarshalFromSol(int,int,SolValue[],Type[],object[],int,bool)" />
@@ -170,14 +197,70 @@ namespace SolScript.Interpreter
         }
 
         /// <summary>
-        ///     Gets the native type representing a certain type in SolScript. Be careful with the results of this method as the
+        ///     Gets a SolScript type representing a certain type name.
+        /// </summary>
+        /// <param name="assembly">The assembly to use for type lookups.</param>
+        /// <param name="type">The type name.</param>
+        /// <param name="classRepresentation">How should native types be represented?</param>
+        /// <returns>The type.</returns>
+        /// <seealso cref="NativeClassRepresentation" />
+        public static Type GetNativeType(SolAssembly assembly, string type, NativeClassRepresentation classRepresentation = NativeClassRepresentation.SolClass)
+        {
+            switch (type) {
+                case SolValue.ANY_TYPE:
+                    return typeof(SolValue);
+                case SolValue.CLASS_TYPE:
+                    return typeof(SolClass);
+                case SolNil.TYPE:
+                    return typeof(SolNil);
+                case SolNumber.TYPE:
+                    return typeof(SolNumber);
+                case SolBool.TYPE:
+                    return typeof(SolBool);
+                case SolString.TYPE:
+                    return typeof(SolString);
+                case SolFunction.TYPE:
+                    return typeof(SolFunction);
+                case SolTable.TYPE:
+                    return typeof(SolTable);
+                default: {
+                    SolClassDefinition definition;
+                    if (assembly.TryGetClass(type, out definition)) {
+                        switch (classRepresentation) {
+                            case NativeClassRepresentation.SolClass:
+                                return typeof(SolClass);
+                            case NativeClassRepresentation.DescribedType:
+                                if (definition.DescribedType != null) {
+                                    return definition.DescribedType;
+                                }
+                                break;
+                            case NativeClassRepresentation.DescriptorType:
+                                if (definition.DescriptorType != null) {
+                                    return definition.DescriptorType;
+                                }
+                                break;
+                            default:
+                                throw new ArgumentOutOfRangeException(nameof(classRepresentation), classRepresentation, null);
+                        }
+                        return typeof(object);
+                    }
+                    break;
+                }
+            }
+            throw new SolMarshallingException("Cannot find a native type for SolType \"" + type + "\".");
+        }
+
+        /// <summary>
+        ///     Gets a commonyl used native type describing a certain SolScript type. Be careful with the results of this method as
+        ///     the
         ///     types are obviously rather vague.
         /// </summary>
         /// <param name="assembly">The assembly to use for type lookups.</param>
         /// <param name="type">The type to get the native type for.</param>
         /// <returns>The native type.</returns>
         /// <exception cref="SolMarshallingException">Could not find a native type for the given type.</exception>
-        public static Type GetNativeType(SolAssembly assembly, string type)
+        [Obsolete]
+        public static Type GetClosestNativeType(SolAssembly assembly, string type)
         {
             switch (type) {
                 case SolValue.ANY_TYPE:
@@ -193,7 +276,7 @@ namespace SolScript.Interpreter
                 case SolFunction.TYPE:
                     return typeof(SolFunction.AutoDelegate);
                 case SolTable.TYPE:
-                    return typeof(System.Collections.Generic.Dictionary<object, object>);
+                    return typeof(Dictionary<object, object>);
                 default: {
                     SolClassDefinition definition;
                     if (assembly.TryGetClass(type, out definition)) {
@@ -298,7 +381,7 @@ namespace SolScript.Interpreter
                     object descriptorObj;
                     solClass.DescribedObjectReference = described;
                     if (classDef.DescribedType == classDef.DescriptorType) {
-                        solClass.DescribedObjectReference = described;
+                        solClass.DescriptorObjectReference = described;
                         descriptorObj = value;
                     } else {
                         descriptorObj = Activator.CreateInstance(classDef.DescriptorType);

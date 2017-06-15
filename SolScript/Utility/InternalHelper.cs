@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Irony.Parsing;
 using JetBrains.Annotations;
 using PSUtility.Enumerables;
 using PSUtility.Reflection;
+using SolScript.Compiler;
 using SolScript.Interpreter;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Expressions;
@@ -22,6 +24,23 @@ namespace SolScript.Utility
     /// </summary>
     internal static class InternalHelper
     {
+        /// <summary>
+        /// Writes the source location to the binary writer.
+        /// </summary>
+        /// <param name="location">The location.</param>
+        /// <param name="writer">The writer.</param>
+        /// <param name="context">The compilation context.</param>
+        /// <exception cref="IOException">An I/O error occurs. </exception>
+        internal static void CompileTo(this SourceLocation location, BinaryWriter writer, SolCompliationContext context)
+        {
+            uint fileIndex = context.FileIndexOf(location.File);
+            writer.Write(fileIndex);
+            // Lines over 65k are not supported. This saves us a ton of bytes.
+            writer.Write(location.Position);
+            writer.Write((ushort)location.Line);
+            writer.Write((ushort)location.Column);
+        }
+
         internal class ReferenceEqualityComparer<T> : IEqualityComparer<T>
         {
             public static readonly ReferenceEqualityComparer<T> Instance = new ReferenceEqualityComparer<T>();

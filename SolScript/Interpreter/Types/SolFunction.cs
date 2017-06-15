@@ -110,7 +110,7 @@ namespace SolScript.Interpreter.Types
                 return CreateDelegate();
             }
             if (type == typeof(AutoDelegate)) {
-                return CreateAutoDelegate(SolMarshal.GetNativeType(Assembly, ReturnType.Type));
+                return CreateAutoDelegate(SolMarshal.GetClosestNativeType(Assembly, ReturnType.Type));
             }
             if (type.IsGenericType) {
                 Type openGenericType = type.GetGenericTypeDefinition();

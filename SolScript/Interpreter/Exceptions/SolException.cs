@@ -105,7 +105,7 @@ namespace SolScript.Interpreter.Exceptions
         /// </summary>
         /// <param name="exception">The exception to write.</param>
         /// <param name="target">The builder to write the output to.</param>
-        public static void UnwindExceptionStack(SolException exception, StringBuilder target)
+        public static void UnwindExceptionStack(Exception exception, StringBuilder target)
         {
             Exception ex = exception;
             while (ex != null) {

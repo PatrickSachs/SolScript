@@ -1,4 +1,5 @@
-﻿using SolScript.Interpreter.Types;
+﻿using SolScript.Compiler;
+using SolScript.Interpreter.Types;
 using SolScript.Interpreter.Types.Implementation;
 
 namespace SolScript.Interpreter.Expressions
@@ -11,11 +12,8 @@ namespace SolScript.Interpreter.Expressions
         /// <summary>
         ///     Creates a new expression.
         /// </summary>
-        /// <param name="assembly">The assembly.</param>
-        /// <param name="location">The location in code.</param>
         /// <param name="chunk">The function chunk.</param>
         /// <param name="type">The function return type.</param>
-        /// <param name="parameterAllowOptional">Are optional function parameters allowed?</param>
         /// <param name="parameters">The function parameters.</param>
         public Expression_CreateFunc(SolChunk chunk, SolType type, SolParameterInfo parameters)
         {
@@ -52,6 +50,15 @@ namespace SolScript.Interpreter.Expressions
         {
             return
                 $"Expression_CreateFunc(Type={Type}, Parameters={Parameters}, Chunk={Chunk})";
+        }
+
+        /// <inheritdoc />
+        public override bool IsConstant => false;
+
+        /// <inheritdoc />
+        public override ValidationResult Validate(SolValidationContext context)
+        {
+            return Chunk.Validate(context);
         }
 
         #endregion

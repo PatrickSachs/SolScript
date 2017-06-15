@@ -1,6 +1,12 @@
-﻿using Irony.Parsing;
+﻿using System;
+using Irony.Parsing;
+using JetBrains.Annotations;
+using PSUtility.Enumerables;
+using PSUtility.Strings;
+using SolScript.Compiler;
 using SolScript.Interpreter.Statements;
 using SolScript.Interpreter.Types;
+using SolScript.Properties;
 
 namespace SolScript.Interpreter.Expressions
 {
@@ -11,7 +17,8 @@ namespace SolScript.Interpreter.Expressions
     ///     number literal itself would have very little purpose, so it needs to stand inside of a statement, e.g. the
     ///     parameters of a function call).
     /// </summary>
-    public abstract class SolExpression : ISourceLocateable //, ISourceLocationInjector
+    public abstract class SolExpression : ISourceLocateable, ISolCompileable
+        //, ISourceLocationInjector
     {
         /// <summary>
         ///     Creates a new expression.
@@ -32,17 +39,31 @@ namespace SolScript.Interpreter.Expressions
             Assembly = SolAssembly.CurrentlyParsing;
         }
 
+        private static readonly BiDictionary<byte, Type> s_ByteIdToType = new BiDictionary<byte, Type>();
+        private static readonly PSDictionary<byte, CompilerData> s_ByteIdToData = new PSDictionary<byte, CompilerData>();
+
         /// <summary>
         ///     The assembly this expression is located in.
         /// </summary>
         public readonly SolAssembly Assembly;
 
-        internal SourceLocation LocationMutable;
+        /// <summary>
+        ///     Is this value constant? Constant values can/are/do: <br />a.) Be evaluated with a <see langword="null" /> execution
+        ///     context.<br />b.) Not manipulate any state.
+        /// </summary>
+        public abstract bool IsConstant { get; }
+
+        #region ISolCompileable Members
+
+        /// <inheritdoc />
+        public abstract ValidationResult Validate(SolValidationContext context);
+
+        #endregion
 
         #region ISourceLocateable Members
 
         /// <inheritdoc />
-        public SourceLocation Location => LocationMutable;
+        public SourceLocation Location { get; private set; }
 
         #endregion
 
@@ -54,6 +75,38 @@ namespace SolScript.Interpreter.Expressions
         #endregion
 
         /// <summary>
+        ///     Registers data required for the compiler.
+        /// </summary>
+        /// <param name="expressionType">The type of expression the data should be registered for.</param>
+        /// <param name="bytecodeId">The id the expression will use in bytecode.</param>
+        /// <param name="factory">The factory method used to create instances of this expression from the compiler.</param>
+        /// <exception cref="ArgumentNullException">
+        ///     <paramref name="expressionType" /> is <see langword="null" /> -or-
+        ///     <paramref name="factory" /> is <see langword="null" />
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        ///     The <paramref name="bytecodeId" /> is already used by another type. -or- The
+        ///     <paramref name="expressionType" /> is already used by another bytecode ID.
+        /// </exception>
+        internal static void RegisterCompilerData([NotNull] Type expressionType, byte bytecodeId, [NotNull] Func<SolExpression> factory)
+        {
+            if (expressionType == null) {
+                throw new ArgumentNullException(nameof(expressionType));
+            }
+            if (factory == null) {
+                throw new ArgumentNullException(nameof(factory));
+            }
+            if (s_ByteIdToType.Contains(bytecodeId)) {
+                throw new ArgumentException(CompilerResources.Err_BytecodeIdAlreadyUsed.FormatWith(bytecodeId, expressionType, s_ByteIdToType[bytecodeId]));
+            }
+            if (s_ByteIdToType.Contains(expressionType)) {
+                throw new ArgumentException(CompilerResources.Err_TypeAlreadyAssingedToBytecodeId.FormatWith(expressionType, bytecodeId, s_ByteIdToType[expressionType]));
+            }
+            s_ByteIdToType.Add(bytecodeId, expressionType);
+            s_ByteIdToData.Add(bytecodeId, new CompilerData(expressionType, bytecodeId, factory));
+        }
+
+        /// <summary>
         ///     This method evaluates the expression to produce the result of the expression. Be very careful and considerate when
         ///     it comes to data that persists between evaluations.
         /// </summary>
@@ -61,6 +114,18 @@ namespace SolScript.Interpreter.Expressions
         /// <param name="parentVariables">The current variable context for this expression.</param>
         /// <returns>The result of the expression.</returns>
         public abstract SolValue Evaluate(SolExecutionContext context, IVariables parentVariables);
+
+        /// <summary>Gets the constant value of this expression.</summary>
+        /// <returns>The value.</returns>
+        /// <exception cref="InvalidOperationException">The expression is not constant.</exception>
+        /// <seealso cref="IsConstant" />
+        public SolValue GetConstant()
+        {
+            if (!IsConstant) {
+                throw new InvalidOperationException(Resources.Err_ExpressionIsNotConstant.FormatWith(GetType()));
+            }
+            return Evaluate(null, null);
+        }
 
         /// <summary>
         ///     Formats the expression to a string for debugging purposes.
@@ -71,8 +136,54 @@ namespace SolScript.Interpreter.Expressions
         /// <inheritdoc />
         public void InjectSourceLocation(SourceLocation location)
         {
-            LocationMutable = location;
-            //SolDebug.WriteLine("Injected " + location + " into " + this + ".");
+            Location = location;
         }
+
+        #region Nested type: CompilerData
+
+        private class CompilerData
+        {
+            public CompilerData(Type type, byte bytecodeId, Func<SolExpression> factory)
+            {
+                BytecodeId = bytecodeId;
+                Factory = factory;
+                Type = type;
+            }
+
+            public readonly byte BytecodeId;
+            public readonly Func<SolExpression> Factory;
+            public readonly Type Type;
+        }
+
+        #endregion
+
+        /*/// <summary>
+        ///     Compiles the statement to the given binary writer.
+        /// </summary>
+        /// <param name="writer">The writer.</param>
+        /// <param name="context">The compilation context.</param>
+        /// <exception cref="IOException">An I/O error occured.</exception>
+        /// <exception cref="SolCompilerException">Failed to compile. (See possible inner exceptions for details)</exception>
+        protected abstract void CompileImpl(BinaryWriter writer, SolCompliationContext context);*/
+
+        /*/// <summary>
+        ///     The factory method used to create this expression. (Must be constant)
+        /// </summary>
+        internal abstract Func<SolExpression> BytecodeFactory { get; }
+
+        /// <summary>
+        ///     The id this expression will use in bytecode. (Must be constant)
+        /// </summary>
+        internal abstract byte BytecodeId { get; }*/
+
+        /*/// <inheritdoc />
+        /// <exception cref="IOException">An I/O error occured.</exception>
+        /// <exception cref="SolCompilerException">Failed to compile. (See possible inner exceptions for details)</exception>
+        public void Compile(BinaryWriter writer, SolCompliationContext context)
+        {
+            //writer.Write(BytecodeId);
+            Location.CompileTo(writer, context);
+            //CompileImpl(writer, context);
+        }*/
     }
 }

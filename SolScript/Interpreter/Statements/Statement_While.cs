@@ -1,5 +1,6 @@
 ﻿using Irony.Parsing;
 using JetBrains.Annotations;
+using SolScript.Compiler;
 using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Types;
 using SolScript.Utility;
@@ -41,6 +42,15 @@ namespace SolScript.Interpreter.Statements {
         /// <inheritdoc />
         protected override string ToString_Impl() {
             return $"Statement_While(Condition={Condition}, Chunk={Chunk})";
+        }
+
+        /// <inheritdoc />
+        public override ValidationResult Validate(SolValidationContext context)
+        {
+            if (!Condition.Validate(context)) {
+                return ValidationResult.Failure();
+            }
+            return Chunk.Validate(context);
         }
 
         #endregion

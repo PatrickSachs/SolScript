@@ -45,7 +45,8 @@ namespace SolScript.Interpreter.Types
 
         #endregion
 
-
+        //internal SolTypeCode TypeCode { get; }
+        
         /// <summary>
         ///     Tries to convert the local value into a value of a native type. May
         ///     return null.

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using JetBrains.Annotations;
 using PSUtility.Enumerables;
+using SolScript.Compiler;
 using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Types;
 using SolScript.Utility;
@@ -78,6 +79,24 @@ namespace SolScript.Interpreter.Statements
         protected override string ToString_Impl()
         {
             return $"Statement_Conditional(If=[{If.JoinToString()}], Else={Else})";
+        }
+
+        /// <inheritdoc />
+        public override ValidationResult Validate(SolValidationContext context)
+        {
+            foreach (IfBranch branch in If) {
+                var conRes = branch.Condition.Validate(context);
+                if (!conRes) {
+                    return ValidationResult.Failure();
+                }
+                var chkRes = branch.Chunk.Validate(context);
+                if (!chkRes) {
+                    return ValidationResult.Failure();
+                }
+            }
+            var elsRes = Else?.Validate(context);
+            // todo: somehow determine if/else return type?
+            return new ValidationResult(true, SolType.AnyNil);
         }
 
         #endregion

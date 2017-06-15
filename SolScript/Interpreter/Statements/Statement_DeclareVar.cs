@@ -1,8 +1,11 @@
 ﻿using Irony.Parsing;
 using JetBrains.Annotations;
+using PSUtility.Strings;
+using SolScript.Compiler;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Types;
+using SolScript.Properties;
 
 namespace SolScript.Interpreter.Statements
 {
@@ -42,7 +45,7 @@ namespace SolScript.Interpreter.Statements
         ///     The optional inital value. (null if none)
         /// </summary>
         [CanBeNull] public readonly SolExpression ValueGetter;
-
+        
         #region Overrides
 
         /// <inheritdoc />
@@ -73,6 +76,37 @@ namespace SolScript.Interpreter.Statements
         {
             string middle = ValueGetter != null ? " = " + ValueGetter : string.Empty;
             return $"var {Name} : {Type}{middle}";
+        }
+
+        /// <inheritdoc />
+        public override ValidationResult Validate(SolValidationContext context)
+        {
+            bool success = true;
+            // If we are not in a chunk the variable declaration is not valid. + short circuit it.
+            if (context.Chunks.Count == 0) {
+                context.Errors.Add(new SolError(Location, ErrorId.None, CompilerResources.Err_VariableDeclarationNotInChunk.FormatWith(Name)));
+                success = false;
+            } else {
+                SolValidationContext.Chunk chunkCtx = context.Chunks.Peek();
+                // If another variable with the same name already exists the decl is not valid.
+                if (context.HasChunkVariable(Name)) {
+                    context.Errors.Add(new SolError(Location, CompilerResources.Err_DuplicateChunkVariable.FormatWith(Name)));
+                    success = false;
+                } else {
+                    chunkCtx.AddVariable(Name, Type);
+                }
+                // If the variable getters fails or the types are not compatible the decl is not valid.
+                if (ValueGetter != null) {
+                    ValidationResult getterResult = ValueGetter.Validate(context);
+                    if (!getterResult) {
+                        success = false;
+                    } else if (!Type.IsCompatible(Assembly, getterResult.Type)) {
+                        context.Errors.Add(new SolError(Location, CompilerResources.Err_VariableInitializerTypeDoesNotMatchDeclaredType.FormatWith(Name, Type, getterResult.Type)));
+                        success = false;
+                    }
+                }
+            }
+            return new ValidationResult(success, Type);
         }
 
         #endregion

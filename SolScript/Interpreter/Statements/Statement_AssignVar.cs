@@ -1,5 +1,8 @@
 ﻿using System;
+using System.CodeDom;
+using System.IO;
 using Irony.Parsing;
+using SolScript.Compiler;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Types;
@@ -76,6 +79,15 @@ namespace SolScript.Interpreter.Statements
         protected override string ToString_Impl()
         {
             return $"{Target} = {ValueGetter}";
+        }
+
+        /// <inheritdoc />
+        public override ValidationResult Validate(SolValidationContext context)
+        {
+            ValidationResult target = Target.Validate(context);
+            ValidationResult value = ValueGetter.Validate(context);
+            // todo: get variable type if named
+            return new ValidationResult(target && value, value.Type);
         }
 
         #endregion

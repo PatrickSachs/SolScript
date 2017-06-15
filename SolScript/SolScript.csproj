@@ -65,6 +65,20 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Compiler\ISolCompileable.cs" />
+    <Compile Include="Compiler\Native\NativeCompiler.cs" />
+    <Compile Include="Compiler\SolCompilationState.cs" />
+    <Compile Include="Compiler\SolCompliationContext.cs" />
+    <Compile Include="Compiler\ValidationResult.cs" />
+    <Compile Include="Interpreter\SolMemberDefinition.cs" />
+    <Compile Include="Interpreter\Types\SolTypeCode.cs" />
+    <Compile Include="Properties\CompilerResources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>CompilerResources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Compiler\SolCompilerValidator.cs" />
+    <Compile Include="Compiler\SolValidationContext.cs" />
     <Compile Include="Interpreter\Exceptions\SolCompilerException.cs" />
     <Compile Include="Interpreter\Expressions\Expression_Literal.cs" />
     <Compile Include="Interpreter\Expressions\Expression_Tertiary.cs" />
@@ -244,9 +258,14 @@
     <Content Include="Properties\License.txt" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Properties\CompilerResources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>CompilerResources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+      <SubType>Designer</SubType>
     </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

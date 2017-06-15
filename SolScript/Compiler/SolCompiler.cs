@@ -2,6 +2,7 @@
 using PSUtility.Enumerables;
 using SolScript.Interpreter;
 using SolScript.Interpreter.Exceptions;
+using SolScript.Interpreter.Statements;
 using SolScript.Utility;
 
 namespace SolScript.Compiler
@@ -41,8 +42,8 @@ namespace SolScript.Compiler
                 SolClassDefinition current = inheritanceChain.Pop();
                 var thisFuncNames = new PSHashSet<string>();
                 var thisFieldNames = new PSHashSet<string>();
-                foreach (SolFunctionDefinition function in current.Functions) {
-                    ValidateFunction(function);
+                foreach (SolFunctionDefinition function in current.DeclaredFunctions) {
+                    ValidateFunctionHead(function);
                     // Every function name may only exist once for each inheritance level.
                     if (thisFuncNames.Contains(function.Name)) {
                         throw new SolCompilerException(function.Location, "The function \"" + FuncStr(function) + "\" exists twice within its class. Function overloading is currently not supported.");
@@ -82,7 +83,7 @@ namespace SolScript.Compiler
                         funcNames[function.Name] = function;
                     }
                 }
-                foreach (SolFieldDefinition field in current.Fields) {
+                foreach (SolFieldDefinition field in current.DeclaredFields) {
                     if (thisFieldNames.Contains(field.Name)) {
                         throw new SolCompilerException(field.Location, "The field \"" + FieldStr(field) + " exists twice within its class.");
                     }
@@ -125,9 +126,9 @@ namespace SolScript.Compiler
                 if (functionDefinition.AccessModifier != SolAccessModifier.Internal) {
                     throw new SolCompilerException(functionDefinition.Location, $"The meta function \"{FuncStr(functionDefinition)}\" must be internal.");
                 }
-                if (!meta.Type.IsCompatible(Assembly, functionDefinition.ReturnType)) {
+                if (!meta.Type.IsCompatible(Assembly, functionDefinition.Type)) {
                     throw new SolCompilerException(functionDefinition.Location,
-                        $"The return type \"{functionDefinition.ReturnType}\" of meta function \"{FuncStr(functionDefinition)}\" is not compatible with the required return type \"{meta.Type}\"");
+                        $"The return type \"{functionDefinition.Type}\" of meta function \"{FuncStr(functionDefinition)}\" is not compatible with the required return type \"{meta.Type}\"");
                 }
                 if (meta.Parameters != null) {
                     if (functionDefinition.ParameterInfo.Count != meta.Parameters.Types.Count || functionDefinition.ParameterInfo.AllowOptional != meta.Parameters.AllowOptional) {
@@ -152,7 +153,7 @@ namespace SolScript.Compiler
         /// </summary>
         /// <param name="definition">The function definition.</param>
         /// <exception cref="SolCompilerException">The function definition is not valid.</exception>
-        public void ValidateFunction(SolFunctionDefinition definition)
+        private void ValidateFunctionHead(SolFunctionDefinition definition)
         {
             // todo: expand this method to fully validate everything. relocate code from the class check. see summary for more detail.
             if (definition.AccessModifier == SolAccessModifier.Local) {
@@ -177,6 +178,19 @@ namespace SolScript.Compiler
                 }
             }
         }
+
+        /// <summary>
+        /// Validates a cimplete chunk.
+        /// </summary>
+        /// <param name="chunk">The chunk.</param>
+        private void ValidateChunk(SolChunk chunk)
+        {
+            foreach (SolStatement statement in chunk.Statements) {
+                
+            }
+        }
+
+
 
         /// <summary>
         ///     <see cref="SolClassDefinition.Type" />.<see cref="SolFunctionDefinition.Name" />

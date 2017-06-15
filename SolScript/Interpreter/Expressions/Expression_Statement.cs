@@ -1,5 +1,6 @@
 ﻿using System;
 using JetBrains.Annotations;
+using SolScript.Compiler;
 using SolScript.Interpreter.Statements;
 using SolScript.Interpreter.Types;
 using SolScript.Utility;
@@ -26,12 +27,12 @@ namespace SolScript.Interpreter.Expressions
         ///     Used by the parser.
         /// </summary>
         [Obsolete(InternalHelper.O_PARSER_MSG, InternalHelper.O_PARSER_ERR)]
-        public Expression_Statement() {}
+        internal Expression_Statement() {}
 
         /// <summary>
         ///     The statement wrapped in this expression.
         /// </summary>
-        public SolStatement Statement { get; [UsedImplicitly] internal set; }
+        public SolStatement Statement { get; /*[UsedImplicitly] internal set;*/ }
 
         #region Overrides
 
@@ -48,6 +49,15 @@ namespace SolScript.Interpreter.Expressions
         {
             return Statement.ToString();
         }
+
+        /// <inheritdoc />
+        public override ValidationResult Validate(SolValidationContext context)
+        {
+            return Statement.Validate(context);
+        }
+
+        /// <inheritdoc />
+        public override bool IsConstant => false;
 
         #endregion
     }

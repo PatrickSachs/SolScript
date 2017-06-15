@@ -1,6 +1,7 @@
 ﻿using System;
 using Irony.Parsing;
 using JetBrains.Annotations;
+using SolScript.Compiler;
 using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter.Statements {
@@ -18,6 +19,12 @@ namespace SolScript.Interpreter.Statements {
 
         protected override string ToString_Impl() {
             return $"Statement_Do({Chunk})";
+        }
+
+        /// <inheritdoc />
+        public override ValidationResult Validate(SolValidationContext context)
+        {
+            return Chunk.Validate(context);
         }
     }
 }

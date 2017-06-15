@@ -3,6 +3,8 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
 using System.Security;
 using System.Text;
 using Irony;
@@ -10,6 +12,8 @@ using Irony.Parsing;
 using JetBrains.Annotations;
 using PSUtility.Metadata;
 using PSUtility.Reflection;
+using SolScript.Compiler;
+using SolScript.Compiler.Native;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Library;
@@ -41,6 +45,11 @@ namespace SolScript.Interpreter
             m_Options = options.Clone();
             Errors = SolErrorCollection.CreateCollection(out m_ErrorAdder, options.WarningsAreErrors);
         }
+
+        /// <summary>
+        ///     The bytecode version of this assembly. Bytecode of older versions may or may not be compatible.
+        /// </summary>
+        public const uint BYTECODE_VERSION = 0;
 
         #region IMetaDataProvider Members
 
@@ -222,7 +231,7 @@ namespace SolScript.Interpreter
                             ex);
                     }
                 }
-                foreach (gen.KeyValuePair<string, SolFieldDefinition> fieldPair in activeInheritance.Definition.FieldLookup) {
+                foreach (gen.KeyValuePair<string, SolFieldDefinition> fieldPair in activeInheritance.Definition.DecalredFieldLookup) {
                     SolFieldDefinition fieldDefinition = fieldPair.Value;
                     IVariables variables = activeInheritance.GetVariables(fieldDefinition.AccessModifier, SolVariableMode.Declarations);
                     // Which variable context is this field declared in?
@@ -307,7 +316,10 @@ namespace SolScript.Interpreter
         /// <param name="constructorArguments">The arguments for the constructor function call.</param>
         /// <returns>The created class instance.</returns>
         /// <exception cref="SolTypeRegistryException">An error occured while creating the instance.</exception>
-        /// <exception cref="ArgumentException"> No class with <paramref name="name" /> exists. -or- The class cannot be instantiated and creation is not enforced. </exception>
+        /// <exception cref="ArgumentException">
+        ///     No class with <paramref name="name" /> exists. -or- The class cannot be
+        ///     instantiated and creation is not enforced.
+        /// </exception>
         public SolClass New(string name, ClassCreationOptions options, params SolValue[] constructorArguments)
         {
             SolClassDefinition definition;
@@ -327,7 +339,10 @@ namespace SolScript.Interpreter
         /// </param>
         /// <param name="constructorArguments">The arguments for the constructor function call.</param>
         /// <exception cref="SolTypeRegistryException">An error occured while creating the instance.</exception>
-        /// <exception cref="ArgumentException"> The <paramref name="definition" /> belongs to a different assembly. -or- The class cannot be instantiated and creation is not enforced. </exception>
+        /// <exception cref="ArgumentException">
+        ///     The <paramref name="definition" /> belongs to a different assembly. -or- The class
+        ///     cannot be instantiated and creation is not enforced.
+        /// </exception>
         public SolClass New(SolClassDefinition definition, ClassCreationOptions options, params SolValue[] constructorArguments)
         {
             if (!ReferenceEquals(definition.Assembly, this)) {
@@ -335,6 +350,35 @@ namespace SolScript.Interpreter
             }
             SolClass instance = New_Impl(definition, options, constructorArguments);
             return instance;
+        }
+
+        /// <summary>
+        ///     Compiles the assembly to the given binary writer.
+        /// </summary>
+        /// <param name="writer">The writer.</param>
+        /// <exception cref="IOException">An I/O error occurs. </exception>
+        public void Compile(BinaryWriter writer)
+        {
+            SolCompliationContext context = new SolCompliationContext {
+                State = SolCompilationState.Preparing
+            };
+            // Get all used file names
+            foreach (SolClassDefinition classDefinition in m_ClassDefinitions.Values) {
+                context.RegisterFile(classDefinition.Location.File);
+            }
+            foreach (SolFunctionDefinition function in m_GlobalFunctions.Values) {
+                context.RegisterFile(function.Location.File);
+            }
+            foreach (SolFieldDefinition field in m_GlobalFields.Values) {
+                context.RegisterFile(field.Location.File);
+            }
+            context.State = SolCompilationState.Started;
+            writer.Write(BYTECODE_VERSION);
+            writer.Write(context.FileIndices.Count);
+            foreach (gen.KeyValuePair<string, uint> indexPair in context.FileIndices) {
+                writer.Write(indexPair.Key);
+                writer.Write(indexPair.Value);
+            }
         }
 
         #region Nested type: Builder
@@ -422,11 +466,31 @@ namespace SolScript.Interpreter
                     return false;
                 }
                 // todo: --!validate scripts !-- 
+                TryCreateNativeMapping();
                 if (!TryCreate()) {
                     CurrentlyParsing = null;
                     return false;
                 }
                 CurrentlyParsing = null;
+                return true;
+            }
+
+            private bool TryCreateNativeMapping()
+            {
+                // TODO: it feels kind of hakcy to just override the previous values. maybe gen the native mappings in one go with the rest?
+                ps.PSList<SolClassDefinition> requiresNativeMapping = new ps.PSList<SolClassDefinition>();
+                foreach (SolClassDefinition definition in m_Assembly.m_ClassDefinitions.Values) {
+                    if (definition.DescriptorType != null) {
+                        // Native classes don't need a native binding.
+                        continue;
+                    }
+                    if (definition.BaseClass?.DescriptorType == null) {
+                        // We are not inheriting from a native class.
+                        continue;
+                    }
+                    requiresNativeMapping.Add(definition);
+                }
+                NativeCompiler.CreateNativeClassForSolClass(requiresNativeMapping, new NativeCompiler.Context { AssemblyName = m_Assembly.Name });
                 return true;
             }
 
@@ -666,7 +730,7 @@ namespace SolScript.Interpreter
                                 // Get name
                                 string name = libraryType.GetCustomAttribute<SolLibraryNameAttribute>()?.Name ?? libraryType.Name;
                                 // Create definition object
-                                SolClassDefinition definition = new SolClassDefinition(m_Assembly, SolSourceLocation.Native()) {
+                                SolClassDefinition definition = new SolClassDefinition(m_Assembly, SolSourceLocation.Native(), true) {
                                     Type = name,
                                     TypeMode = descriptor.TypeMode,
                                     DescribedType = descriptor.Describes,
@@ -756,7 +820,7 @@ namespace SolScript.Interpreter
                         SolFunctionDefinition function = functionResult.Value;
                         function.DefinedIn = definition;
                         // Guard against duplicate function names.
-                        if (definition.Functions.Any(d => d.Name == function.Name)) {
+                        if (definition.DeclaredFunctions.Any(d => d.Name == function.Name)) {
                             m_Assembly.m_ErrorAdder.Add(new SolError(
                                 SolSourceLocation.Native(), ErrorId.None,
                                 Resources.Err_DuplicateClassFunction.ToString(definition.Type, function.Name),
@@ -785,7 +849,7 @@ namespace SolScript.Interpreter
                         }
                         SolFieldDefinition fieldDef = fieldResult.Value;
                         fieldDef.DefinedIn = definition;
-                        if (definition.Fields.Any(d => d.Name == fieldDef.Name)) {
+                        if (definition.DeclaredFields.Any(d => d.Name == fieldDef.Name)) {
                             m_Assembly.m_ErrorAdder.Add(new SolError(
                                 SolSourceLocation.Native(), ErrorId.None,
                                 Resources.Err_DuplicateClassField.ToString(definition.Type, field.FullName()),
@@ -938,7 +1002,7 @@ namespace SolScript.Interpreter
                 SolFunctionDefinition solctor = new SolFunctionDefinition(m_Assembly, SolSourceLocation.Native()) {
                     Name = SolMetaFunction.__new.Name,
                     AccessModifier = accessModifier,
-                    ReturnType = new SolType(SolNil.TYPE, true),
+                    Type = new SolType(SolNil.TYPE, true),
                     Chunk = new SolChunkWrapper(constructor),
                     ParameterInfo = parameterInfo
                 };
@@ -999,7 +1063,7 @@ namespace SolScript.Interpreter
                 SolFunctionDefinition function = new SolFunctionDefinition(m_Assembly, SolSourceLocation.Native()) {
                     Name = name,
                     AccessModifier = access,
-                    ReturnType = remappedReturn.Value,
+                    Type = remappedReturn.Value,
                     Chunk = new SolChunkWrapper(method),
                     MemberModifier = memberModifier,
                     ParameterInfo = parmeterInfo
@@ -1071,14 +1135,17 @@ namespace SolScript.Interpreter
         /// <summary>
         ///     All global fields in key value pairs.
         /// </summary>
-        /// <exception cref="InvalidOperationException">Invalid state. </exception>
         public ps.ReadOnlyDictionary<string, SolFieldDefinition> GlobalFieldPairs => m_GlobalFields.AsReadOnly();
 
         /// <summary>
         ///     All global functions in key value pairs.
         /// </summary>
-        /// <exception cref="InvalidOperationException">Invalid state. </exception>
         public ps.ReadOnlyDictionary<string, SolFunctionDefinition> GlobalFunctionPairs => m_GlobalFunctions.AsReadOnly();
+
+        /// <summary>
+        /// All classes in this assembly.
+        /// </summary>
+        public ps.ReadOnlyCollection<SolClassDefinition> Classes => m_ClassDefinitions.Values;
 
         /// <summary>
         ///     A descriptive name of this assembly(e.g. "Enemy AI Logic"). The name will be used during debugging and error

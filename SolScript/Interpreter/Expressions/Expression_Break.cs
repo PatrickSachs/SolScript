@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Irony.Parsing;
+using SolScript.Compiler;
 using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter.Expressions
@@ -49,6 +50,15 @@ namespace SolScript.Interpreter.Expressions
                 return instance;
             }
             return s_Lookup[assembly] = new Expression_Break(assembly);
+        }
+
+        /// <inheritdoc />
+        public override bool IsConstant => false;
+
+        /// <inheritdoc />
+        public override ValidationResult Validate(SolValidationContext context)
+        {
+            return new ValidationResult(true, SolType.AnyNil);
         }
     }
 }

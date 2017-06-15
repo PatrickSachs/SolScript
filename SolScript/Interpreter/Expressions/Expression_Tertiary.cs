@@ -1,5 +1,6 @@
 ﻿using System;
 using JetBrains.Annotations;
+using SolScript.Compiler;
 using SolScript.Interpreter.Types;
 using SolScript.Utility;
 
@@ -60,6 +61,27 @@ namespace SolScript.Interpreter.Expressions
         protected override string ToString_Impl()
         {
             return First + Operation.Operator1 + Second + Operation.Operator2 + Third;
+        }
+
+        /// <inheritdoc />
+        // todo: detmine constant with help of operation
+        public override bool IsConstant { get; }
+
+        /// <inheritdoc />
+        public override ValidationResult Validate(SolValidationContext context)
+        {
+            if (!First.Validate(context)) {
+                return ValidationResult.Failure();
+            }
+            if (!Second.Validate(context)) {
+                return ValidationResult.Failure();
+            }
+            if (!Third.Validate(context)) {
+                return ValidationResult.Failure();
+            }
+            // todo: determine type
+            // todo: validate operation
+            return new ValidationResult(true, SolType.AnyNil);
         }
 
         #endregion

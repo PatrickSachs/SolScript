@@ -1,8 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using Irony.Parsing;
 using JetBrains.Annotations;
 using PSUtility.Enumerables;
+using SolScript.Compiler;
 using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Statements;
 using SolScript.Interpreter.Types;
@@ -14,7 +14,8 @@ namespace SolScript.Interpreter
     ///     A chunk is a series of statements running in their own variable context. Blocks are typically used as the body of
     ///     functions or generally inside isolated blocks such as iterator bodies.
     /// </summary>
-    public class SolChunk : ISourceLocateable//, ISourceLocationInjector
+    public class SolChunk : ISourceLocateable, ISolCompileable
+        //, ISourceLocationInjector
     {
         /// <summary>
         ///     Used by the parser.
@@ -36,11 +37,12 @@ namespace SolScript.Interpreter
         public SolChunk(SolAssembly assembly, SourceLocation location, [CanBeNull] TerminatingSolExpression returnExpression, params SolStatement[] statements)
         {
             Assembly = assembly;
+            Id = s_NextId++;
             ReturnExpression = returnExpression;
-            StatementsList = new System.Collections.Generic.List<SolStatement>(statements);
+            m_Statements = new PSList<SolStatement>(statements);
             InjectSourceLocation(location);
         }
-        
+
         // The id of the next chunk.
         private static uint s_NextId;
 
@@ -61,12 +63,45 @@ namespace SolScript.Interpreter
         public readonly TerminatingSolExpression ReturnExpression;
 
         // The statement array.
-        internal IList<SolStatement> StatementsList;
+        private readonly PSList<SolStatement> m_Statements;
 
         /// <summary>
         ///     The statements in this chunk.
         /// </summary>
-        public IEnumerable<SolStatement> Statements => StatementsList;
+        public ReadOnlyList<SolStatement> Statements => m_Statements.AsReadOnly();
+
+        #region ISolCompileable Members
+
+        /// <inheritdoc />
+        public ValidationResult Validate(SolValidationContext context)
+        {
+            bool success = true;
+            SolValidationContext.Chunk valChunk = new SolValidationContext.Chunk(this);
+            context.Chunks.Push(valChunk);
+            
+            foreach (SolStatement statement in Statements) {
+                bool stSuccess = statement.Validate(context);
+                // Validate all statements even if one fails.
+                if (success && !stSuccess) {
+                    success = false;
+                }
+            }
+
+            ValidationResult lastResult = ReturnExpression?.Validate(context);
+            if (!lastResult) {
+                success = false;
+            }
+
+            SolValidationContext.Chunk popped = context.Chunks.Pop();
+            if (!ReferenceEquals(popped, valChunk)) {
+                // ReSharper disable once ExceptionNotDocumented
+                throw new InvalidOperationException("Internal chunk validation corruption. Expected " + valChunk.SolChunk + " but got " + popped.SolChunk + ".");
+            }
+            // ReSharper disable once ConditionIsAlwaysTrueOrFalse - No its not. Its even marked with [CanBeNull]
+            return new ValidationResult(success, lastResult != null ? lastResult.Type : SolType.AnyNil);
+        }
+
+        #endregion
 
         #region ISourceLocateable Members
 
@@ -100,7 +135,7 @@ namespace SolScript.Interpreter
         /// <returns>The return value(or nil if no return statement).</returns>
         public SolValue Execute(SolExecutionContext context, IVariables variables, out Terminators terminators)
         {
-            foreach (SolStatement statement in StatementsList) {
+            foreach (SolStatement statement in m_Statements) {
                 SolValue value = statement.Execute(context, variables, out terminators);
                 // If either return, break, or continue occured we break out of the current chunk.
                 if (terminators != Terminators.None) {
@@ -120,5 +155,23 @@ namespace SolScript.Interpreter
         {
             Location = location;
         }
+
+        /*/// <inheritdoc />
+        /// <exception cref="IOException">An I/O error occured.</exception>
+        /// <exception cref="SolCompilerException">Failed to compile. (See possible inner exceptions for details)</exception>
+        public void Compile(BinaryWriter writer, SolCompliationContext context)
+        {
+            Location.CompileTo(writer, context);
+            writer.Write(m_Statements.Count);
+            foreach (SolStatement statement in m_Statements) {
+                statement.Compile(writer, context);
+            }
+            if (ReturnExpression != null) {
+                writer.Write((byte) 1);
+                ReturnExpression.Compile(writer, context);
+            } else {
+                writer.Write((byte) 0);
+            }
+        }*/
     }
 }

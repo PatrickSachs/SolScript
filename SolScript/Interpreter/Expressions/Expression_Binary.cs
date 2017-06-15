@@ -1,4 +1,7 @@
-﻿using SolScript.Interpreter.Types;
+﻿using System;
+using System.IO;
+using SolScript.Compiler;
+using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter.Expressions
 {
@@ -49,6 +52,30 @@ namespace SolScript.Interpreter.Expressions
         {
             return $"{First} {Operation.Operator1} {Second}";
         }
+
+        /// <inheritdoc />
+            // todo: detmine constant with help of operation
+        public override bool IsConstant => First.IsConstant && Second.IsConstant;
+
+        /// <inheritdoc />
+        public override ValidationResult Validate(SolValidationContext context)
+        {
+            if (!First.Validate(context)) {
+                return ValidationResult.Failure();
+            }
+            if (!Second.Validate(context)) {
+                return ValidationResult.Failure();
+            }
+            // todo: determine type
+            // todo: validate operation
+            return new ValidationResult(true, SolType.AnyNil);
+        }
+
+        /*/// <inheritdoc />
+        public override ValidationResult Validate(SolValidationContext context)
+        {
+            return Operation.Validate(this, context);
+        }*/
 
         #endregion
 
@@ -501,6 +528,11 @@ namespace SolScript.Interpreter.Expressions
             /// <param name="context">The execution context we are in.</param>
             /// <returns>The evaluated value.</returns>
             public abstract SolValue Perform(Expression_Binary expression, IVariables parentVariables, SolExecutionContext context);
+
+            /*public virtual ValidationResult Validate(Expression_Binary expression, SolValidationContext context)
+            {
+                
+            }*/
         }
 
         #endregion
@@ -545,14 +577,14 @@ namespace SolScript.Interpreter.Expressions
         /// <summary>
         ///     Subtracts two values from another. <br />Returns the result of the substraction.
         /// </summary>
-        public class Substraction : OperationRef
+        public class Subtraction : OperationRef
         {
-            private Substraction() {}
+            private Subtraction() {}
 
             /// <summary>
             ///     The singleton instance.
             /// </summary>
-            public static readonly Substraction Instance = new Substraction();
+            public static readonly Subtraction Instance = new Subtraction();
 
             /// <inheritdoc />
             public override string Operator1 => "-";

@@ -1,4 +1,5 @@
 ﻿using JetBrains.Annotations;
+using SolScript.Compiler;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
 
@@ -53,6 +54,15 @@ namespace SolScript.Interpreter.Expressions
         {
             return Variable.ToString();
         }
+
+        /// <inheritdoc />
+        public override ValidationResult Validate(SolValidationContext context)
+        {
+            return Variable.Validate(context);
+        }
+
+        /// <inheritdoc />
+        public override bool IsConstant => false;
 
         #endregion
 

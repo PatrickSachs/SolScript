@@ -4,6 +4,7 @@ using System.Linq;
 using Irony.Parsing;
 using JetBrains.Annotations;
 using PSUtility.Enumerables;
+using PSUtility.Strings;
 using SolScript.Compiler;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Library;
@@ -20,11 +21,12 @@ namespace SolScript.Interpreter
     public sealed class SolClassDefinition : SolAnnotateableDefinitionBase
     {
         /// <inheritdoc />
-        public SolClassDefinition(SolAssembly assembly, SourceLocation location) : base(assembly, location)
+        public SolClassDefinition(SolAssembly assembly, SourceLocation location, bool isNativeClass) : base(assembly, location)
         {
+            IsNativeClass = isNativeClass;
         }
 
-        /// <summary>
+        /*/// <summary>
         ///     Used by the parser. Class definitions are NOT created by using this constructor. Class definitions can be created
         ///     by: <br />
         ///     a.) Defining the classes in script.<br />
@@ -34,7 +36,7 @@ namespace SolScript.Interpreter
         //[Obsolete(InternalHelper.O_PARSER_MSG, InternalHelper.O_PARSER_ERR)]
         internal SolClassDefinition()
         {
-        }
+        }*/
 
         /// <summary>
         ///     The reference to the base class used.
@@ -46,15 +48,6 @@ namespace SolScript.Interpreter
         /// </summary>
         private readonly PSList<SolAnnotationDefinition> m_DeclaredAnnotations = new PSList<SolAnnotationDefinition>();
 
-        /*/// <summary>
-        ///     Raw access to all members of this class.
-        /// </summary>
-        /// <remarks>
-        ///     Warning: Make sure to only include <see cref="SolFieldDefinition" /> and <see cref="SolFunctionDefinition" />.
-        ///     Other members can lead to strange behaviour.
-        /// </remarks>
-        internal IList<SolDefinitionBase> DeclaredMembersList;*/
-
         // The fields of this definition.
         private readonly PSDictionary<string, SolFieldDefinition> m_Fields = new PSDictionary<string, SolFieldDefinition>();
         // The functions of this definition.
@@ -62,6 +55,11 @@ namespace SolScript.Interpreter
 
         // Lazily generated meta functions.
         private PSDictionary<SolMetaFunction, MetaFunctionLink> l_meta_functions;
+
+        /// <summary>
+        /// Is this class a native class?
+        /// </summary>
+        public bool IsNativeClass { get; private set; }
 
         /// <summary>
         ///     All meta functions on this class. This includes meta functions declared at all inheritance levels.
@@ -78,17 +76,15 @@ namespace SolScript.Interpreter
         /// <summary>
         ///     The base class of this class definition.
         /// </summary>
-        /// <remarks>Requires <see cref="SolAssembly.AssemblyState.GeneratedClassBodies" /> state.</remarks>
+        [CanBeNull]
         public SolClassDefinition BaseClass {
             get {
-                //Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher,
-                //    "The base class can only be obtained after then class bodies have been generated.");
                 if (BaseClassReference == null) {
                     return null;
                 }
                 SolClassDefinition baseClass;
                 if (!BaseClassReference.TryGetDefinition(out baseClass)) {
-                    throw new InvalidOperationException("The base class {0} of class {1} could not be resolved.".ToString(BaseClassReference.ClassName, Type));
+                    throw new InvalidOperationException("The base class {0} of class {1} could not be resolved.".FormatWith(BaseClassReference.ClassName, Type));
                 }
                 return baseClass;
             }
@@ -118,24 +114,24 @@ namespace SolScript.Interpreter
         ///     <see cref="TryGetField(string,bool,out SolScript.Interpreter.SolFieldDefinition)" /> overloads if you simply want a
         ///     handle on a field definition.
         /// </summary>
-        public ReadOnlyDictionary<string, SolFieldDefinition> FieldLookup => m_Fields.AsReadOnly();
+        public ReadOnlyDictionary<string, SolFieldDefinition> DecalredFieldLookup => m_Fields.AsReadOnly();
 
         /// <summary>
         ///     All fields declared in this class.
         /// </summary>
-        public ReadOnlyCollection<SolFieldDefinition> Fields => m_Fields.Values;
+        public ReadOnlyCollection<SolFieldDefinition> DeclaredFields => m_Fields.Values;
 
         /// <summary>
         ///     A lookup of the functions declared in this class. Consider using one of the
         ///     <see cref="TryGetFunction(string,bool,out SolScript.Interpreter.SolFunctionDefinition)" /> overloads if you simply
         ///     want a handle on a function definition.
         /// </summary>
-        public ReadOnlyDictionary<string, SolFunctionDefinition> FunctionLookup => m_Functions.AsReadOnly();
+        public ReadOnlyDictionary<string, SolFunctionDefinition> DeclaredFunctionLookup => m_Functions.AsReadOnly();
 
         /// <summary>
         ///     All functions declared in this class.
         /// </summary>
-        public ReadOnlyCollection<SolFunctionDefinition> Functions => m_Functions.Values;
+        public ReadOnlyCollection<SolFunctionDefinition> DeclaredFunctions => m_Functions.Values;
 
         /// <summary>
         ///     The native type represented by this class definition.
@@ -182,11 +178,8 @@ namespace SolScript.Interpreter
         ///     most derived one(this one).
         /// </summary>
         /// <returns>A stack containing the class definitions.</returns>
-        /// <remarks>Requires <see cref="SolAssembly.AssemblyState.GeneratedClassBodies" /> state.</remarks>
         public Stack<SolClassDefinition> GetInheritanceReversed()
         {
-            //Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher,
-            //    "The inheritance chain can only be obtained after the class bodies have been generated.");
             var stack = new Stack<SolClassDefinition>();
             SolClassDefinition definition = this;
             while (definition != null) {
@@ -196,13 +189,23 @@ namespace SolScript.Interpreter
             return stack;
         }
 
+        /// <summary>
+        /// Iterates through the inheritance chain. Includes itself.
+        /// </summary>
+        /// <returns>The enumerable.</returns>
+        public IEnumerable<SolClassDefinition> GetInheritance()
+        {
+            SolClassDefinition def = this;
+            while (def != null) {
+                yield return def;
+                def = def.BaseClass;
+            }
+        }
+
         /// <summary>Creates the meta function lookup for the class definition.</summary>
         /// <exception cref="InvalidOperationException">Invalid state.</exception>
-        /// <remarks>Requires <see cref="SolAssembly.AssemblyState.GeneratedClassBodies" /> or higher state.</remarks>
         private void BuildMetaFunctions()
         {
-            //Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher,
-            //    "Class meta functions can only be built once the class bodies have been generated.");
             l_meta_functions = new PSDictionary<SolMetaFunction, MetaFunctionLink>();
             FindAndRegisterMetaFunction(SolMetaFunction.__new);
             FindAndRegisterMetaFunction(SolMetaFunction.__to_string);
@@ -234,12 +237,9 @@ namespace SolScript.Interpreter
         /// </exception>
         /// <exception cref="ArgumentNullException"><paramref name="meta" /> is null.</exception>
         /// <exception cref="InvalidOperationException">Invalid state.</exception>
-        /// <remarks>Requires <see cref="SolAssembly.AssemblyState.GeneratedClassBodies" /> or higher state.</remarks>
         [ContractAnnotation("link:null => false")]
         public bool TryGetMetaFunction([NotNull] SolMetaFunction meta, [CanBeNull] out MetaFunctionLink link)
         {
-            //Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher,
-            //    "Class meta functions can only be obtained once the class bodies have been generated.");
             if (!DidBuildMetaFunctions) {
                 BuildMetaFunctions();
             }
@@ -263,6 +263,25 @@ namespace SolScript.Interpreter
             return false;
         }
 
+        /// <summary>
+        ///     Checks if this class extends the given  native type.
+        /// </summary>
+        /// <param name="type">The native type.</param>
+        /// <returns>true if the class extends the given type, false if not.</returns>
+        public bool Extends(Type type)
+        {
+            SolClassDefinition active = BaseClass;
+            while (active != null) {
+                if (active.DescriptorType == type) {
+                    return true;
+                }
+                if (active.DescribedType == type) {
+                    return true;
+                }
+                active = active.BaseClass;
+            }
+            return false;
+        }
 
         /// <summary>
         ///     Checks if this class extends the given class definition.
@@ -366,11 +385,6 @@ namespace SolScript.Interpreter
         ///     returned true.
         /// </param>
         /// <exception cref="InvalidOperationException">Invalid state.</exception>
-        /// <remarks>
-        ///     This does not account for the <see cref="SolAccessModifier" /> of the function. Use the overload accepting a
-        ///     delegate if you wish to provide custom matching behavior.<br />Only valid in
-        ///     <see cref="SolAssembly.AssemblyState.GeneratedClassBodies" /> or higher state.
-        /// </remarks>
         [ContractAnnotation("definition:null => false")]
         public bool TryGetFunction(string name, bool declaredOnly, [CanBeNull] out SolFunctionDefinition definition)
         {
@@ -393,11 +407,9 @@ namespace SolScript.Interpreter
         /// </param>
         /// <returns>True if the function could be found, false otherwise.</returns>
         /// <exception cref="InvalidOperationException">Invalid state.</exception>
-        /// <remarks>Only valid in <see cref="SolAssembly.AssemblyState.GeneratedClassBodies" /> or higher state.</remarks>
         [ContractAnnotation("definition:null => false")]
         public bool TryGetFunction(string name, bool declaredOnly, [CanBeNull] out SolFunctionDefinition definition, Func<SolFunctionDefinition, bool> validator)
         {
-            //Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher, "Class bodies need to be generated before class functions can be used.");
             SolClassDefinition activeClassDefinition = this;
             while (activeClassDefinition != null) {
                 if (activeClassDefinition.m_Functions.TryGetValue(name, out definition) && validator(definition)) {
@@ -420,16 +432,31 @@ namespace SolScript.Interpreter
         ///     returned true.
         /// </param>
         /// <returns>True if the function could be found, false otherwise.</returns>
-        /// <exception cref="InvalidOperationException">Invalid state.</exception>
         /// <remarks>
         ///     This does not account for the <see cref="SolAccessModifier" /> of the function. Use the overload accepting a
-        ///     delegate if you wish to provide custom matching behavior.<br />Only valid in
-        ///     <see cref="SolAssembly.AssemblyState.GeneratedClassBodies" /> or higher state.
+        ///     delegate if you wish to provide custom matching behavior.
         /// </remarks>
         [ContractAnnotation("definition:null => false")]
         public bool TryGetField(string name, bool declaredOnly, [CanBeNull] out SolFieldDefinition definition)
         {
             return TryGetField(name, declaredOnly, out definition, fieldDefinition => true);
+        }
+
+        [ContractAnnotation("definition:null => false")]
+        public bool TryGetMember(string name, bool declardOnly, [CanBeNull] out SolMemberDefinition definition)
+        {
+            SolFieldDefinition field;
+            if (TryGetField(name, declardOnly, out field)) {
+                definition = field;
+                return true;
+            }
+            SolFunctionDefinition function;
+            if (TryGetFunction(name, declardOnly, out function)) {
+                definition = function;
+                return true;
+            }
+            definition = null;
+            return false;
         }
 
         /// <summary> Gets a field definition in this class definition. </summary>
@@ -446,12 +473,9 @@ namespace SolScript.Interpreter
         ///     This function is used to validate the field. If the delegate returns true the field will be
         ///     treated as matching, if false then not.
         /// </param>
-        /// <exception cref="InvalidOperationException">Invalid state.</exception>
-        /// <remarks>Only valid in <see cref="SolAssembly.AssemblyState.GeneratedClassBodies" /> or higher state.</remarks>
         [ContractAnnotation("definition:null => false")]
         public bool TryGetField(string name, bool declaredOnly, [CanBeNull] out SolFieldDefinition definition, Func<SolFieldDefinition, bool> validator)
         {
-            //Assembly.AssertState(SolAssembly.AssemblyState.GeneratedClassBodies, SolAssembly.AssertMatch.ExactOrHigher, "Class bodies need to be generated before class fields can be used.");
             SolClassDefinition activeClassDefinition = this;
             while (activeClassDefinition != null) {
                 if (activeClassDefinition.m_Fields.TryGetValue(name, out definition) && validator(definition)) {
@@ -461,6 +485,31 @@ namespace SolScript.Interpreter
             }
             definition = null;
             return false;
+        }
+
+        /// <summary>
+        /// Gets a flat representation of all functions in this class. Overridden functions are omitted.
+        /// </summary>
+        /// <param name="local">Should local functions be included?</param>
+        /// <returns>The enumerable.</returns>
+        public IEnumerable<SolFunctionDefinition> GetFlatFunctions(bool local = false)
+        {
+            PSHashSet<string> names = new PSHashSet<string>();
+            SolClassDefinition active = this;
+            while (active != null) {
+                foreach (var pair in active.m_Functions) {
+                    if (names.Contains(pair.Key)) {
+                        continue;
+                    }
+                    SolFunctionDefinition function = pair.Value;
+                    if (function.AccessModifier == SolAccessModifier.Local && (function.DefinedIn != this || !local)) {
+                        continue;
+                    }
+                    names.Add(function.Name);
+                    yield return function;
+                }
+                active = active.BaseClass;
+            }
         }
 
         /// <summary>

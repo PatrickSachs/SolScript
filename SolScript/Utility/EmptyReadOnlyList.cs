@@ -12,6 +12,6 @@ namespace SolScript.Utility
         /// <summary>
         ///     The list instance.
         /// </summary>
-        public static readonly ReadOnlyList<T> Value = new ReadOnlyList<T>(ArrayUtility.Empty<T>());
+        public static readonly ReadOnlyList<T> Value = ReadOnlyList<T>.Wrap(ArrayUtility.Empty<T>());
     }
 }

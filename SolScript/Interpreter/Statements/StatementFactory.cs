@@ -154,10 +154,10 @@ namespace SolScript.Interpreter.Statements
             }
 
             string className = node.ChildNodes[3].Token.Text;
-            SolClassDefinition classDefinition = new SolClassDefinition();
+            SolClassDefinition classDefinition = new SolClassDefinition(Assembly, node.Span.Location, false);
             classDefinition.Type = className;
             classDefinition.TypeMode = typeMode;
-            classDefinition.InjectSourceLocation(node.Span.Location);
+            //classDefinition.InjectSourceLocation(node.Span.Location);
             m_MetaStack.Push(new MetaItem {ActiveClass = classDefinition });
             // ===================================================================
             // == Annotations
@@ -191,7 +191,8 @@ namespace SolScript.Interpreter.Statements
                     // ===================================================================
                     case "FieldWithAccess": {
                         var fieldDefinition = GetFieldWithAccess(classMemberNode);
-                        if (classDefinition.FieldLookup.ContainsKey(fieldDefinition.Name)) {
+                            SolDebug.WriteLine("Debug to register field " + fieldDefinition.Name + " ---> " + fieldDefinition);
+                        if (classDefinition.DecalredFieldLookup.ContainsKey(fieldDefinition.Name)) {
                             throw new SolInterpreterException(classMemberNode.Span.Location, "The field \"" + fieldDefinition.Name + "\" exists multiple times within the class \"" + classDefinition.Type +"\".");
                         }
                             classDefinition.AssignFieldDirect(fieldDefinition);
@@ -200,7 +201,7 @@ namespace SolScript.Interpreter.Statements
                     // ===================================================================
                     case "FunctionWithAccess": {
                         SolFunctionDefinition functionDefinition = GetFunctionWithAccess(classMemberNode);
-                            if (classDefinition.FunctionLookup.ContainsKey(functionDefinition.Name))
+                            if (classDefinition.DeclaredFunctionLookup.ContainsKey(functionDefinition.Name))
                             {
                                 throw new SolInterpreterException(classMemberNode.Span.Location, "The function \"" + functionDefinition.Name + "\" exists multiple times within the class \"" + classDefinition.Type + "\".");
                             }
@@ -307,7 +308,7 @@ namespace SolScript.Interpreter.Statements
                 MemberModifier = memberModifier,
                 ParameterInfo = parameters,
                 Chunk = new SolChunkWrapper(chunk),
-                ReturnType = funcType
+                Type = funcType
             };
             functionDefinition.InjectSourceLocation(node.Span.Location);
             InsertAnnotations(annotationsListNode, functionDefinition);
@@ -336,6 +337,7 @@ namespace SolScript.Interpreter.Statements
             // 3 _identifier 
             // 4 TypeRef_opt 
             // 5 Assignment_opt;
+            SolDebug.WriteLine(node.Span.Location + " :: " + node.ChildNodes.JoinToString(" // "));
             ParseTreeNode annotationsListNode = node.ChildNodes[0];
             SolAccessModifier accessModifier = GetAccessModifier(node.ChildNodes[1]);
             SolMemberModifier memberModifier = GetMemberModifier(node.ChildNodes[2]);
@@ -496,7 +498,7 @@ namespace SolScript.Interpreter.Statements
                     break;
                 }
                 case "-": {
-                    operation = Expression_Binary.Substraction.Instance;
+                    operation = Expression_Binary.Subtraction.Instance;
                     break;
                 }
                 case "*": {

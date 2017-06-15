@@ -1,4 +1,5 @@
 ﻿using Irony.Parsing;
+using SolScript.Compiler;
 using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Types;
 using SolScript.Utility;
@@ -50,6 +51,25 @@ namespace SolScript.Interpreter.Statements {
         protected override string ToString_Impl() {
             return $"Statement_For(Initialization={Initialization}, Condition={Condition}, "+
                 $"Afterthought={Afterthought}, Chunk={Chunk})";
+        }
+
+        /// <inheritdoc />
+        public override ValidationResult Validate(SolValidationContext context)
+        {
+            var iniRes = Initialization.Validate(context);
+            if (!iniRes) {
+                return ValidationResult.Failure();
+            }
+            var conRes = Condition.Validate(context);
+            if (!conRes) {
+                return ValidationResult.Failure();
+            }
+            var aftRes = Afterthought.Validate(context);
+            if (!aftRes)
+            {
+                return ValidationResult.Failure();
+            }
+            return Chunk.Validate(context);
         }
     }
 }

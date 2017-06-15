@@ -138,24 +138,6 @@ namespace SolScript.Interpreter
         }
 
         /// <summary>
-        ///     The wildcard pattern for identifying source files. (Default: "*.sol")
-        /// </summary>
-        /// <exception cref="ArgumentNullException" accessor="set">
-        ///     Cannot set source file pattern to
-        ///     null. <paramref name="value" />
-        /// </exception>
-        [NotNull]
-        public string SourceFilePattern {
-            get { return m_SourceFilePattern; }
-            set {
-                if (value == null) {
-                    throw new ArgumentNullException(nameof(value));
-                }
-                m_SourceFilePattern = value;
-            }
-        }
-
-        /// <summary>
         ///     Should warnings be treated as errors? (Default: false)
         /// </summary>
         public bool WarningsAreErrors { get; set; }

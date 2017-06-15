@@ -22,7 +22,7 @@ namespace SolScript.Interpreter.Types
         public override SolParameterInfo ParameterInfo => Definition.ParameterInfo;
 
         /// <inheritdoc />
-        public override SolType ReturnType => Definition.ReturnType;
+        public override SolType ReturnType => Definition.Type;
 
         #region Overrides
 

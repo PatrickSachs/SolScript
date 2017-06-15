@@ -1,0 +1,2240 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>PSUtility</name>
+    </assembly>
+    <members>
+        <member name="T:PSUtility.Enumerables.Array`1">
+            <summary>
+                Wraps an <see cref="T:System.Array" /> in an <see cref="!:IReadOnlyList&lt;T&gt;" />
+            </summary>
+            <typeparam name="T">The array type.</typeparam>
+        </member>
+        <member name="M:PSUtility.Enumerables.Array`1.#ctor(`0[])">
+            <summary>
+                Creates a new array wrapper for the given array.
+            </summary>
+            <param name="array">The array.</param>
+            <remarks>This internal array is a direct reference to the given array. No cloning is performed.</remarks>
+            <exception cref="T:System.ArgumentNullException">The <paramref name="array" /> is null.</exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.Array`1.#ctor(System.Int32)">
+            <summary>
+                Creates a new array of the given length.
+            </summary>
+            <param name="length">The array length.</param>
+        </member>
+        <member name="P:PSUtility.Enumerables.Array`1.Value">
+            <summary>
+                The backing array.
+            </summary>
+            <exception cref="T:System.ArgumentNullException" accessor="set">
+                Cannot set the backing array of an Array to null.
+                <paramref name="value" />
+            </exception>
+        </member>
+        <member name="P:PSUtility.Enumerables.Array`1.Length">
+            <inheritdoc cref="!:Count" />
+        </member>
+        <member name="M:PSUtility.Enumerables.Array`1.Enumerator.Dispose">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.Array`1.Enumerator.MoveNext">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.Array`1.Enumerator.Reset">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.Array`1.Enumerator.Current">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.Array`1.Enumerator.System#Collections#IEnumerator#Current">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.Array`1.GetEnumerator">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.Array`1.System#Collections#IEnumerable#GetEnumerator">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.Array`1.Contains(`0)">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.Array`1.Item(System.Int32)">
+            <inheritdoc />
+            <exception cref="T:System.ArgumentOutOfRangeException">
+                Index is out of range. <paramref name="index" />
+            </exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.Array`1.System#ICloneable#Clone">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.Array`1.Clone">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.Array`1.CopyTo(System.Array,System.Int32)">
+            <summary>
+                Copies the elements of this collection to an array.
+            </summary>
+            <param name="array">The array.</param>
+            <param name="index">The start index of the array.</param>
+            <exception cref="T:System.ArrayTypeMismatchException">
+                The type of the source <see cref="!:IReadOnlyCollection&lt;T&gt;" /> cannot be cast
+                automatically to the type of the destination <paramref name="array" />.
+            </exception>
+            <exception cref="T:System.RankException">The source array is multidimensional.</exception>
+            <exception cref="T:System.InvalidCastException">
+                At least one element in the source <see cref="T:System.Array" /> cannot be cast
+                to the type of destination <paramref name="array" />.
+            </exception>
+            <exception cref="T:System.ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
+            <exception cref="T:System.ArgumentException"><paramref name="array" /> is not long enough.</exception>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="index" /> is smaller than 0.</exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.Array`1.CopyTo(PSUtility.Enumerables.Array{`0},System.Int32)">
+            <summary>
+                Copies the elements of this collection to an array.
+            </summary>
+            <param name="array">The array.</param>
+            <param name="index">The start index of the array.</param>
+            <exception cref="T:System.ArrayTypeMismatchException">
+                The type of the source <see cref="!:IReadOnlyCollection&lt;T&gt;" /> is not assignable from <typeparamref name="T" />.
+            </exception>
+            <exception cref="T:System.RankException">The source array is multidimensional.</exception>
+            <exception cref="T:System.InvalidCastException">
+                At least one element in the source <see cref="T:System.Array" /> cannot be cast
+                to <typeparamref name="T" />.
+            </exception>
+            <exception cref="T:System.ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
+            <exception cref="T:System.ArgumentException"><paramref name="array" /> is not long enough.</exception>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="index" /> is smaller than 0.</exception>
+        </member>
+        <member name="T:PSUtility.Enumerables.ArrayUtility">
+            <summary>
+                Several utility methods related to arrays.
+            </summary>
+        </member>
+        <member name="M:PSUtility.Enumerables.ArrayUtility.Empty``1">
+            <summary>
+                Gets an empty array of the given type. The array instance is cached.
+            </summary>
+            <typeparam name="T">The array type.</typeparam>
+            <returns>The array.</returns>
+        </member>
+        <member name="M:PSUtility.Enumerables.ArrayUtility.GetElementType(System.Array)">
+            <summary>
+                Gets the element type of the given array.
+            </summary>
+            <param name="array">The array.</param>
+            <returns>The element type.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.ArrayUtility.Copy``1(System.Collections.Generic.IEnumerable{``0},System.Int32,System.Array,System.Int32,System.Int32)">
+            <summary>
+                Copies <paramref name="count" /> elements from <paramref name="source" /> to the <paramref name="target" />
+                array.
+            </summary>
+            <param name="source">The source to copy from.</param>
+            <param name="sourceOffset">How many elements should be skipped before copying?</param>
+            <param name="target">The target to copy to.</param>
+            <param name="offset">Which index is the first index elements should be copied to?</param>
+            <param name="count">How many elements should be copied?</param>
+            <remarks>
+                This method will try really hard to find an efficient way to copy the elements. It will check if
+                <paramref name="source" /> is a (ReadOnly)List or Array(T) before iterating the enumerable itself.
+            </remarks>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+                <paramref name="sourceOffset" /> is smaller than 0. -or-
+                <paramref name="offset" /> is smaller than 0. -or- <paramref name="count" /> is smaller than 0.
+            </exception>
+            <exception cref="T:System.RankException"><paramref name="target" /> is multidimensional.</exception>
+            <exception cref="T:System.ArrayTypeMismatchException">
+                The element type of <paramref name="target" /> is not assignable from
+                <typeparamref name="T" />.
+            </exception>
+            <exception cref="T:System.ArgumentException">
+                <paramref name="target" /> is not long enough to store all elements. -or-
+                <paramref name="source" /> does not provide enough elements.
+            </exception>
+            <exception cref="T:System.InvalidCastException">
+                At least one element in <paramref name="source" /> cannot be cast to
+                <typeparamref name="T" />.
+            </exception>
+            <exception cref="T:System.ArgumentNullException">
+                <paramref name="source" /> is <see langword="null" />. -or-
+                <paramref name="target" /> is <see langword="null" />.
+            </exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.ArrayUtility.Copy(System.Collections.IEnumerable,System.Int32,System.Array,System.Int32,System.Int32)">
+            <summary>
+                Copies <paramref name="count" /> elements from <paramref name="source" /> to the <paramref name="target" />
+                array.
+            </summary>
+            <param name="source">The source to copy from.</param>
+            <param name="sourceOffset">How many elements should be skipped before copying?</param>
+            <param name="target">The target to copy to.</param>
+            <param name="offset">Which index is the first index elements should be copied to?</param>
+            <param name="count">How many elements should be copied?</param>
+            <remarks>
+                This method will try really hard to find an efficient way to copy the elements. It will check if
+                <paramref name="source" /> is a (ReadOnly)List or Array(T) before iterating the enumerable itself.
+            </remarks>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+                <paramref name="sourceOffset" /> is smaller than 0. -or-
+                <paramref name="offset" /> is smaller than 0. -or- <paramref name="count" /> is smaller than 0.
+            </exception>
+            <exception cref="T:System.RankException"><paramref name="target" /> is multidimensional.</exception>
+            <exception cref="T:System.ArrayTypeMismatchException">
+                The element type of <paramref name="target" /> is not assignable from
+                <typeparamref name="T" />.
+            </exception>
+            <exception cref="T:System.ArgumentException">
+                <paramref name="target" /> is not long enough to store all elements. -or-
+                <paramref name="source" /> does not provide enough elements.
+            </exception>
+            <exception cref="T:System.InvalidCastException">
+                At least one element in <paramref name="source" /> cannot be cast to
+                <typeparamref name="T" />.
+            </exception>
+            <exception cref="T:System.ArgumentNullException">
+                <paramref name="source" /> is <see langword="null" />. -or-
+                <paramref name="target" /> is <see langword="null" />.
+            </exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.ArrayUtility.Copy``1(System.Collections.Generic.IEnumerable{``0},System.Int32,PSUtility.Enumerables.Array{``0},System.Int32,System.Int32)">
+            <summary>
+                Copies <paramref name="count" /> elements from <paramref name="source" /> to the <paramref name="target" />
+                array.
+            </summary>
+            <param name="source">The source to copy from.</param>
+            <param name="sourceOffset">How many elements should be skipped before copying?</param>
+            <param name="target">The target to copy to.</param>
+            <param name="offset">Which index is the first index elements should be copied to?</param>
+            <param name="count">How many elements should be copied?</param>
+            <remarks>
+                This method will try really hard to find an efficient way to copy the elements. It will check if
+                <paramref name="source" /> is a (ReadOnly)List or Array(T) before iterating the enumerable itself.
+            </remarks>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+                <paramref name="sourceOffset" /> is smaller than 0. -or-
+                <paramref name="offset" /> is smaller than 0. -or- <paramref name="count" /> is smaller than 0.
+            </exception>
+            <exception cref="T:System.RankException"><paramref name="target" /> is multidimensional.</exception>
+            <exception cref="T:System.ArrayTypeMismatchException">
+                The element type of <paramref name="target" /> is not assignable from
+                <typeparamref name="T" />.
+            </exception>
+            <exception cref="T:System.ArgumentException">
+                <paramref name="target" /> is not long enough to store all elements. -or-
+                <paramref name="source" /> does not provide enough elements.
+            </exception>
+            <exception cref="T:System.InvalidCastException">
+                At least one element in <paramref name="source" /> cannot be cast to
+                <typeparamref name="T" />.
+            </exception>
+            <exception cref="T:System.ArgumentNullException">
+                <paramref name="source" /> is <see langword="null" />. -or-
+                <paramref name="target" /> is <see langword="null" />.
+            </exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.ArrayUtility.Copy``1(System.Collections.IEnumerable,System.Int32,PSUtility.Enumerables.Array{``0},System.Int32,System.Int32)">
+            <summary>
+                Copies <paramref name="count" /> elements from <paramref name="source" /> to the <paramref name="target" />
+                array.
+            </summary>
+            <param name="source">The source to copy from.</param>
+            <param name="sourceOffset">How many elements should be skipped before copying?</param>
+            <param name="target">The target to copy to.</param>
+            <param name="offset">Which index is the first index elements should be copied to?</param>
+            <param name="count">How many elements should be copied?</param>
+            <remarks>
+                This method will try really hard to find an efficient way to copy the elements. It will check if
+                <paramref name="source" /> is a (ReadOnly)List or Array(T) before iterating the enumerable itself.
+            </remarks>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+                <paramref name="sourceOffset" /> is smaller than 0. -or-
+                <paramref name="offset" /> is smaller than 0. -or- <paramref name="count" /> is smaller than 0.
+            </exception>
+            <exception cref="T:System.RankException"><paramref name="target" /> is multidimensional.</exception>
+            <exception cref="T:System.ArrayTypeMismatchException">
+                The element type of <paramref name="target" /> is not assignable from
+                <typeparamref name="T" />.
+            </exception>
+            <exception cref="T:System.ArgumentException">
+                <paramref name="target" /> is not long enough to store all elements. -or-
+                <paramref name="source" /> does not provide enough elements.
+            </exception>
+            <exception cref="T:System.InvalidCastException">
+                At least one element in <paramref name="source" /> cannot be cast to
+                <typeparamref name="T" />.
+            </exception>
+            <exception cref="T:System.ArgumentNullException">
+                <paramref name="source" /> is <see langword="null" />. -or-
+                <paramref name="target" /> is <see langword="null" />.
+            </exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.ArrayUtility.Copy``1(System.Array,System.Int32,PSUtility.Enumerables.Array{``0},System.Int32,System.Int32)">
+            <summary>
+                Copies <paramref name="count" /> elements from <paramref name="source" /> to the <paramref name="target" />
+                array-
+            </summary>
+            <param name="source">The source to copy from.</param>
+            <param name="sourceOffset">How many elements should be skipped before copying?</param>
+            <param name="target">The target to copy to.</param>
+            <param name="offset">Which index is the first index elements should be copied to?</param>
+            <param name="count">How many elements should be copied?</param>
+            <remarks>
+                This method will try really hard to find an efficient way to copy the elements. It will check if
+                <paramref name="source" /> is a (ReadOnly)List or Array(T) before iterating the enumerable itself.
+            </remarks>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+                <paramref name="sourceOffset" /> is smaller than 0. -or-
+                <paramref name="offset" /> is smaller than 0. -or- <paramref name="count" /> is smaller than 0.
+            </exception>
+            <exception cref="T:System.RankException"><paramref name="target" /> is multidimensional.</exception>
+            <exception cref="T:System.ArrayTypeMismatchException">
+                The element type of <paramref name="target" /> is not assignable from
+                <typeparamref name="T" />.
+            </exception>
+            <exception cref="T:System.ArgumentException">
+                <paramref name="target" /> is not long enough to store all elements. -or-
+                <paramref name="source" /> does not provide enough elements.
+            </exception>
+            <exception cref="T:System.InvalidCastException">
+                At least one element in <paramref name="source" /> cannot be cast to
+                <typeparamref name="T" />.
+            </exception>
+            <exception cref="T:System.ArgumentNullException">
+                <paramref name="source" /> is <see langword="null" />. -or-
+                <paramref name="target" /> is <see langword="null" />.
+            </exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.ArrayUtility.Copy``1(System.Array,System.Int32,System.Array,System.Int32,System.Int32)">
+            <summary>Alias for <see cref="M:System.Array.Copy(System.Array,System.Int32,System.Array,System.Int32,System.Int32)" />.</summary>
+            <param name="source">The source to copy from.</param>
+            <param name="sourceOffset">How many elements should be skipped before copying?</param>
+            <param name="target">The target to copy to.</param>
+            <param name="offset">Which index is the first index elements should be copied to?</param>
+            <param name="count">How many elements should be copied?</param>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+                <paramref name="sourceOffset" /> is smaller than 0. -or-
+                <paramref name="offset" /> is smaller than 0. -or- <paramref name="count" /> is smaller than 0.
+            </exception>
+            <exception cref="T:System.RankException"><paramref name="target" /> and <paramref name="source" /> have different ranks.</exception>
+            <exception cref="T:System.ArrayTypeMismatchException">
+                The element type of <paramref name="target" /> is not assignable from
+                <typeparamref name="T" />.
+            </exception>
+            <exception cref="T:System.ArgumentException">
+                <paramref name="target" /> is not long enough to store all elements. -or-
+                <paramref name="source" /> does not provide enough elements.
+            </exception>
+            <exception cref="T:System.InvalidCastException">
+                At least one element in <paramref name="source" /> cannot be cast to
+                <typeparamref name="T" />.
+            </exception>
+        </member>
+        <member name="T:PSUtility.Enumerables.BiDictionary`2">
+            <summary>
+                A Dicionary where both values are key and value, allowing you to access data in a bi-directionary matter.
+            </summary>
+            <typeparam name="TValue1">The first type.</typeparam>
+            <typeparam name="TValue2">The second type.</typeparam>
+        </member>
+        <member name="P:PSUtility.Enumerables.BiDictionary`2.Item(`1)">
+            <inheritdoc />
+            <exception cref="T:System.ArgumentNullException" accessor="set">
+                <paramref name="value" /> is <see langword="null" /> -or-
+                <paramref name="key" /> is <see langword="null" />
+            </exception>
+        </member>
+        <member name="P:PSUtility.Enumerables.BiDictionary`2.Item(`0)">
+            <inheritdoc />
+            <exception cref="T:System.ArgumentNullException" accessor="set">
+                <paramref name="value" /> is <see langword="null" /> -or-
+                <paramref name="key" /> is <see langword="null" />
+            </exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.BiDictionary`2.System#Collections#IEnumerable#GetEnumerator">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.BiDictionary`2.GetEnumerator">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.BiDictionary`2.Contains(System.Collections.Generic.KeyValuePair{`0,`1})">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.BiDictionary`2.CopyTo(System.Collections.Generic.KeyValuePair{`0,`1}[],System.Int32)">
+            <inheritdoc />
+            <param name="array">The array.</param>
+            <param name="arrayIndex">The start index of the array.</param>
+            <exception cref="T:System.ArrayTypeMismatchException">
+                The type of the source <see cref="T:PSUtility.Enumerables.BiDictionary`2" /> cannot be cast
+                automatically to the type of the destination <paramref name="array" />.
+            </exception>
+            <exception cref="T:System.RankException">The source array is multidimensional.</exception>
+            <exception cref="T:System.InvalidCastException">
+                At least one element in the source <see cref="T:System.Array" /> cannot be cast
+                to the type of destination <paramref name="array" />.
+            </exception>
+            <exception cref="T:System.ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
+            <exception cref="T:System.ArgumentException"><paramref name="array" /> is not long enough.</exception>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="arrayIndex" /> is smaller than 0.</exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.BiDictionary`2.Remove(System.Collections.Generic.KeyValuePair{`0,`1})">
+            <inheritdoc />
+            <exception cref="T:System.ArgumentNullException">
+                <paramref name="item.Key.Key" /> is <see langword="null" /> -or-
+                <paramref name="item.Value.Value" /> is <see langword="null" />
+            </exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.BiDictionary`2.Remove(`0)">
+            <inheritdoc />
+            <exception cref="T:System.ArgumentNullException"><paramref name="key" /> is <see langword="null" /></exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.BiDictionary`2.TryGetValue(`0,`1@)">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.BiDictionary`2.Value1AsReadOnly">
+            <summary>
+                Creates a "normal" read-only dictionary using the first value as key.
+            </summary>
+            <returns>The dictionary.</returns>
+        </member>
+        <member name="M:PSUtility.Enumerables.BiDictionary`2.Value2AsReadOnly">
+            <summary>
+                Creates a "normal" read-only dictionary using the second value as key.
+            </summary>
+            <returns>The dictionary.</returns>
+        </member>
+        <member name="M:PSUtility.Enumerables.BiDictionary`2.Add(System.Collections.Generic.KeyValuePair{`0,`1})">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.BiDictionary`2.Add(`0,`1)">
+            <summary>
+                Adds new items to the dictionary.
+            </summary>
+            <param name="item1">The first item.</param>
+            <param name="item2">The second item.</param>
+            <exception cref="T:System.ArgumentNullException">
+                <paramref name="item1" /> is <see langword="null" /> -or-
+                <paramref name="item2" /> is <see langword="null" />
+            </exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.BiDictionary`2.Add(System.Collections.Generic.KeyValuePair{`1,`0})">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.BiDictionary`2.Add(`1,`0)">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.BiDictionary`2.Contains(System.Collections.Generic.KeyValuePair{`1,`0})">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.BiDictionary`2.CopyTo(System.Collections.Generic.KeyValuePair{`1,`0}[],System.Int32)">
+            <inheritdoc />
+            <param name="array">The array.</param>
+            <param name="arrayIndex">The start index of the array.</param>
+            <exception cref="T:System.ArrayTypeMismatchException">
+                The type of the source <see cref="T:PSUtility.Enumerables.BiDictionary`2" /> cannot be cast
+                automatically to the type of the destination <paramref name="array" />.
+            </exception>
+            <exception cref="T:System.RankException">The source array is multidimensional.</exception>
+            <exception cref="T:System.InvalidCastException">
+                At least one element in the source <see cref="T:System.Array" /> cannot be cast
+                to the type of destination <paramref name="array" />.
+            </exception>
+            <exception cref="T:System.ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
+            <exception cref="T:System.ArgumentException"><paramref name="array" /> is not long enough.</exception>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="arrayIndex" /> is smaller than 0.</exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.BiDictionary`2.Contains(`0)">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.BiDictionary`2.Contains(`1)">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.BiDictionary`2.Remove(`1)">
+            <inheritdoc />
+            <exception cref="T:System.ArgumentNullException"><paramref name="key" /> is <see langword="null" /></exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.BiDictionary`2.TryGetValue(`1,`0@)">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.BiDictionary`2.#ctor">
+            <summary>
+                Creates a new BiDictionary.
+            </summary>
+        </member>
+        <member name="M:PSUtility.Enumerables.BiDictionary`2.#ctor(System.Collections.Generic.IEqualityComparer{`0},System.Collections.Generic.IEqualityComparer{`1})">
+            <summary>
+                Creates a new BiDictionary.
+            </summary>
+            <param name="comparer1">The comparer used to compare values of the first type.</param>
+            <param name="comparer2">The comparer used to compare values of the second type.</param>
+            <exception cref="T:System.ArgumentNullException">
+                <paramref name="comparer1" /> is <see langword="null" /> -or-
+                <paramref name="comparer2" /> is <see langword="null" />
+            </exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.BiDictionary`2.#ctor(System.Collections.Generic.IDictionary{`0,`1})">
+            <summary>Creates a new Bi-Dictionary from the given source map.</summary>
+            <param name="map">The source map.</param>
+            <exception cref="T:System.ArgumentException">Invalid source map.</exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.BiDictionary`2.#ctor(System.Collections.Generic.IDictionary{`0,`1},System.Collections.Generic.IEqualityComparer{`0},System.Collections.Generic.IEqualityComparer{`1})">
+            <summary>Creates a new Bi-Dictionary from the given source map.</summary>
+            <param name="map">The source map.</param>
+            <param name="comparer1">The comparer used to compare values of the first type.</param>
+            <param name="comparer2">The comparer used to compare values of the second type.</param>
+            <exception cref="T:System.ArgumentException">Invalid source map.</exception>
+            <exception cref="T:System.ArgumentNullException">
+                <paramref name="comparer1" /> is <see langword="null" /> -or-
+                <paramref name="comparer2" /> is <see langword="null" />
+            </exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.BiDictionary`2.#ctor(System.Collections.Generic.IDictionary{`1,`0})">
+            <summary>Creates a new Bi-Dictionary from the given source map.</summary>
+            <param name="map">The source map.</param>
+            <exception cref="T:System.ArgumentException">Invalid source map.</exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.BiDictionary`2.Clear">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.BiDictionary`2.Count">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.BiDictionary`2.IsReadOnly">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.BiDictionary`2.Value1">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.BiDictionary`2.Value2">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.BiDictionary`2.System#Collections#Generic#ICollection{System#Collections#Generic#KeyValuePair{TValue1,TValue2}}#Add(System.Collections.Generic.KeyValuePair{`0,`1})">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.BiDictionary`2.System#Collections#Generic#IDictionary{TValue1,TValue2}#ContainsKey(`0)">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.BiDictionary`2.System#Collections#Generic#IDictionary{TValue1,TValue2}#Add(`0,`1)">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.BiDictionary`2.System#Collections#Generic#IDictionary{TValue1,TValue2}#Keys">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.BiDictionary`2.System#Collections#Generic#IDictionary{TValue1,TValue2}#Values">
+            <inheritdoc />
+        </member>
+        <member name="T:PSUtility.Enumerables.Collection`1">
+            <summary>
+                The collection implements <see cref="T:System.Collections.Generic.ICollection`1" /> and <see cref="!:IReadOnlyCollection&lt;T&gt;" />. You can
+                wrap any standard collection inside of this collection or create a new one entirely.
+            </summary>
+            <typeparam name="T"></typeparam>
+        </member>
+        <member name="M:PSUtility.Enumerables.Collection`1.#ctor(System.Collections.Generic.IEnumerable{`0})">
+            <summary>
+                Creates a new collection from a given enumerable.
+            </summary>
+            <param name="collection">The enumerable.</param>
+        </member>
+        <member name="M:PSUtility.Enumerables.Collection`1.#ctor">
+            <summary>
+                Creates a new <see cref="T:PSUtility.Enumerables.Collection`1" />.
+            </summary>
+        </member>
+        <member name="M:PSUtility.Enumerables.Collection`1.GetCollection">
+            <summary>
+                Gets the collection wrapped inside of this wrapper.
+            </summary>
+            <returns>The collection.</returns>
+        </member>
+        <member name="M:PSUtility.Enumerables.Collection`1.GetEnumerator">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.Collection`1.System#Collections#IEnumerable#GetEnumerator">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.Collection`1.Add(`0)">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.Collection`1.Clear">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.Collection`1.CopyTo(`0[],System.Int32)">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.Collection`1.Remove(`0)">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.Collection`1.System#Collections#Generic#ICollection{T}#Count">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.Collection`1.IsReadOnly">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.Collection`1.Contains(`0)">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.Collection`1.Count">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.Collection`1.CopyTo(System.Array,System.Int32)">
+            <summary>
+                Copies the elements of this collection to an array.
+            </summary>
+            <param name="array">The array.</param>
+            <param name="index">The start index of the array.</param>
+            <exception cref="T:System.ArrayTypeMismatchException">
+                The type of the source <see cref="!:IReadOnlyCollection&lt;T&gt;" /> cannot be cast
+                automatically to the type of the destination <paramref name="array" />.
+            </exception>
+            <exception cref="T:System.RankException">The source array is multidimensional.</exception>
+            <exception cref="T:System.InvalidCastException">
+                At least one element in the source <see cref="T:System.Array" /> cannot be cast
+                to the type of destination <paramref name="array" />.
+            </exception>
+            <exception cref="T:System.ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
+            <exception cref="T:System.ArgumentException"><paramref name="array" /> is not long enough.</exception>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="index" /> is smaller than 0.</exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.Collection`1.CopyTo(PSUtility.Enumerables.Array{`0},System.Int32)">
+            <summary>
+                Copies the elements of this collection to an array.
+            </summary>
+            <param name="array">The array.</param>
+            <param name="index">The start index of the array.</param>
+            <exception cref="T:System.ArrayTypeMismatchException">
+                The type of the source <see cref="!:IReadOnlyCollection&lt;T&gt;" /> is not assignable from <typeparamref name="T" />.
+            </exception>
+            <exception cref="T:System.RankException">The source array is multidimensional.</exception>
+            <exception cref="T:System.InvalidCastException">
+                At least one element in the source <see cref="T:System.Array" /> cannot be cast
+                to <typeparamref name="T" />.
+            </exception>
+            <exception cref="T:System.ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
+            <exception cref="T:System.ArgumentException"><paramref name="array" /> is not long enough.</exception>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="index" /> is smaller than 0.</exception>
+        </member>
+        <member name="T:PSUtility.Enumerables.CollectionChangedType">
+            <summary>
+                The type of action performed.
+            </summary>
+        </member>
+        <member name="F:PSUtility.Enumerables.CollectionChangedType.None">
+            <summary>
+                No action was performed.
+            </summary>
+        </member>
+        <member name="F:PSUtility.Enumerables.CollectionChangedType.Add">
+            <summary>
+                One or multiple elements have been added.
+            </summary>
+        </member>
+        <member name="F:PSUtility.Enumerables.CollectionChangedType.Remove">
+            <summary>
+                One or multiple elements have been removed.
+            </summary>
+        </member>
+        <member name="F:PSUtility.Enumerables.CollectionChangedType.Modify">
+            <summary>
+            One or multiple elements have been modified.
+            </summary>
+        </member>
+        <member name="F:PSUtility.Enumerables.CollectionChangedType.Reset">
+            <summary>
+                The collection has been reset/massively changed.
+            </summary>
+        </member>
+        <member name="T:PSUtility.Enumerables.ComparisonUtility">
+            <summary>
+                Utility methods related to comparers and comparisons.
+            </summary>
+        </member>
+        <member name="M:PSUtility.Enumerables.ComparisonUtility.ToComparer``1(System.Comparison{``0})">
+            <summary>
+                Creates a comparer for the given comparison delegate.
+            </summary>
+            <typeparam name="T">The comparison type.</typeparam>
+            <param name="comparison">The comparison delegate.</param>
+            <returns>The comparer.</returns>
+        </member>
+        <member name="M:PSUtility.Enumerables.ComparisonUtility.ComparisonComparer`1.Compare(`0,`0)">
+            <inheritdoc />
+        </member>
+        <member name="T:PSUtility.Enumerables.CollectionChangedEventArgs">
+            <summary>
+                These event args are used to signify a change in a collection.
+            </summary>
+        </member>
+        <member name="M:PSUtility.Enumerables.CollectionChangedEventArgs.#ctor(PSUtility.Enumerables.CollectionChangedType,System.Collections.IList)">
+            <summary>
+                Creates new collection changed event arguments from the given parameters.
+            </summary>
+            <param name="action">The action that has been performed.</param>
+            <param name="changedItems">The modified items.</param>
+            <exception cref="T:System.ArgumentNullException"><paramref name="changedItems" /> is <see langword="null" /></exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.CollectionChangedEventArgs.#ctor(PSUtility.Enumerables.CollectionChangedType,System.Object[])">
+            <summary>
+                Creates new collection changed event arguments from the given parameters.
+            </summary>
+            <param name="action">The action that has been performed.</param>
+            <param name="changedItems">The modified items.</param>
+            <exception cref="T:System.ArgumentNullException"><paramref name="changedItems" /> is <see langword="null" /></exception>
+        </member>
+        <member name="P:PSUtility.Enumerables.CollectionChangedEventArgs.ChangedItems">
+            <summary>
+                The modified items.
+            </summary>
+        </member>
+        <member name="P:PSUtility.Enumerables.CollectionChangedEventArgs.Action">
+            <summary>
+                The action that has been performed.
+            </summary>
+        </member>
+        <member name="M:PSUtility.Enumerables.CollectionChangedEventArgs.Reset">
+            <summary>
+                Obtains new collection changed event args for resetting a collection.
+            </summary>
+            <returns>The event args.</returns>
+        </member>
+        <member name="M:PSUtility.Enumerables.CollectionChangedEventArgs.Reset(System.Collections.IList)">
+            <summary>
+                Obtains new collection changed event args for resetting a collection.
+            </summary>
+            <param name="items">The changed items.</param>
+            <returns>The event args.</returns>
+        </member>
+        <member name="M:PSUtility.Enumerables.CollectionChangedEventArgs.Reset(System.Object[])">
+            <summary>
+                Obtains new collection changed event args for resetting a collection.
+            </summary>
+            <param name="items">The changed items.</param>
+            <returns>The event args.</returns>
+        </member>
+        <member name="M:PSUtility.Enumerables.CollectionChangedEventArgs.Add(System.Object[])">
+            <summary>
+                Obtains new collection changed event args for addings item to the collection.
+            </summary>
+            <param name="items">The added items.</param>
+            <returns>The event args.</returns>
+        </member>
+        <member name="M:PSUtility.Enumerables.CollectionChangedEventArgs.Add(System.Collections.IList)">
+            <summary>
+                Obtains new collection changed event args for addings item to the collection.
+            </summary>
+            <param name="items">The added items.</param>
+            <returns>The event args.</returns>
+        </member>
+        <member name="M:PSUtility.Enumerables.CollectionChangedEventArgs.Remove(System.Object[])">
+            <summary>
+                Obtains new collection changed event args for removing item from the collection.
+            </summary>
+            <param name="items">The removed items.</param>
+            <returns>The event args.</returns>
+        </member>
+        <member name="M:PSUtility.Enumerables.CollectionChangedEventArgs.Remove(System.Collections.IList)">
+            <summary>
+                Obtains new collection changed event args for removing item from the collection.
+            </summary>
+            <param name="items">The removed items.</param>
+            <returns>The event args.</returns>
+        </member>
+        <member name="T:PSUtility.Enumerables.MultiDictionary`2">
+            <summary>
+                A MultiDictionary associates multiple values with a single key. Use a multi dicitonary in cases in which a
+                <see cref="T:System.Collections.Generic.IDictionary`2" /> which an <see cref="T:System.Collections.Generic.IList`1" /> as value would have been used. The
+                dictionary automatically creates the value lists when you try to access them. The only exception to this is the
+                <see cref="M:PSUtility.Enumerables.MultiDictionary`2.TryGetValue(`0,System.Collections.Generic.IList{`1}@)" /> method.
+            </summary>
+            <typeparam name="TKey">The key type.</typeparam>
+            <typeparam name="TValues">The type of all values.</typeparam>
+        </member>
+        <member name="M:PSUtility.Enumerables.MultiDictionary`2.#ctor">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.MultiDictionary`2.#ctor(System.Collections.Generic.IEqualityComparer{`0})">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.MultiDictionary`2.Keys">
+            <summary>
+                All keys of this dictionary.
+            </summary>
+        </member>
+        <member name="M:PSUtility.Enumerables.MultiDictionary`2.GetEnumerator">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.MultiDictionary`2.System#Collections#IEnumerable#GetEnumerator">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.MultiDictionary`2.System#Collections#Generic#ICollection{System#Collections#Generic#KeyValuePair{TKey,System#Collections#Generic#IList{TValues}}}#Add(System.Collections.Generic.KeyValuePair{`0,System.Collections.Generic.IList{`1}})">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.MultiDictionary`2.Clear">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.MultiDictionary`2.System#Collections#Generic#ICollection{System#Collections#Generic#KeyValuePair{TKey,System#Collections#Generic#IList{TValues}}}#Contains(System.Collections.Generic.KeyValuePair{`0,System.Collections.Generic.IList{`1}})">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.MultiDictionary`2.CopyTo(System.Collections.Generic.KeyValuePair{`0,System.Collections.Generic.IList{`1}}[],System.Int32)">
+            <inheritdoc />
+            <param name="array">The array.</param>
+            <param name="arrayIndex">The start index of the array.</param>
+            <exception cref="T:System.ArrayTypeMismatchException">
+                The type of the source <see cref="T:PSUtility.Enumerables.MultiDictionary`2" /> cannot be cast
+                automatically to the type of the destination <paramref name="array" />.
+            </exception>
+            <exception cref="T:System.RankException">The source array is multidimensional.</exception>
+            <exception cref="T:System.InvalidCastException">
+                At least one element in the source <see cref="T:System.Array" /> cannot be cast
+                to the type of destination <paramref name="array" />.
+            </exception>
+            <exception cref="T:System.ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
+            <exception cref="T:System.ArgumentException"><paramref name="array" /> is not long enough.</exception>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="index" /> is smaller than 0.</exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.MultiDictionary`2.System#Collections#Generic#ICollection{System#Collections#Generic#KeyValuePair{TKey,System#Collections#Generic#IList{TValues}}}#Remove(System.Collections.Generic.KeyValuePair{`0,System.Collections.Generic.IList{`1}})">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.MultiDictionary`2.Count">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.MultiDictionary`2.IsReadOnly">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.MultiDictionary`2.ContainsKey(`0)">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.MultiDictionary`2.System#Collections#Generic#IDictionary{TKey,System#Collections#Generic#IList{TValues}}#Add(`0,System.Collections.Generic.IList{`1})">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.MultiDictionary`2.Remove(`0)">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.MultiDictionary`2.TryGetValue(`0,System.Collections.Generic.IList{`1}@)">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.MultiDictionary`2.Item(`0)">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.MultiDictionary`2.System#Collections#Generic#IDictionary{TKey,System#Collections#Generic#IList{TValues}}#Keys">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.MultiDictionary`2.System#Collections#Generic#IDictionary{TKey,System#Collections#Generic#IList{TValues}}#Values">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.MultiDictionary`2.AddRange(`0,System.Collections.Generic.IEnumerable{`1})">
+            <summary>
+                Adds several new items to the dictionary.
+            </summary>
+            <param name="key">The item key.</param>
+            <param name="values">The values to add.</param>
+        </member>
+        <member name="M:PSUtility.Enumerables.MultiDictionary`2.Add(`0,`1)">
+            <summary>
+                Adds a single new item to the dictionary.
+            </summary>
+            <param name="key">The item key.</param>
+            <param name="value">The value.</param>
+        </member>
+        <member name="M:PSUtility.Enumerables.MultiDictionary`2.GetFlatCount">
+            <summary>
+                Gets how many items are in this dictionary in total. This requires iteration through all keys.
+            </summary>
+            <returns>The item count.</returns>
+        </member>
+        <member name="M:PSUtility.Enumerables.MultiDictionary`2.AddRange(`0,`1[])">
+            <summary>
+                Adds several new items to the dictionary.
+            </summary>
+            <param name="key">The item key.</param>
+            <param name="value">The values to add.</param>
+        </member>
+        <member name="M:PSUtility.Enumerables.MultiDictionary`2.ReadOnlyImpl.#ctor(PSUtility.Enumerables.MultiDictionary{`0,`1})">
+            <inheritdoc />
+            <exception cref="T:System.ArgumentNullException"><paramref name="dictionary" /> is <see langword="null" /></exception>
+        </member>
+        <member name="P:PSUtility.Enumerables.MultiDictionary`2.ReadOnlyImpl.Count">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.MultiDictionary`2.ReadOnlyImpl.Item(`0)">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.MultiDictionary`2.ReadOnlyImpl.Keys">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.MultiDictionary`2.ReadOnlyImpl.Values">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.MultiDictionary`2.ReadOnlyImpl.GetEnumerator">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.MultiDictionary`2.ReadOnlyImpl.ContainsKey(`0)">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.MultiDictionary`2.ReadOnlyImpl.TryGetValue(`0,PSUtility.Enumerables.ReadOnlyList{`1}@)">
+            <inheritdoc />
+        </member>
+        <member name="T:PSUtility.Enumerables.ObservableList`1">
+            <summary>
+                The observable list allows you to track all modifications done to it using a simple event.
+            </summary>
+            <typeparam name="T">The list type.</typeparam>
+        </member>
+        <member name="F:PSUtility.Enumerables.ObservableList`1.m_List">
+            <summary>
+                The backing list.
+            </summary>
+        </member>
+        <member name="M:PSUtility.Enumerables.ObservableList`1.#ctor">
+            <summary>
+                Creates a new empty obserable list.
+            </summary>
+        </member>
+        <member name="M:PSUtility.Enumerables.ObservableList`1.#ctor(System.Int32)">
+            <summary>
+                Creates a new empty obserable list with the given capcity.
+            </summary>
+            <param name="capacity">The capacity</param>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+                    <paramref name="capacity" /> is less than 0. </exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.ObservableList`1.#ctor(System.Collections.Generic.IEnumerable{`0})">
+            <summary>
+                Creates a new obserable list fiiled with the given elements.
+            </summary>
+            <param name="collection">The elements</param>
+            <exception cref="T:System.ArgumentNullException">
+                    <paramref name="collection" /> is null.</exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.ObservableList`1.System#Collections#ICollection#CopyTo(System.Array,System.Int32)">
+            <inheritdoc />
+            <param name="array">The array.</param>
+            <param name="index">The start index of the array.</param>
+            <exception cref="T:System.ArrayTypeMismatchException">
+                The type of the source <see cref="T:PSUtility.Enumerables.ObservableList`1" /> cannot be cast
+                automatically to the type of the destination <paramref name="array" />.
+            </exception>
+            <exception cref="T:System.RankException">The source array is multidimensional.</exception>
+            <exception cref="T:System.InvalidCastException">
+                At least one element in the source <see cref="T:System.Array" /> cannot be cast
+                to the type of destination <paramref name="array" />.
+            </exception>
+            <exception cref="T:System.ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
+            <exception cref="T:System.ArgumentException"><paramref name="array" /> is not long enough.</exception>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="index" /> is smaller than 0.</exception>
+        </member>
+        <member name="P:PSUtility.Enumerables.ObservableList`1.SyncRoot">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.ObservableList`1.IsSynchronized">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ObservableList`1.System#Collections#IList#Add(System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ObservableList`1.System#Collections#IList#Contains(System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ObservableList`1.System#Collections#IList#IndexOf(System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ObservableList`1.System#Collections#IList#Insert(System.Int32,System.Object)">
+            <inheritdoc />
+            <exception cref="T:System.NullReferenceException">
+                <paramref name="value" /> is null reference in the <see cref="T:System.Collections.IList" />.
+            </exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.ObservableList`1.System#Collections#IList#Remove(System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.ObservableList`1.System#Collections#IList#Item(System.Int32)">
+            <inheritdoc />
+            <exception cref="T:System.ArgumentOutOfRangeException" accessor="set"><paramref name="value" /> is out of range.</exception>
+        </member>
+        <member name="P:PSUtility.Enumerables.ObservableList`1.IsFixedSize">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ObservableList`1.GetEnumerator">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ObservableList`1.System#Collections#IEnumerable#GetEnumerator">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ObservableList`1.Add(`0)">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ObservableList`1.Clear">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ObservableList`1.Contains(`0)">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ObservableList`1.CopyTo(`0[],System.Int32)">
+            <inheritdoc />
+            <param name="array">The array.</param>
+            <param name="arrayIndex">The start index of the array.</param>
+            <exception cref="T:System.ArrayTypeMismatchException">
+                The type of the source <see cref="T:PSUtility.Enumerables.ObservableList`1" /> cannot be cast
+                automatically to the type of the destination <paramref name="array" />.
+            </exception>
+            <exception cref="T:System.RankException">The source array is multidimensional.</exception>
+            <exception cref="T:System.InvalidCastException">
+                At least one element in the source <see cref="T:System.Array" /> cannot be cast
+                to the type of destination <paramref name="array" />.
+            </exception>
+            <exception cref="T:System.ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
+            <exception cref="T:System.ArgumentException"><paramref name="array" /> is not long enough.</exception>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="arrayIndex" /> is smaller than 0.</exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.ObservableList`1.Remove(`0)">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.ObservableList`1.Count">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.ObservableList`1.IsReadOnly">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ObservableList`1.IndexOf(`0)">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ObservableList`1.Insert(System.Int32,`0)">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ObservableList`1.RemoveAt(System.Int32)">
+            <inheritdoc />
+            <exception cref="T:System.ArgumentOutOfRangeException">
+                <param name="index"></param>
+                is out of range.
+            </exception>
+        </member>
+        <member name="P:PSUtility.Enumerables.ObservableList`1.Item(System.Int32)">
+            <inheritdoc />
+            <exception cref="T:System.ArgumentOutOfRangeException">
+                <param name="index"></param>
+                is out of range.
+            </exception>
+        </member>
+        <member name="E:PSUtility.Enumerables.ObservableList`1.CollectionChanged">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ObservableList`1.AsReadOnly">
+            <summary>
+                Returns a read only list of this obserable list.
+            </summary>
+            <returns>The read only list.</returns>
+        </member>
+        <member name="T:PSUtility.Enumerables.PSDictionary`2">
+            <summary>
+                This <see cref="T:PSUtility.Enumerables.PSDictionary`2" /> extends
+                <see cref="T:System.Collections.Generic.Dictionary`2" /> and implements
+                <see cref="!:IReadOnlyDictionary&lt;TKey,TValue&gt;" />.
+            </summary>
+            <typeparam name="TKey">The key type.</typeparam>
+            <typeparam name="TValue">The value type.</typeparam>
+        </member>
+        <member name="M:PSUtility.Enumerables.PSDictionary`2.#ctor">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.PSDictionary`2.#ctor(System.Int32)">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.PSDictionary`2.#ctor(System.Collections.Generic.IEqualityComparer{`0})">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.PSDictionary`2.#ctor(System.Int32,System.Collections.Generic.IEqualityComparer{`0})">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.PSDictionary`2.#ctor(System.Collections.Generic.IDictionary{`0,`1})">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.PSDictionary`2.#ctor(System.Collections.Generic.IDictionary{`0,`1},System.Collections.Generic.IEqualityComparer{`0})">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.PSDictionary`2.#ctor(System.Runtime.Serialization.SerializationInfo,System.Runtime.Serialization.StreamingContext)">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.PSDictionary`2.Keys">
+            <summary>
+                All keys in this dictionary. The collection updated automatically.
+            </summary>
+        </member>
+        <member name="P:PSUtility.Enumerables.PSDictionary`2.Values">
+            <summary>
+                All values in this dictionary. The collection updated automatically.
+            </summary>
+        </member>
+        <member name="P:PSUtility.Enumerables.PSDictionary`2.SyncRoot">
+            <summary>
+                The sync root for threaded access.
+            </summary>
+        </member>
+        <member name="M:PSUtility.Enumerables.PSDictionary`2.AsReadOnly">
+            <summary>
+                Gets a read only version of this dictionary. The instance is cahed. This means that only one read only instance per
+                dictionary will be created this way. If you need a different instance you need to wrap it manually.
+            </summary>
+            <returns>The read only dictionary.</returns>
+        </member>
+        <member name="M:PSUtility.Enumerables.PSDictionary`2.Contains(System.Collections.Generic.KeyValuePair{`0,`1})">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.PSDictionary`2.CopyTo(System.Array,System.Int32)">
+            <inheritdoc />
+            <exception cref="T:System.ArrayTypeMismatchException">
+                The type of the source <see cref="T:System.Array" /> cannot be cast
+                automatically to the type of the destination <paramref name="array" />.
+            </exception>
+            <exception cref="T:System.RankException">The source array is multidimensional.</exception>
+            <exception cref="T:System.InvalidCastException">
+                At least one element in the source <see cref="T:System.Array" /> cannot be cast
+                to the type of destination <paramref name="array" />.
+            </exception>
+            <exception cref="T:System.ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
+            <exception cref="T:System.ArgumentException">
+                <paramref name="array" /> is not long enough. -or- <paramref name="index" /> is
+                smaller than 0.
+            </exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.PSDictionary`2.CopyTo(PSUtility.Enumerables.Array{System.Collections.Generic.KeyValuePair{`0,`1}},System.Int32)">
+            <summary>
+                Copies the elements of this collection to an array.
+            </summary>
+            <param name="array">The array.</param>
+            <param name="index">The start index of the array.</param>
+            <exception cref="T:System.ArrayTypeMismatchException">
+                The type of the source <see cref="T:System.Array" /> is not assignable from
+                <see cref="T:System.Collections.Generic.KeyValuePair`2" />.
+            </exception>
+            <exception cref="T:System.RankException">The source array is multidimensional.</exception>
+            <exception cref="T:System.InvalidCastException">
+                At least one element in the source <see cref="T:System.Array" /> cannot be cast
+                to <see cref="T:System.Collections.Generic.KeyValuePair`2" />.
+            </exception>
+            <exception cref="T:System.ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
+            <exception cref="T:System.ArgumentException"><paramref name="array" /> is not long enough.</exception>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="index" /> is smaller than 0.</exception>
+        </member>
+        <member name="T:PSUtility.Enumerables.EmptyArray`1">
+            <summary>
+                Useful in number of places that return an empty byte array to avoid unnecessary memory allocation.
+            </summary>
+            <typeparam name="T">The array type.</typeparam>
+        </member>
+        <member name="F:PSUtility.Enumerables.EmptyArray`1.Value">
+            <summary>
+                The array instance.
+            </summary>
+        </member>
+        <member name="T:PSUtility.Enumerables.EnumerableUtility">
+            <summary>
+                Extension and utility methods for the <see cref="T:System.Collections.Generic.IEnumerable`1" /> interface.
+            </summary>
+        </member>
+        <member name="M:PSUtility.Enumerables.EnumerableUtility.Lock``1(PSUtility.Enumerables.PSList{``0},System.Action{PSUtility.Enumerables.PSList{``0}})">
+            <summary>
+                Locks onto the sync root and calls a function.
+            </summary>
+            <typeparam name="T">The list type.</typeparam>
+            <param name="list">The list.</param>
+            <param name="func">The function to invoke once the list has been locked.</param>
+            <returns>The enumerable.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="list" /> is <see langword="null" /></exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.EnumerableUtility.Lock``1(PSUtility.Enumerables.ReadOnlyList{``0},System.Action{PSUtility.Enumerables.ReadOnlyList{``0}})">
+            <summary>
+                Locks onto the sync root and calls a function.
+            </summary>
+            <typeparam name="T">The list type.</typeparam>
+            <param name="list">The list.</param>
+            <returns>The enumerable.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="list" /> is <see langword="null" /></exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.EnumerableUtility.Lock``2(PSUtility.Enumerables.PSList{``0},System.Func{PSUtility.Enumerables.PSList{``0},``1})">
+            <summary>
+                Locks onto the sync root and calls a function.
+            </summary>
+            <typeparam name="T">The list type.</typeparam>
+            <typeparam name="TResult">The result type.</typeparam>
+            <param name="list">The list.</param>
+            <param name="func">The function to invoke once the list has been locked.</param>
+            <returns>The enumerable.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="list" /> is <see langword="null" /></exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.EnumerableUtility.Lock``2(PSUtility.Enumerables.ReadOnlyList{``0},System.Func{PSUtility.Enumerables.ReadOnlyList{``0},``1})">
+            <summary>
+                Locks onto the sync root and calls a function.
+            </summary>
+            <typeparam name="T">The list type.</typeparam>
+            <typeparam name="TResult">The result type.</typeparam>
+            <param name="list">The list.</param>
+            <returns>The enumerable.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="list" /> is <see langword="null" /></exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.EnumerableUtility.Lock``1(PSUtility.Enumerables.PSList{``0})">
+            <summary>
+                Locks onto the sync root and iterates the collection. Only useful for deferred execution.
+            </summary>
+            <typeparam name="T">The list type.</typeparam>
+            <param name="list">The list.</param>
+            <returns>The enumerable.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="list" /> is <see langword="null" /></exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.EnumerableUtility.Lock``1(PSUtility.Enumerables.ReadOnlyList{``0})">
+            <summary>
+                Locks onto the sync root and iterates the collection. Only useful for deferred execution.
+            </summary>
+            <typeparam name="T">The list type.</typeparam>
+            <param name="list">The list.</param>
+            <returns>The enumerable.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="list" /> is <see langword="null" /></exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.EnumerableUtility.IndexOrDefault``1(System.Collections.Generic.IList{``0},System.Int32,``0)">
+            <summary>
+                Either indexes the list at the given index or returns the defualt value if it is not possible.
+            </summary>
+            <typeparam name="T">List type.</typeparam>
+            <param name="list">The list.</param>
+            <param name="index">The index.</param>
+            <param name="defValue">The default value.</param>
+            <returns>The value.</returns>
+        </member>
+        <member name="M:PSUtility.Enumerables.EnumerableUtility.IndexOrDefault``1(PSUtility.Enumerables.ReadOnlyList{``0},System.Int32,``0)">
+            <summary>
+                Either indexes the list at the given index or returns the defualt value if it is not possible.
+            </summary>
+            <typeparam name="T">List type.</typeparam>
+            <param name="list">The list.</param>
+            <param name="index">The index.</param>
+            <param name="defValue">The default value.</param>
+            <returns>The value.</returns>
+        </member>
+        <member name="M:PSUtility.Enumerables.EnumerableUtility.Concat``1(System.Collections.Generic.IEnumerable{``0},``0[])">
+            <summary>
+                Concatenates two sequences.
+            </summary>
+            <param name="first">The first sequence to concatenate.</param>
+            <param name="second">The sequence to concatenate to the first sequence. </param>
+            <typeparam name="TSource">TSource:  The type of the elements of the input sequences. </typeparam>
+            <returns>An <see cref="T:System.Collections.Generic.IEnumerable`1" /> that contains the concatenated elements of the two input sequences.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="first" /> or <paramref name="second" /> is null.</exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.EnumerableUtility.JoinToString``1(System.Collections.Generic.IEnumerable{``0},System.String)">
+            <summary>
+                Converts an enumerable of objects to a string using the <see cref="M:System.Object.ToString" /> method.
+            </summary>
+            <typeparam name="T">The object type.</typeparam>
+            <param name="separator">The separator between values.</param>
+            <param name="enumerable">The enumerable to convert.</param>
+            <returns>The joined string.</returns>
+            <seealso cref="M:PSUtility.Enumerables.EnumerableUtility.JoinToString``1(System.Collections.Generic.IEnumerable{``0},System.String,System.Func{``0,System.String})" />
+        </member>
+        <member name="M:PSUtility.Enumerables.EnumerableUtility.JoinToString``1(System.Collections.Generic.IEnumerable{``0},System.String,System.Func{``0,System.String})">
+            <summary>
+                Converts an enumerable of objects to a string using a conversion delegate.
+            </summary>
+            <typeparam name="T">The object type.</typeparam>
+            <param name="separator">The separator between values.</param>
+            <param name="enumerable">The enumerable to convert.</param>
+            <param name="obtainer">The delegate used to convert.</param>
+            <returns>The joined string.</returns>
+            <seealso cref="M:PSUtility.Enumerables.EnumerableUtility.JoinToString``1(System.Collections.Generic.IEnumerable{``0},System.String)" />
+        </member>
+        <member name="M:PSUtility.Enumerables.EnumerableUtility.JoinToString``1(System.Collections.Generic.IEnumerable{``0},System.Func{``0,System.String})">
+            <summary>
+                Converts an enumerable of objects to a string using a conversion delegate.
+            </summary>
+            <typeparam name="T">The object type.</typeparam>
+            <param name="enumerable">The enumerable to convert.</param>
+            <param name="obtainer">The delegate used to convert.</param>
+            <returns>The joined string.</returns>
+            <seealso cref="M:PSUtility.Enumerables.EnumerableUtility.JoinToString``1(System.Collections.Generic.IEnumerable{``0},System.String)" />
+        </member>
+        <member name="M:PSUtility.Enumerables.EnumerableUtility.RemoveWhere``1(System.Collections.Generic.ICollection{``0},System.Func{``0,System.Boolean})">
+            <summary>
+                Removes all elements matching the predicate from this collection.
+            </summary>
+            <typeparam name="T">The collection type.</typeparam>
+            <param name="collection">The collection to remove from.</param>
+            <param name="predicate">The removal predicate.</param>
+            <returns>The amount of elements removed.</returns>
+        </member>
+        <member name="M:PSUtility.Enumerables.EnumerableUtility.FindIndex``1(System.Collections.Generic.IEnumerable{``0},System.Func{``0,System.Boolean})">
+            <summary>
+                Finds the first index in the enumerable matching the given predicate.
+            </summary>
+            <typeparam name="T">The value type.</typeparam>
+            <param name="enumerable">The enumerable.</param>
+            <param name="predicate">The predicate to use for matches.</param>
+            <returns>The index.</returns>
+            <remarks>Keep in mind that this method only makes sense on enumerables with consistent indexing.</remarks>
+        </member>
+        <member name="M:PSUtility.Enumerables.PSHashSet`1.AddRange(System.Collections.Generic.IEnumerable{`0})">
+            <summary>
+                Adds a range of items to this hash set.
+            </summary>
+            <param name="items">The items to add.</param>
+            <returns>The amount of items added.</returns>
+        </member>
+        <member name="T:PSUtility.Enumerables.PSList`1">
+            <summary>
+                This list type extends the <see cref="T:System.Collections.Generic.List`1" /> and provides several additional
+                extensions and helpers making your life easier.
+            </summary>
+            <typeparam name="T">The list type.</typeparam>
+        </member>
+        <member name="M:PSUtility.Enumerables.PSList`1.#ctor">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.PSList`1.#ctor(System.Int32)">
+            <inheritdoc />
+            <exception cref="T:System.ArgumentOutOfRangeException">
+                <paramref name="capacity" /> is less than 0.
+            </exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.PSList`1.#ctor(System.Collections.Generic.IEnumerable{`0})">
+            <inheritdoc />
+            <exception cref="T:System.ArgumentNullException">
+                <paramref name="collection" /> is null.
+            </exception>
+        </member>
+        <member name="P:PSUtility.Enumerables.PSList`1.SyncRoot">
+            <summary>
+                The sync root for thread safe access.
+            </summary>
+        </member>
+        <member name="M:PSUtility.Enumerables.PSList`1.AsReadOnly">
+            <summary>
+                Gets a read only list representing this list. The list is updated automatically. Only one rad only list per list
+                exists. If you need a new reference your need to wrap the list yourself.
+            </summary>
+            <returns>The read only list.</returns>
+        </member>
+        <member name="M:PSUtility.Enumerables.PSList`1.CopyTo(System.Array,System.Int32)">
+            <summary>
+                Copies the elements of this collection to an array.
+            </summary>
+            <param name="array">The array.</param>
+            <param name="index">The start index of the array.</param>
+            <exception cref="T:System.ArrayTypeMismatchException">
+                The type of the source <see cref="T:PSUtility.Enumerables.PSList`1" /> cannot be cast
+                automatically to the type of the destination <paramref name="array" />.
+            </exception>
+            <exception cref="T:System.RankException">The source array is multidimensional.</exception>
+            <exception cref="T:System.InvalidCastException">
+                At least one element in the source <see cref="T:System.Array" /> cannot be cast
+                to the type of destination <paramref name="array" />.
+            </exception>
+            <exception cref="T:System.ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
+            <exception cref="T:System.ArgumentException"><paramref name="array" /> is not long enough.</exception>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="index" /> is smaller than 0.</exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.PSList`1.CopyTo(PSUtility.Enumerables.Array{`0},System.Int32)">
+            <summary>
+                Copies the elements of this collection to an array.
+            </summary>
+            <param name="array">The array.</param>
+            <param name="index">The start index of the array.</param>
+            <exception cref="T:System.ArrayTypeMismatchException">
+                The type of the source <see cref="T:PSUtility.Enumerables.PSList`1" /> is not assignable from <typeparamref name="T" />.
+            </exception>
+            <exception cref="T:System.RankException">The source array is multidimensional.</exception>
+            <exception cref="T:System.InvalidCastException">
+                At least one element in the source <see cref="T:System.Array" /> cannot be cast
+                to <typeparamref name="T" />.
+            </exception>
+            <exception cref="T:System.ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
+            <exception cref="T:System.ArgumentException"><paramref name="array" /> is not long enough.</exception>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="index" /> is smaller than 0.</exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.ListCollectionWrapper.FromType(System.Type)">
+            <exception cref="T:System.ArgumentException"><paramref name="type"/> implements neither <see cref="T:System.Collections.IList"/> or <see cref="T:System.Collections.Generic.ICollection`1"/>.</exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.ListCollectionWrapper.ListImpl.GetEnumerator">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ListCollectionWrapper.ListImpl.CopyTo(System.Array,System.Int32)">
+            <summary>
+                Copies the elements of this collection to an array.
+            </summary>
+            <param name="array">The array.</param>
+            <param name="index">The start index of the array.</param>
+            <exception cref="T:System.ArrayTypeMismatchException">
+                The type of the source <see cref="!:IReadOnlyCollection&lt;T&gt;" /> cannot be cast
+                automatically to the type of the destination <paramref name="array" />.
+            </exception>
+            <exception cref="T:System.RankException">The source array is multidimensional.</exception>
+            <exception cref="T:System.InvalidCastException">
+                At least one element in the source <see cref="T:System.Array" /> cannot be cast
+                to the type of destination <paramref name="array" />.
+            </exception>
+            <exception cref="T:System.ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
+            <exception cref="T:System.ArgumentException"><paramref name="array" /> is not long enough.</exception>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="index" /> is smaller than 0.</exception>
+        </member>
+        <member name="P:PSUtility.Enumerables.ListCollectionWrapper.ListImpl.Count">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.ListCollectionWrapper.ListImpl.SyncRoot">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.ListCollectionWrapper.ListImpl.IsSynchronized">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.ListCollectionWrapper.ListImpl.IsReadOnly">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ListCollectionWrapper.ListImpl.Add(System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ListCollectionWrapper.ListImpl.Clear">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ListCollectionWrapper.ListImpl.Contains(System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ListCollectionWrapper.ListImpl.Remove(System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ListCollectionWrapper.ListImpl.System#Collections#Generic#IEnumerable{System#Object}#GetEnumerator">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ListCollectionWrapper.ListImpl.CopyTo(System.Object[],System.Int32)">
+            <summary>
+                Copies the elements of this collection to an array.
+            </summary>
+            <param name="array">The array.</param>
+            <param name="arrayIndex">The start index of the array.</param>
+            <exception cref="T:System.ArrayTypeMismatchException">
+                The type of the source <see cref="!:IReadOnlyCollection&lt;T&gt;" /> cannot be cast
+                automatically to the type of the destination <paramref name="array" />.
+            </exception>
+            <exception cref="T:System.RankException">The source array is multidimensional.</exception>
+            <exception cref="T:System.InvalidCastException">
+                At least one element in the source <see cref="T:System.Array" /> cannot be cast
+                to the type of destination <paramref name="array" />.
+            </exception>
+            <exception cref="T:System.ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
+            <exception cref="T:System.ArgumentException"><paramref name="array" /> is not long enough.</exception>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="arrayIndex" /> is smaller than 0.</exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.ListCollectionWrapper.CollectionImpl`1.GetEnumerator">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ListCollectionWrapper.CollectionImpl`1.CopyTo(System.Array,System.Int32)">
+            <summary>
+                Copies the elements of this collection to an array.
+            </summary>
+            <param name="array">The array.</param>
+            <param name="index">The start index of the array.</param>
+            <exception cref="T:System.ArrayTypeMismatchException">
+                The type of the source <see cref="!:IReadOnlyCollection&lt;T&gt;" /> cannot be cast
+                automatically to the type of the destination <paramref name="array" />.
+            </exception>
+            <exception cref="T:System.RankException">The source array is multidimensional.</exception>
+            <exception cref="T:System.InvalidCastException">
+                At least one element in the source <see cref="T:System.Array" /> cannot be cast
+                to the type of destination <paramref name="array" />.
+            </exception>
+            <exception cref="T:System.ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
+            <exception cref="T:System.ArgumentException"><paramref name="array" /> is not long enough.</exception>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="index" /> is smaller than 0.</exception>
+        </member>
+        <member name="P:PSUtility.Enumerables.ListCollectionWrapper.CollectionImpl`1.Count">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.ListCollectionWrapper.CollectionImpl`1.SyncRoot">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.ListCollectionWrapper.CollectionImpl`1.IsSynchronized">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.ListCollectionWrapper.CollectionImpl`1.IsReadOnly">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ListCollectionWrapper.CollectionImpl`1.Add(System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ListCollectionWrapper.CollectionImpl`1.Clear">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ListCollectionWrapper.CollectionImpl`1.Contains(System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ListCollectionWrapper.CollectionImpl`1.Remove(System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ListCollectionWrapper.CollectionImpl`1.System#Collections#Generic#IEnumerable{System#Object}#GetEnumerator">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ListCollectionWrapper.CollectionImpl`1.CopyTo(System.Object[],System.Int32)">
+            <summary>
+                Copies the elements of this collection to an array.
+            </summary>
+            <param name="array">The array.</param>
+            <param name="arrayIndex">The start index of the array.</param>
+            <exception cref="T:System.ArrayTypeMismatchException">
+                The type of the source <see cref="!:IReadOnlyCollection&lt;T&gt;" /> cannot be cast
+                automatically to the type of the destination <paramref name="array" />.
+            </exception>
+            <exception cref="T:System.RankException">The source array is multidimensional.</exception>
+            <exception cref="T:System.InvalidCastException">
+                At least one element in the source <see cref="T:System.Array" /> cannot be cast
+                to the type of destination <paramref name="array" />.
+            </exception>
+            <exception cref="T:System.ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
+            <exception cref="T:System.ArgumentException"><paramref name="array" /> is not long enough.</exception>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="arrayIndex" /> is smaller than 0.</exception>
+        </member>
+        <member name="T:PSUtility.Enumerables.NamespaceDoc">
+            <summary>
+                This namespace contains utility classes related or directly implementing enumerables.
+            </summary>
+        </member>
+        <member name="T:PSUtility.Enumerables.ObservableCollection`1">
+            <summary>
+                A collection providing an
+            </summary>
+            <typeparam name="T"></typeparam>
+        </member>
+        <member name="M:PSUtility.Enumerables.ObservableCollection`1.#ctor">
+            <summary>
+                Creates a new empty oberable collection.
+            </summary>
+        </member>
+        <member name="M:PSUtility.Enumerables.ObservableCollection`1.#ctor(System.Collections.Generic.IEnumerable{`0})">
+            <summary>
+                Creates a new obserable collection containing all elements in the given enumerable.
+            </summary>
+            <param name="enumerable">The enumerable.</param>
+        </member>
+        <member name="M:PSUtility.Enumerables.ObservableCollection`1.GetEnumerator">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ObservableCollection`1.System#Collections#IEnumerable#GetEnumerator">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ObservableCollection`1.Add(`0)">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ObservableCollection`1.Clear">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ObservableCollection`1.Contains(`0)">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ObservableCollection`1.CopyTo(`0[],System.Int32)">
+            <inheritdoc />
+            <param name="array">The array.</param>
+            <param name="arrayIndex">The start index of the array.</param>
+            <exception cref="T:System.ArrayTypeMismatchException">
+                The type of the source <see cref="!:IReadOnlyCollection&lt;T&gt;" /> cannot be cast
+                automatically to the type of the destination <paramref name="array" />.
+            </exception>
+            <exception cref="T:System.RankException">The source array is multidimensional.</exception>
+            <exception cref="T:System.InvalidCastException">
+                At least one element in the source <see cref="T:System.Array" /> cannot be cast
+                to the type of destination <paramref name="array" />.
+            </exception>
+            <exception cref="T:System.ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
+            <exception cref="T:System.ArgumentException"><paramref name="array" /> is not long enough.</exception>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="arrayIndex" /> is smaller than 0.</exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.ObservableCollection`1.Remove(`0)">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.ObservableCollection`1.Count">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.ObservableCollection`1.IsReadOnly">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ObservableCollection`1.Wrap(System.Collections.Generic.ICollection{`0})">
+            <summary>
+                Wraps an already existing collection into an observable collection. Any modifcation done to this collection outside
+                of the obserable collection will not raise events.
+            </summary>
+            <param name="wrap">The collection to wrap.</param>
+            <returns>The obserable collection.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="wrap" /> is <see langword="null" /></exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.ObservableCollection`1.AsReadOnly">
+            <summary>
+                Returns a read only collection representing this read only collection.
+            </summary>
+            <returns>The read onyl collection.</returns>
+        </member>
+        <member name="M:PSUtility.Enumerables.ObservableCollection`1.CopyTo(System.Array,System.Int32)">
+            <inheritdoc />
+            <param name="array">The array.</param>
+            <param name="index">The start index of the array.</param>
+            <exception cref="T:System.ArrayTypeMismatchException">
+                The type of the source <see cref="!:IReadOnlyCollection&lt;T&gt;" /> cannot be cast
+                automatically to the type of the destination <paramref name="array" />.
+            </exception>
+            <exception cref="T:System.RankException">The source array is multidimensional.</exception>
+            <exception cref="T:System.InvalidCastException">
+                At least one element in the source <see cref="T:System.Array" /> cannot be cast
+                to the type of destination <paramref name="array" />.
+            </exception>
+            <exception cref="T:System.ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
+            <exception cref="T:System.ArgumentException"><paramref name="array" /> is not long enough.</exception>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="index" /> is smaller than 0.</exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.ObservableCollection`1.CopyTo(PSUtility.Enumerables.Array{`0},System.Int32)">
+            <inheritdoc />
+            <param name="array">The array.</param>
+            <param name="index">The start index of the array.</param>
+            <exception cref="T:System.ArrayTypeMismatchException">
+                The type of the source <see cref="!:IReadOnlyCollection&lt;T&gt;" /> cannot be cast
+                automatically to the type of the destination <paramref name="array" />.
+            </exception>
+            <exception cref="T:System.RankException">The source array is multidimensional.</exception>
+            <exception cref="T:System.InvalidCastException">
+                At least one element in the source <see cref="T:System.Array" /> cannot be cast
+                to the type of destination <paramref name="array" />.
+            </exception>
+            <exception cref="T:System.ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
+            <exception cref="T:System.ArgumentException"><paramref name="array" /> is not long enough.</exception>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="index" /> is smaller than 0.</exception>
+        </member>
+        <member name="E:PSUtility.Enumerables.ObservableCollection`1.CollectionChanged">
+            <summary>
+                This event is invoked whenever the collection changes.
+            </summary>
+        </member>
+        <member name="T:PSUtility.Enumerables.ReadOnlyCollection`1">
+            <summary>
+                A <see cref="T:PSUtility.Enumerables.ReadOnlyCollection`1" /> allows access to a collection without given the user an
+                opportunity to manipulate the data.
+            </summary>
+            <typeparam name="T">The data type.</typeparam>
+            <remarks>This class is abstract. Feel free to implement your own subclasses for customized or enhanced behaviour.</remarks>
+        </member>
+        <member name="P:PSUtility.Enumerables.ReadOnlyCollection`1.Count">
+            <summary>
+                The amount of items in this collection.
+            </summary>
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyCollection`1.GetEnumerator">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyCollection`1.System#Collections#IEnumerable#GetEnumerator">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyCollection`1.TransformerDirectImpl`1.#ctor(System.Collections.Generic.ICollection{`1},System.Func{`1,`0})">
+            <inheritdoc />
+            <exception cref="T:System.ArgumentNullException">
+                <paramref name="collection" /> is <see langword="null" /> -or-
+                <paramref name="transformer" /> is <see langword="null" />
+            </exception>
+        </member>
+        <member name="P:PSUtility.Enumerables.ReadOnlyCollection`1.TransformerDirectImpl`1.Count">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyCollection`1.TransformerDirectImpl`1.GetEnumerator">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyCollection`1.DirectImpl.#ctor(System.Collections.Generic.ICollection{`0})">
+            <inheritdoc />
+            <exception cref="T:System.ArgumentNullException"><paramref name="collection" /> is <see langword="null" /></exception>
+        </member>
+        <member name="P:PSUtility.Enumerables.ReadOnlyCollection`1.DirectImpl.Count">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyCollection`1.DirectImpl.GetEnumerator">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyCollection`1.FuncImpl.#ctor(System.Func{System.Collections.Generic.ICollection{`0}})">
+            <inheritdoc />
+            <exception cref="T:System.ArgumentNullException"><paramref name="func" /> is <see langword="null" /></exception>
+        </member>
+        <member name="P:PSUtility.Enumerables.ReadOnlyCollection`1.FuncImpl.Count">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyCollection`1.FuncImpl.GetEnumerator">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyCollection`1.Wrap(System.Collections.Generic.ICollection{`0})">
+            <summary>
+                Wraps an already exisiting collection in a read only collection.
+            </summary>
+            <param name="collection">The collection.</param>
+            <returns>The read only collection.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="collection" /> is <see langword="null" /></exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyCollection`1.Wrap``1(System.Collections.Generic.ICollection{``0},System.Func{``0,`0})">
+            <summary>
+                Wraps an already exisiting collection in a read only collection. This special implementation allows you to map a
+                value from the source collection to a different value using a transformer.
+            </summary>
+            <param name="collection">The collection.</param>
+            <param name="transformer">The delegate that transforms a value from the source collection to another value.</param>
+            <returns>The read only collection.</returns>
+            <exception cref="T:System.ArgumentNullException">
+                <paramref name="collection" /> is <see langword="null" /> -or-
+                <paramref name="transformer" /> is <see langword="null" />
+            </exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyCollection`1.FromDelegate(System.Func{System.Collections.Generic.ICollection{`0}})">
+            <summary>
+                Creates a new read only collection that obtains its collection through the use of a delegate. This can be handy if
+                the actual collection reference changes or must be obtained dynmically.
+            </summary>
+            <param name="func">The delegate.</param>
+            <returns>The read only collection.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="func" /> is <see langword="null" /></exception>
+        </member>
+        <member name="T:PSUtility.Enumerables.ReadOnlyDictionary`2">
+            <summary>
+                A <see cref="T:PSUtility.Enumerables.ReadOnlyDictionary`2" /> allows access to a dictionary without given the user an
+                opportunity to manipulate the data.
+            </summary>
+            <typeparam name="TKey">The key type.</typeparam>
+            <typeparam name="TValue">The value type.</typeparam>
+            <remarks>This class is abstract. Feel free to implement your own subclasses for customized or enhanced behaviour.</remarks>
+        </member>
+        <member name="P:PSUtility.Enumerables.ReadOnlyDictionary`2.Count">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.ReadOnlyDictionary`2.Item(`0)">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.ReadOnlyDictionary`2.Keys">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.ReadOnlyDictionary`2.Values">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyDictionary`2.System#Collections#IEnumerable#GetEnumerator">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyDictionary`2.GetEnumerator">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyDictionary`2.Wrap(System.Collections.Generic.IDictionary{`0,`1})">
+            <summary>
+                Wraps an already exisiting dictionary in a read only dictionary.
+            </summary>
+            <param name="dictionary">The dictionary.</param>
+            <returns>The read only dictionary.</returns>
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyDictionary`2.FromDelegate(System.Func{System.Collections.Generic.IDictionary{`0,`1}})">
+            <summary>
+                Creates a new read only dictionary that obtains its dictionary through the use of a delegate. This can be handy if
+                the actual dictionary reference changes or must be obtained dynmically.
+            </summary>
+            <param name="func">The delegate.</param>
+            <returns>The read only dictionary.</returns>
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyDictionary`2.ContainsKey(`0)">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyDictionary`2.TryGetValue(`0,`1@)">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.ReadOnlyDictionary`2.FuncImpl.Count">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.ReadOnlyDictionary`2.FuncImpl.Item(`0)">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.ReadOnlyDictionary`2.FuncImpl.Keys">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.ReadOnlyDictionary`2.FuncImpl.Values">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyDictionary`2.FuncImpl.GetEnumerator">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyDictionary`2.FuncImpl.ContainsKey(`0)">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyDictionary`2.FuncImpl.TryGetValue(`0,`1@)">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.ReadOnlyDictionary`2.DirectImpl.Count">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.ReadOnlyDictionary`2.DirectImpl.Item(`0)">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.ReadOnlyDictionary`2.DirectImpl.Keys">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.ReadOnlyDictionary`2.DirectImpl.Values">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyDictionary`2.DirectImpl.GetEnumerator">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyDictionary`2.DirectImpl.ContainsKey(`0)">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyDictionary`2.DirectImpl.TryGetValue(`0,`1@)">
+            <inheritdoc />
+        </member>
+        <member name="T:PSUtility.Enumerables.ReadOnlyList`1">
+            <summary>
+                Wrapper implementation of <see cref="!:IReadOnlyList&lt;T&gt;" />. This class wraps around an already existing other
+                collection.
+            </summary>
+            <typeparam name="T">The list type.</typeparam>
+        </member>
+        <member name="P:PSUtility.Enumerables.ReadOnlyList`1.Count">
+            <summary>
+                Gets the number of elements contained in the <see cref="T:PSUtility.Enumerables.ReadOnlyList`1" />.
+            </summary>
+        </member>
+        <member name="P:PSUtility.Enumerables.ReadOnlyList`1.Item(System.Int32)">
+            <summary>
+                Gets or sets the element at the specified index.
+            </summary>
+            <param name="index">The zero-based index of the element to get or set.</param>
+            <returns>The element at the specified index.</returns>
+            <exception cref="T:System.ArgumentOutOfRangeException">
+                <paramref name="index" /> is less than 0. -or- <paramref name="index" />
+                is equal to or greater than <see cref="P:PSUtility.Enumerables.ReadOnlyList`1.Count" />.
+            </exception>
+        </member>
+        <member name="P:PSUtility.Enumerables.ReadOnlyList`1.SyncRoot">
+            <summary>
+                The sync root for thread safe access.
+            </summary>
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyList`1.GetEnumerator">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyList`1.System#Collections#IEnumerable#GetEnumerator">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyList`1.Wrap(System.Collections.Generic.IList{`0})">
+            <summary>
+                Wraps the given list in a read only list. A direct reference is stored, thus updating the read ony list
+                automatically.
+            </summary>
+            <param name="list">The list.</param>
+            <returns>The read only list</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="list" /> is <see langword="null" /></exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyList`1.Wrap(`0[])">
+            <summary>
+                Wraps an array in a read only list.
+            </summary>
+            <param name="array">The array.</param>
+            <returns>The read only list.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyList`1.Wrap(PSUtility.Enumerables.Array{`0})">
+            <summary>
+                Wraps an array in a read only list.
+            </summary>
+            <param name="array">The array.</param>
+            <returns>The read only list.</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyList`1.FromDelegate``1(System.Func{``0})">
+            <summary>
+                Wraps a delegate in a read only list. The delegate is called during each list operation.
+            </summary>
+            <typeparam name="TList">The list type.</typeparam>
+            <param name="func">The delegate.</param>
+            <returns>The read only list</returns>
+            <exception cref="T:System.ArgumentNullException"><paramref name="func" /> is null</exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyList`1.Empty">
+            <summary>
+                Gets an empty read only list.
+            </summary>
+            <returns>The read only list.</returns>
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyList`1.IndexOf(`0)">
+            <summary>
+                Gets the index of the given element.
+            </summary>
+            <param name="element">The element.</param>
+            <returns>The index.</returns>
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyList`1.CopyTo(System.Array,System.Int32)">
+            <summary>
+                Copies the elements of this collection to an array.
+            </summary>
+            <param name="array">The array.</param>
+            <param name="index">The start index of the array.</param>
+            <exception cref="T:System.ArrayTypeMismatchException">
+                The type of the source <see cref="T:PSUtility.Enumerables.ReadOnlyList`1" /> cannot be cast
+                automatically to the type of the destination <paramref name="array" />.
+            </exception>
+            <exception cref="T:System.RankException">The source array is multidimensional.</exception>
+            <exception cref="T:System.InvalidCastException">
+                At least one element in the source <see cref="T:System.Array" /> cannot be cast
+                to the type of destination <paramref name="array" />.
+            </exception>
+            <exception cref="T:System.ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
+            <exception cref="T:System.ArgumentException"><paramref name="array" /> is not long enough.</exception>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="index" /> is smaller than 0.</exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyList`1.CopyTo(PSUtility.Enumerables.Array{`0},System.Int32)">
+            <summary>
+                Copies the elements of this collection to an array.
+            </summary>
+            <param name="array">The array.</param>
+            <param name="index">The start index of the array.</param>
+            <exception cref="T:System.ArrayTypeMismatchException">
+                The type of the source <see cref="T:PSUtility.Enumerables.ReadOnlyList`1" /> is not assignable from <typeparamref name="T" />.
+            </exception>
+            <exception cref="T:System.RankException">The source array is multidimensional.</exception>
+            <exception cref="T:System.InvalidCastException">
+                At least one element in the source <see cref="T:System.Array" /> cannot be cast
+                to <typeparamref name="T" />.
+            </exception>
+            <exception cref="T:System.ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
+            <exception cref="T:System.ArgumentException"><paramref name="array" /> is not long enough.</exception>
+            <exception cref="T:System.ArgumentOutOfRangeException"><paramref name="index" /> is smaller than 0.</exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyList`1.ArrayImpl2.#ctor(`0[])">
+            <inheritdoc />
+            <exception cref="T:System.ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
+        </member>
+        <member name="P:PSUtility.Enumerables.ReadOnlyList`1.ArrayImpl2.Count">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.ReadOnlyList`1.ArrayImpl2.Item(System.Int32)">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.ReadOnlyList`1.ArrayImpl2.SyncRoot">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyList`1.ArrayImpl2.GetEnumerator">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyList`1.ArrayImpl2.IndexOf(`0)">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyList`1.ArrayImpl.#ctor(PSUtility.Enumerables.Array{`0})">
+            <inheritdoc />
+            <exception cref="T:System.ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
+        </member>
+        <member name="P:PSUtility.Enumerables.ReadOnlyList`1.ArrayImpl.Count">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.ReadOnlyList`1.ArrayImpl.Item(System.Int32)">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.ReadOnlyList`1.ArrayImpl.SyncRoot">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyList`1.ArrayImpl.GetEnumerator">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyList`1.ArrayImpl.IndexOf(`0)">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyList`1.FuncImpl`1.#ctor(System.Func{`1},System.Boolean)">
+            <inheritdoc />
+            <exception cref="T:System.ArgumentNullException"><paramref name="func" /> is null</exception>
+        </member>
+        <member name="P:PSUtility.Enumerables.ReadOnlyList`1.FuncImpl`1.Count">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.ReadOnlyList`1.FuncImpl`1.Item(System.Int32)">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.ReadOnlyList`1.FuncImpl`1.SyncRoot">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyList`1.FuncImpl`1.GetEnumerator">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyList`1.FuncImpl`1.IndexOf(`0)">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyList`1.ListImpl.#ctor(System.Collections.Generic.IList{`0},System.Boolean)">
+            <inheritdoc />
+            <exception cref="T:System.ArgumentNullException"><paramref name="list" /> is <see langword="null" /></exception>
+        </member>
+        <member name="P:PSUtility.Enumerables.ReadOnlyList`1.ListImpl.Count">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.ReadOnlyList`1.ListImpl.Item(System.Int32)">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.ReadOnlyList`1.ListImpl.SyncRoot">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyList`1.ListImpl.GetEnumerator">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyList`1.ListImpl.IndexOf(`0)">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.ReadOnlyList`1.EmptyImpl.Count">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Enumerables.ReadOnlyList`1.EmptyImpl.Item(System.Int32)">
+            <inheritdoc />
+            <exception cref="T:System.ArgumentOutOfRangeException" accessor="get">Cannot index a read only list.</exception>
+        </member>
+        <member name="P:PSUtility.Enumerables.ReadOnlyList`1.EmptyImpl.SyncRoot">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyList`1.EmptyImpl.GetEnumerator">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyList`1.EmptyImpl.IndexOf(`0)">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyHashSet`1.#ctor(System.Collections.Generic.HashSet{`0})">
+            <inheritdoc />
+            <exception cref="T:System.ArgumentNullException"><paramref name="reference" /> is <see langword="null" /></exception>
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyHashSet`1.#ctor(System.Func{System.Collections.Generic.HashSet{`0}})">
+            <inheritdoc />
+            <exception cref="T:System.ArgumentNullException"><paramref name="func" /> is <see langword="null" /></exception>
+        </member>
+        <member name="P:PSUtility.Enumerables.ReadOnlyHashSet`1.Count">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyHashSet`1.GetEnumerator">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyHashSet`1.System#Collections#IEnumerable#GetEnumerator">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyHashSet`1.IsSubsetOf(System.Collections.Generic.IEnumerable{`0})">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyHashSet`1.IsSupersetOf(System.Collections.Generic.IEnumerable{`0})">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyHashSet`1.IsProperSupersetOf(System.Collections.Generic.IEnumerable{`0})">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyHashSet`1.IsProperSubsetOf(System.Collections.Generic.IEnumerable{`0})">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyHashSet`1.Overlaps(System.Collections.Generic.IEnumerable{`0})">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyHashSet`1.SetEquals(System.Collections.Generic.IEnumerable{`0})">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Enumerables.ReadOnlyHashSet`1.Contains(`0)">
+            <inheritdoc />
+        </member>
+        <member name="T:PSUtility.Enumerables.WeakTable`2">
+            <summary>
+                A hash based table allows you to map values to a weak key. Once the key is collected the value is invalidated.
+            </summary>
+            <typeparam name="TKey">The key type; must be a reference type.</typeparam>
+            <typeparam name="TValue">The value type.</typeparam>
+        </member>
+        <member name="M:PSUtility.Enumerables.WeakTable`2.TryGet(`0,`1@)">
+            <exception cref="T:System.ArgumentNullException"><paramref name="key" /> is <see langword="null" /></exception>
+        </member>
+        <member name="T:PSUtility.EventHandler`2">
+            <summary>
+            An event handler with a type safe sender.
+            </summary>
+            <typeparam name="TSender">The sender type.</typeparam>
+            <typeparam name="TArgs">The event type.</typeparam>
+            <param name="sender">The sender.</param>
+            <param name="e">The event.</param>
+        </member>
+        <member name="T:PSUtility.Metadata.IMetaDataProvider">
+            <summary>
+                This interface is implemented on types providing the storage of meta data.
+            </summary>
+        </member>
+        <member name="M:PSUtility.Metadata.IMetaDataProvider.TryGetMetaValue``1(PSUtility.Metadata.MetaKey{``0},``0@)">
+            <summary>
+                Tries to get the value assigned with the given meta key.
+            </summary>
+            <typeparam name="T">The value type.</typeparam>
+            <param name="key">The meta key.</param>
+            <param name="value">The meta value.</param>
+            <returns>true if the value could be obtained, false if not.</returns>
+        </member>
+        <member name="M:PSUtility.Metadata.IMetaDataProvider.TrySetMetaValue``1(PSUtility.Metadata.MetaKey{``0},``0)">
+            <summary>
+                Tries to set the value to the given meta key.
+            </summary>
+            <typeparam name="T">The value type.</typeparam>
+            <param name="key">The meta key.</param>
+            <param name="value">The meta value.</param>
+            <returns>true if the value could be set, false if not.</returns>
+        </member>
+        <member name="M:PSUtility.Metadata.IMetaDataProvider.HasMetaValue``1(PSUtility.Metadata.MetaKey{``0},System.Boolean)">
+            <summary>
+                Checks if a value is assigned to the given meta key.
+            </summary>
+            <typeparam name="T">The calue type.</typeparam>
+            <param name="key">The meta key.</param>
+            <param name="ignoreType">If this is true the type(<typeparamref name="T" />) will be ignored.</param>
+            <returns>true if a key exists, false if not.</returns>
+        </member>
+        <member name="T:PSUtility.Metadata.MetaKeyBase">
+            <summary>
+                Non generic base class for meta keys. New keys must extend the generic meta key.
+            </summary>
+            <remarks>The base class only exists to allow easier storage in collections such as dictionaries.</remarks>
+        </member>
+        <member name="M:PSUtility.Metadata.MetaKeyBase.#ctor(System.String)">
+            <summary>
+                Creates a new meta key.
+            </summary>
+            <param name="name">The key name.</param>
+        </member>
+        <member name="P:PSUtility.Metadata.MetaKeyBase.Name">
+            <summary>
+                The key name. Meta keys with the same name should be considered as equal in e.g. dictionaries regardless of their
+                type.
+            </summary>
+        </member>
+        <member name="P:PSUtility.Metadata.MetaKeyBase.DataType">
+            <summary>
+                The data type associated with this meta key.
+            </summary>
+        </member>
+        <member name="M:PSUtility.Metadata.MetaKeyBase.CompareTo(PSUtility.Metadata.MetaKeyBase)">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Metadata.MetaKeyBase.Equals(PSUtility.Metadata.MetaKeyBase)">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Metadata.MetaKeyBase.Equals(System.Object)">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Metadata.MetaKeyBase.GetHashCode">
+            <inheritdoc />
+        </member>
+        <member name="M:PSUtility.Metadata.MetaKeyBase.ToString">
+            <inheritdoc />
+        </member>
+        <member name="T:PSUtility.Metadata.MetaKey`1">
+            <summary>
+                This type is used as a key to access <see cref="T:PSUtility.Metadata.IMetaDataProvider" />s.
+            </summary>
+            <typeparam name="T">The data type.</typeparam>
+        </member>
+        <member name="M:PSUtility.Metadata.MetaKey`1.#ctor(System.String)">
+            <inheritdoc />
+        </member>
+        <member name="P:PSUtility.Metadata.MetaKey`1.DataType">
+            <inheritdoc />
+        </member>
+        <member name="T:PSUtility.NamespaceDoc">
+            <summary>
+                This is the base namespace containing all general utility classes used by projects created by Patrick Sachs.<br />
+                https://www.patrick-sachs.de/
+            </summary>
+        </member>
+        <member name="T:PSUtility.Properties.Resources">
+            <summary>
+              A strongly-typed resource class, for looking up localized strings, etc.
+            </summary>
+        </member>
+        <member name="P:PSUtility.Properties.Resources.ResourceManager">
+            <summary>
+              Returns the cached ResourceManager instance used by this class.
+            </summary>
+        </member>
+        <member name="P:PSUtility.Properties.Resources.Culture">
+            <summary>
+              Overrides the current thread's CurrentUICulture property for all
+              resource lookups using this strongly typed resource class.
+            </summary>
+        </member>
+        <member name="P:PSUtility.Properties.Resources.Err_ArrayTooSmall">
+            <summary>
+              Looks up a localized string similar to The array({0} length) is not long enough. A length of {1} is required..
+            </summary>
+        </member>
+        <member name="P:PSUtility.Properties.Resources.Err_InvalidArrayRank">
+            <summary>
+              Looks up a localized string similar to The array had {0} rank/s. An array of {1} rank/s was required..
+            </summary>
+        </member>
+        <member name="P:PSUtility.Properties.Resources.Err_InvalidArrayType">
+            <summary>
+              Looks up a localized string similar to The array of element type {0} is not compatible with elements of type {1}..
+            </summary>
+        </member>
+        <member name="P:PSUtility.Properties.Resources.Err_InvalidBiDictionarySource">
+            <summary>
+              Looks up a localized string similar to The BiDictionary source dictionary is not applicable to a BiDictionary..
+            </summary>
+        </member>
+        <member name="P:PSUtility.Properties.Resources.Err_NotCollectionOrListType">
+            <summary>
+              Looks up a localized string similar to The type \&quot;{0}\&quot; is not a generic collection or non generic list type..
+            </summary>
+        </member>
+        <member name="P:PSUtility.Properties.Resources.Err_SmallerThanZero">
+            <summary>
+              Looks up a localized string similar to The {0}({1}) is smaller than zero..
+            </summary>
+        </member>
+        <member name="M:PSUtility.Reflection.AttributeUtility.GetCustomAttribute``1(System.Reflection.MemberInfo,System.Boolean)">
+            <inheritdoc cref="M:System.Reflection.MemberInfo.GetCustomAttributes(System.Type,System.Boolean)" />
+            <exception cref="T:System.TypeLoadException">A custom attribute type cannot be loaded. </exception>
+            <exception cref="T:System.InvalidOperationException">
+                This member belongs to a type that is loaded into the reflection-only
+                context. See How to: Load Assemblies into the Reflection-Only Context.
+            </exception>
+        </member>
+        <member name="M:PSUtility.Reflection.AttributeUtility.GetCustomAttribute``1(System.Reflection.ParameterInfo,System.Boolean)">
+            <inheritdoc cref="M:System.Reflection.ParameterInfo.GetCustomAttributes(System.Type,System.Boolean)" />
+            <exception cref="T:System.TypeLoadException">A custom attribute type cannot be loaded. </exception>
+            <exception cref="T:System.ArgumentException">The type must be a type provided by the underlying runtime system.</exception>
+        </member>
+        <member name="M:PSUtility.Reflection.AttributeUtility.GetCustomAttributes``1(System.Reflection.MemberInfo,System.Boolean)">
+            <inheritdoc cref="M:System.Reflection.MemberInfo.GetCustomAttributes(System.Type,System.Boolean)" />
+            <exception cref="T:System.TypeLoadException">A custom attribute type cannot be loaded. </exception>
+            <exception cref="T:System.InvalidOperationException">
+                This member belongs to a type that is loaded into the reflection-only
+                context. See How to: Load Assemblies into the Reflection-Only Context.
+            </exception>
+        </member>
+        <member name="M:PSUtility.Reflection.AttributeUtility.GetCustomAttributes``1(System.Reflection.ParameterInfo,System.Boolean)">
+            <inheritdoc cref="M:System.Reflection.ParameterInfo.GetCustomAttributes(System.Type,System.Boolean)" />
+            <exception cref="T:System.TypeLoadException">A custom attribute type cannot be loaded. </exception>
+            <exception cref="T:System.ArgumentException">The type must be a type provided by the underlying runtime system.</exception>
+        </member>
+        <!-- Badly formed XML comment ignored for member "T:PSUtility.Strings.StringUtility" -->
+        <member name="M:PSUtility.Strings.StringUtility.IsNullOrWhiteSpace(System.String)">
+            <summary>
+                Indicates whether a specified string is null, empty, or consists only of white-space characters.
+            </summary>
+            <param name="value">The string to test.</param>
+            <returns>
+                <see langword="true" /> if the value parameter is <see langword="null" /> or <see cref="F:System.String.Empty" />, or
+                if <paramref name="value" /> consists exclusively of white-space characters.
+            </returns>
+            <remarks>
+                See also: https://msdn.microsoft.com/en-us/library/system.string.isnullorwhitespace.aspx/
+            </remarks>
+        </member>
+        <member name="M:PSUtility.Strings.StringUtility.FormatWith(System.String,System.Object[])">
+            <summary>
+                Alias for calling <see cref="M:System.String.Format(System.String,System.Object[])" />.
+            </summary>
+            <param name="value">The string to format.</param>
+            <param name="values">The values to format the string with.</param>
+            <returns>The formnatted string, or "null" if the string was null.</returns>
+        </member>
+        <member name="M:PSUtility.Strings.StringUtility.SubstringSkipEnd(System.String,System.Int32)">
+            <summary>
+                Creates a substring of the given string that stops <paramref name="skipEnd" /> characters before the end of the
+                string.
+            </summary>
+            <param name="this">The string.</param>
+            <param name="skipEnd">The end characters.</param>
+        </member>
+    </members>
+</doc>

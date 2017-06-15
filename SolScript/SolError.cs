@@ -2,6 +2,8 @@
 using System.Text;
 using Irony.Parsing;
 using JetBrains.Annotations;
+using SolScript.Interpreter.Exceptions;
+using SolScript.Utility;
 
 namespace SolScript
 {
@@ -23,6 +25,21 @@ namespace SolScript
         {
             Location = location;
             Id = id;
+            Message = message;
+            IsWarning = isWarning;
+            Exception = exception;
+        }
+        /// <summary>
+        ///     Creates a new error from the given parameters.
+        /// </summary>
+        /// <param name="location">The location this error occured at.</param>
+        /// <param name="message"> The human readable error message.</param>
+        /// <param name="isWarning">Is this error a warning?</param>
+        /// <param name="exception"> The exception that caused this error. </param>
+        public SolError(SourceLocation location, string message, bool isWarning = false, [CanBeNull] Exception exception = null)
+        {
+            Location = location;
+            Id = ErrorId.None;
             Message = message;
             IsWarning = isWarning;
             Exception = exception;
@@ -95,11 +112,11 @@ namespace SolScript
             builder.Append("] ");
             builder.Append(Location);
             builder.Append(" - ");
-            builder.Append(Message);
+            builder.AppendLine(Message);
             if (Exception != null) {
-                builder.Append(" (Caused by: ");
-                builder.Append(Exception.GetType().Name);
-                builder.Append(')');
+                builder.Append("Caused by: ");
+                builder.AppendLine(Exception.GetType().Name);
+                SolException.UnwindExceptionStack(Exception, builder);
             }
             return builder.ToString();
         }

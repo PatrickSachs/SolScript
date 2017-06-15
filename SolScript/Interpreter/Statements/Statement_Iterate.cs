@@ -1,4 +1,6 @@
-﻿using Irony.Parsing;
+﻿using System;
+using Irony.Parsing;
+using SolScript.Compiler;
 using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Types;
 using SolScript.Utility;
@@ -44,6 +46,25 @@ namespace SolScript.Interpreter.Statements {
 
         protected override string ToString_Impl() {
             return $"Statement_Iterate(IteratorGetter={IteratorGetter}, IteratorName={IteratorName}, Chunk={Chunk})";
+        }
+
+        /// <inheritdoc />
+        public override ValidationResult Validate(SolValidationContext context)
+        {
+            var getRes = IteratorGetter.Validate(context);
+            if (!getRes) {
+                return ValidationResult.Failure();
+            }
+            // todo: these vars do not belong to a chunk. refactor the way the validation var stack works?
+            var itVars = new SolValidationContext.Chunk(Chunk);
+            itVars.AddVariable(IteratorName, getRes.Type);
+            context.Chunks.Push(itVars);
+            var chkRes = Chunk.Validate(context);
+            if (context.Chunks.Pop() != itVars) {
+                // ReSharper disable once ExceptionNotDocumented
+                throw new InvalidOperationException("Chunk stack corrupted.");
+            }
+            return chkRes;
         }
 
         #endregion

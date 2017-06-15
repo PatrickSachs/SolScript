@@ -1,5 +1,7 @@
 ﻿using System;
 using Irony.Parsing;
+using PSUtility.Strings;
+using SolScript.Compiler;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Types;
@@ -68,6 +70,38 @@ namespace SolScript.Interpreter.Statements
         protected override string ToString_Impl()
         {
             return "Statement_Base(Indexer=" + Indexer + ")";
+        }
+
+        /// <inheritdoc />
+        public override ValidationResult Validate(SolValidationContext context)
+        {
+            SolClassDefinition definition = context.InClassDefinition;
+            if (definition == null) {
+                context.Errors.Add(new SolError(Location, CompilerResources.Err_BaseNotInClass));
+                return ValidationResult.Failure();
+            }
+            if (definition.BaseClass == null)
+            {
+                context.Errors.Add(new SolError(Location, CompilerResources.Err_BaseWithoutBaseClass.FormatWith(definition.Type)));
+                return ValidationResult.Failure();
+            }
+            ValidationResult key = Indexer.Validate(context);
+            if (!key) {
+                return ValidationResult.Failure();
+            }
+            if (!Indexer.IsConstant) {
+                context.Errors.Add(new SolError(Indexer.Location, CompilerResources.Err_CannotIndexBaseDynamically));
+                return ValidationResult.Failure();
+            }
+            SolValue constant; 
+            SolString index = (constant = Indexer.GetConstant()) as SolString;
+            if (index == null) {
+                context.Errors.Add(new SolError(Indexer.Location, CompilerResources.Err_CannotIndexBaseWithType.FormatWith(constant.Type)));
+                return ValidationResult.Failure();
+            }
+            // todo: check if member even exists!
+            // todo: possibly allos dynamic indexing (would require language and framework support)
+            return new ValidationResult(true, new SolType(definition.Type, false));
         }
 
         #endregion

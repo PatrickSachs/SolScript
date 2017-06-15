@@ -86,52 +86,30 @@ namespace SolScript.Interpreter.Types
             if (type == typeof(SolClassDefinition)) {
                 return definition;
             }
-            // Check for the described object first as it is more likely that we wish to pass around references to
-            // that. Besides I can't see a case where the two types would conflict in their native inheritance.
-            if (definition.DescribedType == type || definition.DescribedType.IsSubclassOf(type)) {
-                object nativeObject;
-                if (DescribedObjectReference.TryGet(out nativeObject)) {
-                    SolMarshal.GetAssemblyCache(Assembly).StoreReference(nativeObject.NotNull(), this);
-                    return nativeObject;
+            Inheritance c = InheritanceChain;
+            while (c != null) {
+                SolClassDefinition def = c.Definition;
+                // Check for the described object first as it is more likely that we wish to pass around references to
+                // that. Besides I can't see a case where the two types would conflict in their native inheritance.
+                if (def.DescribedType != null && (def.DescribedType == type || def.DescribedType.IsSubclassOf(type))) {
+                    object nativeObject;
+                    if (DescribedObjectReference.TryGet(out nativeObject)) {
+                        SolMarshal.GetAssemblyCache(Assembly).StoreReference(nativeObject.NotNull(), this);
+                        return nativeObject;
+                    }
+                    throw new SolMarshallingException(Type, type, Resources.Err_InvalidClassDescribedObjectReference.ToString(Type));
                 }
-                throw new SolMarshallingException(Type, type, Resources.Err_InvalidClassDescribedObjectReference.ToString(Type));
-            }
-            if (definition.DescriptorType != definition.DescribedType && (definition.DescriptorType == type || definition.DescriptorType.IsSubclassOf(type))) {
-                object nativeObject;
-                if (DescriptorObjectReference.TryGet(out nativeObject)) {
-                    SolMarshal.GetAssemblyCache(Assembly).StoreReference(nativeObject.NotNull(), this);
-                    return nativeObject;
+                if (def.DescriptorType != null && (def.DescriptorType != def.DescribedType && (def.DescriptorType == type || def.DescriptorType.IsSubclassOf(type)))) {
+                    object nativeObject;
+                    if (DescriptorObjectReference.TryGet(out nativeObject)) {
+                        SolMarshal.GetAssemblyCache(Assembly).StoreReference(nativeObject.NotNull(), this);
+                        return nativeObject;
+                    }
+                    throw new SolMarshallingException(Type, type, Resources.Err_InvalidClassDescriptorObjectReference.ToString(Type));
                 }
-                throw new SolMarshallingException(Type, type, Resources.Err_InvalidClassDescriptorObjectReference.ToString(Type));
+                c = c.BaseInheritance;
             }
             return base.ConvertTo(type);
-            /*Inheritance inheritance = FindInheritance(type, InheritanceFindModes.ObjectType | InheritanceFindModes.DescibedType);
-            if (inheritance != null) {
-                DynamicReference.GetState getState;
-                object nativeObject = inheritance.NativeReference.TryGet(out getState);
-                if (getState != DynamicReference.GetState.Retrieved) {
-                    throw new SolMarshallingException(type, "The native reference of inheritance level \"" + inheritance.Definition.Type + "\" could not be resolved.");
-                }
-                if (nativeObject == null) {
-                    return null;
-                }
-                SolClassDefinition definition = inheritance.Definition;
-                // If the object is of a different type than the one described we can only obtain the 
-                // object itself through the interface.
-                if (definition.DescribedType != definition.DescriptorType) {
-                    ISolTypeDescriptor descriptor;
-                    try {
-                        descriptor = (ISolTypeDescriptor) nativeObject;
-                    } catch (InvalidCastException ex) {
-                        throw new SolMarshallingException(Type, type, Resources.Err_DescriptorNotFound.ToString(Type, definition.DescribedType, definition.DescriptorType), ex);
-                    }
-                    // todo: should the descriptor described object be cached? -- can be changed by user
-                    return descriptor.Object;
-                }
-                // The value/class relation is cached in case the value will be marshalled back to SolScript.
-                SolMarshal.GetAssemblyCache(Assembly).StoreReference(nativeObject, this);
-                return nativeObject;
-            }*/
         }
 
         /// <exception cref="InvalidOperationException">A critical internal error occured while calling this function.</exception>

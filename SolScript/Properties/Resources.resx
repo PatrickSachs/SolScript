@@ -237,4 +237,8 @@
     <value>Failed to get the native object of class "{0}".</value>
     <comment>0: Class Name</comment>
   </data>
+  <data name="Err_ExpressionIsNotConstant" xml:space="preserve">
+    <value>The expression "{0}" is not a constant.</value>
+    <comment>0. Expression Type</comment>
+  </data>
 </root>

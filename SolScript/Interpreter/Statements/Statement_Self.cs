@@ -1,5 +1,6 @@
 ﻿using System;
 using Irony.Parsing;
+using SolScript.Compiler;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
 
@@ -49,6 +50,15 @@ namespace SolScript.Interpreter.Statements
         protected override string ToString_Impl()
         {
             return "Statement_Self(WrittenInClass=" + WrittenInClass + ")";
+        }
+
+        /// <inheritdoc />
+        public override ValidationResult Validate(SolValidationContext context)
+        {
+            if (context.InClassDefinition == null) {
+                return ValidationResult.Failure();
+            }
+            return new ValidationResult(true, new SolType(context.InClassDefinition.Type, false));
         }
 
         #endregion

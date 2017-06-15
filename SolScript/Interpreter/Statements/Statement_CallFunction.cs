@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Irony.Parsing;
 using JetBrains.Annotations;
 using PSUtility.Enumerables;
+using SolScript.Compiler;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Types;
@@ -88,6 +89,12 @@ namespace SolScript.Interpreter.Statements
                 callArgs[i] = m_Arguments[i].Evaluate(context, parentVariables);
             }
             return callArgs;
+        }
+
+        /// <inheritdoc />
+        public override ValidationResult Validate(SolValidationContext context)
+        {
+            throw new NotImplementedException();
         }
     }
 }
