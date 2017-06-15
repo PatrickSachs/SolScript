@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Reflection;
 using System.Runtime.Serialization;
+using SolScript.Interpreter;
 using SolScript.Utility;
 
-namespace SolScript.Interpreter.Exceptions
+namespace SolScript.Exceptions
 {
     /// <summary>
     ///     Use this exception if you wish to throw an exception in a native library method/property but cannot get a handle on

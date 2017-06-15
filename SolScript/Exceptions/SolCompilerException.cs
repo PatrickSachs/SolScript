@@ -2,7 +2,7 @@
 using System.Runtime.Serialization;
 using Irony.Parsing;
 
-namespace SolScript.Interpreter.Exceptions
+namespace SolScript.Exceptions
 {
     /// <summary>
     ///     The <see cref="SolCompilerException" /> is used to indicate that something went wrong while compiling SolScript.

@@ -241,4 +241,7 @@
     <value>The expression "{0}" is not a constant.</value>
     <comment>0. Expression Type</comment>
   </data>
+  <data name="Err_FailedToBuildDynamicMapping" xml:space="preserve">
+    <value>Failed to build the dynamic mapping.</value>
+  </data>
 </root>

@@ -4,7 +4,7 @@ using System.Reflection;
 using Irony.Parsing;
 using JetBrains.Annotations;
 using PSUtility.Enumerables;
-using SolScript.Interpreter.Exceptions;
+using SolScript.Exceptions;
 using SolScript.Interpreter.Types.Implementation;
 
 namespace SolScript.Interpreter.Types

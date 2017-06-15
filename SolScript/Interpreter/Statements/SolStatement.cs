@@ -5,7 +5,6 @@ using JetBrains.Annotations;
 using PSUtility.Enumerables;
 using PSUtility.Strings;
 using SolScript.Compiler;
-using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Types;
 using SolScript.Properties;

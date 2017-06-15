@@ -3,8 +3,8 @@
 using System;
 using System.IO;
 using JetBrains.Annotations;
+using SolScript.Exceptions;
 using SolScript.Interpreter;
-using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Library;
 using SolScript.Interpreter.Types;
 using SolScript.Libraries.std;

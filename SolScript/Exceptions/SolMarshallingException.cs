@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Runtime.Serialization;
+using SolScript.Interpreter;
 
-namespace SolScript.Interpreter.Exceptions
+namespace SolScript.Exceptions
 {
     /// <summary>
     ///     The <see cref="SolMarshallingException" /> indicates an error while concerting values or types.

@@ -1,5 +1,5 @@
 ﻿using System;
-using SolScript.Interpreter.Exceptions;
+using SolScript.Exceptions;
 
 namespace SolScript.Interpreter.Types.Marshal
 {

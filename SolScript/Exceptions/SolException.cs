@@ -2,8 +2,9 @@
 using System.Runtime.Serialization;
 using System.Text;
 using Irony.Parsing;
+using SolScript.Interpreter;
 
-namespace SolScript.Interpreter.Exceptions
+namespace SolScript.Exceptions
 {
     /// <summary>
     ///     This is the base exception for all exceptions in SolScript. The type is abstract, thus relying on custom more

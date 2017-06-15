@@ -191,6 +191,29 @@
     <value>The variable "{0}" exists multiple times within its chunk hierarchy.</value>
     <comment>0: Variable Name</comment>
   </data>
+  <data name="Err_DynMapClassIsAlreadyMapped" xml:space="preserve">
+    <value>Cannot create dynmaic mapping for the SoLScript class "{0}" since it is already mapped to the native class "{1}".</value>
+    <comment>0: Sol Class Name, 1: Mapped Native Class</comment>
+  </data>
+  <data name="Err_DynMapCompilerError" xml:space="preserve">
+    <value>The following error occured while building the dynamic mapping for {0} SolScript classes:\n{1}</value>
+    <comment>0: Error Count, 1: Error Text</comment>
+  </data>
+  <data name="Err_DynMapException" xml:space="preserve">
+    <value>An exception occured while calling the SolScript function "{0}" from a dynamically created native wrapper. See inner exception for details.</value>
+    <comment>0: Sol Function Name</comment>
+  </data>
+  <data name="Err_DynMapFailedToWriteSourceFile" xml:space="preserve">
+    <value>Cannot create source reference file for the native mappings.</value>
+  </data>
+  <data name="Err_DynMapFunctionTriedToOverrideSelf" xml:space="preserve">
+    <value>The SolScript function "{0}" tried to override itself. This is a bug in SolScript.</value>
+    <comment>0: Sol Function Name</comment>
+  </data>
+  <data name="Err_DynMapNoNativeDescriptor" xml:space="preserve">
+    <value>Cannot create a native mapping for SolScript class "{0}" since it does not override a natice class.</value>
+    <comment>0: Sol Class Name</comment>
+  </data>
   <data name="Err_FailedToValidateClass" xml:space="preserve">
     <value>Failed to validate the class "{0}".</value>
     <comment>0: Class Name</comment>

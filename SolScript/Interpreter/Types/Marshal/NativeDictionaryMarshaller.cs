@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using SolScript.Interpreter.Exceptions;
+using SolScript.Exceptions;
 
 namespace SolScript.Interpreter.Types.Marshal
 {

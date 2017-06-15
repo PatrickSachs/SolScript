@@ -1,6 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using SolScript.Interpreter;
-using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
 
 namespace UnitTests.Libraries

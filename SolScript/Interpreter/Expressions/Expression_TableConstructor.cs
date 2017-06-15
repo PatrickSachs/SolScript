@@ -4,7 +4,7 @@ using Irony.Parsing;
 using PSUtility.Enumerables;
 using PSUtility.Strings;
 using SolScript.Compiler;
-using SolScript.Interpreter.Exceptions;
+using SolScript.Exceptions;
 using SolScript.Interpreter.Types;
 using SolScript.Properties;
 

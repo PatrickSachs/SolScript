@@ -6,7 +6,7 @@ using JetBrains.Annotations;
 using PSUtility.Enumerables;
 using PSUtility.Strings;
 using SolScript.Compiler;
-using SolScript.Interpreter.Exceptions;
+using SolScript.Exceptions;
 using SolScript.Interpreter.Library;
 using SolScript.Interpreter.Types;
 using SolScript.Utility;
@@ -270,16 +270,36 @@ namespace SolScript.Interpreter
         /// <returns>true if the class extends the given type, false if not.</returns>
         public bool Extends(Type type)
         {
+            SolClassDefinition definedIn;
+            return Extends(type, out definedIn);
+        }
+
+        /// <summary>
+        ///     Checks if this class extends the given  native type.
+        /// </summary>
+        /// <param name="type">The native type.</param>
+        /// <returns>true if the class extends the given type, false if not.</returns>
+        /// <param name="definedIn">The class definition of the extended class. Only valid if the method returned true.</param>
+        /// <remarks>
+        ///     Warning: A class does not extend itself and will thus return false if
+        ///     the own class name is passed.
+        /// </remarks>
+        [ContractAnnotation("definedIn:null => false")]
+        public bool Extends(Type type, [CanBeNull] out SolClassDefinition definedIn)
+        {
             SolClassDefinition active = BaseClass;
             while (active != null) {
                 if (active.DescriptorType == type) {
+                    definedIn = active;
                     return true;
                 }
                 if (active.DescribedType == type) {
+                    definedIn = active;
                     return true;
                 }
                 active = active.BaseClass;
             }
+            definedIn = null;
             return false;
         }
 
@@ -288,6 +308,10 @@ namespace SolScript.Interpreter
         /// </summary>
         /// <param name="definition">The class definition.</param>
         /// <returns>true if the class extends the given class, false if not.</returns>
+        /// <remarks>
+        ///     Warning: A class does not extend itself and will thus return false if
+        ///     the own class name is passed.
+        /// </remarks>
         public bool Extends(SolClassDefinition definition)
         {
             SolClassDefinition active = BaseClass;

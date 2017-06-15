@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Runtime.Serialization;
+using SolScript.Interpreter;
 
-namespace SolScript.Interpreter.Exceptions
+namespace SolScript.Exceptions
 {
     /// <summary>
     ///     The SolRuntimeException is used to represent an exception that occured during the actual run of an assembly.

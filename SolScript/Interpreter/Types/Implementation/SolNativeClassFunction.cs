@@ -1,6 +1,5 @@
 ﻿using System;
 using JetBrains.Annotations;
-using SolScript.Interpreter.Exceptions;
 
 namespace SolScript.Interpreter.Types.Implementation
 {

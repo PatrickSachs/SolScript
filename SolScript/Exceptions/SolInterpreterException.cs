@@ -2,7 +2,7 @@
 using System.Runtime.Serialization;
 using Irony.Parsing;
 
-namespace SolScript.Interpreter.Exceptions
+namespace SolScript.Exceptions
 {
     /// <summary>
     ///     This exception signals an exception during the interpretation phase of a script.

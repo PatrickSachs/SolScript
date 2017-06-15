@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using PSUtility.Enumerables;
+using SolScript.Exceptions;
 using SolScript.Interpreter;
-using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Statements;
 using SolScript.Utility;
 

@@ -3,7 +3,7 @@ using Irony.Parsing;
 using JetBrains.Annotations;
 using PSUtility.Enumerables;
 using SolScript.Compiler;
-using SolScript.Interpreter.Exceptions;
+using SolScript.Exceptions;
 using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Types;
 using SolScript.Utility;

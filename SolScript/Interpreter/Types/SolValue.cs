@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using JetBrains.Annotations;
-using SolScript.Interpreter.Exceptions;
+using SolScript.Exceptions;
 
 namespace SolScript.Interpreter.Types
 {

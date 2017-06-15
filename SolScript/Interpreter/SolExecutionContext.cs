@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using Irony.Parsing;
 using JetBrains.Annotations;
-using SolScript.Interpreter.Exceptions;
+using SolScript.Exceptions;
 using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter

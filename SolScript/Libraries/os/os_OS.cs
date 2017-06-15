@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Text;
 using JetBrains.Annotations;
+using SolScript.Exceptions;
 using SolScript.Interpreter;
-using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Library;
 using SolScript.Interpreter.Types;
 using SolScript.Utility;

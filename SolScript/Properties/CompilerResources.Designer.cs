@@ -232,6 +232,60 @@ namespace SolScript.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Cannot create dynmaic mapping for the SoLScript class &quot;{0}&quot; since it is already mapped to the native class &quot;{1}&quot;..
+        /// </summary>
+        internal static string Err_DynMapClassIsAlreadyMapped {
+            get {
+                return ResourceManager.GetString("Err_DynMapClassIsAlreadyMapped", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The following error occured while building the dynamic mapping for {0} SolScript classes:\n{1}.
+        /// </summary>
+        internal static string Err_DynMapCompilerError {
+            get {
+                return ResourceManager.GetString("Err_DynMapCompilerError", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to An exception occured while calling the SolScript function &quot;{0}&quot; from a dynamically created native wrapper. See inner exception for details..
+        /// </summary>
+        internal static string Err_DynMapException {
+            get {
+                return ResourceManager.GetString("Err_DynMapException", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot create source reference file for the native mappings..
+        /// </summary>
+        internal static string Err_DynMapFailedToWriteSourceFile {
+            get {
+                return ResourceManager.GetString("Err_DynMapFailedToWriteSourceFile", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The SolScript function &quot;{0}&quot; tried to override itself. This is a bug in SolScript..
+        /// </summary>
+        internal static string Err_DynMapFunctionTriedToOverrideSelf {
+            get {
+                return ResourceManager.GetString("Err_DynMapFunctionTriedToOverrideSelf", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Cannot create a native mapping for SolScript class &quot;{0}&quot; since it does not override a natice class..
+        /// </summary>
+        internal static string Err_DynMapNoNativeDescriptor {
+            get {
+                return ResourceManager.GetString("Err_DynMapNoNativeDescriptor", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Failed to validate the class &quot;{0}&quot;..
         /// </summary>
         internal static string Err_FailedToValidateClass {

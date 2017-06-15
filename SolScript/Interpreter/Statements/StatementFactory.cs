@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Irony.Parsing;
 using PSUtility.Enumerables;
-using SolScript.Interpreter.Exceptions;
+using SolScript.Exceptions;
 using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Types;
 using SolScript.Utility;

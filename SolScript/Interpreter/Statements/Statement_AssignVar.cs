@@ -3,7 +3,7 @@ using System.CodeDom;
 using System.IO;
 using Irony.Parsing;
 using SolScript.Compiler;
-using SolScript.Interpreter.Exceptions;
+using SolScript.Exceptions;
 using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Types;
 using SolScript.Interpreter.Types.Interfaces;

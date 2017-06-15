@@ -2,70 +2,74 @@
 using System.CodeDom;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Reflection.Emit;
+using System.Text;
 using JetBrains.Annotations;
 using Microsoft.CSharp;
 using PSUtility.Enumerables;
+using PSUtility.Strings;
+using SolScript.Exceptions;
 using SolScript.Interpreter;
 using SolScript.Interpreter.Types;
+using SolScript.Properties;
 
 namespace SolScript.Compiler.Native
 {
     /// <summary>
-    /// This class actually compiles native code.
+    ///     This class actually compiles native code.
     /// </summary>
     public class NativeCompiler
     {
-        public class Context
+        /// <inheritdoc />
+        /// <exception cref="ArgumentNullException"><paramref name="compilerOptions"/> is <see langword="null"/></exception>
+        public NativeCompiler([NotNull] Options compilerOptions)
         {
-            public string AssemblyName;
-        }
-
-        /*public Assembly CreateAssemblyForClasses(SolAssembly assembly, string fullName)
-        {
-            AssemblyBuilder builder = AppDomain.CurrentDomain.DefineDynamicAssembly(new AssemblyName(fullName), AssemblyBuilderAccess.Run);
-            foreach (SolClassDefinition sCls in assembly.Classes) {
-                
+            if (compilerOptions == null) {
+                throw new ArgumentNullException(nameof(compilerOptions));
             }
+            CompilerOptions = compilerOptions;
         }
 
-        public void CreateNativeClassForSolClass(SolClassDefinition definition)
-        {
-            // We are overriding the descriptor since we want to keep its signature.
-            // And that's fine since the descriptor base methods will inject the values correctly anyway.
-            Type descriptorType = definition.DescriptorType;
-            if (descriptorType == null) {
-                // Well, we could. But we're not going to. It serves no purpose. The reason why we create new
-                // override classes for native classes is that we will be able to use the overridden members.
-                throw new InvalidOperationException("Cannot create a native class for a SolScript class without descriptor.");
-            }
-            AssemblyName typeNam = new AssemblyName(descriptorType.FullName + "<solcls_" + definition.Type + ">");
-            TypeBuilder typeBuilder = new TypeBuilder();
-        }
-        */
+        /// <summary>
+        /// The options of this compiler.
+        /// </summary>
+        [NotNull]public Options CompilerOptions { get; set; }
 
-        public static void CreateNativeClassForSolClass(IEnumerable<SolClassDefinition> definitions, Context ctx)
+        /// <summary>
+        ///     Tries to dynamically compile the native class mapping for the given SolScript class definitions.
+        /// </summary>
+        /// <param name="definitions">The definitions to dynamically compile.</param>
+        /// <param name="options">The assembly options.</param>
+        /// <returns>The generated assembly.</returns>
+        /// <exception cref="SolCompilerException">An error occured while compiling the mapping.</exception>
+        public Assembly CompileNativeClassMapping(
+            IEnumerable<SolClassDefinition> definitions)
         {
-            var compileUnit = new CodeCompileUnit();
-            var csc = new CSharpCodeProvider(new Dictionary<string, string>() {{"CompilerVersion", "v4.0"}});
-            var parameters = new CompilerParameters(AppDomain.CurrentDomain.GetAssemblies().Select(s => s.Location).ToArray(), ctx.AssemblyName, false);
-            parameters.GenerateExecutable = false;
-            parameters.GenerateInMemory = false;
-            parameters.OutputAssembly = "solscript.gen.dll";
-            PSDictionary<string, CodeNamespace> namespaces = new PSDictionary<string, CodeNamespace>();
-            PSDictionary<string, SolClassDefinition> fullNameToDef = new PSDictionary<string, SolClassDefinition>();
+            CodeCompileUnit compileUnit = new CodeCompileUnit();
+            CSharpCodeProvider csc = new CSharpCodeProvider(new Dictionary<string, string> {{"CompilerVersion", "v4.0"}});
+            CompilerParameters parameters = new CompilerParameters(
+                CompilerOptions.Assemblies.Select(s => s.Location).ToArray(),
+                CompilerOptions.OutputFileName, false) {
+                GenerateExecutable = false,
+                TreatWarningsAsErrors = CompilerOptions.WarningsAreErrors,
+                GenerateInMemory = !CompilerOptions.CreateAssemblyFile,
+                OutputAssembly = CompilerOptions.OutputFileName
+            };
+            var namespaces = new PSDictionary<string, CodeNamespace>();
+            var fullNameToDef = new PSDictionary<string, SolClassDefinition>();
             foreach (SolClassDefinition definition in definitions) {
-                var inheritance = definition.GetInheritance().ToList();
+                if (definition.DescriptorType != null) {
+                    throw new SolCompilerException(definition.Location, CompilerResources.Err_DynMapClassIsAlreadyMapped.FormatWith(definition.Type, definition.DescriptorType.FullName));
+                }
+                List<SolClassDefinition> inheritance = definition.GetInheritance().ToList();
                 // We are overriding the descriptor since we want to keep its signature.
                 // And that's fine since the descriptor base methods will inject the values correctly anyway.
                 if (inheritance.Count(i => i.DescriptorType != null) == 0) {
                     // Well, we could. But we're not going to. It serves no purpose. The reason why we create new
                     // override classes for native classes is that we will be able to use the overridden members.
-                    throw new InvalidOperationException("Cannot create a native class for " + definition.Type + " due to a missing or ambigous descriptor.");
+                    throw new SolCompilerException(definition.Location, CompilerResources.Err_DynMapNoNativeDescriptor.FormatWith(definition.Type));
                 }
                 SolClassDefinition descriptorDef = inheritance.First(i => i.DescriptorType != null);
                 CodeNamespace ns;
@@ -76,7 +80,7 @@ namespace SolScript.Compiler.Native
                         compileUnit.Namespaces.Add(ns);
                     }
                 }
-                var classType = new CodeTypeDeclaration(definition.Type);
+                CodeTypeDeclaration classType = new CodeTypeDeclaration(definition.Type);
                 ns.Types.Add(classType);
                 classType.Attributes = MemberAttributes.Public;
                 classType.BaseTypes.Add(descriptorDef.DescriptorType);
@@ -86,11 +90,11 @@ namespace SolScript.Compiler.Native
                 {
                     classType.BaseTypes.Add(typeof(INativeClassSelf));
 
-                    var selfField = new CodeMemberField(typeof(SolClass), nameof(INativeClassSelf.Self) + "__backingfield") {
+                    CodeMemberField selfField = new CodeMemberField(typeof(SolClass), nameof(INativeClassSelf.Self) + "__backingfield") {
                         Attributes = MemberAttributes.Private
                     };
 
-                    var selfProp = new CodeMemberProperty {
+                    CodeMemberProperty selfProp = new CodeMemberProperty {
                         Name = nameof(INativeClassSelf.Self),
                         Type = new CodeTypeReference(typeof(SolClass)),
                         Attributes = MemberAttributes.Public | MemberAttributes.Final
@@ -104,7 +108,7 @@ namespace SolScript.Compiler.Native
                     classType.Members.Add(selfProp);
                 }
                 // Functions
-                PSHashSet<string> handledFuncNames = new PSHashSet<string>();
+                var handledFuncNames = new PSHashSet<string>();
                 foreach (SolClassDefinition inhCls in inheritance) {
                     foreach (SolFunctionDefinition function in inhCls.DeclaredFunctions) {
                         if (handledFuncNames.Contains(function.Name)
@@ -113,22 +117,20 @@ namespace SolScript.Compiler.Native
                             continue;
                         }
                         handledFuncNames.Add(function.Name);
-                        SolDebug.WriteLine("Chunk func " + function);
                         // Okay, we found a function. Now find the lowest one it overrides.
-                        foreach (var inhClsRev in definition.GetInheritanceReversed()) {
+                        foreach (SolClassDefinition inhClsRev in definition.GetInheritanceReversed()) {
                             SolFunctionDefinition overriddenDef;
                             if (inhClsRev.TryGetFunction(function.Name, true, out overriddenDef)) {
-                                SolDebug.WriteLine("   Overrides " + overriddenDef);
                                 // It was overridden in this class.
                                 if (overriddenDef == function) {
-                                    throw new InvalidOperationException("An override function cannot override itself. - Invalid internal state.");
+                                    throw new SolCompilerException(function.Location, CompilerResources.Err_DynMapFunctionTriedToOverrideSelf.FormatWith(function.ToString()));
                                 }
                                 // We did override a native method.
                                 if (overriddenDef.Chunk.ChunkType != SolChunkWrapper.Type.NativeMethod) {
                                     continue;
                                 }
                                 MethodInfo overriddenMethod = overriddenDef.Chunk.GetNativeMethod();
-                                var method = new CodeMemberMethod();
+                                CodeMemberMethod method = new CodeMemberMethod();
                                 classType.Members.Add(method);
                                 foreach (ParameterInfo parameter in overriddenMethod.GetParameters()) {
                                     method.Parameters.Add(new CodeParameterDeclarationExpression(parameter.ParameterType, parameter.Name));
@@ -193,17 +195,42 @@ namespace SolScript.Compiler.Native
                     }
                 }
             }
-            using (TextWriter writer = File.CreateText(ctx.AssemblyName + ".native.cs")) {
-                csc.GenerateCodeFromCompileUnit(compileUnit, writer, new CodeGeneratorOptions() {});
+            if (CompilerOptions.CreateSourceFile) {
+                try {
+                    using (TextWriter writer = File.CreateText(CompilerOptions.OutputFileName + ".cs")) {
+                        csc.GenerateCodeFromCompileUnit(compileUnit, writer, new CodeGeneratorOptions());
+                    }
+                } catch (Exception ex) {
+                    throw new SolCompilerException(SolSourceLocation.Native(), CompilerResources.Err_DynMapFailedToWriteSourceFile, ex);
+                }
             }
-            var results = csc.CompileAssemblyFromDom(parameters, compileUnit);
-            results.Errors.Cast<CompilerError>().ToList().ForEach(error => Debug.WriteLine(error.ToString()));
-            foreach (Type type in results.CompiledAssembly.GetTypes()) {
-                Debug.WriteLine("final assembly contains: " + type.FullName);
-                fullNameToDef[type.FullName].DescriptorType = type;
+            CompilerResults results = csc.CompileAssemblyFromDom(parameters, compileUnit);
+            List<CompilerError> errors = results.Errors.Cast<CompilerError>().ToList();
+            if (CompilerOptions.WarningsAreErrors ? errors.Count != 0 : errors.Any(e => !e.IsWarning)) {
+                StringBuilder errorBuilder = new StringBuilder();
+                foreach (CompilerError error in results.Errors) {
+                    errorBuilder.AppendLine(error.ToString());
+                }
+                throw new SolCompilerException(SolSourceLocation.Native(), CompilerResources.Err_DynMapCompilerError.FormatWith(fullNameToDef.Count, errorBuilder.ToString()));
             }
+            Assembly assembly = results.CompiledAssembly;
+            foreach (KeyValuePair<string, SolClassDefinition> defPair in fullNameToDef) {
+                defPair.Value.DescriptorType = assembly.GetType(defPair.Key);
+            }
+            return assembly;
         }
 
+        /// <summary>
+        ///     Serves as the essective method body of a dynamically mapped native class.
+        /// </summary>
+        /// <typeparam name="T">The return type.</typeparam>
+        /// <param name="instance">The class instance to get the function from.</param>
+        /// <param name="defName">The name of the inheritance level the function was defined at.</param>
+        /// <param name="defAccess">The access modifier of the function.</param>
+        /// <param name="funcName">The name of the funtion.</param>
+        /// <param name="args">The native argument array.</param>
+        /// <returns>The converted return value.</returns>
+        /// <exception cref="TargetInvocationException">An error occured while calling the function.</exception>
         public static T MethodBody<T>(
             SolClass instance,
             string defName,
@@ -211,10 +238,32 @@ namespace SolScript.Compiler.Native
             string funcName,
             object[] args)
         {
-            SolValue raw = MethodBodyNoConvert(instance, defName, defAccess, funcName, args);
-            return raw.ConvertTo<T>();
+            try {
+                SolValue raw = MethodBodyNoConvert(instance, defName, defAccess, funcName, args);
+                return raw.ConvertTo<T>();
+            } catch (Exception ex) {
+                TargetInvocationException tEs = ex as TargetInvocationException;
+                if (tEs != null) {
+                    throw tEs;
+                }
+                string name = instance.Type + "." + funcName;
+                if (instance.Type != defName) {
+                    name += "#" + defName;
+                }
+                throw new TargetInvocationException(CompilerResources.Err_DynMapException.FormatWith(name), ex);
+            }
         }
 
+        /// <summary>
+        ///     Serves as the essective method body of a dynamically mapped native class.
+        /// </summary>
+        /// <param name="instance">The class instance to get the function from.</param>
+        /// <param name="defName">The name of the inheritance level the function was defined at.</param>
+        /// <param name="defAccess">The access modifier of the function.</param>
+        /// <param name="funcName">The name of the funtion.</param>
+        /// <param name="args">The native argument array.</param>
+        /// <returns>The raw return value.</returns>
+        /// <exception cref="TargetInvocationException">An error occured while calling the function.</exception>
         public static SolValue MethodBodyNoConvert(
             SolClass instance,
             string defName,
@@ -222,12 +271,74 @@ namespace SolScript.Compiler.Native
             string funcName,
             object[] args)
         {
-            SolValue[] solArgs = SolMarshal.MarshalFromNative(instance.Assembly, args);
-            SolClass.Inheritance inh = instance.FindInheritance(defName);
-            IVariables vars = inh.GetVariables(defAccess, SolVariableMode.Declarations);
-            SolValue funcRaw = vars.Get(funcName);
-            SolFunction func = (SolFunction) funcRaw;
-            return func.Call(new SolExecutionContext(instance.Assembly, "Native calling " + func), solArgs);
+            try {
+                SolValue[] solArgs = SolMarshal.MarshalFromNative(instance.Assembly, args);
+                SolClass.Inheritance inh = instance.FindInheritance(defName);
+                if (inh == null) {
+                    throw new SolRuntimeNativeException("Failed to find inheritance level \"" + defName + "\" in class \"" + instance.Type + "\".");
+                }
+                IVariables vars = inh.GetVariables(defAccess, SolVariableMode.Declarations);
+                SolValue funcRaw = vars.Get(funcName);
+                SolFunction func = (SolFunction) funcRaw;
+                return func.Call(new SolExecutionContext(instance.Assembly, "Native calling " + func), solArgs);
+            } catch (Exception ex) {
+                TargetInvocationException tEs = ex as TargetInvocationException;
+                if (tEs != null) {
+                    throw tEs;
+                }
+                string name = instance.Type + "." + funcName;
+                if (instance.Type != defName) {
+                    name += "#" + defName;
+                }
+                throw new TargetInvocationException(CompilerResources.Err_DynMapException.FormatWith(name), ex);
+            }
         }
+
+        #region Nested type: Options
+
+        /// <summary>
+        ///     Options realted to the native compiler.
+        /// </summary>
+        public class Options
+        {
+            /// <summary>
+            ///     Creates new compiler options.
+            /// </summary>
+            /// <param name="assemblies">The assemblies being referenced by the compiler.</param>
+            public Options([NotNull] Assembly[] assemblies)
+            {
+                Assemblies = assemblies;
+            }
+
+            /// <summary>
+            ///     The assemblies being referenced by the compiler.
+            /// </summary>
+            [NotNull]
+            public Assembly[] Assemblies { get; }
+
+            /// <summary>
+            ///     Should a dll file be created?
+            /// </summary>
+            public bool CreateAssemblyFile { get; set; } = false;
+
+            /// <summary>
+            ///     Should source files be created?
+            /// </summary>
+            public bool CreateSourceFile { get; set; } = false;
+
+            /// <summary>
+            ///     The output file name. Only used if either <see cref="CreateAssemblyFile" /> or <see cref="CreateSourceFile" /> is
+            ///     true.
+            /// </summary>
+            [NotNull]
+            public string OutputFileName { get; set; } = "SolScriptMappings.dll";
+
+            /// <summary>
+            ///     Should warnings be treated as errors?
+            /// </summary>
+            public bool WarningsAreErrors { get; set; } = false;
+        }
+
+        #endregion
     }
 }

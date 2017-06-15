@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using JetBrains.Annotations;
 using PSUtility.Enumerables;
+using SolScript.Exceptions;
 using SolScript.Interpreter;
-using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Library;
 using SolScript.Interpreter.Types;
 using SolScript.Interpreter.Types.Marshal;

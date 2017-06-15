@@ -72,6 +72,19 @@ namespace SolScript.Interpreter
         public ps.PSHashSet<NativeFieldPostProcessor> FieldPostProcessors { get; } = new ps.PSHashSet<NativeFieldPostProcessor>();
         public ps.PSHashSet<NativeMethodPostProcessor> MethodPostProcessors { get; } = new ps.PSHashSet<NativeMethodPostProcessor>();
 
+        /// <summary>
+        ///     Should a native class be dynamically compiled for every SolScript class overriding a native class?
+        ///     Setting this to false will result in improved startup time, but result in not being able to inherit
+        ///     from abstract native class or override native members.
+        ///     <br />
+        ///     See this german blog post for details: https://patrick-sachs.de/2017/nahtlose-kompatibilitaet-meistens/
+        /// </summary>
+        /// <remarks>
+        ///     Don't turn it off unless you know what you are doing. Native interop with this disable will not
+        ///     recceive support.
+        /// </remarks>
+        public bool CreateNativeMapping { get; set; } = true;
+
         public static NativeFieldPostProcessor DefaultFallbackFieldPostProcessor {
             get { return s_DefaultFallbackFieldPostProcessor; }
             set {
@@ -92,6 +105,10 @@ namespace SolScript.Interpreter
             }
         }
 
+        /// <summary>
+        ///     The post processor used for native fields when no other one could be found.
+        /// </summary>
+        /// <exception cref="ArgumentNullException" accessor="set"><paramref name="value" /> is <see langword="null" /></exception>
         public NativeFieldPostProcessor FallbackFieldPostProcessor {
             get { return m_FallbackFieldPostProcessor; }
             set {
@@ -102,16 +119,10 @@ namespace SolScript.Interpreter
             }
         }
 
-        /*public T QueryForMethod<T>(MethodInfo method, Func<SolLibrary.NativeMethodPostProcessor, T> func)
-        {
-            foreach (SolLibrary.NativeMethodPostProcessor processor in MethodPostProcessors) {
-                if (processor.AppliesTo(method)) {
-                    return func(processor);
-                }
-            }
-            return func(FallbackMethodPostProcessor);
-        }*/
-
+        /// <summary>
+        ///     The post processor used for native methods when no other one could be found.
+        /// </summary>
+        /// <exception cref="ArgumentNullException" accessor="set"><paramref name="value" /> is <see langword="null" /></exception>
         public NativeMethodPostProcessor FallbackMethodPostProcessor {
             get { return m_FallbackMethodPostProcessor; }
             set {
@@ -136,6 +147,14 @@ namespace SolScript.Interpreter
                 m_Name = value;
             }
         }
+
+        /// <summary>
+        ///     If native mapping is enabled, should be dynamically compiled code be written to an actually existing
+        ///     assembly or unles be loaded into memory? If you wish to write to a physical assembly specifiy the path
+        ///     of the assembly, if not set to null. Igored if <see cref="CreateNativeMapping" /> is false.
+        /// </summary>
+        /// <remarks>If you are concerned about security and retaining a sandboxed environment leave this at null.</remarks>
+        public string NativeMappingOutputPath { get; set; } = null;
 
         /// <summary>
         ///     Should warnings be treated as errors? (Default: false)

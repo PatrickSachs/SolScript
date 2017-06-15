@@ -2,7 +2,7 @@
 using System.Runtime.Serialization;
 using Irony.Parsing;
 
-namespace SolScript.Interpreter.Exceptions
+namespace SolScript.Exceptions
 {
     /// <summary>
     ///     The SolVariableException is used whenever an error while resolving a variable occured.

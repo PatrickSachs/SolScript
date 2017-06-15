@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using SolScript.Interpreter.Exceptions;
+using SolScript.Exceptions;
 
 namespace SolScript.Interpreter.Types
 {

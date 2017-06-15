@@ -169,6 +169,15 @@ namespace SolScript.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Failed to build the dynamic mapping..
+        /// </summary>
+        internal static string Err_FailedToBuildDynamicMapping {
+            get {
+                return ResourceManager.GetString("Err_FailedToBuildDynamicMapping", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Failed to build function from native constructor &quot;{0}&quot;..
         /// </summary>
         internal static string Err_FailedToBuildNativeConstructor {

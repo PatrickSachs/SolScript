@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Reflection;
-using SolScript.Interpreter.Exceptions;
+using SolScript.Exceptions;
 using SolScript.Interpreter.Types.Implementation;
 
 namespace SolScript.Interpreter.Types.Marshal

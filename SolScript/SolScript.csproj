@@ -79,7 +79,7 @@
     </Compile>
     <Compile Include="Compiler\SolCompilerValidator.cs" />
     <Compile Include="Compiler\SolValidationContext.cs" />
-    <Compile Include="Interpreter\Exceptions\SolCompilerException.cs" />
+    <Compile Include="Exceptions\SolCompilerException.cs" />
     <Compile Include="Interpreter\Expressions\Expression_Literal.cs" />
     <Compile Include="Interpreter\Expressions\Expression_Tertiary.cs" />
     <Compile Include="Interpreter\GlobalVariablesBase.cs" />
@@ -115,7 +115,7 @@
     <Compile Include="Compiler\SolCompiler.cs" />
     <Compile Include="ErrorId.cs" />
     <Compile Include="Interpreter\SolAccessModifier.cs" />
-    <Compile Include="Interpreter\Exceptions\SolRuntimeNativeException.cs" />
+    <Compile Include="Exceptions\SolRuntimeNativeException.cs" />
     <Compile Include="Interpreter\IPriority.cs" />
     <Compile Include="Interpreter\PriorityComparer.cs" />
     <Compile Include="Interpreter\SolAnnotateableDefinitionBase.cs" />
@@ -145,10 +145,10 @@
     <Compile Include="Interpreter\DeclaredLocalClassInheritanceVariables.cs" />
     <Compile Include="Interpreter\DeclaredInternalClassInheritanceVariables.cs" />
     <Compile Include="Interpreter\DeclaredClassInheritanceVariables.cs" />
-    <Compile Include="Interpreter\Exceptions\SolInterpreterException.cs" />
-    <Compile Include="Interpreter\Exceptions\SolRuntimeException.cs" />
-    <Compile Include="Interpreter\Exceptions\SolTypeRegistryException.cs" />
-    <Compile Include="Interpreter\Exceptions\SolVariableException.cs" />
+    <Compile Include="Exceptions\SolInterpreterException.cs" />
+    <Compile Include="Exceptions\SolRuntimeException.cs" />
+    <Compile Include="Exceptions\SolTypeRegistryException.cs" />
+    <Compile Include="Exceptions\SolVariableException.cs" />
     <Compile Include="Interpreter\Expressions\Expression_Return.cs" />
     <Compile Include="Interpreter\Expressions\Expression_TableConstructor.cs" />
     <Compile Include="Interpreter\Expressions\Expression_Unary.cs" />
@@ -216,8 +216,8 @@
     <Compile Include="Interpreter\Types\Implementation\SolScriptClassFunction.cs" />
     <Compile Include="Interpreter\Types\SolString.cs" />
     <Compile Include="Interpreter\Types\SolValue.cs" />
-    <Compile Include="Interpreter\Exceptions\SolException.cs" />
-    <Compile Include="Interpreter\Exceptions\SolMarshallingException.cs" />
+    <Compile Include="Exceptions\SolException.cs" />
+    <Compile Include="Exceptions\SolMarshallingException.cs" />
     <Compile Include="Interpreter\Expressions\Expression_Binary.cs" />
     <Compile Include="Interpreter\Expressions\Expression_CreateFunc.cs" />
     <Compile Include="Interpreter\Expressions\Expression_GetVariable.cs" />

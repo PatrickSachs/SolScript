@@ -10,11 +10,12 @@ using System.Text;
 using Irony;
 using Irony.Parsing;
 using JetBrains.Annotations;
+using PSUtility.Enumerables;
 using PSUtility.Metadata;
 using PSUtility.Reflection;
 using SolScript.Compiler;
 using SolScript.Compiler.Native;
-using SolScript.Interpreter.Exceptions;
+using SolScript.Exceptions;
 using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Library;
 using SolScript.Interpreter.Statements;
@@ -466,7 +467,12 @@ namespace SolScript.Interpreter
                     return false;
                 }
                 // todo: --!validate scripts !-- 
-                TryCreateNativeMapping();
+                if (options.CreateNativeMapping) {
+                    if (!TryCreateNativeMapping()) {
+                        CurrentlyParsing = null;
+                        return false;
+                    }
+                }
                 if (!TryCreate()) {
                     CurrentlyParsing = null;
                     return false;
@@ -477,8 +483,8 @@ namespace SolScript.Interpreter
 
             private bool TryCreateNativeMapping()
             {
-                // TODO: it feels kind of hakcy to just override the previous values. maybe gen the native mappings in one go with the rest?
-                ps.PSList<SolClassDefinition> requiresNativeMapping = new ps.PSList<SolClassDefinition>();
+                // TODO: it feels kind of hacky to just override the previous values. maybe gen the native mappings in one go with the rest?
+                PSList<SolClassDefinition> requiresNativeMapping = new PSList<SolClassDefinition>();
                 foreach (SolClassDefinition definition in m_Assembly.m_ClassDefinitions.Values) {
                     if (definition.DescriptorType != null) {
                         // Native classes don't need a native binding.
@@ -490,7 +496,21 @@ namespace SolScript.Interpreter
                     }
                     requiresNativeMapping.Add(definition);
                 }
-                NativeCompiler.CreateNativeClassForSolClass(requiresNativeMapping, new NativeCompiler.Context { AssemblyName = m_Assembly.Name });
+                NativeCompiler.Options options = new NativeCompiler.Options(new PSHashSet<Assembly>(m_Libraries.SelectMany(l => l.Assemblies).Concat(Assembly.GetExecutingAssembly())).ToArray()) {
+                    CreateAssemblyFile = m_Options.NativeMappingOutputPath != null,
+                    CreateSourceFile = m_Options.NativeMappingOutputPath != null,
+                    WarningsAreErrors = m_Options.WarningsAreErrors
+                };
+                if (m_Options.NativeMappingOutputPath != null) {
+                    options.OutputFileName = m_Options.NativeMappingOutputPath;
+                }
+                NativeCompiler compiler = new NativeCompiler(options);
+                try {
+                    compiler.CompileNativeClassMapping(requiresNativeMapping);
+                } catch (SolCompilerException ex) {
+                    m_Assembly.m_ErrorAdder.Add(new SolError(ex.Location,Resources.Err_FailedToBuildDynamicMapping, false, ex));
+                    return false;
+                }
                 return true;
             }
 

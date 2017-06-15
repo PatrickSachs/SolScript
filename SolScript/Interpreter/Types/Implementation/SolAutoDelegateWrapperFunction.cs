@@ -1,6 +1,6 @@
 ﻿using System;
 using Irony.Parsing;
-using SolScript.Interpreter.Exceptions;
+using SolScript.Exceptions;
 
 namespace SolScript.Interpreter.Types.Implementation
 {

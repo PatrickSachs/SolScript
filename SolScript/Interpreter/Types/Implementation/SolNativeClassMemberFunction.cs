@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Reflection;
 using JetBrains.Annotations;
-using SolScript.Interpreter.Exceptions;
+using SolScript.Exceptions;
 using SolScript.Utility;
 
 namespace SolScript.Interpreter.Types.Implementation

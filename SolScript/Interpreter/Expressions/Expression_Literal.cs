@@ -1,7 +1,6 @@
 ﻿using System;
 using System.IO;
 using SolScript.Compiler;
-using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter.Expressions

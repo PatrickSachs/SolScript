@@ -5,7 +5,7 @@ using Irony.Parsing;
 using JetBrains.Annotations;
 using PSUtility.Enumerables;
 using PSUtility.Strings;
-using SolScript.Interpreter.Exceptions;
+using SolScript.Exceptions;
 using SolScript.Interpreter.Library;
 using SolScript.Interpreter.Types.Interfaces;
 using SolScript.Properties;

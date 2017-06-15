@@ -1,7 +1,7 @@
 ﻿using System;
 using Irony.Parsing;
 using JetBrains.Annotations;
-using SolScript.Interpreter.Exceptions;
+using SolScript.Exceptions;
 
 namespace SolScript.Interpreter.Types.Implementation
 {

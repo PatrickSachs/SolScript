@@ -2,7 +2,7 @@
 using System.Runtime.Serialization;
 using Irony.Parsing;
 
-namespace SolScript.Interpreter.Exceptions
+namespace SolScript.Exceptions
 {
     /// <summary>
     ///     This exception is used to indicate an error inside the type registry.
