@@ -84,6 +84,7 @@ namespace SolScript.Compiler.Native
                 ns.Types.Add(classType);
                 classType.Attributes = MemberAttributes.Public;
                 classType.BaseTypes.Add(descriptorDef.DescriptorType);
+                classType.CustomAttributes.Add(new CodeAttributeDeclaration(new CodeTypeReference(typeof(SolNativeCompilerGeneratedAttribute))));
 
                 fullNameToDef.Add(ns.Name + "." + classType.Name, definition);
                 // INativeClassSelf

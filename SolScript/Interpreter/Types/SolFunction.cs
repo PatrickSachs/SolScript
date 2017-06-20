@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Linq;
-using System.Reflection;
 using Irony.Parsing;
 using JetBrains.Annotations;
-using PSUtility.Enumerables;
 using SolScript.Exceptions;
-using SolScript.Interpreter.Types.Implementation;
+using SolScript.Interpreter.Types.Marshal;
 
 namespace SolScript.Interpreter.Types
 {
@@ -17,24 +14,14 @@ namespace SolScript.Interpreter.Types
     /// </summary>
     public abstract class SolFunction : SolValue, ISourceLocateable
     {
-        /// <inheritdoc />
-        public override bool IsReferenceEqual(SolExecutionContext context, SolValue other)
-        {
-            return Id == (other as SolFunction)?.Id;
-        }
-
         #region Delegates
-
-        public delegate object AutoDelegate(params object[] arguments);
-
-        public delegate T AutoDelegate<out T>(params object[] arguments);
 
         /// <summary>
         ///     A delegate used to represent SolFunctions.
         /// </summary>
         /// <param name="arguments">The arguments to the function call.</param>
         /// <returns>The return value.</returns>
-        public delegate SolValue Delegate(params SolValue[] arguments);
+        [NotNull] public delegate SolValue DirectDelegate([ItemNotNull] params SolValue[] arguments);
 
         #endregion
 
@@ -52,15 +39,11 @@ namespace SolScript.Interpreter.Types
         // The Id the next function will receive.
         private static uint s_NextId;
 
-        private static readonly MethodInfo s_CreateAutoDelegateMethod =
-            typeof(SolFunction).GetMethods(BindingFlags.Instance | BindingFlags.Public).First(m => m.Name == nameof(CreateAutoDelegate) && m.GetGenericArguments().Length == 1);
-
         /// <summary>
         ///     The unique Id of this function.
         /// </summary>
         public readonly uint Id;
-
-
+        
         /// <summary>
         ///     The <see cref="SolAssembly" /> this function belongs to.
         /// </summary>
@@ -89,6 +72,12 @@ namespace SolScript.Interpreter.Types
         #region Overrides
 
         /// <inheritdoc />
+        public override bool IsReferenceEqual(SolExecutionContext context, SolValue other)
+        {
+            return Id == (other as SolFunction)?.Id;
+        }
+
+        /// <inheritdoc />
         /// <remarks>One function equals another if they share the same <see cref="Id" />.</remarks>
         public override bool IsEqual(SolExecutionContext context, SolValue other)
         {
@@ -106,17 +95,13 @@ namespace SolScript.Interpreter.Types
         /// <exception cref="SolMarshallingException"> The value cannot be converted. </exception>
         public override object ConvertTo(Type type)
         {
-            if (type == typeof(Delegate)) {
-                return CreateDelegate();
+            // We have a special delegate for direct calls which saves us from having 
+            // to create costly reflections stuff to build and marshal the delegate.
+            if (type == typeof(DirectDelegate)) {
+                return (DirectDelegate) (arguments => Call(new SolExecutionContext(Assembly, "Direct native delegate call"), arguments));
             }
-            if (type == typeof(AutoDelegate)) {
-                return CreateAutoDelegate(SolMarshal.GetClosestNativeType(Assembly, ReturnType.Type));
-            }
-            if (type.IsGenericType) {
-                Type openGenericType = type.GetGenericTypeDefinition();
-                if (openGenericType == typeof(AutoDelegate<>)) {
-                    return s_CreateAutoDelegateMethod.MakeGenericMethod(type.GetGenericArguments()).Invoke(this, ArrayUtility.Empty<object>());
-                }
+            if (typeof(Delegate).IsAssignableFrom(type)) {
+                return NativeDelegateMarshaller.CreateDelegate(type, this);
             }
             return base.ConvertTo(type);
         }
@@ -140,58 +125,6 @@ namespace SolScript.Interpreter.Types
         /// <returns>The class instance. Null if none.</returns>
         [CanBeNull]
         protected abstract SolClass GetClassInstance(out bool isCurrent, out bool resetOnExit);
-
-        /// <summary>
-        ///     A dummy function, doing nothing once called. Accepts any parameter, returns nothing(thus nil).
-        /// </summary>
-        /// <param name="assembly">The assembly this function belongs to.</param>
-        /// <returns>The dummy function.</returns>
-        public static SolFunction Dummy(SolAssembly assembly) => new SolScriptLamdaFunction(assembly, SolSourceLocation.Native(), SolParameterInfo.Any, SolType.AnyNil, new SolChunk(assembly, SolSourceLocation.Native(), null), null);
-
-        /// <summary>
-        ///     Creates a delegate you can use to call the function.
-        /// </summary>
-        /// <returns>The delegate.</returns>
-        /// <remarks>
-        ///     Keep in mind that the preferred way of calling a function is using the <see cref="Call" /> method. If you are
-        ///     unsure about the <see cref="SolExecutionContext" /> parameter just create a new one.
-        /// </remarks>
-        public virtual Delegate CreateDelegate()
-        {
-            return delegate(SolValue[] arguments) { return Call(new SolExecutionContext(Assembly, "Native delegate call"), arguments); };
-        }
-
-        /// <typeparam name="T">The desired return type of the function.</typeparam>
-        /// <inheritdoc cref="CreateAutoDelegate" />
-        public virtual AutoDelegate<T> CreateAutoDelegate<T>()
-        {
-            return delegate(object[] arguments) {
-                SolValue[] solArguments = SolMarshal.MarshalFromNative(Assembly, arguments);
-                SolValue returnValue = Call(new SolExecutionContext(Assembly, "Native auto delegate call"), solArguments);
-                return (T) SolMarshal.MarshalFromSol(returnValue, typeof(T));
-            };
-        }
-
-        /// <summary>
-        ///     Ceates a delegate you can use to the function. The passed arguments will automatically be marshalled to the types
-        ///     required by the function.
-        /// </summary>
-        /// <param name="returnType">The desired return type of the function.</param>
-        /// <returns>The delegate.</returns>
-        /// <remarks>
-        ///     Keep in mind that the preferred way of calling a function is using the <see cref="Call" /> method. If you are
-        ///     unsure about the <see cref="SolExecutionContext" /> parameter just create a new one.<br />Also make sure to check
-        ///     for <see cref="SolMarshallingException" />s whenever calling this function. They are thrown whenevr your arguments
-        ///     could not be converted into the ones required by this function.
-        /// </remarks>
-        public virtual AutoDelegate CreateAutoDelegate(Type returnType)
-        {
-            return delegate(object[] arguments) {
-                SolValue[] solArguments = SolMarshal.MarshalFromNative(Assembly, arguments);
-                SolValue returnValue = Call(new SolExecutionContext(Assembly, "Native auto delegate call"), solArguments);
-                return SolMarshal.MarshalFromSol(returnValue, returnType);
-            };
-        }
 
         /// <summary>
         ///     Calls the function.

@@ -206,7 +206,7 @@ namespace SolScript.Interpreter
                     default:
                         throw new ArgumentOutOfRangeException();
                 }
-                SolDebug.WriteLine("Created function " + function + " [level: " + GetType().Name + "]");
+                //SolDebug.WriteLine("Created function " + function + " [level: " + GetType().Name + "]");
                 Members.Declare(name, new SolType(SolFunction.TYPE, false));
                 if (functionDefinition.DeclaredAnnotations.Count > 0) {
                     SolClass[] annotations;

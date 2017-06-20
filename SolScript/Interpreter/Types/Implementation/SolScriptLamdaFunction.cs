@@ -22,8 +22,8 @@ namespace SolScript.Interpreter.Types.Implementation
         ///     e.g. declared inside  another function and thus needs to have access to that functions variable scope.
         /// </param>
         public SolScriptLamdaFunction([NotNull] SolAssembly assembly, SourceLocation location, [NotNull] SolParameterInfo parameterInfo,
-            SolType returnType, [NotNull] SolChunk chunk, [CanBeNull] IVariables parentVariables)
-            : base(assembly, location, parameterInfo, returnType)
+            SolType returnType, [NotNull] SolChunk chunk, [CanBeNull] IVariables parentVariables, SolClass definedIn)
+            : base(assembly, location, parameterInfo, returnType, definedIn)
         {
             m_Chunk = chunk;
             m_ParentVariables = parentVariables;
@@ -33,14 +33,6 @@ namespace SolScript.Interpreter.Types.Implementation
         [CanBeNull] private readonly IVariables m_ParentVariables;
 
         #region Overrides
-
-        /// <inheritdoc />
-        protected override SolClass GetClassInstance(out bool isCurrent, out bool resetOnExit)
-        {
-            isCurrent = false;
-            resetOnExit = false;
-            return null;
-        }
 
         /// <inheritdoc />
         protected override string ToString_Impl(SolExecutionContext context)

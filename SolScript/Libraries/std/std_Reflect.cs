@@ -443,7 +443,7 @@ namespace SolScript.Libraries.std
         private SolTable GetSourceLocationTable(SourceLocation location)
         {
             return new SolTable {
-                [Str_file] = SolString.ValueOf(location.File).Intern(),
+                [Str_file] = SolString.ValueOf(location.File ?? "<ERR NO FILE>").Intern(),
                 [Str_line] = new SolNumber(location.Line),
                 [Str_column] = new SolNumber(location.Column)
             };

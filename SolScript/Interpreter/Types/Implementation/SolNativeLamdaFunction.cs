@@ -14,8 +14,14 @@ namespace SolScript.Interpreter.Types.Implementation
     public sealed class SolNativeLamdaFunction : SolLamdaFunction
     {
         /// <inheritdoc />
-        private SolNativeLamdaFunction(SolAssembly assembly, SolParameterInfo parameterInfo, SolType returnType, MethodInfo method, DynamicReference instance)
-            : base(assembly, SolSourceLocation.Native(), parameterInfo, returnType)
+        private SolNativeLamdaFunction(
+            SolAssembly assembly, 
+            SolParameterInfo parameterInfo, 
+            SolType returnType, 
+            MethodInfo method, 
+            DynamicReference instance,
+            SolClass definedIn)
+            : base(assembly, SolSourceLocation.Native(), parameterInfo, returnType, definedIn)
         {
             m_Method = method;
             m_Instance = instance;
@@ -30,13 +36,6 @@ namespace SolScript.Interpreter.Types.Implementation
 
         #region Overrides
 
-        /// <inheritdoc />
-        protected override SolClass GetClassInstance(out bool isCurrent, out bool resetOnExit)
-        {
-            isCurrent = false;
-            resetOnExit = false;
-            return null;
-        }
 
         /// <inheritdoc />
         /// <exception cref="SolRuntimeException">A runtime error occured.</exception>
@@ -70,11 +69,11 @@ namespace SolScript.Interpreter.Types.Implementation
         /// <param name="method">The native method representing this function.</param>
         /// <param name="instance">A reference to the object to invoke the method on.</param>
         /// <exception cref="SolMarshallingException">No matching SolType for a parameter type.</exception>
-        public static SolNativeLamdaFunction CreateFrom([NotNull] SolAssembly assembly, [NotNull] MethodInfo method, [NotNull] DynamicReference instance)
+        public static SolNativeLamdaFunction CreateFrom([NotNull] SolAssembly assembly, [NotNull] MethodInfo method, [NotNull] DynamicReference instance, [CanBeNull] SolClass definedIn)
         {
             SolType returnType = InternalHelper.GetMemberReturnType(assembly, method);
             SolParameterInfo parameterInfo = InternalHelper.GetParameterInfo(assembly, method.GetParameters());
-            return new SolNativeLamdaFunction(assembly, parameterInfo, returnType, method, instance);
+            return new SolNativeLamdaFunction(assembly, parameterInfo, returnType, method, instance, definedIn);
         }
     }
 }

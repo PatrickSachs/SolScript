@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.IO;
+using System.Text;
 using Irony.Parsing;
 using JetBrains.Annotations;
 using SolScript.Interpreter.Types;
@@ -46,7 +47,6 @@ namespace SolScript.Interpreter
             SolClassFunction classFunction = Function as SolClassFunction;
             DefinedSolFunction definedFunction = Function as DefinedSolFunction;
             if (classFunction != null) {
-                bool _;
                 SolClassDefinition onClass = classFunction.ClassInstance.InheritanceChain.Definition;
                 SolClassDefinition definingClass = classFunction.Definition.DefinedIn ?? onClass;
                 builder.Append(definingClass.Type);
@@ -64,7 +64,13 @@ namespace SolScript.Interpreter
         public override string ToString()
         {
             StringBuilder builder = new StringBuilder();
-            builder.Append(Location);
+            builder.Append("(");
+            builder.Append(Location.File);
+            builder.Append(":");
+            builder.Append(Location.Line);
+            builder.Append(":");
+            builder.Append(Location.Column);
+            builder.Append(") ");
             builder.Append(" : ");
             AppendFunctionName(builder);
             builder.Append("(");

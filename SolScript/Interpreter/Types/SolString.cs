@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using SolScript.Exceptions;
+using SolScript.Interpreter.Types.Marshal;
 
 namespace SolScript.Interpreter.Types
 {
@@ -12,12 +13,6 @@ namespace SolScript.Interpreter.Types
     /// </summary>
     public sealed class SolString : SolValue
     {
-        /// <inheritdoc />
-        public override bool IsReferenceEqual(SolExecutionContext context, SolValue other)
-        {
-            return IsEqual(context, other);
-        }
-
         static SolString()
         {
             // Intern some often used values.
@@ -31,7 +26,7 @@ namespace SolScript.Interpreter.Types
         }
 
         /// <summary>
-        /// The type name is "string".
+        ///     The type name is "string".
         /// </summary>
         public const string TYPE = "string";
 
@@ -52,6 +47,12 @@ namespace SolScript.Interpreter.Types
         #region Overrides
 
         /// <inheritdoc />
+        public override bool IsReferenceEqual(SolExecutionContext context, SolValue other)
+        {
+            return IsEqual(context, other);
+        }
+
+        /// <inheritdoc />
         /// <exception cref="SolMarshallingException"> The value cannot be converted. </exception>
         public override object ConvertTo(Type type)
         {
@@ -69,6 +70,15 @@ namespace SolScript.Interpreter.Types
             }
             if (type == typeof(StringBuilder)) {
                 return new StringBuilder(Value);
+            }
+            if (type.IsEnum) {
+                NativeEnumMarshaller.EnumData data = NativeEnumMarshaller.GetEnumData(type);
+                Enum e;
+                // todo: support flags
+                if (data.QueryName(Value, out e)) {
+                    return e;
+                }
+                throw new SolMarshallingException(TYPE, type, "Cannot find matching enum value: " + Value);
             }
             return base.ConvertTo(type);
         }

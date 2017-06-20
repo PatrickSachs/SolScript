@@ -94,7 +94,7 @@ namespace SolScript.Interpreter.Types
                 if (def.DescribedType != null && (def.DescribedType == type || def.DescribedType.IsSubclassOf(type))) {
                     object nativeObject;
                     if (DescribedObjectReference.TryGet(out nativeObject)) {
-                        SolMarshal.GetAssemblyCache(Assembly).StoreReference(nativeObject.NotNull(), this);
+                        //SolMarshal.GetAssemblyCache(Assembly).StoreReference(nativeObject.NotNull(), this);
                         return nativeObject;
                     }
                     throw new SolMarshallingException(Type, type, Resources.Err_InvalidClassDescribedObjectReference.ToString(Type));
@@ -102,7 +102,7 @@ namespace SolScript.Interpreter.Types
                 if (def.DescriptorType != null && (def.DescriptorType != def.DescribedType && (def.DescriptorType == type || def.DescriptorType.IsSubclassOf(type)))) {
                     object nativeObject;
                     if (DescriptorObjectReference.TryGet(out nativeObject)) {
-                        SolMarshal.GetAssemblyCache(Assembly).StoreReference(nativeObject.NotNull(), this);
+                        //SolMarshal.GetAssemblyCache(Assembly).StoreReference(nativeObject.NotNull(), this);
                         return nativeObject;
                     }
                     throw new SolMarshallingException(Type, type, Resources.Err_InvalidClassDescriptorObjectReference.ToString(Type));
@@ -316,9 +316,6 @@ namespace SolScript.Interpreter.Types
         /// <param name="meta">The meta key identifier.</param>
         /// <param name="link">The meta function link. Only valid if the method returned true.</param>
         /// <returns>true if the meta function could be found, false if not.</returns>
-        /// <exception cref="SolVariableException">
-        ///     The meta function could be found but was in an invalid state(e.g. wrong type, accessor...).
-        /// </exception>
         [ContractAnnotation("link:null => false")]
         internal bool TryGetMetaFunction(SolMetaFunction meta, out SolClassDefinition.MetaFunctionLink link)
         {
@@ -402,13 +399,16 @@ namespace SolScript.Interpreter.Types
             // The function is already received at this point
             // so that we can create a fake stack-frame helping
             // out with error reporting.
+            SolClassDefinition.MetaFunctionLink link;
+                // If the constructor could not be found, we add a dummy function in order to have a stack trace.
+            if (!TryGetMetaFunction(SolMetaFunction.__new, out link)) {
+                throw new InvalidOperationException("The class \"" + callingContext.CurrentClass.Type + "\" has no constructor meta function. All classes must have a constructor.");
+            }
             SolFunction ctorFunction;
             try {
-                SolClassDefinition.MetaFunctionLink link;
-                // If the constructor could not be found, we add a dummy function in order to have a stack trace.
-                ctorFunction = TryGetMetaFunction(SolMetaFunction.__new, out link) ? link.GetFunction(this) : SolFunction.Dummy(Assembly);
+                ctorFunction = link.GetFunction(this);
             } catch (SolVariableException ex) {
-                throw new SolRuntimeException(callingContext, $"The constructor of \"{Type}\" was in an invalid state.", ex);
+                throw new SolRuntimeException(callingContext, "Failed to obtain constructor of class \"" + Definition.Type + "\" (Instance: " + callingContext.CurrentClass.Id + ")", ex);
             }
             callingContext.PushStackFrame(ctorFunction);
             // ===========================================

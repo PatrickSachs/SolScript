@@ -337,7 +337,7 @@ namespace SolScript.Interpreter.Statements
             // 3 _identifier 
             // 4 TypeRef_opt 
             // 5 Assignment_opt;
-            SolDebug.WriteLine(node.Span.Location + " :: " + node.ChildNodes.JoinToString(" // "));
+            //SolDebug.WriteLine(node.Span.Location + " :: " + node.ChildNodes.JoinToString(" // "));
             ParseTreeNode annotationsListNode = node.ChildNodes[0];
             SolAccessModifier accessModifier = GetAccessModifier(node.ChildNodes[1]);
             SolMemberModifier memberModifier = GetMemberModifier(node.ChildNodes[2]);

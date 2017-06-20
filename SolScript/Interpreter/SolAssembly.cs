@@ -1,10 +1,9 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.Serialization;
 using System.Security;
 using System.Text;
 using Irony;
@@ -206,7 +205,7 @@ namespace SolScript.Interpreter
             if (!options.EnforceCreation && !definition.CanBeCreated()) {
                 throw new ArgumentException($"The class \"{definition.Type}\" cannot be instantiated.");
             }
-            var annotations = new ps.PSList<SolClass>();
+            var annotations = new PSList<SolClass>();
             SolClass instance = new SolClass(definition);
             // The context is required to actually initialize the fields.
             SolExecutionContext creationContext = options.CallingContext ?? new SolExecutionContext(this, definition.Type + "#" + instance.Id + " creation context");
@@ -294,7 +293,7 @@ namespace SolScript.Interpreter
                 // or it is time to get rid of this stupid lazy function init stuff(but my sweet memory!)
                 activeInheritance = activeInheritance.BaseInheritance;
             }
-            instance.AnnotationsArray = new ps.Array<SolClass>(annotations.ToArray());
+            instance.AnnotationsArray = new Array<SolClass>(annotations.ToArray());
             if (options.CallConstructor) {
                 try {
                     instance.CallConstructor(creationContext, constructorArguments);
@@ -397,9 +396,9 @@ namespace SolScript.Interpreter
                 m_Libraries.Add(lang.GetLibrary());
             }
 
-            private readonly ps.PSHashSet<SolLibrary> m_Libraries = new ps.PSHashSet<SolLibrary>();
-            private readonly ps.PSHashSet<string> m_SrcFileNames = new ps.PSHashSet<string>();
-            private readonly ps.PSList<string> m_SrcStrings = new ps.PSList<string>();
+            private readonly PSHashSet<SolLibrary> m_Libraries = new PSHashSet<SolLibrary>();
+            private readonly PSHashSet<string> m_SrcFileNames = new PSHashSet<string>();
+            private readonly PSList<string> m_SrcStrings = new PSList<string>();
             private SolAssembly m_Assembly;
 
             private SolAssemblyOptions m_Options;
@@ -407,12 +406,12 @@ namespace SolScript.Interpreter
             /// <summary>
             ///     The source files referenced by this builder.
             /// </summary>
-            public ps.ReadOnlyHashSet<string> SourceFiles => m_SrcFileNames.AsReadOnly();
+            public ReadOnlyHashSet<string> SourceFiles => m_SrcFileNames.AsReadOnly();
 
             /// <summary>
             ///     The source strings referenced by this builder.
             /// </summary>
-            public ps.ReadOnlyList<string> SourceStrings => m_SrcStrings.AsReadOnly();
+            public ReadOnlyList<string> SourceStrings => m_SrcStrings.AsReadOnly();
 
             /// <summary>
             ///     Includes new source files in this builder.
@@ -466,6 +465,10 @@ namespace SolScript.Interpreter
                     CurrentlyParsing = null;
                     return false;
                 }
+                if (!TryPostProcessPreValidation()) {
+                    CurrentlyParsing = null;
+                    return false;
+                }
                 // todo: --!validate scripts !-- 
                 if (options.CreateNativeMapping) {
                     if (!TryCreateNativeMapping()) {
@@ -481,19 +484,58 @@ namespace SolScript.Interpreter
                 return true;
             }
 
+            private bool TryPostProcessPreValidation()
+            {
+                foreach (SolClassDefinition definition in m_Assembly.m_ClassDefinitions.Values) {
+                    SolClassDefinition.MetaFunctionLink ctor;
+                    if (!definition.TryGetMetaFunction(SolMetaFunction.__new, out ctor)) {
+                        SolFunctionDefinition ctorDef = new SolFunctionDefinition(m_Assembly, SolSourceLocation.Native()) {
+                            Name = SolMetaFunction.__new.Name,
+                            Type = SolType.AnyNil,
+                            AccessModifier = SolAccessModifier.Internal,
+                            MemberModifier = definition.BaseClass != null ? SolMemberModifier.Override : SolMemberModifier.Default,
+                            DefinedIn = definition
+                        };
+                        SolClassDefinition.MetaFunctionLink baseCtor;
+                        // We may not be able to obain the base ctor it hasnt ben generated yet by this method.
+                        // This won't cause problems since an error is created anyway once the pamraters mismatch here.
+                        if (definition.BaseClass != null && definition.BaseClass.TryGetMetaFunction(SolMetaFunction.__new, out baseCtor)) {
+                            SolChunk chunk = new SolChunk(m_Assembly, SolSourceLocation.Native(), null,
+                                new Statement_CallFunction(m_Assembly, SolSourceLocation.Native(), definition.Type,
+                                    new Expression_GetVariable(new AVariable.Named(SolMetaFunction.__new.Name)),
+                                    new Array<SolExpression>(ctorDef.ParameterInfo.Select(p => new Expression_GetVariable(new AVariable.Named(p.Name))).Cast<SolExpression>().ToArray())
+                                )
+                            );
+                            ctorDef.Chunk = new SolChunkWrapper(chunk);
+                            ctorDef.ParameterInfo = baseCtor.Definition.ParameterInfo;
+                        } else {
+                            ctorDef.Chunk = new SolChunkWrapper(new SolChunk(m_Assembly, SolSourceLocation.Native(), null));
+                            ctorDef.ParameterInfo = SolParameterInfo.None;
+                        }
+                    }
+                }
+                return true;
+            }
+
             private bool TryCreateNativeMapping()
             {
                 // TODO: it feels kind of hacky to just override the previous values. maybe gen the native mappings in one go with the rest?
-                PSList<SolClassDefinition> requiresNativeMapping = new PSList<SolClassDefinition>();
+                var requiresNativeMapping = new PSList<SolClassDefinition>();
                 foreach (SolClassDefinition definition in m_Assembly.m_ClassDefinitions.Values) {
-                    if (definition.DescriptorType != null) {
+                    Trace.WriteLine("Considering " + definition + " for mapping...");
+                    if (definition.IsNativeClass)
+                    {
+                        Trace.WriteLine("   ... no: native class");
                         // Native classes don't need a native binding.
                         continue;
                     }
-                    if (definition.BaseClass?.DescriptorType == null) {
+                    if (definition.BaseClass == null || !definition.BaseClass.IsNativeClass)
+                    {
+                        Trace.WriteLine("   ... no: base not native class");
                         // We are not inheriting from a native class.
                         continue;
                     }
+                    Trace.WriteLine("   ... >>> TAKE IT <<<");
                     requiresNativeMapping.Add(definition);
                 }
                 NativeCompiler.Options options = new NativeCompiler.Options(new PSHashSet<Assembly>(m_Libraries.SelectMany(l => l.Assemblies).Concat(Assembly.GetExecutingAssembly())).ToArray()) {
@@ -508,7 +550,7 @@ namespace SolScript.Interpreter
                 try {
                     compiler.CompileNativeClassMapping(requiresNativeMapping);
                 } catch (SolCompilerException ex) {
-                    m_Assembly.m_ErrorAdder.Add(new SolError(ex.Location,Resources.Err_FailedToBuildDynamicMapping, false, ex));
+                    m_Assembly.m_ErrorAdder.Add(new SolError(ex.Location, Resources.Err_FailedToBuildDynamicMapping, false, ex));
                     return false;
                 }
                 return true;
@@ -530,7 +572,7 @@ namespace SolScript.Interpreter
                 // Or like C# and only allow constants, but I'd REALLY(I mean really!) like to avoid that.
                 // Declare Functions ... (AND ASSIGN!)
                 foreach (gen.KeyValuePair<string, SolFunctionDefinition> funcPair in m_Assembly.GlobalFunctionPairs) {
-                    SolDebug.WriteLine("Processing global function " + funcPair.Key + " ...");
+                    //SolDebug.WriteLine("Processing global function " + funcPair.Key + " ...");
                     SolFunctionDefinition funcDefinition = funcPair.Value;
                     IVariables declareInVariables = m_Assembly.GetVariables(funcDefinition.AccessModifier);
                     SolFunction function;
@@ -567,7 +609,7 @@ namespace SolScript.Interpreter
                 }
                 // Initialize global fields
                 foreach (gen.KeyValuePair<string, SolFieldDefinition> fieldPair in m_Assembly.GlobalFieldPairs) {
-                    SolDebug.WriteLine("Processing global field " + fieldPair.Key + " ...");
+                    //SolDebug.WriteLine("Processing global field " + fieldPair.Key + " ...");
                     SolFieldDefinition fieldDefinition = fieldPair.Value;
                     IVariables declareInVariables = m_Assembly.GetVariables(fieldDefinition.AccessModifier);
                     switch (fieldDefinition.Initializer.FieldType) {
@@ -619,7 +661,7 @@ namespace SolScript.Interpreter
             /// <returns>true if everything worked as expected, false if an error occured.</returns>
             private bool TryBuildScripts()
             {
-                var trees = new ps.PSList<ParseTree>();
+                var trees = new PSList<ParseTree>();
                 Irony.Parsing.Parser parser = new Irony.Parsing.Parser(Grammar);
 
                 // Scan the source strings & files for code.
@@ -738,7 +780,7 @@ namespace SolScript.Interpreter
             /// <returns>true if everything worked as expected, false if an error occured.</returns>
             private bool TryBuildLibraries()
             {
-                var globals = new ps.PSList<Type>();
+                var globals = new PSList<Type>();
                 // Build the raw definition hulls.
                 foreach (SolLibrary library in m_Libraries) {
                     foreach (Assembly libraryAssembly in library.Assemblies) {
@@ -746,7 +788,7 @@ namespace SolScript.Interpreter
                             // Get descriptor
                             SolTypeDescriptorAttribute descriptor = libraryType.GetCustomAttribute<SolTypeDescriptorAttribute>();
                             if (descriptor != null && descriptor.LibraryName == library.Name) {
-                                SolDebug.WriteLine(library.Name + " - " + libraryType + " describes " + descriptor.Describes);
+                                //SolDebug.WriteLine(library.Name + " - " + libraryType + " describes " + descriptor.Describes);
                                 // Get name
                                 string name = libraryType.GetCustomAttribute<SolLibraryNameAttribute>()?.Name ?? libraryType.Name;
                                 // Create definition object
@@ -1155,17 +1197,17 @@ namespace SolScript.Interpreter
         /// <summary>
         ///     All global fields in key value pairs.
         /// </summary>
-        public ps.ReadOnlyDictionary<string, SolFieldDefinition> GlobalFieldPairs => m_GlobalFields.AsReadOnly();
+        public ReadOnlyDictionary<string, SolFieldDefinition> GlobalFieldPairs => m_GlobalFields.AsReadOnly();
 
         /// <summary>
         ///     All global functions in key value pairs.
         /// </summary>
-        public ps.ReadOnlyDictionary<string, SolFunctionDefinition> GlobalFunctionPairs => m_GlobalFunctions.AsReadOnly();
+        public ReadOnlyDictionary<string, SolFunctionDefinition> GlobalFunctionPairs => m_GlobalFunctions.AsReadOnly();
 
         /// <summary>
-        /// All classes in this assembly.
+        ///     All classes in this assembly.
         /// </summary>
-        public ps.ReadOnlyCollection<SolClassDefinition> Classes => m_ClassDefinitions.Values;
+        public ReadOnlyCollection<SolClassDefinition> Classes => m_ClassDefinitions.Values;
 
         /// <summary>
         ///     A descriptive name of this assembly(e.g. "Enemy AI Logic"). The name will be used during debugging and error
@@ -1200,14 +1242,14 @@ namespace SolScript.Interpreter
         #region Non Public
 
         // Stores all meta data provider objects.
-        private readonly ps.PSDictionary<MetaKeyBase, object> m_MetaCache = new ps.PSDictionary<MetaKeyBase, object>(MetaKeyBase.NameComparer);
-        private readonly ps.PSDictionary<string, SolClassDefinition> m_ClassDefinitions = new ps.PSDictionary<string, SolClassDefinition>();
+        private readonly PSDictionary<MetaKeyBase, object> m_MetaCache = new PSDictionary<MetaKeyBase, object>(MetaKeyBase.NameComparer);
+        private readonly PSDictionary<string, SolClassDefinition> m_ClassDefinitions = new PSDictionary<string, SolClassDefinition>();
         // Errors can be added here.
         private readonly SolErrorCollection.Adder m_ErrorAdder;
-        private readonly ps.PSDictionary<string, SolFieldDefinition> m_GlobalFields = new ps.PSDictionary<string, SolFieldDefinition>();
-        private readonly ps.PSDictionary<string, SolFunctionDefinition> m_GlobalFunctions = new ps.PSDictionary<string, SolFunctionDefinition>();
-        private readonly ps.PSDictionary<Type, SolClassDefinition> m_DescribedClasses = new ps.PSDictionary<Type, SolClassDefinition>();
-        private readonly ps.PSDictionary<Type, SolClassDefinition> m_DescriptorClasses = new ps.PSDictionary<Type, SolClassDefinition>();
+        private readonly PSDictionary<string, SolFieldDefinition> m_GlobalFields = new PSDictionary<string, SolFieldDefinition>();
+        private readonly PSDictionary<string, SolFunctionDefinition> m_GlobalFunctions = new PSDictionary<string, SolFunctionDefinition>();
+        private readonly PSDictionary<Type, SolClassDefinition> m_DescribedClasses = new PSDictionary<Type, SolClassDefinition>();
+        private readonly PSDictionary<Type, SolClassDefinition> m_DescriptorClasses = new PSDictionary<Type, SolClassDefinition>();
         // The options for creating this assembly.
         private readonly SolAssemblyOptions m_Options;
         // The lazy statement factory.

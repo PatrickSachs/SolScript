@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Reflection;
 using JetBrains.Annotations;
 using PSUtility.Enumerables;
@@ -48,7 +49,7 @@ namespace SolScript.Interpreter.Types.Implementation
             try {
                 values = ParameterInfo.Marshal(context, args);
             } catch (SolMarshallingException ex) {
-                throw new SolRuntimeException(context, "Could to marshal the function parameters to native objects: " + ex.Message, ex);
+                throw new SolRuntimeException(context, "Could not marshal the function parameters to native objects: " + ex.Message, ex);
             }
             SolClassDefinition classDefinition = Definition.DefinedIn.NotNull();
             // Why are we not directly using the descriptor of the class this ctor was defined in?
@@ -75,17 +76,21 @@ namespace SolScript.Interpreter.Types.Implementation
             return SolNil.Instance;
         }
 
+        #endregion
+
         private ConstructorInfo GetMostSuitableNativeCtor()
         {
             // todo: resolve dynmaically generated ctor statically? even possible/realistic?
-            if (!ClassInstance.Definition.IsNativeClass && ClassInstance.Definition.DescriptorType != null) {
+            foreach (SolClassDefinition definition in ClassInstance.Definition.GetInheritanceReversed()) {
                 // todo: dynamic native class create ctor
-                return ClassInstance.Definition.DescriptorType.GetConstructor(ArrayUtility.Empty<Type>());
+                if (definition.DescriptorType != null 
+                    && InternalHelper.IsClassSolCompilerGenerated(definition.DescriptorType))
+                {
+                    return definition.DescriptorType.GetConstructors().First();
+                }
             }
             return Definition.Chunk.GetNativeConstructor();
         }
-
-        #endregion
 
         private static void SetSelf(INativeClassSelf self, SolClass cls)
         {

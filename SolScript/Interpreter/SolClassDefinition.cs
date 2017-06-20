@@ -203,7 +203,6 @@ namespace SolScript.Interpreter
         }
 
         /// <summary>Creates the meta function lookup for the class definition.</summary>
-        /// <exception cref="InvalidOperationException">Invalid state.</exception>
         private void BuildMetaFunctions()
         {
             l_meta_functions = new PSDictionary<SolMetaFunction, MetaFunctionLink>();
@@ -231,10 +230,6 @@ namespace SolScript.Interpreter
         /// <param name="meta">The meta function key.</param>
         /// <param name="link">The meta function linker. Only valid if method returned true.</param>
         /// <returns>true if the meta function exists, false if not.</returns>
-        /// <exception cref="SolVariableException">
-        ///     The meta function could be found but was in an invalid state(e.g. wrong type,
-        ///     accessor...).
-        /// </exception>
         /// <exception cref="ArgumentNullException"><paramref name="meta" /> is null.</exception>
         /// <exception cref="InvalidOperationException">Invalid state.</exception>
         [ContractAnnotation("link:null => false")]
@@ -252,9 +247,11 @@ namespace SolScript.Interpreter
         /// <param name="meta">The meta function helper.</param>
         /// <returns>true if said meta function could be found, false if not.</returns>
         /// <remarks>This method does NOT assert state! Type checks, etc. should be performed by the <see cref="SolCompiler" />.</remarks>
-        // This method is meant for usage from inside BuildMetaFunctions.
-        private bool FindAndRegisterMetaFunction(SolMetaFunction meta)
+        internal bool FindAndRegisterMetaFunction(SolMetaFunction meta)
         {
+            if (!DidBuildMetaFunctions) {
+                BuildMetaFunctions();
+            }
             SolFunctionDefinition definition;
             if (TryGetFunction(meta.Name, false, out definition)) {
                 l_meta_functions.Add(meta, new MetaFunctionLink(meta, definition));
@@ -408,7 +405,6 @@ namespace SolScript.Interpreter
         ///     The returned function. - Only valid if the method
         ///     returned true.
         /// </param>
-        /// <exception cref="InvalidOperationException">Invalid state.</exception>
         [ContractAnnotation("definition:null => false")]
         public bool TryGetFunction(string name, bool declaredOnly, [CanBeNull] out SolFunctionDefinition definition)
         {
@@ -430,7 +426,6 @@ namespace SolScript.Interpreter
         ///     treated as matching, if false then not.
         /// </param>
         /// <returns>True if the function could be found, false otherwise.</returns>
-        /// <exception cref="InvalidOperationException">Invalid state.</exception>
         [ContractAnnotation("definition:null => false")]
         public bool TryGetFunction(string name, bool declaredOnly, [CanBeNull] out SolFunctionDefinition definition, Func<SolFunctionDefinition, bool> validator)
         {

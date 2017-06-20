@@ -1,10 +1,12 @@
-﻿using System;
+﻿//#define DO_NOT_CACHE_NATIVE
+
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using JetBrains.Annotations;
 using PSUtility.Enumerables;
 using SolScript.Exceptions;
-using SolScript.Interpreter;
-using SolScript.Interpreter.Library;
 using SolScript.Interpreter.Types;
 using SolScript.Interpreter.Types.Marshal;
 using SolScript.Utility;
@@ -52,8 +54,9 @@ namespace SolScript.Interpreter
             NativeMarshallers.Add(new NativeDictionaryMarshaller());
             NativeMarshallers.Add(new NativeEnumerableMarshaller());
             NativeMarshallers.Add(new NativeDelegateMarshaller());
-            NativeMarshallers.Add(new NativeAutoDelegateMarshaller());
-            NativeMarshallers.Add(new NativeGenericAutoDelegateMarshaller());
+            //NativeMarshallers.Add(new NativeAutoDelegateMarshaller());
+            //NativeMarshallers.Add(new NativeGenericAutoDelegateMarshaller());
+            NativeMarshallers.Add(new NativeEnumMarshaller());
             NativeMarshallers.Sort(Comparer.Instance);
         }
 
@@ -128,7 +131,8 @@ namespace SolScript.Interpreter
         /// </param>
         /// <exception cref="SolMarshallingException">Failed to marshal a value.</exception>
         /// <exception cref="ArgumentException">Array length mismatches.</exception>
-        public static void MarshalFromSol(int valueStart, int valueCount, SolValue[] values, Type[] types, object[] array, int offset, bool allowCasting = true)
+        public static void MarshalFromSol(int valueStart, int valueCount, [ItemNotNull] SolValue[] values, [ItemNotNull] Type[] types, [ItemCanBeNull] object[] array, int offset,
+            bool allowCasting = true)
         {
             if (valueCount != types.Length || valueStart + valueCount > values.Length || valueCount < 0) {
                 throw new ArgumentException($"Marshalling requires a type for each value - Got {values.Length}(Overridden to {valueCount}, starting at {valueStart}) values and {types.Length} types.",
@@ -143,9 +147,14 @@ namespace SolScript.Interpreter
                 object nativeValue;
                 if (type == typeof(SolValue) || type.IsSubclassOf(typeof(SolValue))) {
                     if (!type.IsInstanceOfType(value)) {
-                        throw new SolMarshallingException(value.Type, type, "Cannot assign types.");
+                        if (value is SolNil) {
+                            nativeValue = null;
+                        } else {
+                            throw new SolMarshallingException(value.Type, type, "Cannot assign types.");
+                        }
+                    } else {
+                        nativeValue = value;
                     }
-                    nativeValue = value;
                     /*else {
                         string toSolType = SolType.PrimitiveTypeNameOf(type);
                         if (!allowCasting) {
@@ -250,7 +259,7 @@ namespace SolScript.Interpreter
             throw new SolMarshallingException("Cannot find a native type for SolType \"" + type + "\".");
         }
 
-        /// <summary>
+        /*/// <summary>
         ///     Gets a commonyl used native type describing a certain SolScript type. Be careful with the results of this method as
         ///     the
         ///     types are obviously rather vague.
@@ -289,7 +298,7 @@ namespace SolScript.Interpreter
                 }
             }
             throw new SolMarshallingException("Cannot find a native type for SolType \"" + type + "\".");
-        }
+        }*/
 
         /// <summary>Marshals the given native values to their SolValue representations. </summary>
         /// <param name="types">The types of the given <paramref name="values" />.</param>
@@ -454,16 +463,24 @@ namespace SolScript.Interpreter
         /// </summary>
         internal class AssemblyCache
         {
-            /// <summary>
-            ///     Creates a new assembly cache.
-            /// </summary>
+#if !DO_NOT_CACHE_NATIVE
+/// <summary>
+///     Creates a new assembly cache.
+/// </summary>
             public AssemblyCache()
             {
-                m_NativeToSol = new WeakTable<object, SolClass>(InternalHelper.ReferenceEqualityComparer<object>.Instance);
-            }
+                m_NativeToSol = new ConditionalWeakTable<object, SolClass>(//100, 
+                    //InternalHelper.ReferenceEqualityComparer<object>.Instance//*,
+                    //InternalHelper.ReferenceEqualityComparer<SolClass>.Instance*/
+                    );
 
-            // The weakly stored objects and classes.
-            private readonly WeakTable<object, SolClass> m_NativeToSol;
+            }
+#endif
+
+#if !DO_NOT_CACHE_NATIVE
+// The weakly stored objects and classes.
+            private readonly ConditionalWeakTable<object, SolClass> m_NativeToSol;
+#endif
 
             /// <summary>
             ///     Stores the class of a given native object.
@@ -472,10 +489,13 @@ namespace SolScript.Interpreter
             /// <param name="solClass">The associated class.</param>
             public void StoreReference([NotNull] object value, [NotNull] SolClass solClass)
             {
-                // todo: determine if conditional weak table doesnt cause issues
-                // there was a reson why it was swapped for a third party one after all. (i assume. though sometimes i do things that just dont make sense...)
-                // note to self: keep in mind to document this kinda stuff....
-                m_NativeToSol.TryInsert(value, solClass);
+                Trace.WriteLine("Storing in assembly cache: " + value);
+#if !DO_NOT_CACHE_NATIVE
+// todo: determine if conditional weak table doesnt cause issues
+// there was a reson why it was swapped for a third party one after all. (i assume. though sometimes i do things that just dont make sense...)
+// note to self: keep in mind to document this kinda stuff....
+                m_NativeToSol.Add(value, solClass);
+#endif
             }
 
             /// <summary>
@@ -486,13 +506,19 @@ namespace SolScript.Interpreter
             [CanBeNull]
             public SolClass GetReference([NotNull] object value)
             {
+#if DO_NOT_CACHE_NATIVE
+                return null;
+#else
                 SolClass solClass;
-                return m_NativeToSol.TryGet(value, out solClass) ? solClass : null;
+                SolClass obj = m_NativeToSol.TryGetValue(value, out solClass) ? solClass : null;
+                Debug.WriteLine("Getting cache of obj " + (value?.ToString() ?? "NULL") + " -> " + obj);
+                return obj;
+#endif
             }
         }
 
         #endregion
-
+        
         #region Nested type: Comparer
 
         private class Comparer : IComparer<ISolNativeMarshaller>
@@ -500,7 +526,7 @@ namespace SolScript.Interpreter
             private Comparer() {}
             public static readonly Comparer Instance = new Comparer();
 
-            #region IComparer<ISolNativeMarshaller> Members
+        #region IComparer<ISolNativeMarshaller> Members
 
             /// <inheritdoc />
             public int Compare(ISolNativeMarshaller x, ISolNativeMarshaller y)
@@ -508,7 +534,7 @@ namespace SolScript.Interpreter
                 return PriorityComparer.Instance.Compare(x, y);
             }
 
-            #endregion
+        #endregion
         }
 
         #endregion

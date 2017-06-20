@@ -112,10 +112,10 @@
     <value>2.0</value>
   </resheader>
   <resheader name="reader">
-    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <resheader name="writer">
-    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="Err_DuplicateClassField" xml:space="preserve">
     <value>The class "{0}" has multiple fields with the name "{1}". Overloading is not supported.</value>
@@ -243,5 +243,9 @@
   </data>
   <data name="Err_FailedToBuildDynamicMapping" xml:space="preserve">
     <value>Failed to build the dynamic mapping.</value>
+  </data>
+  <data name="Err_FailedToBuildDelegate" xml:space="preserve">
+    <value>Failed to build a delegate of type "{0}" for function "{1}".</value>
+    <comment>0: Delegate Type // 1: Function</comment>
   </data>
 </root>

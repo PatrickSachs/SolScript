@@ -5,16 +5,30 @@ using SolScript.Exceptions;
 
 namespace SolScript.Interpreter.Types.Implementation
 {
-    public sealed class SolDelegateWrapperFunction : SolFunction
+    /// <summary>
+    /// Wraps a special delegate in a function that is directly passed all arguments passed from SolScript.
+    /// <br/>
+    /// No marshalling of any type is done, all values are directly used.
+    ///  </summary>
+    public sealed class SolScriptDelegateWrapperFunction : SolFunction
     {
-        public SolDelegateWrapperFunction(SolAssembly assembly, Delegate fDelegate, [CanBeNull] SolParameterInfo parameters = null)
+        /// <summary>
+        /// Creates the delegate wrapper.
+        /// </summary>
+        /// <param name="assembly">The associated assembly.</param>
+        /// <param name="fDelegate">The actual delegate.</param>
+        /// <param name="parameters">The parameters of the function, or simply pass null or allow any arguments to be used.</param>
+        public SolScriptDelegateWrapperFunction(
+            SolAssembly assembly, 
+            DirectDelegate fDelegate, 
+            [CanBeNull] SolParameterInfo parameters = null)
         {
             m_Delegate = fDelegate;
             Assembly = assembly;
             ParameterInfo = parameters ?? SolParameterInfo.Any;
         }
 
-        private readonly Delegate m_Delegate;
+        private readonly DirectDelegate m_Delegate;
 
         /// <inheritdoc />
         public override SolAssembly Assembly { get; }
@@ -31,9 +45,14 @@ namespace SolScript.Interpreter.Types.Implementation
         #region Overrides
 
         /// <inheritdoc />
-        public override Delegate CreateDelegate()
+        /// <exception cref="SolMarshallingException"> The value cannot be converted. </exception>
+        public override object ConvertTo(Type type)
         {
-            return m_Delegate;
+            // Directly return the delegate to avoid nesting delegates in delegates.
+            if (type == typeof(DirectDelegate)) {
+                return m_Delegate;
+            }
+            return base.ConvertTo(type);
         }
 
         /// <inheritdoc />

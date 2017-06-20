@@ -24,7 +24,8 @@ namespace SolScript.Interpreter.Types
             if (type.IsClass) {
                 return null;
             }
-            if (type == typeof(bool)) {
+            if (type == typeof(bool))
+            {
                 return false;
             }
             object number;

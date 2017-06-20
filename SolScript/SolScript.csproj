@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>SolScript</RootNamespace>
     <AssemblyName>SolScript_Library</AssemblyName>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
   </PropertyGroup>
@@ -36,10 +36,6 @@
     <DocumentationFile>bin\Release\SolScript_Library.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="IntXLib, Version=1.0.0.0, Culture=neutral, PublicKeyToken=1744b76c74eaee1e, processorArchitecture=MSIL">
-      <HintPath>..\packages\IntX.1.0.1.0\lib\net20\IntXLib.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="Irony, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ca48ace7223ead47, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\Libraries\Irony.dll</HintPath>
@@ -48,29 +44,25 @@
       <HintPath>..\packages\JetBrains.Annotations.10.4.0\lib\net\JetBrains.Annotations.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="MathNet.Numerics, Version=3.18.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\MathNet.Numerics.3.18.0\lib\net35\MathNet.Numerics.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="PSUtility">
-      <HintPath>..\Libraries\PSUtility.dll</HintPath>
+    <Reference Include="PSUtility, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\PSUtility\bin\Release\PSUtility.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Threading, Version=1.0.2856.102, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\TaskParallelLibrary.1.0.2856.0\lib\Net35\System.Threading.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Compiler\ISolCompileable.cs" />
     <Compile Include="Compiler\Native\NativeCompiler.cs" />
+    <Compile Include="Compiler\Native\SolNativeCompilerGeneratedAttribute.cs" />
     <Compile Include="Compiler\SolCompilationState.cs" />
     <Compile Include="Compiler\SolCompliationContext.cs" />
     <Compile Include="Compiler\ValidationResult.cs" />
     <Compile Include="Interpreter\SolMemberDefinition.cs" />
+    <Compile Include="Interpreter\Types\Marshal\NativeDelegateMarshaller.cs" />
+    <Compile Include="Interpreter\Types\Marshal\NativeEnumMarshaller.cs" />
     <Compile Include="Interpreter\Types\SolTypeCode.cs" />
     <Compile Include="Properties\CompilerResources.Designer.cs">
       <AutoGen>True</AutoGen>
@@ -120,7 +112,7 @@
     <Compile Include="Interpreter\PriorityComparer.cs" />
     <Compile Include="Interpreter\SolAnnotateableDefinitionBase.cs" />
     <Compile Include="Interpreter\SolAssemblyOptions.cs" />
-    <Compile Include="Interpreter\Types\Marshal\NativeDelegateMarshaller.cs" />
+    <Compile Include="Interpreter\Types\Marshal\NativeFunctionDelegateMarshaller.cs" />
     <Compile Include="Interpreter\Types\Implementation\SolAutoDelegateWrapperFunction.cs" />
     <Compile Include="Interpreter\Types\Implementation\SolDelegateWrapperFunction.cs" />
     <Compile Include="Interpreter\Types\Implementation\SolGenericAutoDelgateWrapperFunction.cs" />

@@ -169,6 +169,15 @@ namespace SolScript.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Failed to build a delegate of type &quot;{0}&quot; for function &quot;{1}&quot;..
+        /// </summary>
+        internal static string Err_FailedToBuildDelegate {
+            get {
+                return ResourceManager.GetString("Err_FailedToBuildDelegate", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Failed to build the dynamic mapping..
         /// </summary>
         internal static string Err_FailedToBuildDynamicMapping {

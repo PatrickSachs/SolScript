@@ -1,21 +1,19 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using SolScript.Interpreter.Types.Implementation;
 
 namespace SolScript.Interpreter.Types.Marshal
 {
-    public class NativeAutoDelegateMarshaller : ISolNativeMarshaller
+    public class NativeFunctionDelegateMarshaller : ISolNativeMarshaller
     {
+        #region ISolNativeMarshaller Members
+
         /// <inheritdoc />
         public int Priority => SolMarshal.PRIORITY_DEFAULT;
 
         /// <inheritdoc />
         public bool DoesHandle(SolAssembly assembly, Type type)
         {
-            return type == typeof(SolFunction.AutoDelegate);
+            return type == typeof(SolFunction.DirectDelegate);
         }
 
         /// <inheritdoc />
@@ -27,8 +25,9 @@ namespace SolScript.Interpreter.Types.Marshal
         /// <inheritdoc />
         public SolValue Marshal(SolAssembly assembly, object value, Type type)
         {
-            SolFunction.AutoDelegate auto = (SolFunction.AutoDelegate)value;
-            return new SolAutoDelegateWrapperFunction(assembly, auto);
+            return new SolDelegateWrapperFunction(assembly, (SolFunction.DirectDelegate) value);
         }
+
+        #endregion
     }
 }

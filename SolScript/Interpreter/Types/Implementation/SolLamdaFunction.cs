@@ -1,4 +1,5 @@
 using Irony.Parsing;
+using JetBrains.Annotations;
 
 namespace SolScript.Interpreter.Types.Implementation
 {
@@ -10,11 +11,17 @@ namespace SolScript.Interpreter.Types.Implementation
     public abstract class SolLamdaFunction : SolFunction
     {
         // No third party primitives
-        internal SolLamdaFunction(SolAssembly assembly, SourceLocation location, SolParameterInfo parameterInfo, SolType returnType)
+        internal SolLamdaFunction(
+            SolAssembly assembly, 
+            SourceLocation location, 
+            SolParameterInfo parameterInfo, 
+            SolType returnType,
+            SolClass definedIn)
         {
             Assembly = assembly;
             ParameterInfo = parameterInfo;
             ReturnType = returnType;
+            DefinedIn = definedIn;
             Location = location;
         }
 
@@ -27,7 +34,21 @@ namespace SolScript.Interpreter.Types.Implementation
         /// <inheritdoc />
         public override SolType ReturnType { get; }
 
+        /// <summary>
+        /// The class this lamda function was defined in. null for global lamdas.
+        /// </summary>
+        [CanBeNull]
+        public SolClass DefinedIn { get; }
+
         /// <inheritdoc />
         public override SourceLocation Location { get; }
+
+        /// <inheritdoc />
+        protected override SolClass GetClassInstance(out bool isCurrent, out bool resetOnExit)
+        {
+            isCurrent = true;
+            resetOnExit = true;
+            return DefinedIn;
+        }
     }
 }

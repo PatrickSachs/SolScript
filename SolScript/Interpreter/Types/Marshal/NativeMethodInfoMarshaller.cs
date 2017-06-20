@@ -26,7 +26,7 @@ namespace SolScript.Interpreter.Types.Marshal
         /// <exception cref="SolMarshallingException">No matching SolType for a parameter type.</exception>
         public SolValue Marshal(SolAssembly assembly, object value, Type type)
         {
-            return SolNativeLamdaFunction.CreateFrom(assembly, (MethodInfo) value, DynamicReference.NullReference.Instance);
+            return SolNativeLamdaFunction.CreateFrom(assembly, (MethodInfo) value, DynamicReference.NullReference.Instance, null);
         }
 
         /// <inheritdoc />
