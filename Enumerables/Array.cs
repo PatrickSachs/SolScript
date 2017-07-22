@@ -55,13 +55,19 @@ namespace PSUtility.Enumerables
             }
         }
 
-        /// <inheritdoc cref="Count" />
+        /// <summary>
+        ///     The lenght of this array.
+        /// </summary>
         public int Length => m_Array.Length;
 
+        /// <summary>
+        ///     Creates a read only representation of this array.
+        /// </summary>
+        /// <returns>The read only list.</returns>
         public ReadOnlyList<T> AsReadOnly()
         {
             if (m_ReadOnly == null) {
-                m_ReadOnly = new ReadOnlyList<T>(this);
+                m_ReadOnly = ReadOnlyList<T>.Wrap(this);
             }
             return m_ReadOnly;
         }
@@ -91,7 +97,7 @@ namespace PSUtility.Enumerables
             private void AssertRange(int index)
             {
                 if (index < 0 || index >= m_Wrapper.m_Array.Length) {
-                    throw new IndexOutOfRangeException("The index " + index + " is out of range. Min: 0; Max: " + (m_Wrapper.m_Array.Length - 1));
+                    throw new InvalidOperationException("The index " + index + " is out of range. Min: 0; Max: " + (m_Wrapper.m_Array.Length - 1));
                 }
             }
 
@@ -158,9 +164,6 @@ namespace PSUtility.Enumerables
         {
             return GetEnumerator();
         }
-
-        /// <inheritdoc />
-        public int Count => m_Array.Length;
 
         /// <inheritdoc />
         public bool Contains(T item)

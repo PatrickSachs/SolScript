@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>PSUtility</RootNamespace>
     <AssemblyName>PSUtility</AssemblyName>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <WarningLevel>4</WarningLevel>
@@ -36,6 +36,7 @@
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Prefer32Bit>false</Prefer32Bit>
+    <DocumentationFile>bin\Release\PSUtility.xml</DocumentationFile>
   </PropertyGroup>
   <PropertyGroup>
     <StartupObject />
@@ -64,11 +65,18 @@
     <Compile Include="Enumerables\ArrayUtility.cs" />
     <Compile Include="Enumerables\BiDictionary.cs" />
     <Compile Include="Enumerables\Collection.cs" />
+    <Compile Include="Enumerables\CollectionChangedEventHandler.cs" />
+    <Compile Include="Enumerables\CollectionChangedType.cs" />
     <Compile Include="Enumerables\ComparisonUtility.cs" />
+    <Compile Include="Enumerables\EnumerableConcat.cs" />
+    <Compile Include="Enumerables\IdMapping.cs" />
+    <Compile Include="Enumerables\INotifyCollectionChanged.cs" />
+    <Compile Include="Enumerables\INotifyListChanged.cs" />
     <Compile Include="Enumerables\IPSDictionary.cs" />
     <Compile Include="Enumerables\IPSList.cs" />
     <Compile Include="Enumerables\CollectionChangedEventArgs.cs" />
     <Compile Include="Enumerables\MultiDictionary.cs" />
+    <Compile Include="Enumerables\ObservableList.cs" />
     <Compile Include="Enumerables\PSDictionary.cs" />
     <Compile Include="Enumerables\EmptyArray.cs" />
     <Compile Include="Enumerables\EnumerableUtility.cs" />
@@ -87,7 +95,11 @@
     <Compile Include="Enumerables\ReadOnlyDictionary.cs" />
     <Compile Include="Enumerables\ReadOnlyList.cs" />
     <Compile Include="Enumerables\ReadOnlyHashSet.cs" />
+    <Compile Include="Enumerables\WeakDictionary.cs" />
+    <Compile Include="Enumerables\WeakDictionaryEntryPurgedEventArgs.cs" />
     <Compile Include="Enumerables\WeakTable.cs" />
+    <Compile Include="Enumerables\WeakValueTable.cs" />
+    <Compile Include="EventHandler.cs" />
     <Compile Include="Math\PrimeHelper.cs" />
     <Compile Include="Metadata\IMetaDataProvider.cs" />
     <Compile Include="Metadata\MetaKeyBase.cs" />

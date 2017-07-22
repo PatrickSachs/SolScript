@@ -46,5 +46,16 @@ namespace PSUtility.Strings
             }
             return string.Format(value, values);
         }
+
+        /// <summary>
+        ///     Creates a substring of the given string that stops <paramref name="skipEnd" /> characters before the end of the
+        ///     string.
+        /// </summary>
+        /// <param name="this">The string.</param>
+        /// <param name="skipEnd">The end characters.</param>
+        public static string SubstringSkipEnd(this string @this, int skipEnd)
+        {
+            return @this.Substring(0, @this.Length - skipEnd);
+        }
     }
 }

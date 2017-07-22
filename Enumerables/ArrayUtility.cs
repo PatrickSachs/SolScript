@@ -47,7 +47,7 @@ namespace PSUtility.Enumerables
         /// <param name="count">How many elements should be copied?</param>
         /// <remarks>
         ///     This method will try really hard to find an efficient way to copy the elements. It will check if
-        ///     <paramref name="source" /> is a (ReadOnly)List or Array(T) before iterating the enumerable itself.
+        ///     <paramref name="source" /> is a (ReadOnly)List or <see cref="Array{T}"/>/<typeparamref name="T"/>[] before iterating the enumerable itself.
         /// </remarks>
         /// <exception cref="ArgumentOutOfRangeException">
         ///     <paramref name="sourceOffset" /> is smaller than 0. -or-
@@ -116,18 +116,21 @@ namespace PSUtility.Enumerables
                 }
             }
             // Lists provide better offset handling.
-            /*{
-                var sourceReadOnlyList = source as IReadOnlyList<T>;
-                if (sourceReadOnlyList != null) {
-                    if (sourceReadOnlyList.Count < endSourceIndex) {
-                        throw new ArgumentException(Resources.Err_ArrayTooSmall.FormatWith(sourceReadOnlyList.Count, endSourceIndex), nameof(source));
+            {
+                var sourceList = source as IList;
+                if (sourceList != null)
+                {
+                    if (sourceList.Count < endSourceIndex)
+                    {
+                        throw new ArgumentException(Resources.Err_ArrayTooSmall.FormatWith(sourceList.Count, endSourceIndex), nameof(source));
                     }
-                    for (int i = 0; i < count; i++) {
-                        target.SetValue(sourceReadOnlyList[sourceOffset + i], offset + i);
+                    for (int i = 0; i < count; i++)
+                    {
+                        target.SetValue(sourceList[sourceOffset + i], offset + i);
                     }
                     return;
                 }
-            }*/
+            }
             {
                 var sourceList = source as IList<T>;
                 if (sourceList != null) {
@@ -141,13 +144,20 @@ namespace PSUtility.Enumerables
                 }
             }
             // If all else fails copy manually. Offset is a bit wacky on enumerables, but we will try regardless. Results
-            // may not be deterministic.
+            // may not be deterministic. Also we start copying before evaluating. This means that we may throw an exception
+            // half way through the operation.
+            // However, we cannot count/convert the elements beforehand since we may be reading from a (nearly or completly) 
+            // infinite source enumerable. Also it'd be very slow.
             {
-                T[] sourceArray = source.ToArray();
-                if (sourceArray.Length != endSourceIndex) {
-                    throw new ArgumentException(Resources.Err_ArrayTooSmall.FormatWith(sourceArray.Length, endSourceIndex));
+                int i = 0;
+                foreach (T var in source.Skip(sourceOffset).Take(count))
+                {
+                    target.SetValue(var, offset + i);
+                    i++;
                 }
-                Array.Copy(sourceArray, sourceOffset, target, offset, count);
+                if (i != count) {
+                    throw new ArgumentException(Resources.Err_ArrayTooSmall.FormatWith(offset + i, endSourceIndex), nameof(source));
+                }
             }
         }
 
@@ -170,8 +180,7 @@ namespace PSUtility.Enumerables
         /// </exception>
         /// <exception cref="RankException"><paramref name="target" /> is multidimensional.</exception>
         /// <exception cref="ArrayTypeMismatchException">
-        ///     The element type of <paramref name="target" /> is not assignable from
-        ///     <typeparamref name="T" />.
+        ///     The element type of <paramref name="target" /> is not assignable from the array type.
         /// </exception>
         /// <exception cref="ArgumentException">
         ///     <paramref name="target" /> is not long enough to store all elements. -or-
@@ -329,9 +338,9 @@ namespace PSUtility.Enumerables
         /// </exception>
         /// <exception cref="InvalidCastException">
         ///     At least one element in <paramref name="source" /> cannot be cast to
-        ///     <typeparamref name="T" />.
+        ///     the array element type.
         /// </exception>
-        public static void Copy<T>(Array source, int sourceOffset, Array target, int offset, int count)
+        public static void Copy(Array source, int sourceOffset, Array target, int offset, int count)
         {
             Array.Copy(source, sourceOffset, target, offset, count);
         }

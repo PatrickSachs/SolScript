@@ -10,31 +10,6 @@ namespace PSUtility.Enumerables
     [PublicAPI]
     public class CollectionChangedEventArgs : EventArgs
     {
-        /// <summary>
-        ///     The type of action performed.
-        /// </summary>
-        public enum ActionType
-        {
-            /// <summary>
-            ///     No action was performed.
-            /// </summary>
-            None,
-
-            /// <summary>
-            ///     One or multiple elements have been added.
-            /// </summary>
-            Add,
-
-            /// <summary>
-            ///     One or multiple elements have been removed.
-            /// </summary>
-            Remove,
-
-            /// <summary>
-            ///     The collection has been reset/massively changed.
-            /// </summary>
-            Reset
-        }
 
         /// <summary>
         ///     Creates new collection changed event arguments from the given parameters.
@@ -42,7 +17,7 @@ namespace PSUtility.Enumerables
         /// <param name="action">The action that has been performed.</param>
         /// <param name="changedItems">The modified items.</param>
         /// <exception cref="ArgumentNullException"><paramref name="changedItems" /> is <see langword="null" /></exception>
-        public CollectionChangedEventArgs(ActionType action, [NotNull] IList changedItems)
+        public CollectionChangedEventArgs(CollectionChangedType action, [NotNull] IList changedItems)
         {
             if (changedItems == null) {
                 throw new ArgumentNullException(nameof(changedItems));
@@ -57,7 +32,7 @@ namespace PSUtility.Enumerables
         /// <param name="action">The action that has been performed.</param>
         /// <param name="changedItems">The modified items.</param>
         /// <exception cref="ArgumentNullException"><paramref name="changedItems" /> is <see langword="null" /></exception>
-        public CollectionChangedEventArgs(ActionType action, params object[] changedItems)
+        public CollectionChangedEventArgs(CollectionChangedType action, params object[] changedItems)
         {
             if (changedItems == null) {
                 throw new ArgumentNullException(nameof(changedItems));
@@ -74,7 +49,7 @@ namespace PSUtility.Enumerables
         /// <summary>
         ///     The action that has been performed.
         /// </summary>
-        public ActionType Action { get; }
+        public CollectionChangedType Action { get; }
 
         /// <summary>
         ///     Obtains new collection changed event args for resetting a collection.
@@ -82,7 +57,7 @@ namespace PSUtility.Enumerables
         /// <returns>The event args.</returns>
         public static CollectionChangedEventArgs Reset()
         {
-            return new CollectionChangedEventArgs(ActionType.Reset, new PSList<object>());
+            return new CollectionChangedEventArgs(CollectionChangedType.Reset, new PSList<object>());
         }
 
         /// <summary>
@@ -92,7 +67,7 @@ namespace PSUtility.Enumerables
         /// <returns>The event args.</returns>
         public static CollectionChangedEventArgs Reset(IList items)
         {
-            return new CollectionChangedEventArgs(ActionType.Reset, items);
+            return new CollectionChangedEventArgs(CollectionChangedType.Reset, items);
         }
 
         /// <summary>
@@ -102,7 +77,7 @@ namespace PSUtility.Enumerables
         /// <returns>The event args.</returns>
         public static CollectionChangedEventArgs Reset(params object[] items)
         {
-            return new CollectionChangedEventArgs(ActionType.Reset, items);
+            return new CollectionChangedEventArgs(CollectionChangedType.Reset, items);
         }
 
         /// <summary>
@@ -112,7 +87,7 @@ namespace PSUtility.Enumerables
         /// <returns>The event args.</returns>
         public static CollectionChangedEventArgs Add(params object[] items)
         {
-            return new CollectionChangedEventArgs(ActionType.Add, items);
+            return new CollectionChangedEventArgs(CollectionChangedType.Add, items);
         }
 
         /// <summary>
@@ -122,7 +97,7 @@ namespace PSUtility.Enumerables
         /// <returns>The event args.</returns>
         public static CollectionChangedEventArgs Add(IList items)
         {
-            return new CollectionChangedEventArgs(ActionType.Add, items);
+            return new CollectionChangedEventArgs(CollectionChangedType.Add, items);
         }
 
         /// <summary>
@@ -132,7 +107,7 @@ namespace PSUtility.Enumerables
         /// <returns>The event args.</returns>
         public static CollectionChangedEventArgs Remove(params object[] items)
         {
-            return new CollectionChangedEventArgs(ActionType.Remove, items);
+            return new CollectionChangedEventArgs(CollectionChangedType.Remove, items);
         }
 
         /// <summary>
@@ -142,7 +117,7 @@ namespace PSUtility.Enumerables
         /// <returns>The event args.</returns>
         public static CollectionChangedEventArgs Remove(IList items)
         {
-            return new CollectionChangedEventArgs(ActionType.Remove, items);
+            return new CollectionChangedEventArgs(CollectionChangedType.Remove, items);
         }
     }
 }

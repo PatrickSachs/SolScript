@@ -18,7 +18,7 @@ namespace PSUtility.Enumerables
             }
             m_Reference = reference;
         }
-
+         
         /// <inheritdoc />
         /// <exception cref="ArgumentNullException"><paramref name="func" /> is <see langword="null" /></exception>
         public ReadOnlyHashSet(Func<HashSet<T>> func)
@@ -31,7 +31,7 @@ namespace PSUtility.Enumerables
 
         protected virtual HashSet<T> Set {
             get {
-                if (m_Reference == null) {
+                if (m_Reference != null) {
                     return m_Reference;
                 }
                 return m_Func();

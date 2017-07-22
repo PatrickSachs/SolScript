@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using JetBrains.Annotations;
 
 namespace PSUtility.Enumerables
@@ -10,7 +11,7 @@ namespace PSUtility.Enumerables
     /// </summary>
     /// <typeparam name="T"></typeparam>
     [PublicAPI]
-    public class ObservableCollection<T> : ICollection<T>
+    public class ObservableCollection<T> : ICollection<T>, INotifyCollectionChanged
     {
         private readonly ICollection<T> m_BackingCollection;
         private ReadOnlyCollection<T> m_ReadOnly;
@@ -166,7 +167,7 @@ namespace PSUtility.Enumerables
         /// <summary>
         ///     This event is invoked whenever the collection changes.
         /// </summary>
-        public event EventHandler<CollectionChangedEventArgs> CollectionChanged;
+        public event CollectionChangedEventHandler CollectionChanged;
 
         protected void OnCollectionChanged(CollectionChangedEventArgs e)
         {

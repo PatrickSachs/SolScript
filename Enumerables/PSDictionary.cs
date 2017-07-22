@@ -1,24 +1,43 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.Serialization;
 using JetBrains.Annotations;
 
 namespace PSUtility.Enumerables
 {
+    internal sealed class DictionaryDebugView<K, V>
+    {
+        private readonly IDictionary<K, V> dict;
+
+        public DictionaryDebugView(IDictionary<K, V> dictionary)
+        {
+            dict = dictionary;
+        }
+
+        [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+        public KeyValuePair<K, V>[] Items {
+            get {
+                var items = new KeyValuePair<K, V>[dict.Count];
+                dict.CopyTo(items, 0);
+                return items;
+            }
+        }
+    }
+
     /// <summary>
     ///     This <see cref="PSDictionary{TKey,TValue}" /> extends
-    ///     <see cref="System.Collections.Generic.Dictionary{TKey, TValue}" /> and implements
-    ///     <see cref="IReadOnlyDictionary{TKey,TValue}" />.
+    ///     <see cref="System.Collections.Generic.Dictionary{TKey, TValue}" />.
     /// </summary>
     /// <typeparam name="TKey">The key type.</typeparam>
     /// <typeparam name="TValue">The value type.</typeparam>
-    [PublicAPI]
-    public class PSDictionary<TKey, TValue> : Dictionary<TKey, TValue> //, IPSDictionary<TKey, TValue>
+    [PublicAPI, DebuggerTypeProxy(typeof(DictionaryDebugView<,>))]
+    public class PSDictionary<TKey, TValue> : Dictionary<TKey, TValue>
     {
-        private readonly object m_SyncRoot = new object();
         // The lazy dictionary keys.
         private ReadOnlyCollection<TKey> m_Keys;
-
+        // The read-only representation.
         private ReadOnlyDictionary<TKey, TValue> m_ReadOnly;
         // The lazy dictionary values.
         private ReadOnlyCollection<TValue> m_Values;
@@ -44,37 +63,83 @@ namespace PSUtility.Enumerables
         /// <inheritdoc />
         protected PSDictionary(SerializationInfo info, StreamingContext context) : base(info, context) {}
 
-        public new ReadOnlyCollection<TKey> Keys {
-            get {
-                if (m_Keys == null) {
-                    m_Keys = ReadOnlyCollection<TKey>.Wrap(base.Keys);
-                }
-                return m_Keys;
-            }
-        }
+        /// <summary>
+        ///     All keys in this dictionary. The collection updated automatically.
+        /// </summary>
+        public new ReadOnlyCollection<TKey> Keys => m_Keys ?? (m_Keys = ReadOnlyCollection<TKey>.Wrap(base.Keys));
 
-        public new ReadOnlyCollection<TValue> Values {
-            get {
-                if (m_Values == null) {
-                    m_Values = ReadOnlyCollection<TValue>.Wrap(base.Values);
-                }
-                return m_Values;
-            }
-        }
+        /// <summary>
+        ///     All values in this dictionary. The collection updated automatically.
+        /// </summary>
+        public new ReadOnlyCollection<TValue> Values => m_Values ?? (m_Values = ReadOnlyCollection<TValue>.Wrap(base.Values));
 
-        public object SyncRoot => m_SyncRoot;
+        /// <summary>
+        ///     The sync root for threaded access.
+        /// </summary>
+        public object SyncRoot => ((ICollection)this).SyncRoot;
 
-        public ReadOnlyDictionary<TKey, TValue> AsReadOnly()
+        /// <summary>
+        ///     Gets a read only version of this dictionary. The instance is cahed. This means that only one read only instance per
+        ///     dictionary will be created this way. If you need a different instance you need to wrap it manually.
+        /// </summary>
+        /// <returns>The read only dictionary.</returns>
+        public ReadOnlyDictionary<TKey, TValue> AsReadOnly() => m_ReadOnly ?? (m_ReadOnly = ReadOnlyDictionary<TKey, TValue>.Wrap(this));
+        
+        /// <summary>
+        ///     Adds a key value pair of an item to this dictionary.
+        /// </summary>
+        /// <param name="pair">The pair to add.</param>
+        /// <exception cref="ArgumentException">
+        ///     An element with the same key already exists in the
+        ///     <see cref="PSDictionary{TKey,TValue}" />.
+        /// </exception>
+        public void Add(KeyValuePair<TKey, TValue> pair)
         {
-            if (m_ReadOnly == null) {
-                m_ReadOnly = ReadOnlyDictionary<TKey, TValue>.Wrap(this);
-            }
-            return m_ReadOnly;
+            Add(pair.Key, pair.Value);
         }
 
-        #region IReadOnlyDictionary<TKey,TValue> Members
+        /// <summary>
+        ///     Adds several new items to the dictionary.
+        /// </summary>
+        /// <param name="pairs">The items to add.</param>
+        /// <exception cref="ArgumentException">
+        ///     An element with the same key already exists in the
+        ///     <see cref="PSDictionary{TKey,TValue}" />.
+        /// </exception>
+        public void AddRange(IEnumerable<KeyValuePair<TKey, TValue>> pairs)
+        {
+            foreach (KeyValuePair<TKey, TValue> pair in pairs) {
+                Add(pair);
+            }
+        }
 
-        /// <inheritdoc />
+        private class __DEBUG
+        {
+            private readonly PSDictionary<TKey, TValue> m_Dictionary;
+
+            public __DEBUG(PSDictionary<TKey, TValue> dictionary)
+            {
+                m_Dictionary = dictionary;
+            }
+
+            [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
+            public KeyValuePair<TKey, TValue>[] Values {
+                get {
+                    var array = new KeyValuePair<TKey, TValue>[m_Dictionary.Count];
+                    int i = 0;
+                    foreach (KeyValuePair<TKey, TValue> pair in m_Dictionary) {
+                        if (i == array.Length) {
+                            break;
+                        }
+                        array[i] = pair;
+                        i++;
+                    }
+                    return array;
+                }
+            }
+        }
+
+        /*/// <inheritdoc />
         public bool Contains(KeyValuePair<TKey, TValue> item)
         {
             TValue value;
@@ -82,20 +147,7 @@ namespace PSUtility.Enumerables
                 return false;
             }
             return Equals(value, item.Value);
-        }
-
-
-        /*/// <inheritdoc />
-        IEnumerable<TKey> IPSDictionary<TKey, TValue>.Keys => Keys;
-
-        /// <inheritdoc />
-        IEnumerable<TValue> IPSDictionary<TKey, TValue>.Values => Values;
-
-        /// <inheritdoc />
-        IEnumerable<TKey> IReadOnlyDictionary<TKey, TValue>.Keys => Keys;
-
-        /// <inheritdoc />
-        IEnumerable<TValue> IReadOnlyDictionary<TKey, TValue>.Values => Values;*/
+        }*/
 
         /// <inheritdoc />
         /// <exception cref="ArrayTypeMismatchException">
@@ -138,7 +190,5 @@ namespace PSUtility.Enumerables
         {
             ArrayUtility.Copy(this, 0, array, index, Count);
         }
-
-        #endregion
     }
 }

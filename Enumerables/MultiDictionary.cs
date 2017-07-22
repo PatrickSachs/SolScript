@@ -17,10 +17,10 @@ namespace PSUtility.Enumerables
     public class MultiDictionary<TKey, TValues> : IDictionary<TKey, IList<TValues>>
     {
         private readonly PSDictionary<TKey, PSList<TValues>> m_Dictionary;
-        
+
         // The lazy dictionary keys.
         private ReadOnlyImpl m_ReadOnly;
-
+        // The lazy values.
         private ReadOnlyCollection<ReadOnlyList<TValues>> m_Values;
 
         /// <inheritdoc />
@@ -30,12 +30,26 @@ namespace PSUtility.Enumerables
         public MultiDictionary(IEqualityComparer<TKey> comparer)
         {
             m_Dictionary = new PSDictionary<TKey, PSList<TValues>>(comparer);
-        }
+        } 
 
         /// <summary>
         ///     All keys of this dictionary.
         /// </summary>
         public ReadOnlyCollection<TKey> Keys => m_Dictionary.Keys;
+
+        /// <summary>
+        ///     All values lists of this dictionary.
+        /// </summary>
+        public ReadOnlyCollection<ReadOnlyList<TValues>> Values {
+            get {
+                if (m_Values == null) {
+                    m_Values = ReadOnlyCollection<ReadOnlyList<TValues>>.Wrap(
+                        ((IDictionary<TKey, PSList<TValues>>) m_Dictionary).Values,
+                        list => list.AsReadOnly());
+                }
+                return m_Values;
+            }
+        }
 
         /// <inheritdoc />
         public IEnumerator<KeyValuePair<TKey, IList<TValues>>> GetEnumerator()
@@ -68,7 +82,7 @@ namespace PSUtility.Enumerables
         {
             PSList<TValues> list = GetListNoAlloc(item.Key);
             if (list == null) {
-                return false;
+                return item.Value.Count == 0;
             }
             foreach (TValues value in item.Value) {
                 if (!list.Contains(value)) {
@@ -76,6 +90,16 @@ namespace PSUtility.Enumerables
                 }
             }
             return true;
+        }
+
+        public IEnumerable<TValues> ValuesOf(TKey key)
+        {
+            PSList<TValues> listNoAlloc = GetListNoAlloc(key);
+            if (listNoAlloc != null) {
+                foreach (TValues value in listNoAlloc) {
+                    yield return value;
+                }
+            }
         }
 
         /// <inheritdoc />
@@ -103,7 +127,7 @@ namespace PSUtility.Enumerables
         {
             PSList<TValues> list = GetListNoAlloc(item.Key);
             if (list == null) {
-                return false;
+                return item.Value.Count == 0;
             }
             bool didRemoveAll = true;
             foreach (TValues value in item.Value) {
@@ -164,15 +188,19 @@ namespace PSUtility.Enumerables
             get { return (ICollection<IList<TValues>>) ((IDictionary<TKey, PSList<TValues>>) m_Dictionary).Values; }
         }
 
-        public ReadOnlyCollection<ReadOnlyList<TValues>> Values {
-            get {
-                if (m_Values == null) {
-                    m_Values = ReadOnlyCollection<ReadOnlyList<TValues>>.Wrap(
-                        ((IDictionary<TKey, PSList<TValues>>)m_Dictionary).Values,
-                        list => list.AsReadOnly());
-                }
-                return m_Values;
+        /// <summary>
+        ///     Removes a value from the given key.
+        /// </summary>
+        /// <param name="key">The key.</param>
+        /// <param name="value">The value.</param>
+        /// <returns>true if the value was removed, false otherwise.</returns>
+        public bool Remove(TKey key, TValues value)
+        {
+            PSList<TValues> list = GetListNoAlloc(key);
+            if (list == null) {
+                return false;
             }
+            return list.Remove(value);
         }
 
         public ReadOnlyDictionary<TKey, ReadOnlyList<TValues>> AsReadOnly()
@@ -244,15 +272,8 @@ namespace PSUtility.Enumerables
             public override int Count => m_Dictionary.Count;
 
             /// <inheritdoc />
-            public override ReadOnlyList<TValues> this[TKey key] {
-                get {
-                    PSList<TValues> list = m_Dictionary.GetListNoAlloc(key);
-                    if (list == null) {
-                        return ReadOnlyList<TValues>.Empty();
-                    }
-                    return list.AsReadOnly();
-                }
-            }
+            // We are allocating the list in case the list cached.
+            public override ReadOnlyList<TValues> this[TKey key] => m_Dictionary.GetList(key).AsReadOnly();
 
             /// <inheritdoc />
             public override ReadOnlyCollection<TKey> Keys => m_Dictionary.Keys;
@@ -263,7 +284,7 @@ namespace PSUtility.Enumerables
             /// <inheritdoc />
             public override IEnumerator<KeyValuePair<TKey, ReadOnlyList<TValues>>> GetEnumerator()
             {
-                foreach (var pair in m_Dictionary.m_Dictionary) {
+                foreach (KeyValuePair<TKey, PSList<TValues>> pair in m_Dictionary.m_Dictionary) {
                     yield return new KeyValuePair<TKey, ReadOnlyList<TValues>>(pair.Key, pair.Value.AsReadOnly());
                 }
             }
@@ -277,7 +298,7 @@ namespace PSUtility.Enumerables
             /// <inheritdoc />
             public override bool TryGetValue(TKey key, out ReadOnlyList<TValues> value)
             {
-                var list = m_Dictionary.GetListNoAlloc(key);
+                PSList<TValues> list = m_Dictionary.GetListNoAlloc(key);
                 if (list != null) {
                     value = list.AsReadOnly();
                     return true;

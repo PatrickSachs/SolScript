@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using JetBrains.Annotations;
 
 namespace PSUtility.Enumerables
@@ -11,80 +12,34 @@ namespace PSUtility.Enumerables
     /// </summary>
     /// <typeparam name="T">The list type.</typeparam>
     [PublicAPI]
-    public class ReadOnlyList<T> : IEnumerable<T>
+    public abstract class ReadOnlyList<T> : IEnumerable<T>
     {
-        private static readonly ReadOnlyList<T> m_Empty = new ReadOnlyList<T>(ArrayUtility.Empty<T>());
+        private static readonly ReadOnlyList<T> s_Empty = new EmptyImpl();
 
-        public static ReadOnlyList<T> Empty() => m_Empty;
+        /// <summary>
+        ///     Gets the number of elements contained in the <see cref="ReadOnlyList{T}" />.
+        /// </summary>
+        public abstract int Count { get; }
 
-        private Array<T> m_Array;
-        private Func<IList<T>> m_Func;
-        private IList<T> m_Reference;
+        // ReSharper disable once ExceptionNotThrown
+        /// <summary>
+        ///     Gets or sets the element at the specified index.
+        /// </summary>
+        /// <param name="index">The zero-based index of the element to get or set.</param>
+        /// <returns>The element at the specified index.</returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        ///     <paramref name="index" /> is less than 0. -or- <paramref name="index" />
+        ///     is equal to or greater than <see cref="Count" />.
+        /// </exception>
+        public abstract T this[int index] { get; }
 
-        /// <inheritdoc />
-        /// <exception cref="ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
-        public ReadOnlyList(Array<T> array)
-        {
-            if (array == null) {
-                throw new ArgumentNullException(nameof(array));
-            }
-            m_Array = array;
-        }
-
-        /*protected virtual IList<T> List {
-            get {
-                if (m_Reference != null) {
-                    return m_Reference;
-                }
-                return m_Func();
-            }
-        }*/
+        /// <summary>
+        ///     The sync root for thread safe access.
+        /// </summary>
+        public abstract object SyncRoot { get; }
 
         /// <inheritdoc />
-        /// <exception cref="ArgumentNullException"><paramref name="reference" /> is <see langword="null" /></exception>
-        public ReadOnlyList(IList<T> reference)
-        {
-            if (reference == null) {
-                throw new ArgumentNullException(nameof(reference));
-            }
-            m_Reference = reference;
-        }
-
-        /// <inheritdoc />
-        /// <exception cref="ArgumentNullException"><paramref name="func" /> is <see langword="null" /></exception>
-        public ReadOnlyList(Func<IList<T>> func)
-        {
-            if (func == null) {
-                throw new ArgumentNullException(nameof(func));
-            }
-            m_Func = func;
-        }
-
-        /// <inheritdoc />
-        public int Count {
-            get {
-                if (m_Reference != null) {
-                    return m_Reference.Count;
-                }
-                if (m_Array != null) {
-                    return m_Array.Length;
-                }
-                return m_Func().Count;
-            }
-        }
-
-        /// <inheritdoc />
-        public T this[int index] {
-            get {
-                if (m_Reference != null) {
-                    return m_Reference[index];
-                }
-                if (m_Array != null) {
-                    return m_Array[index];
-                }
-                return m_Func()[index];
-            }
-        }
+        public abstract IEnumerator<T> GetEnumerator();
 
         /// <inheritdoc />
         IEnumerator IEnumerable.GetEnumerator()
@@ -92,32 +47,334 @@ namespace PSUtility.Enumerables
             return GetEnumerator();
         }
 
-        /// <inheritdoc />
-        public IEnumerator<T> GetEnumerator()
+        /// <summary>
+        ///     Wraps the given list in a read only list. A direct reference is stored, thus updating the read ony list
+        ///     automatically.
+        /// </summary>
+        /// <param name="list">The list.</param>
+        /// <returns>The read only list</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="list" /> is <see langword="null" /></exception>
+        public static ReadOnlyList<T> Wrap(IList<T> list)
         {
-            if (m_Reference != null) {
-                return m_Reference.GetEnumerator();
-            }
-            if (m_Array != null) {
-                return m_Array.GetEnumerator();
-            }
-            return m_Func().GetEnumerator();
+            return new ListImpl(list, list is ICollection);
         }
 
-        public int IndexOf(T element)
+        /// <summary>
+        ///     Wraps an array in a read only list.
+        /// </summary>
+        /// <param name="array">The array.</param>
+        /// <returns>The read only list.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
+        public static ReadOnlyList<T> Wrap(T[] array)
         {
-            if (m_Reference != null) {
-                return m_Reference.IndexOf(element);
+            return new ArrayImpl2(array);
+        }
+
+        /// <summary>
+        ///     Wraps an array in a read only list.
+        /// </summary>
+        /// <param name="array">The array.</param>
+        /// <returns>The read only list.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
+        public static ReadOnlyList<T> Wrap(Array<T> array)
+        {
+            return new ArrayImpl(array);
+        }
+
+        /// <summary>
+        ///     Wraps a delegate in a read only list. The delegate is called during each list operation.
+        /// </summary>
+        /// <typeparam name="TList">The list type.</typeparam>
+        /// <param name="func">The delegate.</param>
+        /// <returns>The read only list</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="func" /> is null</exception>
+        public static ReadOnlyList<T> FromDelegate<TList>(Func<TList> func) where TList : IList<T>
+        {
+            return new FuncImpl<TList>(func, typeof(ICollection).IsAssignableFrom(typeof(TList)));
+        }
+
+        /// <summary>
+        ///     Gets an empty read only list.
+        /// </summary>
+        /// <returns>The read only list.</returns>
+        public static ReadOnlyList<T> Empty() => s_Empty;
+
+        /// <summary>
+        ///     Gets the index of the given element.
+        /// </summary>
+        /// <param name="element">The element.</param>
+        /// <returns>The index.</returns>
+        public abstract int IndexOf(T element);
+
+        /// <summary>
+        ///     Copies the elements of this collection to an array.
+        /// </summary>
+        /// <param name="array">The array.</param>
+        /// <param name="index">The start index of the array.</param>
+        /// <exception cref="ArrayTypeMismatchException">
+        ///     The type of the source <see cref="ReadOnlyList{T}" /> cannot be cast
+        ///     automatically to the type of the destination <paramref name="array" />.
+        /// </exception>
+        /// <exception cref="RankException">The source array is multidimensional.</exception>
+        /// <exception cref="InvalidCastException">
+        ///     At least one element in the source <see cref="Array" /> cannot be cast
+        ///     to the type of destination <paramref name="array" />.
+        /// </exception>
+        /// <exception cref="ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
+        /// <exception cref="ArgumentException"><paramref name="array" /> is not long enough.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> is smaller than 0.</exception>
+        public virtual void CopyTo(Array array, int index)
+        {
+            ArrayUtility.Copy(this, 0, array, index, Count);
+        }
+
+        /// <summary>
+        ///     Copies the elements of this collection to an array.
+        /// </summary>
+        /// <param name="array">The array.</param>
+        /// <param name="index">The start index of the array.</param>
+        /// <exception cref="ArrayTypeMismatchException">
+        ///     The type of the source <see cref="ReadOnlyList{T}" /> is not assignable from <typeparamref name="T" />.
+        /// </exception>
+        /// <exception cref="RankException">The source array is multidimensional.</exception>
+        /// <exception cref="InvalidCastException">
+        ///     At least one element in the source <see cref="Array" /> cannot be cast
+        ///     to <typeparamref name="T" />.
+        /// </exception>
+        /// <exception cref="ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
+        /// <exception cref="ArgumentException"><paramref name="array" /> is not long enough.</exception>
+        /// <exception cref="ArgumentOutOfRangeException"><paramref name="index" /> is smaller than 0.</exception>
+        public void CopyTo(Array<T> array, int index)
+        {
+            CopyTo(array.m_Array, index);
+        }
+
+        private class ArrayImpl2 : ReadOnlyList<T>
+        {
+            private readonly object m_SyncRoot = new object();
+            private T[] m_Array;
+
+            /// <inheritdoc />
+            /// <exception cref="ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
+            public ArrayImpl2(T[] array)
+            {
+                if (array == null) {
+                    throw new ArgumentNullException(nameof(array));
+                }
+                m_Array = array;
             }
-            if (m_Array != null) {
+
+            /// <inheritdoc />
+            public override int Count => m_Array.Length;
+
+            /// <inheritdoc />
+            public override T this[int index] {
+                get { return m_Array[index]; }
+            }
+
+            /// <inheritdoc />
+            public override object SyncRoot => m_SyncRoot;
+
+            /// <inheritdoc />
+            public override IEnumerator<T> GetEnumerator()
+            {
+                return ((IEnumerable<T>) m_Array).GetEnumerator();
+            }
+
+            /// <inheritdoc />
+            public override int IndexOf(T element)
+            {
+                bool isValueType = typeof(T).IsValueType;
                 for (int i = 0; i < m_Array.Length; i++) {
-                    if (Equals(m_Array[i], element)) {
-                        return i;
+                    T e = m_Array[i];
+                    if (isValueType) {
+                        if (Equals(e, element)) {
+                            return i;
+                        }
+                    } else {
+                        if (ReferenceEquals(e, element)) {
+                            return i;
+                        }
                     }
                 }
                 return -1;
             }
-            return m_Func().IndexOf(element);
+        }
+
+        private class ArrayImpl : ReadOnlyList<T>
+        {
+            private readonly object m_SyncRoot = new object();
+            private Array<T> m_Array;
+
+            /// <inheritdoc />
+            /// <exception cref="ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
+            public ArrayImpl(Array<T> array)
+            {
+                if (array == null) {
+                    throw new ArgumentNullException(nameof(array));
+                }
+                m_Array = array;
+            }
+
+            /// <inheritdoc />
+            public override int Count => m_Array.Length;
+
+            /// <inheritdoc />
+            public override T this[int index] {
+                get { return m_Array[index]; }
+            }
+
+            /// <inheritdoc />
+            public override object SyncRoot => m_SyncRoot;
+
+            /// <inheritdoc />
+            public override IEnumerator<T> GetEnumerator()
+            {
+                return m_Array.GetEnumerator();
+            }
+
+            /// <inheritdoc />
+            public override int IndexOf(T element)
+            {
+                bool isValueType = typeof(T).IsValueType;
+                for (int i = 0; i < m_Array.Length; i++) {
+                    T e = m_Array[i];
+                    if (isValueType) {
+                        if (Equals(e, element)) {
+                            return i;
+                        }
+                    } else {
+                        if (ReferenceEquals(e, element)) {
+                            return i;
+                        }
+                    }
+                }
+                return -1;
+            }
+        }
+
+        private class FuncImpl<TList> : ReadOnlyList<T> where TList : IList<T>
+        {
+            private readonly Func<TList> m_Func;
+            private readonly bool m_ImplementsCollection;
+            private readonly object m_SyncRoot = new object();
+
+            /// <inheritdoc />
+            /// <exception cref="ArgumentNullException"><paramref name="func" /> is null</exception>
+            public FuncImpl(Func<TList> func, bool implementsCollection)
+            {
+                if (func == null) {
+                    throw new ArgumentNullException(nameof(func));
+                }
+                m_Func = func;
+                m_ImplementsCollection = implementsCollection;
+            }
+
+            private IList<T> List => m_Func();
+
+            /// <inheritdoc />
+            public override int Count => List.Count;
+
+            /// <inheritdoc />
+            public override T this[int index] => List[index];
+
+            /// <inheritdoc />
+            public override object SyncRoot {
+                get {
+                    if (m_ImplementsCollection) {
+                        return ((ICollection) m_Func()).SyncRoot;
+                    }
+                    return m_SyncRoot;
+                }
+            }
+
+            /// <inheritdoc />
+            public override IEnumerator<T> GetEnumerator()
+            {
+                return List.GetEnumerator();
+            }
+
+            /// <inheritdoc />
+            public override int IndexOf(T element)
+            {
+                return List.IndexOf(element);
+            }
+        }
+
+        private class ListImpl : ReadOnlyList<T>
+        {
+            private readonly bool m_ImplementsCollection;
+
+            private readonly IList<T> m_List;
+            private readonly object m_SyncRoot = new object();
+
+            /// <inheritdoc />
+            /// <exception cref="ArgumentNullException"><paramref name="list" /> is <see langword="null" /></exception>
+            public ListImpl(IList<T> list, bool implementsCollection)
+            {
+                if (list == null) {
+                    throw new ArgumentNullException(nameof(list));
+                }
+                m_List = list;
+                m_ImplementsCollection = implementsCollection;
+            }
+
+            /// <inheritdoc />
+            public override int Count => m_List.Count;
+
+            /// <inheritdoc />
+            public override T this[int index] => m_List[index];
+
+            /// <inheritdoc />
+            public override object SyncRoot {
+                get {
+                    if (m_ImplementsCollection) {
+                        return ((ICollection) m_List).SyncRoot;
+                    }
+                    return m_SyncRoot;
+                }
+            }
+
+            /// <inheritdoc />
+            public override IEnumerator<T> GetEnumerator()
+            {
+                return m_List.GetEnumerator();
+            }
+
+            /// <inheritdoc />
+            public override int IndexOf(T element)
+            {
+                return m_List.IndexOf(element);
+            }
+        }
+
+        private class EmptyImpl : ReadOnlyList<T>
+        {
+            private readonly object m_SyncRoot = new object();
+
+            /// <inheritdoc />
+            public override int Count => 0;
+
+            /// <inheritdoc />
+            /// <exception cref="ArgumentOutOfRangeException" accessor="get">Cannot index a read only list.</exception>
+            public override T this[int index] {
+                get { throw new ArgumentOutOfRangeException(nameof(index), "Cannot index a read only list."); }
+            }
+
+            /// <inheritdoc />
+            public override object SyncRoot => m_SyncRoot;
+
+            /// <inheritdoc />
+            public override IEnumerator<T> GetEnumerator()
+            {
+                return Enumerable.Empty<T>().GetEnumerator();
+            }
+
+            /// <inheritdoc />
+            public override int IndexOf(T element)
+            {
+                return -1;
+            }
         }
 
         /*private readonly Func<IReadOnlyList<T>> m_Delegate1;
@@ -355,5 +612,88 @@ namespace PSUtility.Enumerables
             ReadOnlyList,
             List
         }*/
+        /*public int IndexOf(T element)
+        {
+            if (m_Reference != null) {
+                return m_Reference.IndexOf(element);
+            }
+            if (m_Array != null) {
+                for (int i = 0; i < m_Array.Length; i++) {
+                    if (Equals(m_Array[i], element)) {
+                        return i;
+                    }
+                }
+                return -1;
+            }
+            return m_Func().IndexOf(element);
+        }*/
+        /*       /// <inheritdoc />
+        public IEnumerator<T> GetEnumerator()
+        {
+            if (m_Reference != null) {
+                return m_Reference.GetEnumerator();
+            }
+            if (m_Array != null) {
+                return m_Array.GetEnumerator();
+            }
+            return m_Func().GetEnumerator();
+        }*/
+        /*/// <inheritdoc />
+        public int Count {
+            get {
+                if (m_Reference != null) {
+                    return m_Reference.Count;
+                }
+                if (m_Array != null) {
+                    return m_Array.Length;
+                }
+                return m_Func().Count;
+            }
+        }*/
+        /*/// <inheritdoc />
+        public T this[int index] {
+            get {
+                if (m_Reference != null) {
+                    return m_Reference[index];
+                }
+                if (m_Array != null) {
+                    return m_Array[index];
+                }
+                return m_Func()[index];
+            }
+        }*/
+        /*/// <inheritdoc />
+        /// <exception cref="ArgumentNullException"><paramref name="array" /> is <see langword="null" /></exception>
+        public ReadOnlyList(Array<T> array)
+        {
+            if (array == null) {
+                throw new ArgumentNullException(nameof(array));
+            }
+            m_Array = array;
+        }
+
+        /// <inheritdoc />
+        /// <exception cref="ArgumentNullException"><paramref name="reference" /> is <see langword="null" /></exception>
+        public ReadOnlyList(IList<T> reference)
+        {
+            if (reference == null) {
+                throw new ArgumentNullException(nameof(reference));
+            }
+            m_Reference = reference;
+        }
+
+        /// <inheritdoc />
+        /// <exception cref="ArgumentNullException"><paramref name="func" /> is <see langword="null" /></exception>
+        public ReadOnlyList(Func<IList<T>> func)
+        {
+            if (func == null) {
+                throw new ArgumentNullException(nameof(func));
+            }
+            m_Func = func;
+        }*/
+
+        /*private Array<T> m_Array;
+        private Func<IList<T>> m_Func;
+        private IList<T> m_Reference;*/
     }
 }
