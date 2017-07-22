@@ -1,4 +1,32 @@
-﻿using JetBrains.Annotations;
+﻿// ---------------------------------------------------------------------
+// SolScript - A simple but powerful scripting language.
+// Official repository: https://bitbucket.org/PatrickSachs/solscript/
+// ---------------------------------------------------------------------
+// Copyright 2017 Patrick Sachs
+// Permission is hereby granted, free of charge, to any person obtaining 
+// a copy of this software and associated documentation files (the 
+// "Software"), to deal in the Software without restriction, including 
+// without limitation the rights to use, copy, modify, merge, publish, 
+// distribute, sublicense, and/or sell copies of the Software, and to 
+// permit persons to whom the Software is furnished to do so, subject to 
+// the following conditions:
+// 
+// The above copyright notice and this permission notice shall be 
+// included in all copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, 
+// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND 
+// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS 
+// BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN 
+// ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
+// SOFTWARE.
+// ---------------------------------------------------------------------
+// ReSharper disable ArgumentsStyleStringLiteral
+
+using System;
+using NodeParser;
 using SolScript.Compiler;
 using SolScript.Exceptions;
 using SolScript.Interpreter.Types;
@@ -8,32 +36,30 @@ namespace SolScript.Interpreter.Expressions
     /// <summary>
     ///     This expression is used to get a variable.
     /// </summary>
-    public class Expression_GetVariable : SolExpression//, IWrittenInClass
+    public class Expression_GetVariable : SolExpression
     {
-        /// <summary>
-        ///     Used by the parser.
-        /// </summary>
-        public Expression_GetVariable() {}
-
         /// <summary>
         ///     Creates a new variable getter expression.
         /// </summary>
+        /// <param name="location">The code location.</param>
         /// <param name="variable">The variable to get.</param>
-        public Expression_GetVariable(AVariable variable)
+        /// <param name="assembly">The assembly.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="variable" /> is <see langword="null" /></exception>
+        public Expression_GetVariable(SolAssembly assembly, NodeLocation location, AVariable variable) : base(assembly, location)
         {
+            if (variable == null) {
+                throw new ArgumentNullException(nameof(variable));
+            }
             Variable = variable;
         }
+
+        /// <inheritdoc />
+        public override bool IsConstant => false;
 
         /// <summary>
         ///     The variable.
         /// </summary>
-        public AVariable Variable { get; [UsedImplicitly] internal set; }
-
-        /*#region IWrittenInClass Members
-        /// <inheritdoc />
-        public string WrittenInClass { get; [UsedImplicitly] internal set; }
-        #endregion
-        */
+        public AVariable Variable { get; }
 
         #region Overrides
 
@@ -60,9 +86,6 @@ namespace SolScript.Interpreter.Expressions
         {
             return Variable.Validate(context);
         }
-
-        /// <inheritdoc />
-        public override bool IsConstant => false;
 
         #endregion
 
@@ -107,6 +130,7 @@ namespace SolScript.Interpreter.Expressions
                 m_Source = value;
             }
         }*/
+
         /*
         #region Nested type: IndexedVariable
 

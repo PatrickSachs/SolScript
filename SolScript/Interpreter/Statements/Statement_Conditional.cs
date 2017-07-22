@@ -1,6 +1,16 @@
-﻿using System;
+﻿// ---------------------------------------------------------------------
+// SolScript - A simple but powerful scripting language.
+// Offical repository: https://bitbucket.org/PatrickSachs/solscript/
+// SolScript is licensed unter The MIT License.
+// ---------------------------------------------------------------------
+// ReSharper disable ArgumentsStyleStringLiteral
+
+using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using JetBrains.Annotations;
+using NodeParser;
 using PSUtility.Enumerables;
 using SolScript.Compiler;
 using SolScript.Interpreter.Expressions;
@@ -16,42 +26,35 @@ namespace SolScript.Interpreter.Statements
     public class Statement_Conditional : SolStatement
     {
         /// <summary>
-        ///     Used by the parser.
-        /// </summary>
-        [Obsolete(InternalHelper.O_PARSER_MSG, InternalHelper.O_PARSER_ERR), UsedImplicitly]
-        public Statement_Conditional() {}
-
-        /// <summary>
         ///     Creates a new conditional statement.
         /// </summary>
+        /// <param name="location">The code location.</param>
         /// <param name="if">An array of all if branches.</param>
         /// <param name="else">The (optional) fallback else branch.</param>
-        public Statement_Conditional(Array<IfBranch> @if, [CanBeNull] SolChunk @else)
+        /// <param name="assembly">The assembly.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="if" /> is <see langword="null" /></exception>
+        public Statement_Conditional(SolAssembly assembly, NodeLocation location, IEnumerable<IfBranch> @if, [CanBeNull] SolChunk @else) : base(assembly, location)
         {
-            If = @if;
+            if (@if == null) {
+                throw new ArgumentNullException(nameof(@if));
+            }
+            m_If = InternalHelper.CreateArray(@if);
             Else = @else;
         }
+
+        private readonly Array<IfBranch> m_If;
 
         /// <summary>
         ///     The chunk that will be executed if no if statement applies.
         /// </summary>
         [CanBeNull]
-        public SolChunk Else { get;[UsedImplicitly] internal set; }
+        public SolChunk Else { get; }
 
-        //internal IfBranch If;
-        internal Array<IfBranch> If;
-
-        /*/// <summary>
-        ///     A read only list of all possible if branches.
+        /// <summary>
+        ///     The if branches of this conditional statement.
         /// </summary>
-        public IEnumerable<IfBranch> Branches {
-            get {
-                yield return If;
-                foreach (IfBranch branch in ElseIf) {
-                    yield return branch;
-                }
-            }
-        }*/
+        [ItemNotNull]
+        public ReadOnlyList<IfBranch> If => m_If.AsReadOnly();
 
         #region Overrides
 
@@ -59,7 +62,7 @@ namespace SolScript.Interpreter.Statements
         public override SolValue Execute(SolExecutionContext context, IVariables parentVariables, out Terminators terminators)
         {
             context.CurrentLocation = Location;
-            foreach (IfBranch branch in If) {
+            foreach (IfBranch branch in m_If) {
                 Variables branchVariables = new Variables(Assembly) {Parent = parentVariables};
                 if (branch.Condition.Evaluate(context, parentVariables).IsTrue(context)) {
                     SolValue value = branch.Chunk.Execute(context, branchVariables, out terminators);
@@ -78,23 +81,36 @@ namespace SolScript.Interpreter.Statements
         /// <inheritdoc />
         protected override string ToString_Impl()
         {
-            return $"Statement_Conditional(If=[{If.JoinToString()}], Else={Else})";
+            StringBuilder builder = new StringBuilder();
+            foreach (IfBranch ifBranch in m_If) {
+                if (builder.Length != 0) {
+                    builder.Append(" else");
+                }
+                builder.Append(ifBranch);
+            }
+            if (Else != null) {
+                builder.Append(" else ");
+                builder.Append(Else);
+            }
+            builder.Append(" end");
+            return builder.ToString();
+            //return $"Statement_Conditional(If=[{m_If.JoinToString()}], Else={Else})";
         }
 
         /// <inheritdoc />
         public override ValidationResult Validate(SolValidationContext context)
         {
-            foreach (IfBranch branch in If) {
-                var conRes = branch.Condition.Validate(context);
+            foreach (IfBranch branch in m_If) {
+                ValidationResult conRes = branch.Condition.Validate(context);
                 if (!conRes) {
                     return ValidationResult.Failure();
                 }
-                var chkRes = branch.Chunk.Validate(context);
+                ValidationResult chkRes = branch.Chunk.Validate(context);
                 if (!chkRes) {
                     return ValidationResult.Failure();
                 }
             }
-            var elsRes = Else?.Validate(context);
+            ValidationResult elsRes = Else?.Validate(context);
             // todo: somehow determine if/else return type?
             return new ValidationResult(true, SolType.AnyNil);
         }
@@ -103,16 +119,48 @@ namespace SolScript.Interpreter.Statements
 
         #region Nested type: IfBranch
 
+        /// <summary>
+        ///     Represents a branch is a conditional statement.
+        /// </summary>
         public class IfBranch
         {
-            public SolChunk Chunk;
-            public SolExpression Condition;
+            /// <inheritdoc />
+            /// <exception cref="ArgumentNullException">An argument is <see langword="null" /></exception>
+            public IfBranch([NotNull] SolExpression condition, [NotNull] SolChunk chunk)
+            {
+                if (condition == null) {
+                    throw new ArgumentNullException(nameof(condition));
+                }
+                if (chunk == null) {
+                    throw new ArgumentNullException(nameof(chunk));
+                }
+                Condition = condition;
+                Chunk = chunk;
+            }
+
+            /// <summary>
+            ///     The chunk to be executed if the condition is met.
+            /// </summary>
+            [NotNull]
+            public SolChunk Chunk { get; }
+
+            /// <summary>
+            ///     The condition.
+            /// </summary>
+            [NotNull]
+            public SolExpression Condition { get; }
 
             #region Overrides
 
+            /// <inheritdoc />
             public override string ToString()
             {
-                return $"IfBranch(Condition={Condition}, Chunk={Chunk})";
+                StringBuilder builder = new StringBuilder();
+                builder.Append("if ");
+                builder.Append(Condition);
+                builder.Append(" then ");
+                builder.Append(Chunk);
+                return builder.ToString();
             }
 
             #endregion

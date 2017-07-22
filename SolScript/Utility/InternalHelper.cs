@@ -1,11 +1,40 @@
-﻿using System;
+﻿// ---------------------------------------------------------------------
+// SolScript - A simple but powerful scripting language.
+// Official repository: https://bitbucket.org/PatrickSachs/solscript/
+// ---------------------------------------------------------------------
+// Copyright 2017 Patrick Sachs
+// Permission is hereby granted, free of charge, to any person obtaining 
+// a copy of this software and associated documentation files (the 
+// "Software"), to deal in the Software without restriction, including 
+// without limitation the rights to use, copy, modify, merge, publish, 
+// distribute, sublicense, and/or sell copies of the Software, and to 
+// permit persons to whom the Software is furnished to do so, subject to 
+// the following conditions:
+// 
+// The above copyright notice and this permission notice shall be 
+// included in all copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, 
+// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND 
+// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS 
+// BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN 
+// ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
+// SOFTWARE.
+// ---------------------------------------------------------------------
+// ReSharper disable ArgumentsStyleStringLiteral
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Irony.Parsing;
 using JetBrains.Annotations;
+using NodeParser;
 using PSUtility.Enumerables;
 using PSUtility.Reflection;
 using SolScript.Compiler;
@@ -44,6 +73,24 @@ namespace SolScript.Utility
             typeof(Action<,,,>)
         }.AsReadOnly();
 
+        internal static NodeLocation L(this SourceLocation l, string file)
+        {
+            return NodeLocation.FromIrony(file, l);
+        }
+
+        /// <summary>
+        ///     Creates an array from the enumerable. This method is preferred over simply using the "normal" constructor as it
+        ///     sorts out zero length enumerables.
+        /// </summary>
+        /// <typeparam name="T">The type.</typeparam>
+        /// <param name="e">The enumerable.</param>
+        /// <returns>The array.</returns>
+        internal static Array<T> CreateArray<T>(IEnumerable<T> e)
+        {
+            T[] arr = e.ToArray();
+            return new Array<T>(arr.Length == 0 ? ArrayUtility.Empty<T>() : arr);
+        }
+
         /// <summary>
         ///     Checks if the given class was created by the <see cref="NativeCompiler" />. (Determined by the presence or absence
         ///     of the <see cref="SolNativeCompilerGeneratedAttribute" />)
@@ -60,7 +107,7 @@ namespace SolScript.Utility
             try {
                 return type.GetCustomAttribute<SolNativeCompilerGeneratedAttribute>(inherit) != null;
             } catch (TypeLoadException ex) {
-               throw new InvalidOperationException("Failed to check if type \"" + type + "\" was created by the SolScript native compiler.", ex);
+                throw new InvalidOperationException("Failed to check if type \"" + type + "\" was created by the SolScript native compiler.", ex);
             }
         }
 
@@ -207,7 +254,7 @@ namespace SolScript.Utility
         /// <param name="location">The location in code.</param>
         /// <returns>The exception, ready to be thrown.</returns>
         /// <remarks>This method does NOT THROW the exception, only create the exception object.</remarks>
-        internal static SolVariableException CreateVariableGetException(string name, VariableState state, Exception exception, SourceLocation location)
+        internal static SolVariableException CreateVariableGetException(string name, VariableState state, Exception exception, NodeLocation location)
         {
             switch (state) {
                 case VariableState.Success:
@@ -239,7 +286,7 @@ namespace SolScript.Utility
         /// <param name="location">The location in code.</param>
         /// <returns>The exception, ready to be thrown.</returns>
         /// <remarks>This method does NOT THROW the exception, only create the exception object.</remarks>
-        internal static SolVariableException CreateVariableSetException(string name, VariableState state, Exception exception, SourceLocation location)
+        internal static SolVariableException CreateVariableSetException(string name, VariableState state, Exception exception, NodeLocation location)
         {
             switch (state) {
                 case VariableState.Success:
@@ -890,6 +937,25 @@ namespace SolScript.Utility
         /// <param name="parentVariables">The parent variables.</param>
         /// <returns>The value array.</returns>
         public static SolValue[] Evaluate(this IList<SolExpression> expressions, SolExecutionContext context, IVariables parentVariables)
+        {
+            if (expressions.Count == 0) {
+                return ArrayUtility.Empty<SolValue>();
+            }
+            var values = new SolValue[expressions.Count];
+            for (int i = 0; i < values.Length; i++) {
+                values[i] = expressions[i].Evaluate(context, parentVariables);
+            }
+            return values;
+        }
+
+        /// <summary>
+        ///     Evaluates a read only list of expressions.
+        /// </summary>
+        /// <param name="expressions">The expression array.</param>
+        /// <param name="context">The execution context.</param>
+        /// <param name="parentVariables">The parent variables.</param>
+        /// <returns>The value array.</returns>
+        public static SolValue[] Evaluate(this ReadOnlyList<SolExpression> expressions, SolExecutionContext context, IVariables parentVariables)
         {
             if (expressions.Count == 0) {
                 return ArrayUtility.Empty<SolValue>();

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Runtime.Serialization;
 using Irony.Parsing;
+using NodeParser;
 
 namespace SolScript.Exceptions
 {
@@ -14,7 +15,7 @@ namespace SolScript.Exceptions
         /// </summary>
         /// <param name="location">The code location this exception relates to.</param>
         /// <param name="message">The error message.</param>
-        public SolCompilerException(SourceLocation location, string message) : base(location, message) {}
+        public SolCompilerException(NodeLocation location, string message) : base(location, message) {}
 
         /// <summary>
         ///     Deserializes a compiler exception.
@@ -34,6 +35,6 @@ namespace SolScript.Exceptions
         /// <param name="location">The code location this exception relates to.</param>
         /// <param name="message">The error message.</param>
         /// <param name="inner">The inner wrapped exception.</param>
-        public SolCompilerException(SourceLocation location, string message, Exception inner) : base(location, message, inner) {}
+        public SolCompilerException(NodeLocation location, string message, Exception inner) : base(location, message, inner) {}
     }
 }

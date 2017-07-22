@@ -45,8 +45,12 @@
       <HintPath>..\packages\JetBrains.Annotations.10.4.0\lib\net\JetBrains.Annotations.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="PSUtility">
-      <HintPath>..\Libraries\PSUtility.dll</HintPath>
+    <Reference Include="NodeParser">
+      <HintPath>..\..\NodeParser\NodeParser\obj\Debug\NodeParser.dll</HintPath>
+    </Reference>
+    <Reference Include="PSUtility, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\PSUtility\bin\Debug\PSUtility.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />

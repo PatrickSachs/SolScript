@@ -1,9 +1,37 @@
-﻿using System;
-using Irony.Parsing;
+﻿// ---------------------------------------------------------------------
+// SolScript - A simple but powerful scripting language.
+// Official repository: https://bitbucket.org/PatrickSachs/solscript/
+// ---------------------------------------------------------------------
+// Copyright 2017 Patrick Sachs
+// Permission is hereby granted, free of charge, to any person obtaining 
+// a copy of this software and associated documentation files (the 
+// "Software"), to deal in the Software without restriction, including 
+// without limitation the rights to use, copy, modify, merge, publish, 
+// distribute, sublicense, and/or sell copies of the Software, and to 
+// permit persons to whom the Software is furnished to do so, subject to 
+// the following conditions:
+// 
+// The above copyright notice and this permission notice shall be 
+// included in all copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, 
+// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND 
+// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS 
+// BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN 
+// ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
+// SOFTWARE.
+// ---------------------------------------------------------------------
+// ReSharper disable ArgumentsStyleStringLiteral
+
+using System;
 using JetBrains.Annotations;
+using NodeParser;
 using PSUtility.Enumerables;
 using PSUtility.Strings;
 using SolScript.Compiler;
+using SolScript.Exceptions;
 using SolScript.Interpreter.Statements;
 using SolScript.Interpreter.Types;
 using SolScript.Properties;
@@ -18,25 +46,16 @@ namespace SolScript.Interpreter.Expressions
     ///     parameters of a function call).
     /// </summary>
     public abstract class SolExpression : ISourceLocateable, ISolCompileable
-        //, ISourceLocationInjector
     {
         /// <summary>
         ///     Creates a new expression.
         /// </summary>
         /// <param name="assembly">The assembly this expression is in.</param>
         /// <param name="location">The source location of this expression.</param>
-        protected SolExpression(SolAssembly assembly, SourceLocation location)
+        protected SolExpression(SolAssembly assembly, NodeLocation location)
         {
             Assembly = assembly;
-            InjectSourceLocation(location);
-        }
-
-        /// <summary>
-        ///     Creates a new <see cref="SolExpression" />.
-        /// </summary>
-        protected SolExpression()
-        {
-            Assembly = SolAssembly.CurrentlyParsing;
+            Location = location;
         }
 
         private static readonly BiDictionary<byte, Type> s_ByteIdToType = new BiDictionary<byte, Type>();
@@ -63,7 +82,7 @@ namespace SolScript.Interpreter.Expressions
         #region ISourceLocateable Members
 
         /// <inheritdoc />
-        public SourceLocation Location { get; private set; }
+        public NodeLocation Location { get; }
 
         #endregion
 
@@ -113,6 +132,7 @@ namespace SolScript.Interpreter.Expressions
         /// <param name="context">The currently active execution context.</param>
         /// <param name="parentVariables">The current variable context for this expression.</param>
         /// <returns>The result of the expression.</returns>
+        /// <exception cref="SolRuntimeException">A runtime error occured while evaluating the expression.</exception>
         public abstract SolValue Evaluate(SolExecutionContext context, IVariables parentVariables);
 
         /// <summary>Gets the constant value of this expression.</summary>
@@ -133,12 +153,6 @@ namespace SolScript.Interpreter.Expressions
         /// <returns>The string.</returns>
         protected abstract string ToString_Impl();
 
-        /// <inheritdoc />
-        public void InjectSourceLocation(SourceLocation location)
-        {
-            Location = location;
-        }
-
         #region Nested type: CompilerData
 
         private class CompilerData
@@ -157,14 +171,15 @@ namespace SolScript.Interpreter.Expressions
 
         #endregion
 
-        /*/// <summary>
-        ///     Compiles the statement to the given binary writer.
-        /// </summary>
-        /// <param name="writer">The writer.</param>
-        /// <param name="context">The compilation context.</param>
+        /*/// <inheritdoc />
         /// <exception cref="IOException">An I/O error occured.</exception>
         /// <exception cref="SolCompilerException">Failed to compile. (See possible inner exceptions for details)</exception>
-        protected abstract void CompileImpl(BinaryWriter writer, SolCompliationContext context);*/
+        public void Compile(BinaryWriter writer, SolCompliationContext context)
+        {
+            //writer.Write(BytecodeId);
+            Location.CompileTo(writer, context);
+            //CompileImpl(writer, context);
+        }*/
 
         /*/// <summary>
         ///     The factory method used to create this expression. (Must be constant)
@@ -176,14 +191,13 @@ namespace SolScript.Interpreter.Expressions
         /// </summary>
         internal abstract byte BytecodeId { get; }*/
 
-        /*/// <inheritdoc />
+        /*/// <summary>
+        ///     Compiles the statement to the given binary writer.
+        /// </summary>
+        /// <param name="writer">The writer.</param>
+        /// <param name="context">The compilation context.</param>
         /// <exception cref="IOException">An I/O error occured.</exception>
         /// <exception cref="SolCompilerException">Failed to compile. (See possible inner exceptions for details)</exception>
-        public void Compile(BinaryWriter writer, SolCompliationContext context)
-        {
-            //writer.Write(BytecodeId);
-            Location.CompileTo(writer, context);
-            //CompileImpl(writer, context);
-        }*/
+        protected abstract void CompileImpl(BinaryWriter writer, SolCompliationContext context);*/
     }
 }

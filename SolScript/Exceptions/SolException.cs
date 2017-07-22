@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Runtime.Serialization;
 using System.Text;
-using Irony.Parsing;
+using NodeParser;
 using SolScript.Interpreter;
 
 namespace SolScript.Exceptions
@@ -16,14 +16,14 @@ namespace SolScript.Exceptions
         /// <summary>
         ///     Creates an empty exception.
         /// </summary>
-        protected SolException(SourceLocation location) : this(location, UNSPECIFIED_ERROR) {}
+        protected SolException(NodeLocation location) : this(location, UNSPECIFIED_ERROR) {}
 
         /// <summary>
         ///     Creates an exception with the given message.
         /// </summary>
         /// <param name="location">The location in code this exception relates to.</param>
         /// <param name="message">The error message.</param>
-        protected SolException(SourceLocation location, string message) : base(location + " : " + message)
+        protected SolException(NodeLocation location, string message) : base(location + " : " + message)
         {
             Location = location;
             RawMessage = message;
@@ -35,7 +35,7 @@ namespace SolScript.Exceptions
         /// <param name="location">The location in code this exception relates to.</param>
         /// <param name="message">The error message.</param>
         /// <param name="inner">The inner exception.</param>
-        protected SolException(SourceLocation location, string message, Exception inner) : base(location + " : " + message, inner)
+        protected SolException(NodeLocation location, string message, Exception inner) : base(location + " : " + message, inner)
         {
             Location = location;
             RawMessage = message;
@@ -61,7 +61,7 @@ namespace SolScript.Exceptions
             int column = info.GetInt32(SER_COLUMN);
             string file = info.GetString(SER_FILE);
             RawMessage = info.GetString(SER_RAW);
-            Location = new SourceLocation(file, position, line, column);
+            Location = new NodeLocation(line, column, position, file);
         }
 
         private const string UNSPECIFIED_ERROR = "An unspecified error occured.";
@@ -79,7 +79,7 @@ namespace SolScript.Exceptions
         #region ISourceLocateable Members
 
         /// <inheritdoc />
-        public SourceLocation Location { get; }
+        public NodeLocation Location { get; }
 
         #endregion
 
@@ -90,10 +90,10 @@ namespace SolScript.Exceptions
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
-            info.AddValue(SER_POSITION, Location.Position);
+            info.AddValue(SER_POSITION, Location.FileIndex);
             info.AddValue(SER_FILE, Location.File);
-            info.AddValue(SER_LINE, Location.Line);
-            info.AddValue(SER_COLUMN, Location.Column);
+            info.AddValue(SER_LINE, Location.LineIndex);
+            info.AddValue(SER_COLUMN, Location.ColumnIndex);
             info.AddValue(SER_RAW, RawMessage);
         }
 
@@ -106,15 +106,35 @@ namespace SolScript.Exceptions
         /// </summary>
         /// <param name="exception">The exception to write.</param>
         /// <param name="target">The builder to write the output to.</param>
-        public static void UnwindExceptionStack(Exception exception, StringBuilder target)
+        /// <param name="includeStackTrace">Should the stack trace be included?</param>
+        public static void UnwindExceptionStack(Exception exception, StringBuilder target, bool includeStackTrace = true)
         {
+            SolRuntimeException topRuntimeEx = null;
+            Exception topNativeEx = null;
             Exception ex = exception;
             while (ex != null) {
-                if (!ex.GetType().IsSubclassOf(typeof(SolException))) {
-                    target.Append("[Native Exception: \"" + ex.GetType().Name + "\"]");
+                if (topRuntimeEx == null && ex is SolRuntimeException) {
+                    topRuntimeEx = (SolRuntimeException) ex;
+                } else if (topNativeEx == null && !(ex is SolException)) {
+                    topNativeEx = ex;
                 }
                 target.AppendLine(ex.Message);
                 ex = ex.InnerException;
+            }
+            string sep = new string('-', 25);
+            if (topRuntimeEx != null) {
+                target.AppendLine(sep);
+                target.AppendLine("Stack Trace:");
+                target.AppendLine(topRuntimeEx.SolStackTrace);
+                target.AppendLine(sep);
+            }
+            if (topNativeEx != null) {
+                if (topRuntimeEx == null) {
+                    target.AppendLine(sep);
+                }
+                target.AppendLine("Caused by native exception " + topNativeEx.GetType().Name + ":");
+                target.AppendLine(topNativeEx.StackTrace);
+                target.AppendFormat(sep);
             }
         }
     }

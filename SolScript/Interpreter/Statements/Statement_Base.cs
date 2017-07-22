@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Text;
 using Irony.Parsing;
+using NodeParser;
 using PSUtility.Strings;
 using SolScript.Compiler;
 using SolScript.Exceptions;
@@ -17,7 +19,7 @@ namespace SolScript.Interpreter.Statements
     public class Statement_Base : SolStatement//, IWrittenInClass
     {
         /// <inheritdoc />
-        public Statement_Base(SolAssembly assembly, SourceLocation location, SolExpression indexer) : base(assembly, location)
+        public Statement_Base(SolAssembly assembly, NodeLocation location, SolExpression indexer) : base(assembly, location)
         {
             //WrittenInClass = writtenInClass;
             Indexer = indexer;
@@ -69,7 +71,11 @@ namespace SolScript.Interpreter.Statements
         /// <inheritdoc />
         protected override string ToString_Impl()
         {
-            return "Statement_Base(Indexer=" + Indexer + ")";
+            StringBuilder builder = new StringBuilder();
+            builder.Append("base[");
+            builder.Append(Indexer);
+            builder.Append("]");
+            return builder.ToString();
         }
 
         /// <inheritdoc />

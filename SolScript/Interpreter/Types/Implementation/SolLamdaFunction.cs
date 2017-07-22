@@ -1,5 +1,6 @@
 using Irony.Parsing;
 using JetBrains.Annotations;
+using NodeParser;
 
 namespace SolScript.Interpreter.Types.Implementation
 {
@@ -12,8 +13,8 @@ namespace SolScript.Interpreter.Types.Implementation
     {
         // No third party primitives
         internal SolLamdaFunction(
-            SolAssembly assembly, 
-            SourceLocation location, 
+            SolAssembly assembly,
+            NodeLocation location, 
             SolParameterInfo parameterInfo, 
             SolType returnType,
             SolClass definedIn)
@@ -41,7 +42,7 @@ namespace SolScript.Interpreter.Types.Implementation
         public SolClass DefinedIn { get; }
 
         /// <inheritdoc />
-        public override SourceLocation Location { get; }
+        public override NodeLocation Location { get; }
 
         /// <inheritdoc />
         protected override SolClass GetClassInstance(out bool isCurrent, out bool resetOnExit)

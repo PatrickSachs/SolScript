@@ -1,6 +1,7 @@
 ﻿using System;
 using Irony.Parsing;
 using JetBrains.Annotations;
+using NodeParser;
 using SolScript.Exceptions;
 
 namespace SolScript.Interpreter.Types.Implementation
@@ -40,7 +41,7 @@ namespace SolScript.Interpreter.Types.Implementation
         public override SolType ReturnType => SolType.AnyNil;
 
         /// <inheritdoc />
-        public override SourceLocation Location => SolSourceLocation.Native();
+        public override NodeLocation Location => SolSourceLocation.Native();
 
         #region Overrides
 

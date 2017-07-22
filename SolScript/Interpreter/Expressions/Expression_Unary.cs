@@ -1,4 +1,6 @@
-﻿using Irony.Parsing;
+﻿using System;
+using Irony.Parsing;
+using NodeParser;
 using SolScript.Compiler;
 using SolScript.Interpreter.Types;
 
@@ -6,17 +8,23 @@ namespace SolScript.Interpreter.Expressions
 {
     public class Expression_Unary : SolExpression
     {
-        public Expression_Unary() {}
-
         /// <inheritdoc />
-        public Expression_Unary(OperationRef operation, SolExpression valueGetter) : base()
+        /// <exception cref="ArgumentNullException">An argument is <see langword="null"/></exception>
+        public Expression_Unary(SolAssembly assembly, NodeLocation location, OperationRef operation, SolExpression valueGetter) : base(assembly, location)
         {
+            if (operation == null) {
+                throw new ArgumentNullException(nameof(operation));
+            }
+            if (valueGetter == null) {
+                throw new ArgumentNullException(nameof(valueGetter));
+            }
             Operation = operation;
             ValueGetter = valueGetter;
         }
+        
 
-        public OperationRef Operation { get; internal set; }
-        public SolExpression ValueGetter { get; internal set; }
+        public OperationRef Operation { get; }
+        public SolExpression ValueGetter { get;  }
 
         #region Overrides
 

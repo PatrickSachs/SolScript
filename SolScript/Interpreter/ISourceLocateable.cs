@@ -1,4 +1,4 @@
-﻿using Irony.Parsing;
+﻿using NodeParser;
 
 namespace SolScript.Interpreter
 {
@@ -10,6 +10,6 @@ namespace SolScript.Interpreter
         /// <summary>
         ///     The location in code.
         /// </summary>
-        SourceLocation Location { get; }
+        NodeLocation Location { get; }
     }
 }

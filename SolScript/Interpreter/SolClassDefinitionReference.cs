@@ -54,7 +54,7 @@ namespace SolScript.Interpreter
         /// <summary>
         ///     The class name of the definition. Always valid.
         /// </summary>
-        public string ClassName {
+        public string Name {
             get {
                 if (IsStrong) {
                     return m_Strong.Type;

@@ -1,5 +1,6 @@
 ﻿using Irony.Parsing;
 using JetBrains.Annotations;
+using NodeParser;
 using PSUtility.Enumerables;
 
 namespace SolScript.Interpreter
@@ -7,10 +8,7 @@ namespace SolScript.Interpreter
     public abstract class SolMemberDefinition : SolAnnotateableDefinitionBase
     {
         /// <inheritdoc />
-        public SolMemberDefinition(SolAssembly assembly, SourceLocation location) : base(assembly, location) { }
-
-        internal SolMemberDefinition() { }
-
+        public SolMemberDefinition(SolAssembly assembly, NodeLocation location) : base(assembly, location) { }
 
         /// <summary>
         ///     The access modifier for this function which decide from where the function can be accessed.

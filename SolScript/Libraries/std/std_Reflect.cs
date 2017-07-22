@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Irony.Parsing;
 using JetBrains.Annotations;
+using NodeParser;
 using PSUtility.Enumerables;
 using SolScript.Exceptions;
 using SolScript.Interpreter;
@@ -440,12 +441,12 @@ namespace SolScript.Libraries.std
 
         #region Native Helpers
 
-        private SolTable GetSourceLocationTable(SourceLocation location)
+        private SolTable GetSourceLocationTable(NodeLocation location)
         {
             return new SolTable {
-                [Str_file] = SolString.ValueOf(location.File ?? "<ERR NO FILE>").Intern(),
-                [Str_line] = new SolNumber(location.Line),
-                [Str_column] = new SolNumber(location.Column)
+                [Str_file] = SolString.ValueOf(location.File).Intern(),
+                [Str_line] = new SolNumber(location.LineIndex),
+                [Str_column] = new SolNumber(location.ColumnIndex)
             };
         }
 

@@ -44,9 +44,12 @@
       <HintPath>..\packages\JetBrains.Annotations.10.4.0\lib\net\JetBrains.Annotations.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="NodeParser">
+      <HintPath>..\..\NodeParser\NodeParser\obj\Debug\NodeParser.dll</HintPath>
+    </Reference>
     <Reference Include="PSUtility, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\PSUtility\bin\Release\PSUtility.dll</HintPath>
+      <HintPath>..\..\PSUtility\bin\Debug\PSUtility.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -64,6 +67,48 @@
     <Compile Include="Interpreter\Types\Marshal\NativeDelegateMarshaller.cs" />
     <Compile Include="Interpreter\Types\Marshal\NativeEnumMarshaller.cs" />
     <Compile Include="Interpreter\Types\SolTypeCode.cs" />
+    <Compile Include="Parser\Nodes\Expressions\SolNodeExpressionBinary.cs" />
+    <Compile Include="Parser\Nodes\Expressions\SolNodeExpressionCreateFunction.cs" />
+    <Compile Include="Parser\Nodes\Expressions\SolNodeExpressionGetVariable.cs" />
+    <Compile Include="Parser\Nodes\Expressions\SolNodeExpressionLiteral.cs" />
+    <Compile Include="Parser\Nodes\Expressions\SolNodeExpressionParenthetical.cs" />
+    <Compile Include="Parser\Nodes\Expressions\SolNodeExpressionSelf.cs" />
+    <Compile Include="Parser\Nodes\Expressions\SolNodeExpressionStatement.cs" />
+    <Compile Include="Parser\Nodes\Expressions\SolNodeExpressionTable.cs" />
+    <Compile Include="Parser\Nodes\Expressions\SolNodeExpressionTertiary.cs" />
+    <Compile Include="Parser\Nodes\Expressions\SolNodeExpressionUnary.cs" />
+    <Compile Include="Parser\Nodes\Operators\SolNodeBinaryOperator.cs" />
+    <Compile Include="Parser\Nodes\Operators\SolNodeUnaryOperator.cs" />
+    <Compile Include="Parser\Nodes\SolNodeAccessModifier.cs" />
+    <Compile Include="Parser\Nodes\Expressions\SolNodeExpression.cs" />
+    <Compile Include="Parser\Nodes\SolNodeAnnotation.cs" />
+    <Compile Include="Parser\Nodes\SolNodeChunk.cs" />
+    <Compile Include="Parser\Nodes\SolNodeClass.cs" />
+    <Compile Include="Parser\Nodes\SolNodeClassModifier.cs" />
+    <Compile Include="Parser\Nodes\SolNodeField.cs" />
+    <Compile Include="Parser\Nodes\SolNodeFunction.cs" />
+    <Compile Include="Parser\Nodes\SolNodeMemberModifier.cs" />
+    <Compile Include="Parser\Nodes\SolNodeParameter.cs" />
+    <Compile Include="Parser\Nodes\SolNodeParameters.cs" />
+    <Compile Include="Parser\Nodes\SolNodeRoot.cs" />
+    <Compile Include="Parser\Nodes\SolNodeTypeReference.cs" />
+    <Compile Include="Parser\Nodes\SolNodeVariable.cs" />
+    <Compile Include="Parser\Nodes\Statements\SolNodeStatement.cs" />
+    <Compile Include="Parser\Nodes\Statements\SolNodeStatementAssignVariable.cs" />
+    <Compile Include="Parser\Nodes\Statements\SolNodeStatementBase.cs" />
+    <Compile Include="Parser\Nodes\Statements\SolNodeStatementCall.cs" />
+    <Compile Include="Parser\Nodes\Statements\SolNodeStatementConditional.cs" />
+    <Compile Include="Parser\Nodes\Statements\SolNodeStatementDeclareVariable.cs" />
+    <Compile Include="Parser\Nodes\Statements\SolNodeStatementDo.cs" />
+    <Compile Include="Parser\Nodes\Statements\SolNodeStatementFor.cs" />
+    <Compile Include="Parser\Nodes\Statements\SolNodeStatementIterate.cs" />
+    <Compile Include="Parser\Nodes\Statements\SolNodeStatementLast.cs" />
+    <Compile Include="Parser\Nodes\Statements\SolNodeStatementNew.cs" />
+    <Compile Include="Parser\Nodes\Statements\SolNodeStatementWhile.cs" />
+    <Compile Include="Parser\SolParser.cs" />
+    <Compile Include="Parser\SolParserTokenEventArgs.cs" />
+    <Compile Include="Parser\SolScriptNodeGrammar.cs" />
+    <Compile Include="Parser\SolTokenType.cs" />
     <Compile Include="Properties\CompilerResources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -84,7 +129,7 @@
     <Compile Include="Interpreter\SolVariableMode.cs" />
     <Compile Include="Interpreter\SolMemberModifier.cs" />
     <Compile Include="Interpreter\Statements\Statement_Base.cs" />
-    <Compile Include="Interpreter\Statements\Statement_Self.cs" />
+    <Compile Include="Interpreter\Expressions\Expression_Self.cs" />
     <Compile Include="Interpreter\Types\Classes\ANativeTypeDescriptor.cs" />
     <Compile Include="Interpreter\Types\Classes\TypeTypeDescriptor.cs" />
     <Compile Include="Interpreter\Types\GlobalSolFunction.cs" />
@@ -113,18 +158,14 @@
     <Compile Include="Interpreter\SolAnnotateableDefinitionBase.cs" />
     <Compile Include="Interpreter\SolAssemblyOptions.cs" />
     <Compile Include="Interpreter\Types\Marshal\NativeFunctionDelegateMarshaller.cs" />
-    <Compile Include="Interpreter\Types\Implementation\SolAutoDelegateWrapperFunction.cs" />
-    <Compile Include="Interpreter\Types\Implementation\SolDelegateWrapperFunction.cs" />
-    <Compile Include="Interpreter\Types\Implementation\SolGenericAutoDelgateWrapperFunction.cs" />
+    <Compile Include="Interpreter\Types\Implementation\SolNativeDelegateWrapperFunction.cs" />
+    <Compile Include="Interpreter\Types\Implementation\SolScriptDelegateWrapperFunction.cs" />
     <Compile Include="Interpreter\Types\Implementation\SolNativeClassMemberFunction.cs" />
     <Compile Include="Interpreter\Types\Marshal\ISolNativeMarshaller.cs" />
-    <Compile Include="Interpreter\Types\Marshal\NativeArrayMarshaller.cs" />
-    <Compile Include="Interpreter\Types\Marshal\NativeAutoDelegateMarshaller.cs" />
     <Compile Include="Interpreter\Types\Marshal\NativeBoolMarshaller.cs" />
     <Compile Include="Interpreter\Types\Marshal\NativeCharMarshaller.cs" />
     <Compile Include="Interpreter\Types\Marshal\NativeDictionaryMarshaller.cs" />
     <Compile Include="Interpreter\Types\Marshal\NativeEnumerableMarshaller.cs" />
-    <Compile Include="Interpreter\Types\Marshal\NativeGenericAutoDelegateMarshaller.cs" />
     <Compile Include="Interpreter\Types\Marshal\NativeMethodInfoMarshaller.cs" />
     <Compile Include="Interpreter\Types\Marshal\NativeNullableMarshaller.cs" />
     <Compile Include="Interpreter\Types\Marshal\NativeNumericMarshaller.cs" />
@@ -141,10 +182,9 @@
     <Compile Include="Exceptions\SolRuntimeException.cs" />
     <Compile Include="Exceptions\SolTypeRegistryException.cs" />
     <Compile Include="Exceptions\SolVariableException.cs" />
-    <Compile Include="Interpreter\Expressions\Expression_Return.cs" />
+    <Compile Include="Interpreter\Statements\Statement_Return.cs" />
     <Compile Include="Interpreter\Expressions\Expression_TableConstructor.cs" />
     <Compile Include="Interpreter\Expressions\Expression_Unary.cs" />
-    <Compile Include="Interpreter\Expressions\TerminatingSolExpression.cs" />
     <Compile Include="Interpreter\InternalVariables.cs" />
     <Compile Include="Interpreter\LocalVariables.cs" />
     <Compile Include="Interpreter\GlobalVariables.cs" />
@@ -168,10 +208,10 @@
     <Compile Include="Interpreter\Library\SolLibraryVisibilityAttribute.cs" />
     <Compile Include="Libraries\std\std_String.cs" />
     <Compile Include="Libraries\std\std_Table.cs" />
-    <Compile Include="Interpreter\Expressions\Expression_Break.cs" />
-    <Compile Include="Interpreter\Expressions\Expression_Continue.cs" />
+    <Compile Include="Interpreter\Statements\Statement_Break.cs" />
+    <Compile Include="Interpreter\Statements\Statement_Continue.cs" />
     <Compile Include="Interpreter\SolAnnotationDefinition.cs" />
-    <Compile Include="Interpreter\SolDefinitionBase.cs" />
+    <Compile Include="Interpreter\SolDefinition.cs" />
     <Compile Include="Interpreter\SolFieldInitializerWrapper.cs" />
     <Compile Include="Interpreter\SolMetaFunction.cs" />
     <Compile Include="Interpreter\SolChunkWrapper.cs" />
@@ -181,7 +221,7 @@
     <Compile Include="Interpreter\SolFunctionDefinition.cs" />
     <Compile Include="Interpreter\SolSourceLocation.cs" />
     <Compile Include="Interpreter\SolStackFrame.cs" />
-    <Compile Include="Interpreter\Statements\Statement_DeclareVar.cs" />
+    <Compile Include="Interpreter\Statements\Statement_DeclareVariable.cs" />
     <Compile Include="Interpreter\Statements\Statement_Do.cs" />
     <Compile Include="Interpreter\Statements\Statement_For.cs" />
     <Compile Include="Interpreter\Statements\Statement_Iterate.cs" />
@@ -211,13 +251,10 @@
     <Compile Include="Exceptions\SolException.cs" />
     <Compile Include="Exceptions\SolMarshallingException.cs" />
     <Compile Include="Interpreter\Expressions\Expression_Binary.cs" />
-    <Compile Include="Interpreter\Expressions\Expression_CreateFunc.cs" />
+    <Compile Include="Interpreter\Expressions\Expression_CreateFunction.cs" />
     <Compile Include="Interpreter\Expressions\Expression_GetVariable.cs" />
-    <Compile Include="Interpreter\Expressions\Expression_Number.cs" />
     <Compile Include="Interpreter\Expressions\Expression_Statement.cs" />
     <Compile Include="Interpreter\Expressions\SolExpression.cs" />
-    <Compile Include="Interpreter\Expressions\Expression_String.cs" />
-    <Compile Include="Interpreter\Expressions\Expression_Nil.cs" />
     <Compile Include="Utility\CallerFilePathAttribute.cs" />
     <Compile Include="Utility\CallerMemberNameAttribute.cs" />
     <Compile Include="Utility\EmptyReadOnlyList.cs" />
@@ -226,8 +263,7 @@
     <Compile Include="Interpreter\SolChunk.cs" />
     <Compile Include="Interpreter\Library\SolLibrary.cs" />
     <Compile Include="Interpreter\SolAssembly.cs" />
-    <Compile Include="Interpreter\Statements\Statement_AssignVar.cs" />
-    <Compile Include="Interpreter\Statements\StatementFactory.cs" />
+    <Compile Include="Interpreter\Statements\Statement_AssignVariable.cs" />
     <Compile Include="Interpreter\Statements\Statement_Conditional.cs" />
     <Compile Include="Parser\Literals\SolScriptStringLiteral.cs" />
     <Compile Include="Interpreter\Statements\Statement_CallFunction.cs" />
@@ -260,6 +296,7 @@
       <SubType>Designer</SubType>
     </EmbeddedResource>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using Irony.Parsing;
 using JetBrains.Annotations;
+using NodeParser;
 
 namespace SolScript.Interpreter
 {
@@ -13,8 +14,12 @@ namespace SolScript.Interpreter
         ///     The file name used when the location refers to native code.
         /// </summary>
         public const string NATIVE_FILE = "<native>";
-
         /// <summary>
+        ///     The file name used when the location refers to an unkown location.
+        /// </summary>
+        public const string UNKOWN_FILE = "<?>";
+
+        /*/// <summary>
         ///     Generates an empty Source Location for instances where the actual location cannot be determined.
         /// </summary>
         /// <param name="file">The optional file the source is in.</param>
@@ -22,10 +27,10 @@ namespace SolScript.Interpreter
         ///     A source location with Position, Line and Column set to -1. The file name is either an empty string,
         ///     or the one passed as argument.
         /// </returns>
-        public static SourceLocation Empty([CanBeNull] string file = null)
+        public static NodeLocation Empty([CanBeNull] string file = null)
         {
-            return new SourceLocation(file ?? string.Empty, -1, -1, -1);
-        }
+            return new NodeLocation( -1, -1, -1, file ?? string.Empty);
+        }*/
 
         /// <summary>
         ///     Generates an empty Source Location for instances where the relevant location is in native code..
@@ -33,9 +38,18 @@ namespace SolScript.Interpreter
         /// <returns>
         ///     A source location with Position, Line and Column set to -1. The file name is set to <see cref="NATIVE_FILE" />.
         /// </returns>
-        public static SourceLocation Native()
+        public static NodeLocation Native()
         {
-            return new SourceLocation(NATIVE_FILE, -1, -1, -1);
+            return new NodeLocation(0, 0, 0, NATIVE_FILE);
+        }/// <summary>
+         ///     Generates an empty Source Location for instances where the relevant location is in native code..
+         /// </summary>
+         /// <returns>
+         ///     A source location with Position, Line and Column set to -1. The file name is set to <see cref="NATIVE_FILE" />.
+         /// </returns>
+        public static NodeLocation Unkown()
+        {
+            return new NodeLocation(0, 0, 0, UNKOWN_FILE);
         }
 
         /*/// <summary>

@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Irony.Parsing;
 using JetBrains.Annotations;
+using NodeParser;
 using PSUtility.Enumerables;
 using SolScript.Compiler;
 using SolScript.Exceptions;
@@ -21,34 +23,22 @@ namespace SolScript.Interpreter.Statements
         /// </summary>
         /// <param name="assembly">The assembly.</param>
         /// <param name="location">The location in source code.</param>
-        /// <param name="statementDefinedInClass">The class name the statement was defined in. (Obsolete; value not used)</param>
         /// <param name="functionGetter">The statement used to get the function.</param>
         /// <param name="args">The function argument expressions.</param>
-        public Statement_CallFunction(SolAssembly assembly, SourceLocation location, string statementDefinedInClass,
-            SolExpression functionGetter, Array<SolExpression> args) : base(assembly, location)
+        public Statement_CallFunction(SolAssembly assembly, NodeLocation location, SolExpression functionGetter, IEnumerable<SolExpression> args) : base(assembly, location)
         {
             FunctionGetter = functionGetter;
-            m_Arguments = args;
-            //StatementDefinedInClassName = statementDefinedInClass;
+            SolExpression[] array = args.ToArray();
+            if (array.Length == 0) {
+                array = ArrayUtility.Empty<SolExpression>();
+            }
+            m_Arguments = new Array<SolExpression>(array);
         }
 
         /// <summary>
         ///     The statement getting the function.
         /// </summary>
         public readonly SolExpression FunctionGetter;
-
-        /*// WARNING: This could have been defined __ anywhere__ not even necessarily within the class inheritance tree!
-        /// <summary>
-        ///     This defines where the STATEMENT CALLING the function has been defined, and NOT where the FUNCTION ITSELF has been
-        ///     defined.
-        /// </summary>
-        /// <remarks>
-        ///     If you want to get a handle on the class that defined a function, cast the function itself to
-        ///     <see cref="SolClassFunction" /> and obtain the class using
-        ///     <see cref="SolClassFunction.ClassInstance" />.
-        /// </remarks>
-        [CanBeNull, Obsolete]
-        public readonly string StatementDefinedInClassName;*/
 
         // Raw argument array.
         private readonly Array<SolExpression> m_Arguments;
@@ -61,6 +51,7 @@ namespace SolScript.Interpreter.Statements
         #region Overrides
 
         /// <inheritdoc />
+        /// <exception cref="SolRuntimeException">Can only call a function value.</exception>
         public override SolValue Execute(SolExecutionContext context, IVariables parentVariables, out Terminators terminators)
         {
             context.CurrentLocation = Location;

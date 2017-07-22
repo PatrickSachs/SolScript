@@ -1,6 +1,33 @@
-﻿using System.Collections.Generic;
-using Irony.Parsing;
+﻿// ---------------------------------------------------------------------
+// SolScript - A simple but powerful scripting language.
+// Official repository: https://bitbucket.org/PatrickSachs/solscript/
+// ---------------------------------------------------------------------
+// Copyright 2017 Patrick Sachs
+// Permission is hereby granted, free of charge, to any person obtaining 
+// a copy of this software and associated documentation files (the 
+// "Software"), to deal in the Software without restriction, including 
+// without limitation the rights to use, copy, modify, merge, publish, 
+// distribute, sublicense, and/or sell copies of the Software, and to 
+// permit persons to whom the Software is furnished to do so, subject to 
+// the following conditions:
+// 
+// The above copyright notice and this permission notice shall be 
+// included in all copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, 
+// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND 
+// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS 
+// BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN 
+// ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
+// SOFTWARE.
+// ---------------------------------------------------------------------
+// ReSharper disable ArgumentsStyleStringLiteral
+
+using System.Collections.Generic;
 using JetBrains.Annotations;
+using NodeParser;
 using PSUtility.Enumerables;
 using SolScript.Compiler;
 using SolScript.Exceptions;
@@ -20,26 +47,26 @@ namespace SolScript.Interpreter.Statements
         /// </summary>
         /// <param name="assembly">The assembly this statement belongs to.</param>
         /// <param name="location">The location in source code.</param>
-        /// <param name="typeName">The name of the class that should be created.</param>
+        /// <param name="class">The class that should be created.</param>
         /// <param name="arguments">The constructor arguments.</param>
-        public Statement_New([NotNull] SolAssembly assembly, SourceLocation location, string typeName, params SolExpression[] arguments) : base(assembly, location)
+        public Statement_New([NotNull] SolAssembly assembly, NodeLocation location, SolClassDefinitionReference @class, IEnumerable<SolExpression> arguments) : base(assembly, location)
         {
-            m_Arguments = new Array<SolExpression>(arguments);
-            TypeName = typeName;
+            Class = @class;
+            m_Arguments = InternalHelper.CreateArray(arguments);
         }
 
         // The constructor arguments.
         private readonly Array<SolExpression> m_Arguments;
 
         /// <summary>
-        ///     The name of the class that should be created.
-        /// </summary>
-        public readonly string TypeName;
-
-        /// <summary>
         ///     The constructor arguments.
         /// </summary>
         public ReadOnlyList<SolExpression> Arguments => m_Arguments.AsReadOnly();
+
+        /// <summary>
+        ///     The class that should be created.
+        /// </summary>
+        public SolClassDefinitionReference Class { get; }
 
         #region Overrides
 
@@ -51,11 +78,15 @@ namespace SolScript.Interpreter.Statements
             for (int i = 0; i < arguments.Length; i++) {
                 arguments[i] = m_Arguments[i].Evaluate(context, parentVariables);
             }
+            SolClassDefinition definition;
+            if (!Class.TryGetDefinition(out definition)) {
+                throw new SolRuntimeException(context, $"The class \"{Class.Name}\" does not exist.");
+            }
             SolClass instance;
             try {
-                instance = Assembly.New(TypeName, ClassCreationOptions.Default(context), arguments);
+                instance = Assembly.New(definition, ClassCreationOptions.Default(context), arguments);
             } catch (SolTypeRegistryException ex) {
-                throw new SolRuntimeException(context, $"An error occured while creating a class instance of type \"{TypeName}\".", ex);
+                throw new SolRuntimeException(context, $"An error occured while creating a class instance of type \"{Class.Name}\".", ex);
             }
             terminators = Terminators.None;
             return instance;
@@ -65,22 +96,21 @@ namespace SolScript.Interpreter.Statements
         protected override string ToString_Impl()
         {
             return
-                $"new {TypeName}({m_Arguments.JoinToString()})";
+                $"new {Class.Name}({m_Arguments.JoinToString()})";
         }
 
         /// <inheritdoc />
         public override ValidationResult Validate(SolValidationContext context)
         {
             SolClassDefinition def;
-            if (!Assembly.TryGetClass(TypeName, out def)) {
+            if (!Class.TryGetDefinition(out def)) {
                 return ValidationResult.Failure();
             }
             if (!def.CanBeCreated()) {
                 return ValidationResult.Failure();
             }
             SolFunctionDefinition ctor;
-            try
-            {
+            try {
                 SolClassDefinition.MetaFunctionLink ctorMetaFunc;
                 if (!def.TryGetMetaFunction(SolMetaFunction.__new, out ctorMetaFunc) && Arguments.Count != 0) {
                     return ValidationResult.Failure();
@@ -112,7 +142,7 @@ namespace SolScript.Interpreter.Statements
                     }
                 }
             }
-            return new ValidationResult(true, new SolType(TypeName, false));
+            return new ValidationResult(true, new SolType(Class.Name, false));
         }
 
         #endregion

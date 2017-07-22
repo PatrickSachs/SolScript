@@ -248,4 +248,12 @@
     <value>Failed to build a delegate of type "{0}" for function "{1}".</value>
     <comment>0: Delegate Type // 1: Function</comment>
   </data>
+  <data name="Err_FailedToParseFile" xml:space="preserve">
+    <value>Failed to parse the file "{0}". See inner exception for details.</value>
+    <comment>0: File Name</comment>
+  </data>
+  <data name="Err_FailedToBuildSolScriptGrammar" xml:space="preserve">
+    <value>The SolScript grammar could not be generated. Did you modify the grammar? If so consider reading up on the NodeParser as there are slight but important differences to how Irony works by default.</value>
+    <comment>0: Language state list</comment>
+  </data>
 </root>

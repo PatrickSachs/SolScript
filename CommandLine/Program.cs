@@ -3,6 +3,7 @@ using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
 using Irony.Parsing;
+using NodeParser;
 using SolScript.Exceptions;
 using SolScript.Interpreter;
 using SolScript.Interpreter.Types;
@@ -144,7 +145,7 @@ namespace SolScript
                             SolValue main = script.GetVariables(SolAccessModifier.Global).Get("main");
                             SolFunction mainFunction = main as SolFunction;
                             if (mainFunction == null) {
-                                throw new SolVariableException(SourceLocation.Empty, "main is not a function - " + main);
+                                throw new SolVariableException(default(NodeLocation), "main is not a function - " + main);
                             }
                             SolValue returnValue = mainFunction.Call(new SolExecutionContext(script, "Command Line Interpreter"));
                             Console.WriteLine("main() returned: " + returnValue);
@@ -158,12 +159,14 @@ namespace SolScript
                         Console.WriteLine(" ================================================");
                         Console.ForegroundColor = ConsoleColor.White;   
                         StringBuilder builder = new StringBuilder();
-                        if (ex is SolRuntimeException) {
-                            builder.AppendLine(ex.Message);
-                        } else {
+
                             SolException.UnwindExceptionStack(ex, builder);
-                        }
-                        Console.WriteLine(builder.ToString());
+                            /*if (ex is SolRuntimeException) {
+                                builder.AppendLine(ex.Message);
+                            } else {
+                                SolException.UnwindExceptionStack(ex, builder);
+                            }*/
+                            Console.WriteLine(builder.ToString());
                         Console.ForegroundColor = ConsoleColor.Yellow;
                         Console.WriteLine(" ================================================");
                         Console.ForegroundColor = ConsoleColor.White;

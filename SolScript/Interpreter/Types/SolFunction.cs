@@ -1,6 +1,7 @@
 ﻿using System;
 using Irony.Parsing;
 using JetBrains.Annotations;
+using NodeParser;
 using SolScript.Exceptions;
 using SolScript.Interpreter.Types.Marshal;
 
@@ -65,7 +66,7 @@ namespace SolScript.Interpreter.Types
         #region ISourceLocateable Members
 
         /// <inheritdoc />
-        public abstract SourceLocation Location { get; }
+        public abstract NodeLocation Location { get; }
 
         #endregion
 

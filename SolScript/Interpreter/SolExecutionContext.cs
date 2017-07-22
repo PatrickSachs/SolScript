@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using Irony.Parsing;
 using JetBrains.Annotations;
+using NodeParser;
 using SolScript.Exceptions;
 using SolScript.Interpreter.Types;
 
@@ -47,7 +48,7 @@ namespace SolScript.Interpreter
         ///     possible as it contains vital information for debugging in case an error
         ///     arises.
         /// </summary>
-        public SourceLocation CurrentLocation { get; set; }
+        public NodeLocation CurrentLocation { get; set; }
 
         /// <summary>
         ///     The class this context is currently in. This property is set automatically.<br /> Only change it if you know what
@@ -147,12 +148,12 @@ namespace SolScript.Interpreter
         protected virtual StringBuilder GenerateStackTrace_Impl()
         {
             StringBuilder builder = new StringBuilder();
-            builder.Append("Error in execution " + Name + ".");
-            if (CurrentClass != null) {
+            builder.AppendLine("Error in execution context \"" + Name + "\".");
+            /*if (CurrentClass != null) {
                 builder.AppendLine("(Currently in class: \"" + CurrentClass.Type + "\" - Instance-Id: " + CurrentClass.Id + ")");
             } else {
                 builder.AppendLine();
-            }
+            }*/
             foreach (SolStackFrame frame in StackTrace) {
                 builder.Append("  ");
                 builder.AppendLine(frame.ToString());
@@ -170,12 +171,12 @@ namespace SolScript.Interpreter
         ///     Generates the stack trace with information about each called function. Also (optionally) indicates that a given
         ///     exception has caused the generation of this stack trace.
         /// </summary>
-        /// <param name="nativeException">The exception.</param>
         /// <returns>The stack trace as string.</returns>
-        public virtual string GenerateStackTrace(Exception nativeException = null)
+        public virtual string GenerateStackTrace(/*Exception nativeException = null*/)
         {
+            // <param name="nativeException">The exception.</param>
             StringBuilder builder = GenerateStackTrace_Impl();
-            if (nativeException is SolException) {
+            /*if (nativeException is SolException) {
                 SolException.UnwindExceptionStack((SolException) nativeException, builder);
             } else if (nativeException != null) {
                 builder.Append("Caused by a native exception: ");
@@ -186,7 +187,7 @@ namespace SolScript.Interpreter
                     builder.AppendLine(")");
                 }
                 builder.AppendLine(nativeException.StackTrace);
-            }
+            }*/
             return builder.ToString();
         }
     }

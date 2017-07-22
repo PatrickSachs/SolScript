@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using Irony.Parsing;
+using NodeParser;
 using PSUtility.Enumerables;
 
 namespace SolScript.Interpreter
@@ -7,12 +8,10 @@ namespace SolScript.Interpreter
     /// <summary>
     ///     This is the base class for all annotateable definitions.
     /// </summary>
-    public abstract class SolAnnotateableDefinitionBase : SolDefinitionBase
+    public abstract class SolAnnotateableDefinitionBase : SolDefinition
     {
         /// <inheritdoc />
-        internal SolAnnotateableDefinitionBase(SolAssembly assembly, SourceLocation location) : base(assembly, location) {}
-        // No 3rd party definitions.
-        internal SolAnnotateableDefinitionBase() {}
+        internal SolAnnotateableDefinitionBase(SolAssembly assembly, NodeLocation location) : base(assembly, location) {}
 
         /// <summary>
         ///     All annotations declared in this definition.

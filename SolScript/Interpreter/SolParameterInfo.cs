@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 using JetBrains.Annotations;
 using PSUtility.Enumerables;
 using SolScript.Exceptions;
@@ -171,6 +172,25 @@ namespace SolScript.Interpreter
                 }
             }
             return newArguments.ToArray();
+        }
+
+        /// <inheritdoc />
+        public override string ToString()
+        {
+            StringBuilder builder = new StringBuilder();
+            foreach (SolParameter parameter in this) {
+                if (builder.Length != 0) {
+                    builder.Append(", ");
+                }
+                builder.Append(parameter);
+            }
+            if (AllowOptional) {
+                if (builder.Length != 0) {
+                    builder.Append(", ");
+                }
+                builder.Append("...");
+            }
+            return builder.ToString();
         }
 
         /// <summary>

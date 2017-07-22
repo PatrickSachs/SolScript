@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using NodeParser;
 using SolScript.Compiler;
 using SolScript.Interpreter.Types;
 
@@ -11,18 +12,23 @@ namespace SolScript.Interpreter.Expressions
     public class Expression_Binary : SolExpression
     {
         /// <inheritdoc />
-        public Expression_Binary()
+        /// <exception cref="ArgumentNullException">An argument is <see langword="null"/></exception>
+        public Expression_Binary(SolAssembly assembly, NodeLocation location, SolExpression first, OperationRef operation, SolExpression second) : base(assembly, location)
         {
-        }
-
-        /// <inheritdoc />
-        public Expression_Binary(OperationRef operation, SolExpression first, SolExpression second)
-        {
-            Operation = operation;
+            if (first == null) {
+                throw new ArgumentNullException(nameof(first));
+            }
+            if (operation == null) {
+                throw new ArgumentNullException(nameof(operation));
+            }
+            if (second == null) {
+                throw new ArgumentNullException(nameof(second));
+            }
             First = first;
+            Operation = operation;
             Second = second;
         }
-        
+
         /// <summary>
         ///     The first expression.
         /// </summary>

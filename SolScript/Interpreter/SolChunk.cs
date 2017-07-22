@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using Irony.Parsing;
 using JetBrains.Annotations;
+using NodeParser;
 using PSUtility.Enumerables;
 using SolScript.Compiler;
 using SolScript.Interpreter.Expressions;
@@ -15,32 +17,19 @@ namespace SolScript.Interpreter
     ///     functions or generally inside isolated blocks such as iterator bodies.
     /// </summary>
     public class SolChunk : ISourceLocateable, ISolCompileable
-        //, ISourceLocationInjector
     {
-        /// <summary>
-        ///     Used by the parser.
-        /// </summary>
-        [Obsolete(InternalHelper.O_PARSER_MSG, InternalHelper.O_PARSER_ERR)]
-        public SolChunk()
-        {
-            Assembly = SolAssembly.CurrentlyParsing;
-            Id = s_NextId++;
-        }
-
         /// <summary>
         ///     Creates a new chunk.
         /// </summary>
         /// <param name="location">The code location of this chunk.</param>
-        /// <param name="returnExpression">The optional return/break/continue expression.</param>
         /// <param name="statements">The statements in this chunk.</param>
         /// <param name="assembly">The assembly of this chunk</param>
-        public SolChunk(SolAssembly assembly, SourceLocation location, [CanBeNull] TerminatingSolExpression returnExpression, params SolStatement[] statements)
+        public SolChunk(SolAssembly assembly, NodeLocation location, IEnumerable<SolStatement> statements)
         {
             Assembly = assembly;
             Id = s_NextId++;
-            ReturnExpression = returnExpression;
-            m_Statements = new PSList<SolStatement>(statements);
-            InjectSourceLocation(location);
+            m_Statements = InternalHelper.CreateArray(statements);
+            Location = location;
         }
 
         // The id of the next chunk.
@@ -56,14 +45,8 @@ namespace SolScript.Interpreter
         /// </summary>
         public readonly uint Id;
 
-        /// <summary>
-        ///     The optional return/continue/break expression.
-        /// </summary>
-        [CanBeNull]
-        public readonly TerminatingSolExpression ReturnExpression;
-
         // The statement array.
-        private readonly PSList<SolStatement> m_Statements;
+        private readonly Array<SolStatement> m_Statements;
 
         /// <summary>
         ///     The statements in this chunk.
@@ -78,19 +61,21 @@ namespace SolScript.Interpreter
             bool success = true;
             SolValidationContext.Chunk valChunk = new SolValidationContext.Chunk(this);
             context.Chunks.Push(valChunk);
-            
+
+            ValidationResult returnResult = null;
             foreach (SolStatement statement in Statements) {
-                bool stSuccess = statement.Validate(context);
+                var thisResult = statement.Validate(context);
                 // Validate all statements even if one fails.
-                if (success && !stSuccess) {
+                if (success && !thisResult) {
                     success = false;
                 }
+
             }
 
-            ValidationResult lastResult = ReturnExpression?.Validate(context);
+            /*ValidationResult lastResult = ReturnExpression?.Validate(context);
             if (!lastResult) {
                 success = false;
-            }
+            }*/
 
             SolValidationContext.Chunk popped = context.Chunks.Pop();
             if (!ReferenceEquals(popped, valChunk)) {
@@ -98,7 +83,7 @@ namespace SolScript.Interpreter
                 throw new InvalidOperationException("Internal chunk validation corruption. Expected " + valChunk.SolChunk + " but got " + popped.SolChunk + ".");
             }
             // ReSharper disable once ConditionIsAlwaysTrueOrFalse - No its not. Its even marked with [CanBeNull]
-            return new ValidationResult(success, lastResult != null ? lastResult.Type : SolType.AnyNil);
+            return new ValidationResult(success, returnResult?.Type ?? new SolType(SolNil.TYPE, true));
         }
 
         #endregion
@@ -106,7 +91,7 @@ namespace SolScript.Interpreter
         #region ISourceLocateable Members
 
         /// <inheritdoc />
-        public SourceLocation Location { get; private set; }
+        public NodeLocation Location { get; }
 
         #endregion
 
@@ -142,36 +127,12 @@ namespace SolScript.Interpreter
                     return value;
                 }
             }
-            if (ReturnExpression != null) {
+            /*if (ReturnExpression != null) {
                 SolValue value = ReturnExpression.Evaluate(context, variables, out terminators);
                 return value;
-            }
+            }*/
             terminators = Terminators.None;
             return SolNil.Instance;
         }
-
-        /// <inheritdoc />
-        public void InjectSourceLocation(SourceLocation location)
-        {
-            Location = location;
-        }
-
-        /*/// <inheritdoc />
-        /// <exception cref="IOException">An I/O error occured.</exception>
-        /// <exception cref="SolCompilerException">Failed to compile. (See possible inner exceptions for details)</exception>
-        public void Compile(BinaryWriter writer, SolCompliationContext context)
-        {
-            Location.CompileTo(writer, context);
-            writer.Write(m_Statements.Count);
-            foreach (SolStatement statement in m_Statements) {
-                statement.Compile(writer, context);
-            }
-            if (ReturnExpression != null) {
-                writer.Write((byte) 1);
-                ReturnExpression.Compile(writer, context);
-            } else {
-                writer.Write((byte) 0);
-            }
-        }*/
     }
 }

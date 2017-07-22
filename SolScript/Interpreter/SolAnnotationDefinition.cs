@@ -1,6 +1,33 @@
+// ---------------------------------------------------------------------
+// SolScript - A simple but powerful scripting language.
+// Official repository: https://bitbucket.org/PatrickSachs/solscript/
+// ---------------------------------------------------------------------
+// Copyright 2017 Patrick Sachs
+// Permission is hereby granted, free of charge, to any person obtaining 
+// a copy of this software and associated documentation files (the 
+// "Software"), to deal in the Software without restriction, including 
+// without limitation the rights to use, copy, modify, merge, publish, 
+// distribute, sublicense, and/or sell copies of the Software, and to 
+// permit persons to whom the Software is furnished to do so, subject to 
+// the following conditions:
+// 
+// The above copyright notice and this permission notice shall be 
+// included in all copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, 
+// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND 
+// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS 
+// BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN 
+// ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
+// SOFTWARE.
+// ---------------------------------------------------------------------
+// ReSharper disable ArgumentsStyleStringLiteral
+
 using System;
 using System.Collections.Generic;
-using JetBrains.Annotations;
+using NodeParser;
 using PSUtility.Enumerables;
 using SolScript.Interpreter.Expressions;
 using SolScript.Properties;
@@ -11,23 +38,17 @@ namespace SolScript.Interpreter
     /// <summary>
     ///     This definition is used to declare the usage of an annotation.
     /// </summary>
-    public sealed class SolAnnotationDefinition : SolDefinitionBase
+    public sealed class SolAnnotationDefinition : SolDefinition
     {
-        /// <summary>
-        ///     Parser usage only.
-        /// </summary>
-        [Obsolete(InternalHelper.O_PARSER_MSG, InternalHelper.O_PARSER_ERR)]
-        [UsedImplicitly]
-        public SolAnnotationDefinition() {}
-
         /// <summary>Creates a new annotation definition.</summary>
+        /// <param name="location">The location in node.</param>
         /// <param name="type">The annotation type name.</param>
         /// <param name="arguments">The annotation constructor arguments.</param>
+        /// <param name="assembly">The assembly owing the annotation.</param>
         /// <exception cref="ArgumentNullException">
-        ///     <paramref name="type" /> is <see langword="null" /> -or-
-        ///     <paramref name="arguments" /> is <see langword="null" />
+        ///     An argument is <see langword="null" />
         /// </exception>
-        public SolAnnotationDefinition(SolClassDefinitionReference type, params SolExpression[] arguments)
+        public SolAnnotationDefinition(SolAssembly assembly, NodeLocation location, SolClassDefinitionReference type, IEnumerable<SolExpression> arguments) : base(assembly, location)
         {
             if (type == null) {
                 throw new ArgumentNullException(nameof(type));
@@ -35,18 +56,24 @@ namespace SolScript.Interpreter
             if (arguments == null) {
                 throw new ArgumentNullException(nameof(arguments));
             }
-            Arguments = new PSList<SolExpression>(arguments);
+            m_Arguments = InternalHelper.CreateArray(arguments);
             m_Reference = type;
-            //Arguments = ReadOnlyList<SolExpression>.FromDelegate(() => ArgumentsList ?? EmptyReadOnlyList<SolExpression>.Value);
         }
 
+        private readonly Array<SolExpression> m_Arguments;
+
         private readonly SolClassDefinitionReference m_Reference;
+
+        /// <summary>
+        ///     The annotation constructor arguments.
+        /// </summary>
+        public ReadOnlyList<SolExpression> Arguments => m_Arguments.AsReadOnly();
 
         /// <summary>
         ///     The annotation class name.
         /// </summary>
         /// <remarks>Always valid.</remarks>
-        public string ClassName => m_Reference.ClassName;
+        public string ClassName => m_Reference.Name;
 
         /// <summary>
         ///     The annotation class definition.
@@ -57,15 +84,10 @@ namespace SolScript.Interpreter
             get {
                 SolClassDefinition definition;
                 if (!m_Reference.TryGetDefinition(out definition)) {
-                    throw new InvalidOperationException(Resources.Err_ClassDefinitionNotValid.ToString(m_Reference.ClassName));
+                    throw new InvalidOperationException(Resources.Err_ClassDefinitionNotValid.ToString(m_Reference.Name));
                 }
                 return definition;
             }
         }
-
-        /// <summary>
-        ///     The annotation constructor arguments.
-        /// </summary>
-        public IList<SolExpression> Arguments { get; internal set; }
     }
 }

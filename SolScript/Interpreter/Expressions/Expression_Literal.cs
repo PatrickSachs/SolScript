@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using NodeParser;
 using SolScript.Compiler;
 using SolScript.Interpreter.Types;
 
@@ -10,24 +11,25 @@ namespace SolScript.Interpreter.Expressions
     /// </summary>
     public sealed class Expression_Literal : SolExpression
     {
-        private Expression_Literal() : base(SolAssembly.CurrentlyParsing, SolSourceLocation.Empty())
-        {
-        }
-
-        /// <inheritdoc />
-        /// <exception cref="ArgumentNullException"><paramref name="value" /> is <see langword="null" /></exception>
-        public Expression_Literal(SolValue value) : base(SolAssembly.CurrentlyParsing, SolSourceLocation.Empty())
+        /// <summary>
+        /// Creates a literal expression.
+        /// </summary>
+        /// <param name="assembly">The assembly.</param>
+        /// <param name="location">The location in code.</param>
+        /// <param name="value">The value this expression evaluates to.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="value"/> is <see langword="null"/></exception>
+        public Expression_Literal(SolAssembly assembly, NodeLocation location, SolValue value) : base(assembly, location)
         {
             if (value == null) {
                 throw new ArgumentNullException(nameof(value));
             }
             Value = value;
         }
-
+        
         /// <summary>
         ///     The value this expression evaluates to.
         /// </summary>
-        public SolValue Value { get; private set; }
+        public SolValue Value { get; }
 
         #region Overrides
 
@@ -40,6 +42,9 @@ namespace SolScript.Interpreter.Expressions
         /// <inheritdoc />
         protected override string ToString_Impl()
         {
+            if (Value is SolString) {
+                return "\"" + Value + "\"";
+            }
             return Value.ToString();
         }
 

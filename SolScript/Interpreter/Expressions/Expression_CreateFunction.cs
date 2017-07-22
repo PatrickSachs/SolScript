@@ -1,4 +1,7 @@
-﻿using SolScript.Compiler;
+﻿using System;
+using System.Text;
+using NodeParser;
+using SolScript.Compiler;
 using SolScript.Interpreter.Types;
 using SolScript.Interpreter.Types.Implementation;
 
@@ -7,16 +10,25 @@ namespace SolScript.Interpreter.Expressions
     /// <summary>
     ///     This expression is used to create new functions("lamda functions") at runtime.
     /// </summary>
-    public class Expression_CreateFunc : SolExpression
+    public class Expression_CreateFunction : SolExpression
     {
         /// <summary>
         ///     Creates a new expression.
         /// </summary>
+        /// <param name="assembly">The assembly.</param>
+        /// <param name="location">The location in code.</param>
         /// <param name="chunk">The function chunk.</param>
         /// <param name="type">The function return type.</param>
         /// <param name="parameters">The function parameters.</param>
-        public Expression_CreateFunc(SolChunk chunk, SolType type, SolParameterInfo parameters)
+        /// <exception cref="ArgumentNullException">An argument is <see langword="null"/></exception>
+        public Expression_CreateFunction(SolAssembly assembly, NodeLocation location, SolChunk chunk, SolType type, SolParameterInfo parameters) : base(assembly, location)
         {
+            if (chunk == null) {
+                throw new ArgumentNullException(nameof(chunk));
+            }
+            if (parameters == null) {
+                throw new ArgumentNullException(nameof(parameters));
+            }
             Chunk = chunk;
             Type = type;
             Parameters = parameters;
@@ -48,8 +60,13 @@ namespace SolScript.Interpreter.Expressions
         /// <inheritdoc />
         protected override string ToString_Impl()
         {
-            return
-                $"Expression_CreateFunc(Type={Type}, Parameters={Parameters}, Chunk={Chunk})";
+            StringBuilder builder = new StringBuilder();
+            builder.Append("function(");
+            builder.Append(Parameters);
+            builder.Append(") ");
+            builder.Append(Chunk);
+            builder.Append(" end");
+            return builder.ToString();
         }
 
         /// <inheritdoc />

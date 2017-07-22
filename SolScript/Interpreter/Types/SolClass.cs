@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Irony.Parsing;
 using JetBrains.Annotations;
+using NodeParser;
 using PSUtility.Enumerables;
 using PSUtility.Strings;
 using SolScript.Exceptions;
@@ -875,7 +876,7 @@ namespace SolScript.Interpreter.Types
                 #region Overrides
 
                 /// <inheritdoc />
-                protected override SourceLocation GetLocation()
+                protected override NodeLocation GetLocation()
                 {
                     return VarInheritance.Definition.Location;
                 }
@@ -1052,7 +1053,7 @@ namespace SolScript.Interpreter.Types
             ///     Gets the location of this variable source used for errors.
             /// </summary>
             /// <returns>The location.</returns>
-            protected abstract SourceLocation GetLocation();
+            protected abstract NodeLocation GetLocation();
 
             /// <summary>
             ///     Gets all <see cref="IVariables" />s that declare the values.

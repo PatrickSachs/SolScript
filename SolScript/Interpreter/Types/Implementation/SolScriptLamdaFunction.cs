@@ -1,5 +1,5 @@
-﻿using Irony.Parsing;
-using JetBrains.Annotations;
+﻿using JetBrains.Annotations;
+using NodeParser;
 using SolScript.Exceptions;
 
 namespace SolScript.Interpreter.Types.Implementation
@@ -21,7 +21,8 @@ namespace SolScript.Interpreter.Types.Implementation
         ///     The parent variables of the function. Set this to a non-null value if the function was
         ///     e.g. declared inside  another function and thus needs to have access to that functions variable scope.
         /// </param>
-        public SolScriptLamdaFunction([NotNull] SolAssembly assembly, SourceLocation location, [NotNull] SolParameterInfo parameterInfo,
+        /// <param name="definedIn">The class the function was defined in.</param>
+        public SolScriptLamdaFunction([NotNull] SolAssembly assembly, NodeLocation location, [NotNull] SolParameterInfo parameterInfo,
             SolType returnType, [NotNull] SolChunk chunk, [CanBeNull] IVariables parentVariables, SolClass definedIn)
             : base(assembly, location, parameterInfo, returnType, definedIn)
         {
@@ -30,7 +31,9 @@ namespace SolScript.Interpreter.Types.Implementation
         }
 
         private readonly SolChunk m_Chunk;
-        [CanBeNull] private readonly IVariables m_ParentVariables;
+
+        [CanBeNull]
+        private readonly IVariables m_ParentVariables;
 
         #region Overrides
 

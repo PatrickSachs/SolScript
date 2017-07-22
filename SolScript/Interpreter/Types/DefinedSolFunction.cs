@@ -1,4 +1,5 @@
 ﻿using Irony.Parsing;
+using NodeParser;
 
 namespace SolScript.Interpreter.Types
 {
@@ -16,7 +17,7 @@ namespace SolScript.Interpreter.Types
         public abstract SolFunctionDefinition Definition { get; }
 
         /// <inheritdoc />
-        public override SourceLocation Location => Definition.Location;
+        public override NodeLocation Location => Definition.Location;
 
         /// <inheritdoc />
         public override SolParameterInfo ParameterInfo => Definition.ParameterInfo;

@@ -1,13 +1,39 @@
-﻿using System;
+﻿// ---------------------------------------------------------------------
+// SolScript - A simple but powerful scripting language.
+// Official repository: https://bitbucket.org/PatrickSachs/solscript/
+// ---------------------------------------------------------------------
+// Copyright 2017 Patrick Sachs
+// Permission is hereby granted, free of charge, to any person obtaining 
+// a copy of this software and associated documentation files (the 
+// "Software"), to deal in the Software without restriction, including 
+// without limitation the rights to use, copy, modify, merge, publish, 
+// distribute, sublicense, and/or sell copies of the Software, and to 
+// permit persons to whom the Software is furnished to do so, subject to 
+// the following conditions:
+// 
+// The above copyright notice and this permission notice shall be 
+// included in all copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, 
+// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND 
+// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS 
+// BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN 
+// ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
+// SOFTWARE.
+// ---------------------------------------------------------------------
+// ReSharper disable ArgumentsStyleStringLiteral
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using Irony.Parsing;
 using JetBrains.Annotations;
+using NodeParser;
 using PSUtility.Enumerables;
 using PSUtility.Strings;
 using SolScript.Compiler;
 using SolScript.Exceptions;
-using SolScript.Interpreter.Library;
 using SolScript.Interpreter.Types;
 using SolScript.Utility;
 
@@ -15,28 +41,15 @@ namespace SolScript.Interpreter
 {
     /// <summary>
     ///     The <see cref="SolClassDefinition" /> is a "prefab" for classes. They contain all non-instance bound data about a
-    ///     class. The definitions are created from <see cref="SolClassBuilder" /> by the <see cref="SolAssembly" /> during the
-    ///     assembly creation.
+    ///     class. The definitions are created by the <see cref="SolAssembly.Builder" /> during the assembly creation.
     /// </summary>
     public sealed class SolClassDefinition : SolAnnotateableDefinitionBase
     {
         /// <inheritdoc />
-        public SolClassDefinition(SolAssembly assembly, SourceLocation location, bool isNativeClass) : base(assembly, location)
+        public SolClassDefinition(SolAssembly assembly, NodeLocation location, bool isNativeClass) : base(assembly, location)
         {
             IsNativeClass = isNativeClass;
         }
-
-        /*/// <summary>
-        ///     Used by the parser. Class definitions are NOT created by using this constructor. Class definitions can be created
-        ///     by: <br />
-        ///     a.) Defining the classes in script.<br />
-        ///     b.) Marking a native class with [<see cref="SolTypeDescriptorAttribute" />]. See documentation about library
-        ///     classes for more info.
-        /// </summary>
-        //[Obsolete(InternalHelper.O_PARSER_MSG, InternalHelper.O_PARSER_ERR)]
-        internal SolClassDefinition()
-        {
-        }*/
 
         /// <summary>
         ///     The reference to the base class used.
@@ -57,11 +70,6 @@ namespace SolScript.Interpreter
         private PSDictionary<SolMetaFunction, MetaFunctionLink> l_meta_functions;
 
         /// <summary>
-        /// Is this class a native class?
-        /// </summary>
-        public bool IsNativeClass { get; private set; }
-
-        /// <summary>
         ///     All meta functions on this class. This includes meta functions declared at all inheritance levels.
         /// </summary>
         public ReadOnlyDictionary<SolMetaFunction, MetaFunctionLink> AllMetaFunctions {
@@ -76,6 +84,7 @@ namespace SolScript.Interpreter
         /// <summary>
         ///     The base class of this class definition.
         /// </summary>
+        /// <exception cref="InvalidOperationException" accessor="get">Could not resolve base class.</exception>
         [CanBeNull]
         public SolClassDefinition BaseClass {
             get {
@@ -84,28 +93,9 @@ namespace SolScript.Interpreter
                 }
                 SolClassDefinition baseClass;
                 if (!BaseClassReference.TryGetDefinition(out baseClass)) {
-                    throw new InvalidOperationException("The base class {0} of class {1} could not be resolved.".FormatWith(BaseClassReference.ClassName, Type));
+                    throw new InvalidOperationException("The base class {0} of class {1} could not be resolved.".FormatWith(BaseClassReference.Name, Type));
                 }
                 return baseClass;
-            }
-        }
-
-        /// <inheritdoc />
-        public override ReadOnlyList<SolAnnotationDefinition> DeclaredAnnotations => m_DeclaredAnnotations.AsReadOnly();
-
-        /// <summary>
-        ///     The meta functions only declared in this class definition.
-        /// </summary>
-        public ReadOnlyDictionary<SolMetaFunction, MetaFunctionLink> DeclaredMetaFunctions {
-            get {
-                if (!DidBuildMetaFunctions) {
-                    BuildMetaFunctions();
-                }
-                var dic = new PSDictionary<SolMetaFunction, MetaFunctionLink>();
-                foreach (KeyValuePair<SolMetaFunction, MetaFunctionLink> m in l_meta_functions.Where(p => p.Value.Definition.DefinedIn == this)) {
-                    dic.Add(m.Key, m.Value);
-                }
-                return dic.AsReadOnly();
             }
         }
 
@@ -115,6 +105,9 @@ namespace SolScript.Interpreter
         ///     handle on a field definition.
         /// </summary>
         public ReadOnlyDictionary<string, SolFieldDefinition> DecalredFieldLookup => m_Fields.AsReadOnly();
+
+        /// <inheritdoc />
+        public override ReadOnlyList<SolAnnotationDefinition> DeclaredAnnotations => m_DeclaredAnnotations.AsReadOnly();
 
         /// <summary>
         ///     All fields declared in this class.
@@ -134,6 +127,22 @@ namespace SolScript.Interpreter
         public ReadOnlyCollection<SolFunctionDefinition> DeclaredFunctions => m_Functions.Values;
 
         /// <summary>
+        ///     The meta functions only declared in this class definition.
+        /// </summary>
+        public ReadOnlyDictionary<SolMetaFunction, MetaFunctionLink> DeclaredMetaFunctions {
+            get {
+                if (!DidBuildMetaFunctions) {
+                    BuildMetaFunctions();
+                }
+                var dic = new PSDictionary<SolMetaFunction, MetaFunctionLink>();
+                foreach (KeyValuePair<SolMetaFunction, MetaFunctionLink> m in l_meta_functions.Where(p => p.Value.Definition.DefinedIn == this)) {
+                    dic.Add(m.Key, m.Value);
+                }
+                return dic.AsReadOnly();
+            }
+        }
+
+        /// <summary>
         ///     The native type represented by this class definition.
         /// </summary>
         public Type DescribedType { get; internal set; }
@@ -142,6 +151,11 @@ namespace SolScript.Interpreter
         ///     The native type objects actually are.
         /// </summary>
         public Type DescriptorType { get; internal set; }
+
+        /// <summary>
+        ///     Is this class a native class?
+        /// </summary>
+        public bool IsNativeClass { get; private set; }
 
         /// <summary>
         ///     The type name of this class definition.
@@ -190,7 +204,7 @@ namespace SolScript.Interpreter
         }
 
         /// <summary>
-        /// Iterates through the inheritance chain. Includes itself.
+        ///     Iterates through the inheritance chain. Includes itself.
         /// </summary>
         /// <returns>The enumerable.</returns>
         public IEnumerable<SolClassDefinition> GetInheritance()
@@ -461,6 +475,17 @@ namespace SolScript.Interpreter
             return TryGetField(name, declaredOnly, out definition, fieldDefinition => true);
         }
 
+        /// <summary>
+        ///     Tries to get a member(a field or function) of the given name. In the case that a function and field with the same
+        ///     name exists(Which is possible if <paramref name="declardOnly"/> is false), the field will be preferred.
+        /// </summary>
+        /// <param name="name">The name.</param>
+        /// <param name="declardOnly">
+        ///     Should only members declared in this class be searched(true) or should the base classes be
+        ///     considered as well(false)?
+        /// </param>
+        /// <param name="definition">The resolved definition. Only valid if the method returned true.</param>
+        /// <returns>true if a member should be found, false if not.</returns>
         [ContractAnnotation("definition:null => false")]
         public bool TryGetMember(string name, bool declardOnly, [CanBeNull] out SolMemberDefinition definition)
         {
@@ -507,7 +532,7 @@ namespace SolScript.Interpreter
         }
 
         /// <summary>
-        /// Gets a flat representation of all functions in this class. Overridden functions are omitted.
+        ///     Gets a flat representation of all functions in this class. Overridden functions are omitted.
         /// </summary>
         /// <param name="local">Should local functions be included?</param>
         /// <returns>The enumerable.</returns>

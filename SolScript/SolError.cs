@@ -1,9 +1,35 @@
-﻿using System;
+﻿// ---------------------------------------------------------------------
+// SolScript - A simple but powerful scripting language.
+// Official repository: https://bitbucket.org/PatrickSachs/solscript/
+// ---------------------------------------------------------------------
+// Copyright 2017 Patrick Sachs
+// Permission is hereby granted, free of charge, to any person obtaining 
+// a copy of this software and associated documentation files (the 
+// "Software"), to deal in the Software without restriction, including 
+// without limitation the rights to use, copy, modify, merge, publish, 
+// distribute, sublicense, and/or sell copies of the Software, and to 
+// permit persons to whom the Software is furnished to do so, subject to 
+// the following conditions:
+// 
+// The above copyright notice and this permission notice shall be 
+// included in all copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, 
+// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND 
+// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS 
+// BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN 
+// ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
+// SOFTWARE.
+// ---------------------------------------------------------------------
+// ReSharper disable ArgumentsStyleStringLiteral
+
+using System;
 using System.Text;
-using Irony.Parsing;
 using JetBrains.Annotations;
+using NodeParser;
 using SolScript.Exceptions;
-using SolScript.Utility;
 
 namespace SolScript
 {
@@ -21,7 +47,7 @@ namespace SolScript
         /// <param name="message"> The human readable error message.</param>
         /// <param name="isWarning">Is this error a warning?</param>
         /// <param name="exception"> The exception that caused this error. </param>
-        public SolError(SourceLocation location, ErrorId id, string message, bool isWarning = false, [CanBeNull] Exception exception = null)
+        public SolError(NodeLocation location, ErrorId id, string message, bool isWarning = false, [CanBeNull] Exception exception = null)
         {
             Location = location;
             Id = id;
@@ -29,6 +55,7 @@ namespace SolScript
             IsWarning = isWarning;
             Exception = exception;
         }
+
         /// <summary>
         ///     Creates a new error from the given parameters.
         /// </summary>
@@ -36,7 +63,7 @@ namespace SolScript
         /// <param name="message"> The human readable error message.</param>
         /// <param name="isWarning">Is this error a warning?</param>
         /// <param name="exception"> The exception that caused this error. </param>
-        public SolError(SourceLocation location, string message, bool isWarning = false, [CanBeNull] Exception exception = null)
+        public SolError(NodeLocation location, string message, bool isWarning = false, [CanBeNull] Exception exception = null)
         {
             Location = location;
             Id = ErrorId.None;
@@ -66,7 +93,7 @@ namespace SolScript
         /// <summary>
         ///     The location this error occured at.
         /// </summary>
-        public SourceLocation Location { get; }
+        public NodeLocation Location { get; }
 
         /// <summary>
         ///     The human readable error message.

@@ -2,6 +2,7 @@
 using System.Text;
 using Irony.Parsing;
 using JetBrains.Annotations;
+using NodeParser;
 using SolScript.Interpreter.Types;
 using SolScript.Interpreter.Types.Implementation;
 
@@ -16,7 +17,7 @@ namespace SolScript.Interpreter
         /// <summary>
         ///     The location in the code from where the function was called.
         /// </summary>
-        public readonly SourceLocation Location;
+        public readonly NodeLocation Location;
 
         /// <summary>
         ///     The function that has been called during this frame.
@@ -32,7 +33,7 @@ namespace SolScript.Interpreter
         /// </summary>
         /// <param name="location">The location of the stack frame in code.</param>
         /// <param name="function">The function the frame related to.</param>
-        public SolStackFrame(SourceLocation location, SolFunction function)
+        public SolStackFrame(NodeLocation location, SolFunction function)
         {
             Location = location;
             Function = function;
@@ -65,19 +66,18 @@ namespace SolScript.Interpreter
         {
             StringBuilder builder = new StringBuilder();
             builder.Append("(");
-            builder.Append(Location.File);
-            builder.Append(":");
-            builder.Append(Location.Line);
-            builder.Append(":");
-            builder.Append(Location.Column);
-            builder.Append(") ");
+            builder.Append(Location);
+            builder.Append("->");
+            builder.Append(Function.Location);
+            builder.Append(")");
             builder.Append(" : ");
             AppendFunctionName(builder);
             builder.Append("(");
             AppendFunctionParameters(builder);
-            builder.Append(") [@ ");
+            builder.Append(")");
+            /*builder.Append(" [@ ");
             builder.Append(Function.Location);
-            builder.Append("]");
+            builder.Append("]");*/
             return builder.ToString();
         }
 

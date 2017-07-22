@@ -15,9 +15,9 @@ namespace SolScript.Exceptions
         /// </summary>
         /// <param name="context">The context. - Required for generating the stack trace.</param>
         /// <param name="message">The exception message.</param>
-        public SolRuntimeException(SolExecutionContext context, string message) : base(context.CurrentLocation, $"{message}\nStack Trace:\n{context.GenerateStackTrace()}")
+        public SolRuntimeException(SolExecutionContext context, string message) : base(context.CurrentLocation, message)
         {
-            RawNoStackTrace = message;
+            SolStackTrace = context.GenerateStackTrace();
         }
 
         /// <inheritdoc />
@@ -28,7 +28,7 @@ namespace SolScript.Exceptions
         /// <exception cref="InvalidCastException">A value cannot be converted to a required type. </exception>
         protected SolRuntimeException(SerializationInfo info, StreamingContext context) : base(info, context)
         {
-            RawNoStackTrace = info.GetString(NO_STACK);
+            SolStackTrace = info.GetString(STACK);
         }
 
         /// <summary>
@@ -38,14 +38,17 @@ namespace SolScript.Exceptions
         /// <param name="message">The exception message.</param>
         /// <param name="inner">The wrapped exception.</param>
         public SolRuntimeException(SolExecutionContext context, string message, Exception inner) : base(
-            context.CurrentLocation, $"{message}\nStack Trace:\n{context.GenerateStackTrace(inner)}", inner) {}
+            context.CurrentLocation, message, inner)
+        {
+            SolStackTrace = context.GenerateStackTrace();
+        }
 
-        private const string NO_STACK = "SolRuntimeException.RawNoStackTrace";
+        private const string STACK = "SolRuntimeException.StackTrace";
 
         /// <summary>
         ///     The exception message without stack trace or file location.
         /// </summary>
-        public string RawNoStackTrace { get; }
+        public string SolStackTrace { get; }
 
         #region Overrides
 
@@ -54,7 +57,7 @@ namespace SolScript.Exceptions
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
-            info.AddValue(NO_STACK, RawNoStackTrace);
+            info.AddValue(STACK, StackTrace);
         }
 
         #endregion

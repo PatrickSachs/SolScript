@@ -1,5 +1,32 @@
-﻿using System;
-using System.Diagnostics;
+﻿// ---------------------------------------------------------------------
+// SolScript - A simple but powerful scripting language.
+// Official repository: https://bitbucket.org/PatrickSachs/solscript/
+// ---------------------------------------------------------------------
+// Copyright 2017 Patrick Sachs
+// Permission is hereby granted, free of charge, to any person obtaining 
+// a copy of this software and associated documentation files (the 
+// "Software"), to deal in the Software without restriction, including 
+// without limitation the rights to use, copy, modify, merge, publish, 
+// distribute, sublicense, and/or sell copies of the Software, and to 
+// permit persons to whom the Software is furnished to do so, subject to 
+// the following conditions:
+// 
+// The above copyright notice and this permission notice shall be 
+// included in all copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, 
+// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND 
+// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS 
+// BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN 
+// ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
+// SOFTWARE.
+// ---------------------------------------------------------------------
+// ReSharper disable ArgumentsStyleStringLiteral
+
+using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -9,9 +36,11 @@ using System.Text;
 using Irony;
 using Irony.Parsing;
 using JetBrains.Annotations;
+using NodeParser.Exceptions;
 using PSUtility.Enumerables;
 using PSUtility.Metadata;
 using PSUtility.Reflection;
+using PSUtility.Strings;
 using SolScript.Compiler;
 using SolScript.Compiler.Native;
 using SolScript.Exceptions;
@@ -22,9 +51,8 @@ using SolScript.Interpreter.Types;
 using SolScript.Interpreter.Types.Implementation;
 using SolScript.Libraries.lang;
 using SolScript.Parser;
+using SolScript.Parser.Nodes;
 using SolScript.Utility;
-using gen = System.Collections.Generic;
-using ps = PSUtility.Enumerables;
 using Resources = SolScript.Properties.Resources;
 
 namespace SolScript.Interpreter
@@ -187,10 +215,6 @@ namespace SolScript.Interpreter
         /// <param name="className">The class name.</param>
         /// <param name="definition">This out value contains the found class, or null.</param>
         /// <returns>true if a class for the native type could be found, false otherwise.</returns>
-        /// <exception cref="InvalidOperationException">
-        ///     Invalid state.
-        /// </exception>
-        /// />
         [ContractAnnotation("definition:null => false")]
         public bool TryGetClass(string className, [CanBeNull] out SolClassDefinition definition)
         {
@@ -231,7 +255,7 @@ namespace SolScript.Interpreter
                             ex);
                     }
                 }
-                foreach (gen.KeyValuePair<string, SolFieldDefinition> fieldPair in activeInheritance.Definition.DecalredFieldLookup) {
+                foreach (KeyValuePair<string, SolFieldDefinition> fieldPair in activeInheritance.Definition.DecalredFieldLookup) {
                     SolFieldDefinition fieldDefinition = fieldPair.Value;
                     IVariables variables = activeInheritance.GetVariables(fieldDefinition.AccessModifier, SolVariableMode.Declarations);
                     // Which variable context is this field declared in?
@@ -375,7 +399,7 @@ namespace SolScript.Interpreter
             context.State = SolCompilationState.Started;
             writer.Write(BYTECODE_VERSION);
             writer.Write(context.FileIndices.Count);
-            foreach (gen.KeyValuePair<string, uint> indexPair in context.FileIndices) {
+            foreach (KeyValuePair<string, uint> indexPair in context.FileIndices) {
                 writer.Write(indexPair.Key);
                 writer.Write(indexPair.Value);
             }
@@ -456,31 +480,31 @@ namespace SolScript.Interpreter
             public bool TryBuild(SolAssemblyOptions options, out SolAssembly assembly)
             {
                 m_Options = options;
-                CurrentlyParsing = m_Assembly = assembly = new SolAssembly(options);
+                CurrentlyParsingThreadStatic = m_Assembly = assembly = new SolAssembly(options);
                 if (!TryBuildLibraries()) {
-                    CurrentlyParsing = null;
+                    CurrentlyParsingThreadStatic = null;
                     return false;
                 }
                 if (!TryBuildScripts()) {
-                    CurrentlyParsing = null;
+                    CurrentlyParsingThreadStatic = null;
                     return false;
                 }
                 if (!TryPostProcessPreValidation()) {
-                    CurrentlyParsing = null;
+                    CurrentlyParsingThreadStatic = null;
                     return false;
                 }
                 // todo: --!validate scripts !-- 
                 if (options.CreateNativeMapping) {
                     if (!TryCreateNativeMapping()) {
-                        CurrentlyParsing = null;
+                        CurrentlyParsingThreadStatic = null;
                         return false;
                     }
                 }
                 if (!TryCreate()) {
-                    CurrentlyParsing = null;
+                    CurrentlyParsingThreadStatic = null;
                     return false;
                 }
-                CurrentlyParsing = null;
+                CurrentlyParsingThreadStatic = null;
                 return true;
             }
 
@@ -500,16 +524,17 @@ namespace SolScript.Interpreter
                         // We may not be able to obain the base ctor it hasnt ben generated yet by this method.
                         // This won't cause problems since an error is created anyway once the pamraters mismatch here.
                         if (definition.BaseClass != null && definition.BaseClass.TryGetMetaFunction(SolMetaFunction.__new, out baseCtor)) {
-                            SolChunk chunk = new SolChunk(m_Assembly, SolSourceLocation.Native(), null,
-                                new Statement_CallFunction(m_Assembly, SolSourceLocation.Native(), definition.Type,
-                                    new Expression_GetVariable(new AVariable.Named(SolMetaFunction.__new.Name)),
-                                    new Array<SolExpression>(ctorDef.ParameterInfo.Select(p => new Expression_GetVariable(new AVariable.Named(p.Name))).Cast<SolExpression>().ToArray())
+                            SolChunk chunk = new SolChunk(m_Assembly, SolSourceLocation.Native(), new SolStatement[] {
+                                new Statement_CallFunction(m_Assembly, SolSourceLocation.Native(),
+                                    new Expression_GetVariable(m_Assembly, SolSourceLocation.Native(), new AVariable.Named(SolMetaFunction.__new.Name)),
+                                    ctorDef.ParameterInfo.Select(p => new Expression_GetVariable(m_Assembly, SolSourceLocation.Native(), new AVariable.Named(p.Name))
+                                    )
                                 )
-                            );
+                            });
                             ctorDef.Chunk = new SolChunkWrapper(chunk);
                             ctorDef.ParameterInfo = baseCtor.Definition.ParameterInfo;
                         } else {
-                            ctorDef.Chunk = new SolChunkWrapper(new SolChunk(m_Assembly, SolSourceLocation.Native(), null));
+                            ctorDef.Chunk = new SolChunkWrapper(new SolChunk(m_Assembly, SolSourceLocation.Native(), ArrayUtility.Empty<SolStatement>()));
                             ctorDef.ParameterInfo = SolParameterInfo.None;
                         }
                     }
@@ -522,20 +547,18 @@ namespace SolScript.Interpreter
                 // TODO: it feels kind of hacky to just override the previous values. maybe gen the native mappings in one go with the rest?
                 var requiresNativeMapping = new PSList<SolClassDefinition>();
                 foreach (SolClassDefinition definition in m_Assembly.m_ClassDefinitions.Values) {
-                    Trace.WriteLine("Considering " + definition + " for mapping...");
-                    if (definition.IsNativeClass)
-                    {
-                        Trace.WriteLine("   ... no: native class");
+                    //Trace.WriteLine("Considering " + definition + " for mapping...");
+                    if (definition.IsNativeClass) {
+                        //Trace.WriteLine("   ... no: native class");
                         // Native classes don't need a native binding.
                         continue;
                     }
-                    if (definition.BaseClass == null || !definition.BaseClass.IsNativeClass)
-                    {
-                        Trace.WriteLine("   ... no: base not native class");
+                    if (definition.BaseClass == null || !definition.BaseClass.IsNativeClass) {
+                        //Trace.WriteLine("   ... no: base not native class");
                         // We are not inheriting from a native class.
                         continue;
                     }
-                    Trace.WriteLine("   ... >>> TAKE IT <<<");
+                    //Trace.WriteLine("   ... >>> TAKE IT <<<");
                     requiresNativeMapping.Add(definition);
                 }
                 NativeCompiler.Options options = new NativeCompiler.Options(new PSHashSet<Assembly>(m_Libraries.SelectMany(l => l.Assemblies).Concat(Assembly.GetExecutingAssembly())).ToArray()) {
@@ -571,7 +594,7 @@ namespace SolScript.Interpreter
                 // A possible solution would be to do it like java and don't let initializers refer to members below them. 
                 // Or like C# and only allow constants, but I'd REALLY(I mean really!) like to avoid that.
                 // Declare Functions ... (AND ASSIGN!)
-                foreach (gen.KeyValuePair<string, SolFunctionDefinition> funcPair in m_Assembly.GlobalFunctionPairs) {
+                foreach (KeyValuePair<string, SolFunctionDefinition> funcPair in m_Assembly.GlobalFunctionPairs) {
                     //SolDebug.WriteLine("Processing global function " + funcPair.Key + " ...");
                     SolFunctionDefinition funcDefinition = funcPair.Value;
                     IVariables declareInVariables = m_Assembly.GetVariables(funcDefinition.AccessModifier);
@@ -608,7 +631,7 @@ namespace SolScript.Interpreter
                     }
                 }
                 // Initialize global fields
-                foreach (gen.KeyValuePair<string, SolFieldDefinition> fieldPair in m_Assembly.GlobalFieldPairs) {
+                foreach (KeyValuePair<string, SolFieldDefinition> fieldPair in m_Assembly.GlobalFieldPairs) {
                     //SolDebug.WriteLine("Processing global field " + fieldPair.Key + " ...");
                     SolFieldDefinition fieldDefinition = fieldPair.Value;
                     IVariables declareInVariables = m_Assembly.GetVariables(fieldDefinition.AccessModifier);
@@ -661,13 +684,25 @@ namespace SolScript.Interpreter
             /// <returns>true if everything worked as expected, false if an error occured.</returns>
             private bool TryBuildScripts()
             {
-                var trees = new PSList<ParseTree>();
-                Irony.Parsing.Parser parser = new Irony.Parsing.Parser(Grammar);
-
+                var trees = new PSList<SolNodeRoot>();
+                bool hasError = false;
+                try {
+                    Grammar.BuildGrammar(m_Options.WarningsAreErrors ? GrammarErrorLevel.Warning : GrammarErrorLevel.Error);
+                } catch (NodeParserGrammarException ex) {
+                    // The grammar failed to build; we need to exit right away.
+                    m_Assembly.m_ErrorAdder.Add(new SolError(SolSourceLocation.Native(), Resources.Err_FailedToBuildSolScriptGrammar, false, ex));
+                    return false;
+                }
                 // Scan the source strings & files for code.
                 for (int i = 0; i < m_SrcStrings.Count; i++) {
-                    ParseTree tree = parser.Parse(m_SrcStrings[i], "Source:" + i.ToString(CultureInfo.InvariantCulture));
-                    trees.Add(tree);
+                    try {
+                        SolNodeRoot tree = (SolNodeRoot) Grammar.Parse(m_SrcStrings[i], "Source:" + i.ToString(CultureInfo.InvariantCulture),
+                            m_Options.WarningsAreErrors ? ErrorLevel.Warning : ErrorLevel.Error);
+                        trees.Add(tree);
+                    } catch (NodeParserParseErrorException ex) {
+                        hasError = true;
+                        m_Assembly.m_ErrorAdder.Add(new SolError(ex.Location, Resources.Err_FailedToParseFile.FormatWith("Source String # " + i), false, ex));
+                    }
                 }
                 foreach (string fileName in m_SrcFileNames) {
                     string text;
@@ -690,88 +725,54 @@ namespace SolScript.Interpreter
                         m_Assembly.m_ErrorAdder.Add(new SolError(SolSourceLocation.Native(), ErrorId.None, Resources.Err_SourceFileIOError.ToString(fileName), false, ex));
                         return false;
                     }
-                    ParseTree tree = parser.Parse(text, fileName);
-                    trees.Add(tree);
-                }
-
-                // ===========================================================================
-
-                // All trees have been built. Time to check them for errors.
-                // Parse all trees even if we have errors. This allows easier debugging for the user if there are errors
-                // spread accross multiple files.
-                bool errorInTrees = false;
-                foreach (ParseTree tree in trees) {
-                    foreach (LogMessage message in tree.ParserMessages) {
-                        switch (message.Level) {
-                            case ErrorLevel.Info:
-                            case ErrorLevel.Warning:
-                                m_Assembly.m_ErrorAdder.Add(new SolError(message.Location, ErrorId.SyntaxError, message.Message, true));
-                                errorInTrees = errorInTrees || m_Options.WarningsAreErrors;
-                                continue;
-                            case ErrorLevel.Error:
-                                m_Assembly.m_ErrorAdder.Add(new SolError(message.Location, ErrorId.SyntaxError, message.Message));
-                                errorInTrees = true;
-                                continue;
-                            default:
-                                throw new ArgumentOutOfRangeException();
+                    try {
+                        SolNodeRoot tree = Grammar.Parse(text, Path.GetFileName(fileName), m_Options.WarningsAreErrors ? ErrorLevel.Warning : ErrorLevel.Error) as SolNodeRoot;
+                        if (tree != null) {
+                            trees.Add(tree);
                         }
+                    } catch (NodeParserParseErrorException ex) {
+                        hasError = true;
+                        m_Assembly.m_ErrorAdder.Add(new SolError(ex.Location, Resources.Err_FailedToParseFile.FormatWith(fileName), false, ex));
                     }
                 }
-                if (errorInTrees) {
-                    return false;
-                }
-
                 // ===========================================================================
-
-                // At this point we can be sure that our parse trees are valid. Let's go ahead and transform them into
-                // SolScript statements/classes and all the other fun!
-                // Parse all trees even if we have errors. This allows easier debugging for the user if there are errors
-                // spread accross multiple files.
-                StatementFactory factory = m_Assembly.Factory;
-                foreach (ParseTree tree in trees) {
-                    try {
-                        StatementFactory.TreeData treeData = factory.InterpretTree(tree);
-                        // Register the parsed classes
-                        foreach (SolClassDefinition classDefinition in treeData.Classes) {
+                foreach (SolNodeRoot root in trees) {
+                    //Console.WriteLine(root.ToTreeString());
+                    foreach (SolDefinition definition in root.GetValue()) {
+                        SolClassDefinition classDefinition = definition as SolClassDefinition;
+                        if (classDefinition != null) {
                             try {
                                 m_Assembly.m_ClassDefinitions.Add(classDefinition.Type, classDefinition);
                             } catch (ArgumentException ex) {
                                 m_Assembly.m_ErrorAdder.Add(new SolError(classDefinition.Location, ErrorId.InterpreterError, Resources.Err_DuplicateClass.ToString(classDefinition.Type), false, ex));
-                                errorInTrees = true;
+                                hasError = true;
                             }
                         }
-                        // Register the parsed global fields
-                        foreach (SolFieldDefinition fieldDefinition in treeData.Fields) {
+                        SolFieldDefinition fieldDefinition = definition as SolFieldDefinition;
+                        if (fieldDefinition != null) {
                             try {
                                 m_Assembly.m_GlobalFields.Add(fieldDefinition.Name, fieldDefinition);
                             } catch (ArgumentException ex) {
                                 m_Assembly.m_ErrorAdder.Add(new SolError(fieldDefinition.Location, ErrorId.InterpreterError, Resources.Err_DuplicateGlobalField.ToString(fieldDefinition.Name), false,
                                     ex));
-                                errorInTrees = true;
+                                hasError = true;
                             }
                         }
-                        // Register the parsed global functions
-                        foreach (SolFunctionDefinition functionDefinition in treeData.Functions) {
+                        SolFunctionDefinition functionDefinition = definition as SolFunctionDefinition;
+                        if (functionDefinition != null) {
                             try {
                                 m_Assembly.m_GlobalFunctions.Add(functionDefinition.Name, functionDefinition);
                             } catch (ArgumentException ex) {
                                 m_Assembly.m_ErrorAdder.Add(new SolError(functionDefinition.Location, ErrorId.InterpreterError, Resources.Err_DuplicateGlobalFunction.ToString(functionDefinition.Name),
                                     false, ex));
-                                errorInTrees = true;
+                                hasError = true;
                             }
                         }
-                    } catch (SolInterpreterException ex) {
-                        m_Assembly.m_ErrorAdder.Add(new SolError(ex.Location, ErrorId.InterpreterError, Resources.Err_SourceFileIsInvalid.ToString(tree.FileName), false, ex));
-                        errorInTrees = true;
                     }
                 }
-                if (errorInTrees) {
-                    return false;
-                }
-                // ===========================================================================
 
                 // And we've done it again! Time to finally move on to validating all of this.
-                return true;
+                return !hasError;
             }
 
             /// <summary>
@@ -1160,18 +1161,19 @@ namespace SolScript.Interpreter
 
         #region Non Public
 
-        internal static SolAssembly CurrentlyParsing;
+        [ThreadStatic]
+        internal static SolAssembly CurrentlyParsingThreadStatic;
 
         // The Irony Grammar rules used for SolScript.
-        private static SolScriptGrammar s_Grammar;
+        private static SolScriptNodeGrammar s_Grammar;
         // CacheGrammar backing field.
         private static bool s_CacheGrammar = true;
 
-        internal static SolScriptGrammar Grammar {
+        internal static SolScriptNodeGrammar Grammar {
             get {
-                SolScriptGrammar gr = s_Grammar;
+                SolScriptNodeGrammar gr = s_Grammar;
                 if (gr == null) {
-                    gr = new SolScriptGrammar();
+                    gr = new SolScriptNodeGrammar();
                     if (CacheGrammar) {
                         s_Grammar = gr;
                     }
@@ -1252,12 +1254,10 @@ namespace SolScript.Interpreter
         private readonly PSDictionary<Type, SolClassDefinition> m_DescriptorClasses = new PSDictionary<Type, SolClassDefinition>();
         // The options for creating this assembly.
         private readonly SolAssemblyOptions m_Options;
-        // The lazy statement factory.
-        private StatementFactory l_factory;
 
-
-        // The statement factory is used for parsing raw source files.
-        private StatementFactory Factory => l_factory ?? (l_factory = new StatementFactory(this));
+        /*// The lazy statement factory.
+        private SolParser l_factory;
+        private SolParser Factory => l_factory ?? (l_factory = new SolParser(this));*/
 
         /// <summary>
         ///     The global variables of an assembly are exposed to everything. Other assemblies, classes and other globals can

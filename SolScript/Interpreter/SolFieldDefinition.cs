@@ -1,4 +1,5 @@
 ﻿using Irony.Parsing;
+using NodeParser;
 
 namespace SolScript.Interpreter
 {
@@ -8,9 +9,9 @@ namespace SolScript.Interpreter
     public sealed class SolFieldDefinition : SolMemberDefinition
     {
         /// <inheritdoc />
-        public SolFieldDefinition(SolAssembly assembly, SourceLocation location) : base(assembly, location) { }
+        public SolFieldDefinition(SolAssembly assembly, NodeLocation location) : base(assembly, location) { }
 
-        internal SolFieldDefinition() { }
+        //internal SolFieldDefinition() { }
 
         /// <summary>
         ///     This class wraps the initializer of the field. Make sure to check the

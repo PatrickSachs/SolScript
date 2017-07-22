@@ -1,8 +1,7 @@
 ﻿using System;
-using JetBrains.Annotations;
+using NodeParser;
 using SolScript.Compiler;
 using SolScript.Interpreter.Types;
-using SolScript.Utility;
 
 namespace SolScript.Interpreter.Expressions
 {
@@ -13,16 +12,22 @@ namespace SolScript.Interpreter.Expressions
     /// <seealso cref="Expression_Unary" />
     public sealed class Expression_Tertiary : SolExpression
     {
-        /// <summary>
-        ///     Used by the compiler.
-        /// </summary>
-        [Obsolete(InternalHelper.O_PARSER_MSG, InternalHelper.O_PARSER_ERR)]
-        [UsedImplicitly]
-        public Expression_Tertiary() {}
-
         /// <inheritdoc />
-        public Expression_Tertiary(OperationRef operation, SolExpression first, SolExpression second, SolExpression third)
+        /// <exception cref="ArgumentNullException">An argument is <see langword="null" /></exception>
+        public Expression_Tertiary(SolAssembly assembly, NodeLocation location, OperationRef operation, SolExpression first, SolExpression second, SolExpression third) : base(assembly, location)
         {
+            if (operation == null) {
+                throw new ArgumentNullException(nameof(operation));
+            }
+            if (first == null) {
+                throw new ArgumentNullException(nameof(first));
+            }
+            if (second == null) {
+                throw new ArgumentNullException(nameof(second));
+            }
+            if (third == null) {
+                throw new ArgumentNullException(nameof(third));
+            }
             Operation = operation;
             First = first;
             Second = second;
@@ -32,22 +37,26 @@ namespace SolScript.Interpreter.Expressions
         /// <summary>
         ///     The first expression.
         /// </summary>
-        public SolExpression First { get; [UsedImplicitly] internal set; }
+        public SolExpression First { get; }
+
+        /// <inheritdoc />
+        // todo: detmine constant with help of operation
+        public override bool IsConstant { get; }
 
         /// <summary>
         ///     The operation resolving the three expressions.
         /// </summary>
-        public OperationRef Operation { get; [UsedImplicitly] internal set; }
+        public OperationRef Operation { get; }
 
         /// <summary>
         ///     The second expression.
         /// </summary>
-        public SolExpression Second { get; [UsedImplicitly] internal set; }
+        public SolExpression Second { get; }
 
         /// <summary>
         ///     The thrid expression.
         /// </summary>
-        public SolExpression Third { get; [UsedImplicitly] internal set; }
+        public SolExpression Third { get; }
 
         #region Overrides
 
@@ -62,10 +71,6 @@ namespace SolScript.Interpreter.Expressions
         {
             return First + Operation.Operator1 + Second + Operation.Operator2 + Third;
         }
-
-        /// <inheritdoc />
-        // todo: detmine constant with help of operation
-        public override bool IsConstant { get; }
 
         /// <inheritdoc />
         public override ValidationResult Validate(SolValidationContext context)

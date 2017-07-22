@@ -56,12 +56,6 @@ namespace SolScript.Interpreter
         public class Indexed : AVariable
         {
             /// <summary>
-            ///     Used by the parser.
-            /// </summary>
-            [Obsolete("Used by the parser.", true)]
-            public Indexed() {}
-
-            /// <summary>
             ///     Creates a new indexed variable.
             /// </summary>
             /// <param name="indexableGetter">The value which will be indexed(e.g. a table or class).</param>
@@ -235,6 +229,12 @@ namespace SolScript.Interpreter
             }
 
             #endregion
+
+            /// <inheritdoc />
+            public override string ToString()
+            {
+                return IndexableGetter + "[" + KeyGetter + "]";
+            }
         }
 
         #endregion
@@ -299,6 +299,12 @@ namespace SolScript.Interpreter
             }
 
             #endregion
+
+            /// <inheritdoc />
+            public override string ToString()
+            {
+                return Name;
+            }
         }
 
         #endregion

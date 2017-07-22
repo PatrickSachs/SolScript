@@ -1,5 +1,6 @@
 ﻿using Irony.Parsing;
 using JetBrains.Annotations;
+using NodeParser;
 
 namespace SolScript.Interpreter
 {
@@ -10,10 +11,7 @@ namespace SolScript.Interpreter
     /// </summary>
     public sealed class SolFunctionDefinition : SolMemberDefinition
     {
-        internal SolFunctionDefinition(SolAssembly assembly, SourceLocation location) : base(assembly, location) {}
-
-        internal SolFunctionDefinition() {}
-
+        internal SolFunctionDefinition(SolAssembly assembly, NodeLocation location) : base(assembly, location) {}
 
         /// <summary>
         ///     The wrapper around the actual code of the function. The function may either be a chunk declared in your code or a

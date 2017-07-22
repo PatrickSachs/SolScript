@@ -1,4 +1,5 @@
 ﻿using JetBrains.Annotations;
+using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter
 {
@@ -8,22 +9,6 @@ namespace SolScript.Interpreter
     /// </summary>
     public class SolParameter
     {
-        /// <summary>
-        ///     Used by the parser.
-        /// </summary>
-        public SolParameter()
-        {
-            Name = "$unnamed";
-            Type = SolType.AnyNil;
-        }
-
-        /// <summary> Creates a new parameter using the type "any!". </summary>
-        /// <param name="name"> The name </param>
-        public SolParameter([NotNull] string name)
-        {
-            Name = name;
-            Type = SolType.AnyNil;
-        }
 
         /// <summary> Creates a new parameter. </summary>
         /// <param name="name"> The name </param>
@@ -36,10 +21,10 @@ namespace SolScript.Interpreter
 
         /// <summary> The name of this parameter. </summary>
         [NotNull]
-        public string Name { get; [UsedImplicitly] internal set; }
+        public string Name { get; }
 
         /// <summary> The type of this parameter. </summary>
-        public SolType Type { get; [UsedImplicitly] internal set; }
+        public SolType Type { get; }
 
         #region Overrides
 

@@ -1,12 +1,40 @@
-﻿using System;
+﻿// ---------------------------------------------------------------------
+// SolScript - A simple but powerful scripting language.
+// Official repository: https://bitbucket.org/PatrickSachs/solscript/
+// ---------------------------------------------------------------------
+// Copyright 2017 Patrick Sachs
+// Permission is hereby granted, free of charge, to any person obtaining 
+// a copy of this software and associated documentation files (the 
+// "Software"), to deal in the Software without restriction, including 
+// without limitation the rights to use, copy, modify, merge, publish, 
+// distribute, sublicense, and/or sell copies of the Software, and to 
+// permit persons to whom the Software is furnished to do so, subject to 
+// the following conditions:
+// 
+// The above copyright notice and this permission notice shall be 
+// included in all copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, 
+// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND 
+// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS 
+// BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN 
+// ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
+// SOFTWARE.
+// ---------------------------------------------------------------------
+// ReSharper disable ArgumentsStyleStringLiteral
+
+using System.Collections.Generic;
 using System.Text;
-using Irony.Parsing;
+using NodeParser;
 using PSUtility.Enumerables;
 using PSUtility.Strings;
 using SolScript.Compiler;
 using SolScript.Exceptions;
 using SolScript.Interpreter.Types;
 using SolScript.Properties;
+using SolScript.Utility;
 
 namespace SolScript.Interpreter.Expressions
 {
@@ -16,33 +44,38 @@ namespace SolScript.Interpreter.Expressions
     public class Expression_TableConstructor : SolExpression
     {
         /// <inheritdoc />
-        /// <exception cref="ArgumentException">
-        ///     Not the same amount of <paramref name="keys" /> and <paramref name="values" />
-        ///     passed.
-        /// </exception>
-        public Expression_TableConstructor(SolAssembly assembly, SourceLocation location, SolExpression[] keys, SolExpression[] values) : base(assembly, location)
+        /// <param name="assembly">The assembly of the table.</param>
+        /// <param name="location">The expression location.</param>
+        /// <param name="fields">
+        ///     All table fields. The key can be null if they represent the array like part of the table. Index
+        ///     will be applied by the native iteration order of the enumerable.
+        /// </param>
+        public Expression_TableConstructor(SolAssembly assembly, NodeLocation location, IEnumerable<KeyValuePair<SolExpression, SolExpression>> fields) : base(assembly, location)
         {
-            if (keys.Length != values.Length) {
-                throw new ArgumentException($"Not the same amount of keys({keys.Length}) and values({values.Length}) has been passed.", nameof(keys));
-            }
-            m_Keys = new Array<SolExpression>(keys);
-            m_Values = new Array<SolExpression>(values);
+            m_Fields = InternalHelper.CreateArray(fields);
         }
 
-        private readonly Array<SolExpression> m_Keys;
-        private readonly Array<SolExpression> m_Values;
+        private readonly Array<KeyValuePair<SolExpression, SolExpression>> m_Fields;
 
         /// <summary>
-        ///     A read-only collection of all keys in this constructor. The matching value can be found in the
-        ///     <see cref="Values" /> list at them same index.
+        ///     A read only list of all fields in this table.
         /// </summary>
-        public ReadOnlyList<SolExpression> Keys => m_Keys.AsReadOnly();
+        public ReadOnlyList<KeyValuePair<SolExpression, SolExpression>> Fields => m_Fields.AsReadOnly();
 
-        /// <summary>
-        ///     A read-only collection of all values in this constructor. The matching key can be found in the <see cref="Keys" />
-        ///     list at them same index.
-        /// </summary>
-        public ReadOnlyList<SolExpression> Values => m_Values.AsReadOnly();
+        /// <inheritdoc />
+        public override bool IsConstant {
+            get {
+                foreach (var field in m_Fields) {
+                    if (!field.Key.IsConstant) {
+                        return false;
+                    }
+                    if (!field.Value.IsConstant) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
 
         #region Overrides
 
@@ -54,16 +87,17 @@ namespace SolScript.Interpreter.Expressions
                 context.CurrentLocation = Location;
             }
             SolTable table = new SolTable();
-            for (int i = 0; i < m_Keys.Length; i++) {
-                SolValue key = m_Keys[i].Evaluate(context, parentVariables);
-                SolValue value = m_Values[i].Evaluate(context, parentVariables);
+            int nextArrayIdx = 0;
+            foreach (var field in m_Fields) {
+                SolValue key = field.Key?.Evaluate(context, parentVariables) ?? new SolNumber(nextArrayIdx++);
+                SolValue value = field.Value.Evaluate(context, parentVariables);
                 try {
                     table[key] = value;
                 } catch (SolVariableException ex) {
                     throw new SolRuntimeException(context, $"An error occured while creating the table at key \"{key}\".", ex);
                 }
             }
-            table.SetN(m_Keys.Length);
+            table.SetN(m_Fields.Length);
             return table;
         }
 
@@ -71,11 +105,11 @@ namespace SolScript.Interpreter.Expressions
         protected override string ToString_Impl()
         {
             StringBuilder builder = new StringBuilder();
+            int nextArrayIdx = 0;
             builder.AppendLine("{");
-            for (int i = 0; i < m_Keys.Length; i++) {
-                SolExpression key = m_Keys[i];
-                SolExpression value = m_Values[i];
-                builder.AppendLine("  [" + key + "] = " + value);
+            foreach (var field in m_Fields) {
+                // ReSharper disable once ConstantNullCoalescingCondition
+                builder.AppendLine("  [" + (field.Key?.ToString() ?? nextArrayIdx++.ToString()) + "] = " + field.Value);
             }
             builder.AppendLine("}");
             return builder.ToString();
@@ -85,35 +119,24 @@ namespace SolScript.Interpreter.Expressions
         public override ValidationResult Validate(SolValidationContext context)
         {
             bool success = true;
-            for (int i = 0; i < m_Keys.Length; i++) {
-                SolExpression key = m_Keys[i];
-                SolExpression value = m_Values[i];
-                ValidationResult keyResult = key.Validate(context);
-                // Evalualte all keys/values even if one fails.
-                if (!keyResult) {
-                    context.Errors.Add(new SolError(Location, CompilerResources.Err_TableConstructorKeyError.FormatWith(i)));
-                    success = false;
+            for (int i = 0; i < m_Fields.Length; i++) {
+                var field = m_Fields[i];
+                // If the key is null we have an array like part, so the key will always be valid.
+                if (field.Key != null) {
+                    ValidationResult keyResult = field.Key.Validate(context);
+                    // Evalualte all keys/values even if one fails.
+                    if (!keyResult) {
+                        context.Errors.Add(new SolError(Location, CompilerResources.Err_TableConstructorKeyError.FormatWith(i)));
+                        success = false;
+                    }
                 }
-                ValidationResult valueResult = value.Validate(context);
+                ValidationResult valueResult = field.Value.Validate(context);
                 if (!valueResult) {
                     context.Errors.Add(new SolError(Location, CompilerResources.Err_TableConstructorValueError.FormatWith(i)));
                     success = false;
                 }
             }
             return new ValidationResult(success, new SolType(SolTable.TYPE, false));
-        }
-
-        /// <inheritdoc />
-        public override bool IsConstant {
-            get {
-                foreach (SolExpression expression in Keys) {
-                    if (!expression.IsConstant) return false;
-                }
-                foreach (SolExpression expression in Values) {
-                    if (!expression.IsConstant) return false;
-                }
-                return true;
-            }
         }
 
         #endregion

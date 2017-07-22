@@ -1,5 +1,6 @@
 ﻿using System;
 using Irony.Parsing;
+using NodeParser;
 using SolScript.Exceptions;
 using SolScript.Utility;
 
@@ -46,7 +47,7 @@ namespace SolScript.Interpreter.Types.Implementation
         public override SolAssembly Assembly { get; }
 
         /// <inheritdoc />
-        public override SourceLocation Location => SolSourceLocation.Native();
+        public override NodeLocation Location => SolSourceLocation.Native();
 
         /// <summary>
         ///     The type returned by this function.

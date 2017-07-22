@@ -25,7 +25,7 @@ namespace SolScript.Interpreter.Types.Marshal
         /// <inheritdoc />
         public SolValue Marshal(SolAssembly assembly, object value, Type type)
         {
-            return new SolDelegateWrapperFunction(assembly, (SolFunction.DirectDelegate) value);
+            return new SolScriptDelegateWrapperFunction(assembly, (SolFunction.DirectDelegate) value);
         }
 
         #endregion

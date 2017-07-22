@@ -2,6 +2,7 @@
 using System.IO;
 using Irony.Parsing;
 using JetBrains.Annotations;
+using NodeParser;
 using PSUtility.Enumerables;
 using PSUtility.Strings;
 using SolScript.Compiler;
@@ -18,7 +19,6 @@ namespace SolScript.Interpreter.Statements
     ///     s(e.g. a function call can stand alone in a chunk and takes several expressions as arguments).
     /// </summary>
     public abstract class SolStatement : ISourceLocateable, ISolCompileable
-        //, ISourceLocationInjector
     {
         /// <summary>
         ///     Creates a new statement.
@@ -26,21 +26,13 @@ namespace SolScript.Interpreter.Statements
         /// <param name="assembly">The assembly this statement is in.</param>
         /// <param name="location">The location of this statement.</param>
         /// <exception cref="ArgumentNullException"><paramref name="assembly" /> is null.</exception>
-        protected SolStatement(SolAssembly assembly, SourceLocation location)
+        protected SolStatement(SolAssembly assembly, NodeLocation location)
         {
             if (assembly == null) {
                 throw new ArgumentNullException(nameof(assembly));
             }
             Assembly = assembly;
-            InjectSourceLocation(location);
-        }
-
-        /// <summary>
-        ///     Used by the parser.
-        /// </summary>
-        internal SolStatement()
-        {
-            Assembly = SolAssembly.CurrentlyParsing;
+            Location = location;
         }
 
         private static readonly BiDictionary<byte, Type> s_ByteIdToType = new BiDictionary<byte, Type>();
@@ -51,20 +43,10 @@ namespace SolScript.Interpreter.Statements
         /// </summary>
         public readonly SolAssembly Assembly;
 
-        /*/// <summary>
-        ///     The factory method used to create this statement. (Must be constant)
-        /// </summary>
-        internal abstract Func<SolStatement> BytecodeFactory { get; }
-
-        /// <summary>
-        ///     The id this statement will use in bytecode. (Must be constant)
-        /// </summary>
-        internal abstract byte BytecodeId { get; }*/
-
         #region ISourceLocateable Members
 
         /// <inheritdoc />
-        public SourceLocation Location { get; private set; }
+        public NodeLocation Location { get; }
 
         #endregion
 
@@ -126,32 +108,7 @@ namespace SolScript.Interpreter.Statements
         protected abstract string ToString_Impl();
 
         /// <inheritdoc />
-        public void InjectSourceLocation(SourceLocation location)
-        {
-            Location = location;
-        }
-
-        /// <inheritdoc />
         public abstract ValidationResult Validate(SolValidationContext context);
-
-        /*/// <inheritdoc />
-        /// <exception cref="IOException">An I/O error occured.</exception>
-        /// <exception cref="SolCompilerException">Failed to compile. (See possible inner exceptions for details)</exception>
-        public void Compile(BinaryWriter writer, SolCompliationContext context)
-        {
-            //writer.Write(BytecodeId);
-            Location.CompileTo(writer, context);
-            //CompileImpl(writer, context);
-        }*/
-
-        /*/// <summary>
-        /// Compiles the statement to the given binary writer.
-        /// </summary>
-        /// <param name="writer">The writer.</param>
-        /// <param name="context">The compilation context.</param>
-        /// <exception cref="IOException">An I/O error occured.</exception>
-        /// <exception cref="SolCompilerException">Failed to compile. (See possible inner exceptions for details)</exception>
-        protected abstract void CompileImpl(BinaryWriter writer, SolCompliationContext context);*/
 
         #region Nested type: CompilerData
 

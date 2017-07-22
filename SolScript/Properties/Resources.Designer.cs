@@ -223,6 +223,15 @@ namespace SolScript.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to The SolScript grammar could not be generated. Did you modify the grammar? If so consider reading up on the NodeParser as there are slight but important differences to how Irony works by default..
+        /// </summary>
+        internal static string Err_FailedToBuildSolScriptGrammar {
+            get {
+                return ResourceManager.GetString("Err_FailedToBuildSolScriptGrammar", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Failed to create annotations on global field &quot;{1}&quot;..
         /// </summary>
         internal static string Err_FailedToCreateGlobalFieldAnnotations {
@@ -264,6 +273,15 @@ namespace SolScript.Properties {
         internal static string Err_FailedToGetNativeClassObject {
             get {
                 return ResourceManager.GetString("Err_FailedToGetNativeClassObject", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Failed to parse the file &quot;{0}&quot;. See inner exception for details..
+        /// </summary>
+        internal static string Err_FailedToParseFile {
+            get {
+                return ResourceManager.GetString("Err_FailedToParseFile", resourceCulture);
             }
         }
         
