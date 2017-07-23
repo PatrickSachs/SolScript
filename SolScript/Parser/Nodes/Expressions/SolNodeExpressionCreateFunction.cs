@@ -26,6 +26,7 @@
 // ReSharper disable ArgumentsStyleStringLiteral
 
 using Irony.Parsing;
+using NodeParser;
 using NodeParser.Nodes;
 using SolScript.Interpreter;
 using SolScript.Interpreter.Expressions;
@@ -41,10 +42,10 @@ namespace SolScript.Parser.Nodes.Expressions
         protected override BnfExpression Rule_Impl
             => KEYWORD("function")
                + BRACES("(",
-                   NODE<SolNodeParameters>(id: "params"),
+                   NODE<SolNodeParameters>(),
                    ")")
-               + (PUNCTUATION(":") + NODE<SolNodeTypeReference>(id: "return")).Q()
-               + NODE<SolNodeChunk>(id: "chunk")
+               + (PUNCTUATION(":") + NODE<SolNodeTypeReference>()).OPT()
+               + NODE<SolNodeChunk>()
                + KEYWORD("end")
         ;
 
@@ -54,9 +55,9 @@ namespace SolScript.Parser.Nodes.Expressions
         protected override Expression_CreateFunction BuildAndGetNode(IAstNode[] astNodes)
         {
             return new Expression_CreateFunction(SolAssembly.CurrentlyParsingThreadStatic, Location,
-                OfId<SolNodeChunk>("chunk").GetValue(),
-                OfId<SolNodeTypeReference>("return", true)?.GetValue() ?? SolNodeFunction.ReturnTypeDefault,
-                OfId<SolNodeParameters>("params").GetValue()
+                astNodes[3].As<SolNodeChunk>().GetValue(),
+                astNodes[2].As<OptionalNode>().GetValue(SolNodeFunction.ReturnTypeDefault),
+                astNodes[1].As<BraceNode>().GetValue<SolParameterInfo>()
             );
         }
 

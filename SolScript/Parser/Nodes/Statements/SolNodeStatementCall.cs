@@ -27,7 +27,9 @@
 
 using System.Collections.Generic;
 using Irony.Parsing;
+using NodeParser;
 using NodeParser.Nodes;
+using NodeParser.Nodes.NonTerminals;
 using SolScript.Interpreter;
 using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Statements;
@@ -53,8 +55,8 @@ namespace SolScript.Parser.Nodes.Statements
         /// <inheritdoc />
         protected override Statement_CallFunction BuildAndGetNode(IAstNode[] astNodes)
         {
-            SolExpression expr = (SolExpression) astNodes[0].GetValue();
-            var args = (IEnumerable<SolExpression>) astNodes[1].GetValue();
+            SolExpression expr = astNodes[0].As<SolNodeExpression>().GetValue();
+            var args = astNodes[1].As<BraceNode>().GetValue<IEnumerable<SolExpression>>();
             return new Statement_CallFunction(SolAssembly.CurrentlyParsingThreadStatic, Location, expr, args);
         }
 

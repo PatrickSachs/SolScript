@@ -26,7 +26,9 @@
 // ReSharper disable ArgumentsStyleStringLiteral
 
 using Irony.Parsing;
+using NodeParser;
 using NodeParser.Nodes;
+using PSUtility.Enumerables;
 using SolScript.Interpreter;
 using SolScript.Interpreter.Expressions;
 
@@ -40,12 +42,12 @@ namespace SolScript.Parser.Nodes.Expressions
         /// <inheritdoc />
         protected override BnfExpression Rule_Impl
             =>
-                NODE<SolNodeExpression>(id: "1")
+                NODE<SolNodeExpression>()
                 + PUNCTUATION("?")
                 + BRACES("(",
-                    NODE<SolNodeExpression>(id: "2")
+                    NODE<SolNodeExpression>()
                     + PUNCTUATION(":")
-                    + NODE<SolNodeExpression>(id: "3"),
+                    + NODE<SolNodeExpression>(),
                     ")", true)
         ;
 
@@ -54,11 +56,10 @@ namespace SolScript.Parser.Nodes.Expressions
         /// <inheritdoc />
         protected override Expression_Tertiary BuildAndGetNode(IAstNode[] astNodes)
         {
-            SolExpression e1 = OfId<SolNodeExpression>("1").GetValue();
-            SolExpression e2 = OfId<SolNodeExpression>("2").GetValue();
-            SolExpression e3 = OfId<SolNodeExpression>("3").GetValue();
-            return new Expression_Tertiary(SolAssembly.CurrentlyParsingThreadStatic, Location,
-                Expression_Tertiary.Conditional.Instance, e1, e2, e3);
+            SolExpression e1 = astNodes[0].As<SolNodeExpression>().GetValue();
+            SolExpression e2 = astNodes[1].As<BraceNode>().GetValue<ReadOnlyList<IAstNode>>()[0].As<SolNodeExpression>().GetValue();
+            SolExpression e3 = astNodes[1].As<BraceNode>().GetValue<ReadOnlyList<IAstNode>>()[1].As<SolNodeExpression>().GetValue();
+            return new Expression_Tertiary(SolAssembly.CurrentlyParsingThreadStatic, Location, Expression_Tertiary.Conditional.Instance, e1, e2, e3);
         }
 
         #endregion

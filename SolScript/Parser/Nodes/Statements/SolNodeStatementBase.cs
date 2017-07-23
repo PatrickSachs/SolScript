@@ -27,6 +27,7 @@
 
 using System;
 using Irony.Parsing;
+using NodeParser;
 using NodeParser.Nodes;
 using NodeParser.Nodes.Terminals;
 using SolScript.Interpreter;
@@ -48,8 +49,8 @@ namespace SolScript.Parser.Nodes.Statements
         /// <inheritdoc />
         protected override BnfExpression Rule_Impl
             =>
-                (KEYWORD("base") + PUNCTUATION(".") + TERMINAL<IdentifierNode>(id: "identifier"))
-                | (KEYWORD("base") + BRACES("[", NODE<SolNodeExpression>(id: "expr"), "]"))
+                (KEYWORD("base") + PUNCTUATION(".") + TERMINAL<IdentifierNode>())
+                | (KEYWORD("base") + BRACES("[", NODE<SolNodeExpression>(), "]"))
         ;
 
         #region Overrides
@@ -57,10 +58,14 @@ namespace SolScript.Parser.Nodes.Statements
         /// <inheritdoc />
         protected override Statement_Base BuildAndGetNode(IAstNode[] astNodes)
         {
-            IdentifierNode id = OfId<IdentifierNode>("identifier", true);
-            SolExpression indexer = id != null 
-                ? new Expression_Literal(SolAssembly.CurrentlyParsingThreadStatic, id.Location, SolString.ValueOf(id.GetValue())) 
-                : OfId<SolNodeExpression>("expr").GetValue();
+            IdentifierNode idNode = astNodes[1] as IdentifierNode;
+            SolExpression indexer = idNode != null 
+                ? new Expression_Literal(SolAssembly.CurrentlyParsingThreadStatic, idNode.Location, SolString.ValueOf(idNode.GetValue())) 
+                : astNodes[1].As<BraceNode>().GetValue<SolExpression>();
+            /*IdentifierNode id = OfId<IdentifierNode>("identifier", true);
+            SolExpression indexer = id != null
+                ? new Expression_Literal(SolAssembly.CurrentlyParsingThreadStatic, id.Location, SolString.ValueOf(id.GetValue()))
+                : OfId<SolNodeExpression>("expr").GetValue();*/
 
             return new Statement_Base(SolAssembly.CurrentlyParsingThreadStatic, Location, indexer);
         }

@@ -25,11 +25,13 @@
 // ---------------------------------------------------------------------
 // ReSharper disable ArgumentsStyleStringLiteral
 
+using System.Collections.Generic;
 using Irony.Parsing;
 using NodeParser;
 using NodeParser.Nodes;
 using NodeParser.Nodes.NonTerminals;
 using NodeParser.Nodes.Terminals;
+using PSUtility.Enumerables;
 using SolScript.Interpreter;
 using SolScript.Utility;
 
@@ -58,16 +60,16 @@ namespace SolScript.Parser.Nodes
 
         /// <inheritdoc />
         protected override BnfExpression Rule_Impl
-            => ID(NODE<SolNodeAnnotation>().LIST<SolAnnotationDefinition>(null, TermListOptions.StarList), "annotations")
-               + NODE<SolNodeAccessModifier>(id: "accessMod").Q()
-               + NODE<SolNodeMemberModifier>(id: "memberMod").Q()
+            => NODE<SolNodeAnnotation>().LIST<SolAnnotationDefinition>(null, TermListOptions.StarList)
+               + NODE<SolNodeAccessModifier>().OPT()
+               + NODE<SolNodeMemberModifier>().OPT()
                + KEYWORD("function")
-               + TERMINAL<IdentifierNode>(id: "name")
+               + TERMINAL<IdentifierNode>()
                + BRACES("(",
-                   NODE<SolNodeParameters>(id: "params"),
+                   NODE<SolNodeParameters>(),
                    ")")
-               + (PUNCTUATION(":") + NODE<SolNodeTypeReference>(id: "return")).Q()
-               + NODE<SolNodeChunk>(id: "chunk")
+               + (PUNCTUATION(":") + NODE<SolNodeTypeReference>()).OPT()
+               + NODE<SolNodeChunk>()
                + KEYWORD("end");
 
         #region Overrides
@@ -75,13 +77,18 @@ namespace SolScript.Parser.Nodes
         /// <inheritdoc />
         protected override SolFunctionDefinition BuildAndGetNode(IAstNode[] astNodes)
         {
-            SolAccessModifier accessModifier = astNodes.NodeValue((node, index) => node is SolNodeAccessModifier, AccessModifierImplicit);
-            SolMemberModifier memberModifier = astNodes.NodeValue((node, index) => node is SolNodeMemberModifier, MemberModifierImplicit);
-            SolChunk chunk = astNodes.NodeValue((node, index) => node is SolNodeChunk, (SolChunk) null).NotNull();
+            IEnumerable<SolAnnotationDefinition> annotations = astNodes[0].As<ListNode<SolAnnotationDefinition>>().GetValue();
+            SolAccessModifier accessModifier = astNodes[1].As<OptionalNode>().GetValue(AccessModifierImplicit);
+            SolMemberModifier memberModifier = astNodes[2].As<OptionalNode>().GetValue(MemberModifierImplicit);
+            string name = astNodes[4].As<IdentifierNode>().GetValue();
+            SolParameterInfo param = astNodes[5].As<BraceNode>().GetValue<SolParameterInfo>();
+            SolType returnType = astNodes[6].As<OptionalNode>().GetValue(ReturnTypeDefault);
+            SolChunk chunk = astNodes[7].As<SolNodeChunk>().GetValue();
+            /*SolChunk chunk = astNodes.NodeValue((node, index) => node is SolNodeChunk, (SolChunk) null).NotNull();
             SolParameterInfo param = OfId<SolNodeParameters>("params").GetValue();
             SolType returnType = OfId<SolNodeTypeReference>("return")?.GetValue() ?? ReturnTypeDefault;
             string name = OfId<IdentifierNode>("name").GetValue();
-            var annotNode = OfId<ListNode<SolAnnotationDefinition>>("annotations");
+            var annotNode = OfId<ListNode<SolAnnotationDefinition>>("annotations");*/
 
             SolFunctionDefinition definition = new SolFunctionDefinition(SolAssembly.CurrentlyParsingThreadStatic, Location) {
                 AccessModifier = accessModifier,
@@ -91,11 +98,14 @@ namespace SolScript.Parser.Nodes
                 ParameterInfo = param,
                 Name = name
             };
-            if (annotNode.Count > 0) {
+            foreach (SolAnnotationDefinition annotation in annotations) {
+                definition.AddAnnotation(annotation);
+            }
+            /*if (annotNode.Count > 0) {
                 foreach (SolAnnotationDefinition annotation in annotNode.GetValue()) {
                     definition.AddAnnotation(annotation);
                 }
-            }
+            }*/
             return definition;
         }
 

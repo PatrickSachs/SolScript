@@ -29,6 +29,7 @@ using System;
 using Irony.Parsing;
 using NodeParser;
 using NodeParser.Nodes;
+using NodeParser.Nodes.Terminals;
 using SolScript.Interpreter;
 using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Statements;
@@ -49,15 +50,17 @@ namespace SolScript.Parser.Nodes.Statements
                     | KEYWORD("break", Terminators.Break)
                     | KEYWORD("continue", Terminators.Continue)
                 )
-                + NODE<SolNodeExpression>(id: "expr").Q();
+                + NODE<SolNodeExpression>().OPT();
 
         #region Overrides
 
         /// <inheritdoc />
         protected override SolStatement BuildAndGetNode(IAstNode[] astNodes)
         {
-            Terminators terminators = (Terminators) ((DefaultAst) astNodes[0])[0].GetValue();
-            SolExpression expr = OfId<SolNodeExpression>("expr", true)?.GetValue<SolExpression>();
+            Terminators terminators = astNodes[0].As<DefaultAst>()[0].As<KeyTermNode<Terminators>>().GetValue();
+            SolExpression expr = astNodes[1].As<OptionalNode>().GetValue<SolExpression>(null);
+            /*Terminators terminators = (Terminators) ((DefaultAst) astNodes[0])[0].GetValue();
+            SolExpression expr = OfId<SolNodeExpression>("expr", true)?.GetValue<SolExpression>();*/
             switch (terminators) {
                 case Terminators.Return:
                     return new Statement_Return(SolAssembly.CurrentlyParsingThreadStatic, Location, expr);

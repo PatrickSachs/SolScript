@@ -27,10 +27,12 @@
 
 using System.Collections.Generic;
 using Irony.Parsing;
+using NodeParser;
 using NodeParser.Nodes;
 using NodeParser.Nodes.NonTerminals;
 using PSUtility.Enumerables;
 using SolScript.Interpreter;
+using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Statements;
 using SolScript.Parser.Nodes.Expressions;
 
@@ -44,14 +46,14 @@ namespace SolScript.Parser.Nodes.Statements
         /// <inheritdoc />
         protected override BnfExpression Rule_Impl
             => KEYWORD("if")
-               + NODE<SolNodeExpression>(id: "if")
+               + NODE<SolNodeExpression>()
                + KEYWORD("then")
-               + NODE<SolNodeChunk>(id: "then")
-               + ID(NODE<ElseIfNode>().LIST<Statement_Conditional.IfBranch>(null, TermListOptions.StarList), "elseif")
+               + NODE<SolNodeChunk>()
+               + NODE<ElseIfNode>().LIST<Statement_Conditional.IfBranch>(null, TermListOptions.StarList)
                + (
                    KEYWORD("else")
-                   + NODE<SolNodeChunk>(id: "else")
-               ).Q()
+                   + NODE<SolNodeChunk>()
+               ).OPT()
                + KEYWORD("end");
 
         #region Overrides
@@ -59,12 +61,9 @@ namespace SolScript.Parser.Nodes.Statements
         /// <inheritdoc />
         protected override Statement_Conditional BuildAndGetNode(IAstNode[] astNodes)
         {
-            var ifB = new Statement_Conditional.IfBranch(OfId<SolNodeExpression>("if").GetValue(), OfId<SolNodeChunk>("then").GetValue());
-            var elseif = OfId<ListNode<Statement_Conditional.IfBranch>>("elseif");
-            IEnumerable<Statement_Conditional.IfBranch> branches = elseif != null
-                ? elseif.GetValue().Concat(EnumerableConcat.Prepend, ifB)
-                : new[] {ifB};
-            SolChunk elseB = OfId<SolNodeChunk>("else")?.GetValue();
+            var ifBranch = new Statement_Conditional.IfBranch(astNodes[1].As<SolNodeExpression>().GetValue(), astNodes[3].As<SolNodeChunk>().GetValue());
+            IEnumerable<Statement_Conditional.IfBranch> branches = astNodes[4].As<ListNode<Statement_Conditional.IfBranch>>().GetValue().Concat(EnumerableConcat.Prepend, ifBranch);
+            SolChunk elseB = astNodes[5].As<OptionalNode>().GetValue(null, list => list[1].As<SolNodeChunk>().GetValue());
             return new Statement_Conditional(SolAssembly.CurrentlyParsingThreadStatic, Location, branches, elseB);
         }
 
@@ -77,18 +76,18 @@ namespace SolScript.Parser.Nodes.Statements
             /// <inheritdoc />
             protected override BnfExpression Rule_Impl
                 => KEYWORD("elseif")
-                   + NODE<SolNodeExpression>(id: "condition")
+                   + NODE<SolNodeExpression>()
                    + KEYWORD("then")
-                   + NODE<SolNodeChunk>(id: "chunk");
+                   + NODE<SolNodeChunk>();
 
             #region Overrides
 
             /// <inheritdoc />
             protected override Statement_Conditional.IfBranch BuildAndGetNode(IAstNode[] astNodes)
             {
-                SolNodeExpression condition = OfId<SolNodeExpression>("condition");
-                SolNodeChunk chunk = OfId<SolNodeChunk>("chunk");
-                return new Statement_Conditional.IfBranch(condition.GetValue(), chunk.GetValue());
+                SolExpression condition = astNodes[1].As<SolNodeExpression>().GetValue();
+                SolChunk chunk = astNodes[3].As<SolNodeChunk>().GetValue();
+                return new Statement_Conditional.IfBranch(condition, chunk);
             }
 
             #endregion

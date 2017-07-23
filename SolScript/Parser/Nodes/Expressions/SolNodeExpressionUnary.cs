@@ -26,7 +26,9 @@
 // ReSharper disable ArgumentsStyleStringLiteral
 
 using Irony.Parsing;
+using NodeParser;
 using NodeParser.Nodes;
+using NodeParser.Nodes.Terminals;
 using SolScript.Interpreter;
 using SolScript.Interpreter.Expressions;
 using SolScript.Parser.Nodes.Operators;
@@ -41,8 +43,8 @@ namespace SolScript.Parser.Nodes.Expressions
         /// <inheritdoc />
         protected override BnfExpression Rule_Impl
             =>
-                NODE<SolNodeUnaryOperator>(id: "op")
-                + NODE<SolNodeExpression>(id: "expr")
+                NODE<SolNodeUnaryOperator>()
+                + NODE<SolNodeExpression>()
         ;
 
         #region Overrides
@@ -50,8 +52,8 @@ namespace SolScript.Parser.Nodes.Expressions
         /// <inheritdoc />
         protected override Expression_Unary BuildAndGetNode(IAstNode[] astNodes)
         {
-            Expression_Unary.OperationRef op = (Expression_Unary.OperationRef)astNodes[0].GetValue();
-            SolExpression expr = (SolExpression) astNodes[1].GetValue();
+            Expression_Unary.OperationRef op = astNodes[0].As<KeyTermNode<Expression_Unary.OperationRef>>().GetValue();
+            SolExpression expr = astNodes[1].As<SolNodeExpression>().GetValue();
             return new Expression_Unary(SolAssembly.CurrentlyParsingThreadStatic, Location, op, expr);
         }
 

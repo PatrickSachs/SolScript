@@ -26,7 +26,9 @@
 // ReSharper disable ArgumentsStyleStringLiteral
 
 using Irony.Parsing;
+using NodeParser;
 using NodeParser.Nodes;
+using NodeParser.Nodes.Terminals;
 using SolScript.Interpreter;
 using SolScript.Interpreter.Expressions;
 using SolScript.Parser.Nodes.Operators;
@@ -49,14 +51,11 @@ namespace SolScript.Parser.Nodes.Expressions
         /// <inheritdoc />
         protected override Expression_Binary BuildAndGetNode(IAstNode[] astNodes)
         {
-            SolExpression exp1 = (SolExpression) astNodes[0].GetValue();
-            Expression_Binary.OperationRef op = (Expression_Binary.OperationRef) astNodes[1].GetValue();
-            SolExpression exp2 = (SolExpression) astNodes[2].GetValue();
+            SolExpression exp1 = astNodes[0].As<SolNodeExpression>().GetValue();
+            Expression_Binary.OperationRef op = astNodes[1].As<KeyTermNode<Expression_Binary.OperationRef>>().GetValue();
+            SolExpression exp2 = astNodes[2].As<SolNodeExpression>().GetValue();
 
-            return new Expression_Binary(SolAssembly.CurrentlyParsingThreadStatic, Location,
-                exp1,
-                op,
-                exp2);
+            return new Expression_Binary(SolAssembly.CurrentlyParsingThreadStatic, Location, exp1, op, exp2);
         }
 
         #endregion

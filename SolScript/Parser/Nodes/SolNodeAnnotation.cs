@@ -26,7 +26,9 @@
 // ReSharper disable ArgumentsStyleStringLiteral
 
 using System.Collections.Generic;
+using System.Linq;
 using Irony.Parsing;
+using NodeParser;
 using NodeParser.Nodes;
 using NodeParser.Nodes.NonTerminals;
 using NodeParser.Nodes.Terminals;
@@ -46,10 +48,10 @@ namespace SolScript.Parser.Nodes
         protected override BnfExpression Rule_Impl
             =>
                 PUNCTUATION("@")
-                + TERMINAL<IdentifierNode>(id: "name")
+                + TERMINAL<IdentifierNode>()
                 + BRACES("(",
-                    ID(NODE<SolNodeExpression>().LIST<SolExpression>(PUNCTUATION(","), TermListOptions.StarList | TermListOptions.AllowTrailingDelimiter), "args"),
-                    ")").Q()
+                    NODE<SolNodeExpression>().LIST<SolExpression>(PUNCTUATION(","), TermListOptions.StarList | TermListOptions.AllowTrailingDelimiter),
+                    ")").OPT()
         ;
 
         #region Overrides
@@ -57,8 +59,10 @@ namespace SolScript.Parser.Nodes
         /// <inheritdoc />
         protected override SolAnnotationDefinition BuildAndGetNode(IAstNode[] astNodes)
         {
-            string name = OfId<IdentifierNode>("name").GetValue();
-            IEnumerable<SolExpression> args = OfId<ListNode<SolExpression>>("args", true)?.GetValue() ?? ArrayUtility.Empty<SolExpression>();
+            string name = astNodes[0].As<IdentifierNode>().GetValue();
+            IEnumerable<SolExpression> args = astNodes[1].As<OptionalNode>().GetValue(Enumerable.Empty<SolExpression>());
+            /*string name = OfId<IdentifierNode>("name").GetValue();
+            IEnumerable<SolExpression> args = OfId<ListNode<SolExpression>>("args", true)?.GetValue() ?? ArrayUtility.Empty<SolExpression>();*/
             /*string name = (string) astNodes[0].GetValue();
             IEnumerable<SolExpression> args = astNodes.Length == 0
                 ? Enumerable.Empty<SolExpression>()

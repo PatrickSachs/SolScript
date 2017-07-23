@@ -25,7 +25,9 @@
 // ---------------------------------------------------------------------
 // ReSharper disable ArgumentsStyleStringLiteral
 
+using System.Collections.Generic;
 using Irony.Parsing;
+using NodeParser;
 using NodeParser.Nodes;
 using NodeParser.Nodes.NonTerminals;
 using NodeParser.Nodes.Terminals;
@@ -54,13 +56,11 @@ namespace SolScript.Parser.Nodes
         /// <inheritdoc />
         protected override BnfExpression Rule_Impl
             =>
-                ID(NODE<SolNodeAnnotation>().LIST<SolAnnotationDefinition>(null, TermListOptions.StarList), "annotations")
-                + NODE<SolNodeAccessModifier>(id: "access").Q()
-                + TERMINAL<IdentifierNode>(id: "name")
-                + (PUNCTUATION(":") + NODE<SolNodeTypeReference>(id: "type")).Q()
-                + (OPERATOR("=")
-                   + NODE<SolNodeExpression>(id: "init")
-                ).Q()
+                NODE<SolNodeAnnotation>().LIST<SolAnnotationDefinition>(null, TermListOptions.StarList)
+                + NODE<SolNodeAccessModifier>().OPT()
+                + TERMINAL<IdentifierNode>()
+                + (PUNCTUATION(":") + NODE<SolNodeTypeReference>()).OPT()
+                + (OPERATOR("=") + NODE<SolNodeExpression>()).OPT()
         ;
 
         #region Overrides
@@ -68,22 +68,24 @@ namespace SolScript.Parser.Nodes
         /// <inheritdoc />
         protected override SolFieldDefinition BuildAndGetNode(IAstNode[] astNodes)
         {
-            SolAccessModifier modifier = OfId<SolNodeAccessModifier>("access", true)?.GetValue() ?? AccessModifierImplict;
+            IEnumerable<SolAnnotationDefinition> annotations = astNodes[0].As<ListNode<SolAnnotationDefinition>>().GetValue();
+            SolAccessModifier modifier = astNodes[1].As<OptionalNode>().GetValue(AccessModifierImplict);
+            string name = astNodes[2].As<IdentifierNode>().GetValue();
+            SolType type = astNodes[3].As<OptionalNode>().GetValue(TypeImplicit);
+            SolExpression initializer = astNodes[4].As<OptionalNode>().GetValue(null, list => list[1].As<SolNodeExpression>().GetValue());
+            /*SolAccessModifier modifier = OfId<SolNodeAccessModifier>("access", true)?.GetValue() ?? AccessModifierImplict;
             string name = OfId<IdentifierNode>("name").GetValue();
             SolType type = OfId<SolNodeTypeReference>("type", true)?.GetValue() ?? TypeImplicit;
             SolExpression initializer = OfId<SolNodeExpression>("init", true)?.GetValue();
-            var annotNode = OfId<ListNode<SolAnnotationDefinition>>("annotations");
-
+            var annotNode = OfId<ListNode<SolAnnotationDefinition>>("annotations");*/
             SolFieldDefinition definition = new SolFieldDefinition(SolAssembly.CurrentlyParsingThreadStatic, Location) {
                 Name = name,
                 Type = type,
                 AccessModifier = modifier,
                 Initializer = initializer != null ? new SolFieldInitializerWrapper(initializer) : null
             };
-            if (annotNode.Count > 0) {
-                foreach (SolAnnotationDefinition annotation in annotNode.GetValue()) {
-                    definition.AddAnnotation(annotation);
-                }
+            foreach (SolAnnotationDefinition annotation in annotations) {
+                definition.AddAnnotation(annotation);
             }
             return definition;
         }

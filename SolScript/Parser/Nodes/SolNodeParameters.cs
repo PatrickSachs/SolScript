@@ -26,6 +26,7 @@
 // ReSharper disable ArgumentsStyleStringLiteral
 
 using Irony.Parsing;
+using NodeParser;
 using NodeParser.Nodes;
 using NodeParser.Nodes.NonTerminals;
 using NodeParser.Nodes.Terminals;
@@ -42,17 +43,17 @@ namespace SolScript.Parser.Nodes
         // We need to use TERM for ... since PUNCTUATION does not create an AST node.
         protected override BnfExpression Rule_Impl
             =>
-                ID(NODE<SolNodeParameter>().LIST<SolParameter>(PUNCTUATION(","), TermListOptions.StarList | TermListOptions.AllowTrailingDelimiter), "params")
-                + ID(TERM("..."), "opt").Q();
+                NODE<SolNodeParameter>().LIST<SolParameter>(PUNCTUATION(","), TermListOptions.StarList | TermListOptions.AllowTrailingDelimiter)
+                + TERM("...").OPT();
 
         #region Overrides
 
         /// <inheritdoc />
         protected override SolParameterInfo BuildAndGetNode(IAstNode[] astNodes)
         {
-            var paramsList = OfId<ListNode<SolParameter>>("params");
-            var opt = OfId<KeyTermNode<string>>("opt", true);
-            return new SolParameterInfo(paramsList.GetValue(), opt != null);
+            var paramsList = astNodes[0].As<ListNode<SolParameter>>().GetValue();
+            var opt = astNodes[1].As<OptionalNode>();
+            return new SolParameterInfo(paramsList, opt.HasValue);
         }
 
         #endregion

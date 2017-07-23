@@ -27,8 +27,10 @@
 
 using System;
 using Irony.Parsing;
+using NodeParser;
 using NodeParser.Nodes;
 using SolScript.Interpreter;
+using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Statements;
 using SolScript.Parser.Nodes.Expressions;
 
@@ -44,10 +46,10 @@ namespace SolScript.Parser.Nodes.Statements
             =>
                 KEYWORD("while")
                 + BRACES("(", 
-                    NODE<SolNodeExpression>(id: "condition"), 
+                    NODE<SolNodeExpression>(), 
                     ")", true)
                 + KEYWORD("do")
-                + NODE<SolNodeChunk>(id: "chunk")
+                + NODE<SolNodeChunk>()
                 + KEYWORD("end")
         ;
 
@@ -56,11 +58,12 @@ namespace SolScript.Parser.Nodes.Statements
         /// <inheritdoc />
         protected override Statement_While BuildAndGetNode(IAstNode[] astNodes)
         {
-            var condition = OfId<SolNodeExpression>("condition");
-            var chunk = OfId<SolNodeChunk>("chunk");
+            SolExpression condition = astNodes[1].As<BraceNode>().GetValue<SolExpression>();
+            SolChunk chunk = astNodes[3].As<SolNodeChunk>().GetValue();
+            //var condition = OfId<SolNodeExpression>("condition");
+            //var chunk = OfId<SolNodeChunk>("chunk");
 
-            return new Statement_While(SolAssembly.CurrentlyParsingThreadStatic, Location,
-                condition.GetValue(), chunk.GetValue());
+            return new Statement_While(SolAssembly.CurrentlyParsingThreadStatic, Location, condition, chunk);
         }
 
         #endregion

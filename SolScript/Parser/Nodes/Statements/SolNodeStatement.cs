@@ -26,6 +26,7 @@
 // ReSharper disable ArgumentsStyleStringLiteral
 
 using Irony.Parsing;
+using NodeParser;
 using NodeParser.Nodes;
 using SolScript.Interpreter.Statements;
 
@@ -57,7 +58,7 @@ namespace SolScript.Parser.Nodes.Statements
         /// <inheritdoc />
         protected override SolStatement BuildAndGetNode(IAstNode[] astNodes)
         {
-            return (SolStatement) astNodes[0].GetValue();
+            return astNodes[0].GetValue<SolStatement>();
         }
 
         #endregion

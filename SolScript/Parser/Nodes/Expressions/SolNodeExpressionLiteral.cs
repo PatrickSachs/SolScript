@@ -28,6 +28,7 @@
 using System;
 using System.Collections.Generic;
 using Irony.Parsing;
+using NodeParser;
 using NodeParser.Nodes;
 using NodeParser.Nodes.NonTerminals;
 using NodeParser.Nodes.Terminals;
@@ -58,7 +59,7 @@ namespace SolScript.Parser.Nodes.Expressions
         /// <inheritdoc />
         protected override Expression_Literal BuildAndGetNode(IAstNode[] astNodes)
         {
-            return new Expression_Literal(SolAssembly.CurrentlyParsingThreadStatic, Location, (SolValue) astNodes[0].GetValue());
+            return new Expression_Literal(SolAssembly.CurrentlyParsingThreadStatic, Location, astNodes[0].GetValue<SolValue>());
         }
 
         #endregion

@@ -27,6 +27,7 @@
 
 using System;
 using Irony.Parsing;
+using NodeParser;
 using NodeParser.Nodes;
 using SolScript.Interpreter.Expressions;
 
@@ -40,14 +41,14 @@ namespace SolScript.Parser.Nodes.Expressions
     {
         /// <inheritdoc />
         protected override BnfExpression Rule_Impl
-            => BRACES("(", NODE<SolNodeExpression>(id: "expr"), ")");
+            => BRACES("(", NODE<SolNodeExpression>(), ")");
 
         #region Overrides
 
         /// <inheritdoc />
         protected override SolExpression BuildAndGetNode(IAstNode[] astNodes)
         {
-            return OfId<SolNodeExpression>("expr").GetValue();
+            return astNodes[0].As<BraceNode>().GetValue<SolExpression>();
         }
 
         #endregion

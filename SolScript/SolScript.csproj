@@ -105,7 +105,6 @@
     <Compile Include="Parser\Nodes\Statements\SolNodeStatementLast.cs" />
     <Compile Include="Parser\Nodes\Statements\SolNodeStatementNew.cs" />
     <Compile Include="Parser\Nodes\Statements\SolNodeStatementWhile.cs" />
-    <Compile Include="Parser\SolParser.cs" />
     <Compile Include="Parser\SolParserTokenEventArgs.cs" />
     <Compile Include="Parser\SolScriptNodeGrammar.cs" />
     <Compile Include="Parser\SolTokenType.cs" />
@@ -273,7 +272,6 @@
     <Compile Include="Interpreter\SolMarshal.cs" />
     <Compile Include="Interpreter\SolType.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Parser\SolScriptGrammar.cs" />
     <Compile Include="Parser\Terminals\SolScriptCommentTerminal.cs" />
     <Compile Include="Parser\Terminals\SolScriptLongStringTerminal.cs" />
     <Compile Include="NamespaceDoc.cs" />

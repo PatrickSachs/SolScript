@@ -65,11 +65,11 @@ namespace SolScript.Parser.Nodes
         /// <inheritdoc />
         protected override BnfExpression Rule_Impl
             =>
-                ID(NODE<SolNodeAnnotation>().LIST<SolAnnotationDefinition>(null, TermListOptions.StarList), "annotations")
-                + NODE<SolNodeClassModifier>(id: "modifier").Q()
+                NODE<SolNodeAnnotation>().LIST<SolAnnotationDefinition>(null, TermListOptions.StarList)
+                + NODE<SolNodeClassModifier>().OPT()
                 + KEYWORD("class")
-                + TERMINAL<IdentifierNode>(id: "name")
-                + ID(NODE<Member>().LIST<SolMemberDefinition>(null, TermListOptions.StarList), "members")
+                + TERMINAL<IdentifierNode>()
+                + NODE<Member>().LIST<SolMemberDefinition>(null, TermListOptions.StarList)
                 + KEYWORD("end");
 
         #region Overrides
@@ -77,10 +77,14 @@ namespace SolScript.Parser.Nodes
         /// <inheritdoc />
         protected override SolClassDefinition BuildAndGetNode(IAstNode[] astNodes)
         {
-            IEnumerable<SolAnnotationDefinition> annotations = OfId<ListNode<SolAnnotationDefinition>>("annotations").GetValue();
+            IEnumerable<SolAnnotationDefinition> annotations = astNodes[0].As<ListNode<SolAnnotationDefinition>>().GetValue();
+            SolTypeMode typeMode = astNodes[1].As<OptionalNode>().GetValue(TypeModeImplicit);
+            string name = astNodes[3].As<IdentifierNode>().GetValue();
+            IEnumerable<SolMemberDefinition> members = astNodes[4].As<ListNode<SolMemberDefinition>>().GetValue();
+            /*IEnumerable<SolAnnotationDefinition> annotations = OfId<ListNode<SolAnnotationDefinition>>("annotations").GetValue();
             SolTypeMode typeMode = OfId<SolNodeClassModifier>("modifier", true)?.GetValue() ?? TypeModeImplicit;
             string name = OfId<IdentifierNode>("name").GetValue();
-            IEnumerable<SolMemberDefinition> members = OfId<ListNode<SolMemberDefinition>>("members").GetValue();
+            IEnumerable<SolMemberDefinition> members = OfId<ListNode<SolMemberDefinition>>("members").GetValue();*/
             SolClassDefinition definition = new SolClassDefinition(SolAssembly.CurrentlyParsingThreadStatic, Location, false) {
                 Type = name,
                 TypeMode = typeMode

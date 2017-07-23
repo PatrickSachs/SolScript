@@ -26,6 +26,7 @@
 // ReSharper disable ArgumentsStyleStringLiteral
 
 using Irony.Parsing;
+using NodeParser;
 using NodeParser.Nodes;
 using SolScript.Interpreter;
 using SolScript.Interpreter.Statements;
@@ -41,7 +42,7 @@ namespace SolScript.Parser.Nodes.Statements
         protected override BnfExpression Rule_Impl
             =>
                 KEYWORD("do")
-                + NODE<SolNodeChunk>(id: "chunk")
+                + NODE<SolNodeChunk>()
                 + KEYWORD("end")
         ;
 
@@ -50,8 +51,8 @@ namespace SolScript.Parser.Nodes.Statements
         /// <inheritdoc />
         protected override Statement_Do BuildAndGetNode(IAstNode[] astNodes)
         {
-            var chunk = OfId<SolNodeChunk>("chunk");
-            return new Statement_Do(SolAssembly.CurrentlyParsingThreadStatic, Location, chunk.GetValue());
+            SolChunk chunk = astNodes[1].As<SolNodeChunk>().GetValue();
+            return new Statement_Do(SolAssembly.CurrentlyParsingThreadStatic, Location, chunk);
         }
 
         #endregion

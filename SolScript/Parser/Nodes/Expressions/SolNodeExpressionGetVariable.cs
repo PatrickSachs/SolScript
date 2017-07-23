@@ -26,6 +26,7 @@
 // ReSharper disable ArgumentsStyleStringLiteral
 
 using Irony.Parsing;
+using NodeParser;
 using NodeParser.Nodes;
 using SolScript.Interpreter;
 using SolScript.Interpreter.Expressions;
@@ -47,7 +48,7 @@ namespace SolScript.Parser.Nodes.Expressions
         /// <inheritdoc />
         protected override Expression_GetVariable BuildAndGetNode(IAstNode[] astNodes)
         {
-            return new Expression_GetVariable(SolAssembly.CurrentlyParsingThreadStatic, Location, (AVariable) astNodes[0].GetValue());
+            return new Expression_GetVariable(SolAssembly.CurrentlyParsingThreadStatic, Location, astNodes[0].GetValue<AVariable>());
         }
 
         #endregion

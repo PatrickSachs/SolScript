@@ -26,7 +26,9 @@
 // ReSharper disable ArgumentsStyleStringLiteral
 
 using System;
+using System.Collections.Generic;
 using Irony.Parsing;
+using NodeParser;
 using NodeParser.Nodes;
 using NodeParser.Nodes.NonTerminals;
 using NodeParser.Nodes.Terminals;
@@ -47,9 +49,9 @@ namespace SolScript.Parser.Nodes.Statements
         protected override BnfExpression Rule_Impl
             =>
                 KEYWORD("new")
-                + TERMINAL<IdentifierNode>(id: "name")
+                + TERMINAL<IdentifierNode>()
                 + BRACES("(",
-                    ID(NODE<SolNodeExpression>().LIST<SolExpression>(PUNCTUATION(","), TermListOptions.StarList | TermListOptions.AllowTrailingDelimiter), "args")
+                    NODE<SolNodeExpression>().LIST<SolExpression>(PUNCTUATION(","), TermListOptions.StarList | TermListOptions.AllowTrailingDelimiter)
                     , ")")
         ;
 
@@ -58,10 +60,12 @@ namespace SolScript.Parser.Nodes.Statements
         /// <inheritdoc />
         protected override Statement_New BuildAndGetNode(IAstNode[] astNodes)
         {
-            string name = OfId<IdentifierNode>("name").GetValue();
-            ListNode<SolExpression> args = OfId<ListNode<SolExpression>>("args");
+            string name = astNodes[1].As<IdentifierNode>().GetValue();
+            IEnumerable<SolExpression> args = astNodes[2].As<BraceNode>().GetValue<IEnumerable<SolExpression>>();
+            /*string name = OfId<IdentifierNode>("name").GetValue();
+            ListNode<SolExpression> args = OfId<ListNode<SolExpression>>("args");*/
 
-            return new Statement_New(SolAssembly.CurrentlyParsingThreadStatic, Location, new SolClassDefinitionReference(SolAssembly.CurrentlyParsingThreadStatic, name), args.Count != 0 ? args.GetValue() : ArrayUtility.Empty<SolExpression>());
+            return new Statement_New(SolAssembly.CurrentlyParsingThreadStatic, Location, new SolClassDefinitionReference(SolAssembly.CurrentlyParsingThreadStatic, name), args);
         }
 
         #endregion

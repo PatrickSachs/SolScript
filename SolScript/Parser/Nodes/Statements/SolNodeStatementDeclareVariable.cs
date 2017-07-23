@@ -25,9 +25,12 @@
 // ---------------------------------------------------------------------
 // ReSharper disable ArgumentsStyleStringLiteral
 
+using System;
 using Irony.Parsing;
+using NodeParser;
 using NodeParser.Nodes;
 using NodeParser.Nodes.Terminals;
+using PSUtility.Enumerables;
 using SolScript.Interpreter;
 using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Statements;
@@ -48,9 +51,9 @@ namespace SolScript.Parser.Nodes.Statements
         /// <inheritdoc />
         protected override BnfExpression Rule_Impl
             => KEYWORD("var")
-               + TERMINAL<IdentifierNode>(id: "name")
-               + (PUNCTUATION(":") + NODE<SolNodeTypeReference>(id: "type")).Q()
-               + (OPERATOR("=") + NODE<SolNodeExpression>(id: "expression")).Q()
+               + TERMINAL<IdentifierNode>()
+               + (PUNCTUATION(":") + NODE<SolNodeTypeReference>()).OPT()
+               + (OPERATOR("=") + NODE<SolNodeExpression>()).OPT()
         ;
 
         #region Overrides
@@ -58,9 +61,12 @@ namespace SolScript.Parser.Nodes.Statements
         /// <inheritdoc />
         protected override Statement_DeclareVariable BuildAndGetNode(IAstNode[] astNodes)
         {
-            string name = OfId<IdentifierNode>("name").GetValue();
+            string name = astNodes[1].As<IdentifierNode>().GetValue();
+            SolType type = astNodes[2].As<OptionalNode>().GetValue(VariableTypeImplicit);
+            SolExpression expression = astNodes[3].As<OptionalNode>().GetValue(null, list => list[1].As<SolNodeExpression>().GetValue());
+            /*string name = OfId<IdentifierNode>("name").GetValue();
             SolType type = OfId<SolNodeTypeReference>("type", true)?.GetValue() ?? VariableTypeImplicit;
-            SolExpression expression = OfId<SolNodeExpression>("expression", true)?.GetValue();
+            SolExpression expression = OfId<SolNodeExpression>("expression", true)?.GetValue();*/
             return new Statement_DeclareVariable(SolAssembly.CurrentlyParsingThreadStatic, Location, name, type, expression);
         }
 

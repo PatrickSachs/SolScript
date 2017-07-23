@@ -46,7 +46,7 @@ namespace SolScript.Parser.Nodes.Expressions
         /// <inheritdoc />
         protected override BnfExpression Rule_Impl
             => BRACES("{",
-                ID(NODE<TableFieldNode>().LIST<KeyValuePair<SolExpression, SolExpression>>(PUNCTUATION(","), TermListOptions.StarList | TermListOptions.AllowTrailingDelimiter), "fields"),
+                NODE<TableFieldNode>().LIST<KeyValuePair<SolExpression, SolExpression>>(PUNCTUATION(","), TermListOptions.StarList | TermListOptions.AllowTrailingDelimiter),
                 "}")
         ;
 
@@ -55,8 +55,8 @@ namespace SolScript.Parser.Nodes.Expressions
         /// <inheritdoc />
         protected override Expression_TableConstructor BuildAndGetNode(IAstNode[] astNodes)
         {
-            var fields = OfId<ListNode<KeyValuePair<SolExpression, SolExpression>>>("fields");
-            return new Expression_TableConstructor(SolAssembly.CurrentlyParsingThreadStatic, Location, fields.GetValue());
+            var fields = astNodes[0].As<BraceNode>().GetValue<IEnumerable<KeyValuePair<SolExpression, SolExpression>>>();
+            return new Expression_TableConstructor(SolAssembly.CurrentlyParsingThreadStatic, Location, fields);
         }
 
         #endregion

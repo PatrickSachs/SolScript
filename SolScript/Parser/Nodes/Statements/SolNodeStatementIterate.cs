@@ -26,8 +26,10 @@
 // ReSharper disable ArgumentsStyleStringLiteral
 
 using Irony.Parsing;
+using NodeParser;
 using NodeParser.Nodes;
 using NodeParser.Nodes.Terminals;
+using PSUtility.Enumerables;
 using SolScript.Interpreter;
 using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Statements;
@@ -44,12 +46,12 @@ namespace SolScript.Parser.Nodes.Statements
         protected override BnfExpression Rule_Impl
             => KEYWORD("for")
                + BRACES("(",
-                   TERMINAL<IdentifierNode>(id: "name")
+                   TERMINAL<IdentifierNode>()
                    + KEYWORD("in")
-                   + NODE<SolNodeExpression>(id: "expr"),
+                   + NODE<SolNodeExpression>(),
                    ")", true)
                + KEYWORD("do")
-               + NODE<SolNodeChunk>(id: "chunk")
+               + NODE<SolNodeChunk>()
                + KEYWORD("end")
         ;
 
@@ -58,9 +60,13 @@ namespace SolScript.Parser.Nodes.Statements
         /// <inheritdoc />
         protected override Statement_Iterate BuildAndGetNode(IAstNode[] astNodes)
         {
-            string name = OfId<IdentifierNode>("name").GetValue();
+            ReadOnlyList<IAstNode> braceInside = astNodes[1].As<BraceNode>().GetValue<ReadOnlyList<IAstNode>>();
+            string name = braceInside[0].As<IdentifierNode>().GetValue();
+            SolExpression expr = braceInside[2].As<SolNodeExpression>().GetValue();
+            SolChunk chunk = astNodes[3].As<SolNodeChunk>().GetValue();
+            /*string name = OfId<IdentifierNode>("name").GetValue();
             SolExpression expr = OfId<SolNodeExpression>("expr").GetValue();
-            SolChunk chunk = OfId<SolNodeChunk>("chunk").GetValue();
+            SolChunk chunk = OfId<SolNodeChunk>("chunk").GetValue();*/
 
             return new Statement_Iterate(SolAssembly.CurrentlyParsingThreadStatic, Location,
                 expr, name, chunk);

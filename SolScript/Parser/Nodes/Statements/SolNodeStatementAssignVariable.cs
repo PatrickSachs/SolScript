@@ -26,8 +26,10 @@
 // ReSharper disable ArgumentsStyleStringLiteral
 
 using Irony.Parsing;
+using NodeParser;
 using NodeParser.Nodes;
 using SolScript.Interpreter;
+using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Statements;
 using SolScript.Parser.Nodes.Expressions;
 
@@ -40,7 +42,7 @@ namespace SolScript.Parser.Nodes.Statements
     {
         /// <inheritdoc />
         protected override BnfExpression Rule_Impl
-            => NODE<SolNodeVariable>(id: "variable") + OPERATOR("=") + NODE<SolNodeExpression>(id: "value")
+            => NODE<SolNodeVariable>() + OPERATOR("=") + NODE<SolNodeExpression>()
         ;
 
         #region Overrides
@@ -48,10 +50,9 @@ namespace SolScript.Parser.Nodes.Statements
         /// <inheritdoc />
         protected override Statement_AssignVariable BuildAndGetNode(IAstNode[] astNodes)
         {
-            SolNodeVariable variable = OfId<SolNodeVariable>("variable");
-            SolNodeExpression value = OfId<SolNodeExpression>("value");
-
-            return new Statement_AssignVariable(SolAssembly.CurrentlyParsingThreadStatic, Location, variable.GetValue(), value.GetValue());
+            AVariable variable = astNodes[0].As<SolNodeVariable>().GetValue();
+            SolExpression value = astNodes[2].As<SolNodeExpression>().GetValue();
+            return new Statement_AssignVariable(SolAssembly.CurrentlyParsingThreadStatic, Location, variable, value);
         }
 
         #endregion
