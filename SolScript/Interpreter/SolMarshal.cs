@@ -195,7 +195,7 @@ namespace SolScript.Interpreter
         ///     Keep in mind that the types of the values are inferred using <see cref="object.GetType()" /> which only
         ///     returns the most derived type.
         /// </remarks>
-        public static SolValue[] MarshalFromNative(SolAssembly assembly, [ItemCanBeNull] object[] values)
+        public static SolValue[] MarshalFromNative(SolAssembly assembly, [ItemCanBeNull] params object[] values)
         {
             var array = new SolValue[values.Length];
             for (int i = 0; i < array.Length; i++) {

@@ -23,7 +23,7 @@ namespace SolScript.Compiler.Native
     public class NativeCompiler
     {
         /// <inheritdoc />
-        /// <exception cref="ArgumentNullException"><paramref name="compilerOptions"/> is <see langword="null"/></exception>
+        /// <exception cref="ArgumentNullException"><paramref name="compilerOptions" /> is <see langword="null" /></exception>
         public NativeCompiler([NotNull] Options compilerOptions)
         {
             if (compilerOptions == null) {
@@ -33,9 +33,10 @@ namespace SolScript.Compiler.Native
         }
 
         /// <summary>
-        /// The options of this compiler.
+        ///     The options of this compiler.
         /// </summary>
-        [NotNull]public Options CompilerOptions { get; set; }
+        [NotNull]
+        public Options CompilerOptions { get; set; }
 
         /// <summary>
         ///     Tries to dynamically compile the native class mapping for the given SolScript class definitions.
@@ -279,11 +280,32 @@ namespace SolScript.Compiler.Native
         {
             try {
                 SolValue[] solArgs = SolMarshal.MarshalFromNative(instance.Assembly, args);
-                SolClass.Inheritance inh = instance.FindInheritance(defName);
+                /*SolClass.Inheritance inh = instance.FindInheritance(defName);
                 if (inh == null) {
                     throw new SolRuntimeNativeException("Failed to find inheritance level \"" + defName + "\" in class \"" + instance.Type + "\".");
                 }
-                IVariables vars = inh.GetVariables(defAccess, SolVariableMode.Declarations);
+                IVariables vars = inh.GetVariables(defAccess, SolVariableMode.Declarations);*/
+
+                // We are not getting the variables from the inheritance since we wish to be able to user
+                // overridden overridden members aswell.
+                // The only exception to this are locals which cannot be overridden. But that also means
+                // that we should never have local defAccess. But we'll just make sure.
+                IVariables vars;
+                switch (defAccess) {
+                    case SolAccessModifier.Global:
+                    case SolAccessModifier.Internal:
+                        vars = instance.GetVariables(defAccess, SolVariableMode.All);
+                        break;
+                    case SolAccessModifier.Local:
+                        SolClass.Inheritance inh = instance.FindInheritance(defName);
+                        if (inh == null) {
+                            throw new SolRuntimeNativeException("Failed to find inheritance level \"" + defName + "\" in class \"" + instance.Type + "\".");
+                        }
+                        vars = inh.GetVariables(SolAccessModifier.Local, SolVariableMode.Declarations);
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(defAccess), defAccess, null);
+                }
                 SolValue funcRaw = vars.Get(funcName);
                 SolFunction func = (SolFunction) funcRaw;
                 return func.Call(new SolExecutionContext(instance.Assembly, "Native calling " + func), solArgs);

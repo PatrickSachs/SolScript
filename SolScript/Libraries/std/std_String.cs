@@ -44,7 +44,8 @@ namespace SolScript.Libraries.std
         ///     Should the local culture be used for string operations? (Default: true)
         /// </summary>
         [SolContract(SolBool.TYPE, false)]
-        public SolBool use_local_culture {
+        public SolBool use_local_culture
+        {
             get { return SolBool.ValueOf(UseLocalCulture); }
             set { UseLocalCulture = value.Value; }
         }
@@ -70,8 +71,10 @@ namespace SolScript.Libraries.std
         [SolContract(SolBool.TYPE, false)]
         public SolBool is_lower([SolContract(SolString.TYPE, false)] SolString value)
         {
-            foreach (char c in value.Value) {
-                if (!char.IsLower(c)) {
+            foreach (char c in value.Value)
+            {
+                if (!char.IsLower(c))
+                {
                     return SolBool.False;
                 }
             }
@@ -97,8 +100,10 @@ namespace SolScript.Libraries.std
         [SolContract(SolBool.TYPE, false)]
         public SolBool is_upper([SolContract(SolString.TYPE, false)] SolString value)
         {
-            foreach (char c in value.Value) {
-                if (!char.IsUpper(c)) {
+            foreach (char c in value.Value)
+            {
+                if (!char.IsUpper(c))
+                {
                     return SolBool.False;
                 }
             }
@@ -128,10 +133,12 @@ namespace SolScript.Libraries.std
         public SolString char_at(SolExecutionContext context, [SolContract(SolString.TYPE, false)] SolString value, [SolContract(SolNumber.TYPE, false)] SolNumber index)
         {
             int intIndex;
-            if (!InternalHelper.NumberToInteger(index, out intIndex)) {
+            if (!InternalHelper.NumberToInteger(index, out intIndex))
+            {
                 throw new SolRuntimeException(context, "Tried to access index " + index + " - The index has a decimal part.");
             }
-            if (intIndex >= value.Value.Length || intIndex < 0) {
+            if (intIndex >= value.Value.Length || intIndex < 0)
+            {
                 throw new SolRuntimeException(context, "Tried to access index " + index + " - The string only has a length of " + value.Value.Length + ".");
             }
             return SolString.ValueOf(new string(value.Value[intIndex], 1));
@@ -151,10 +158,14 @@ namespace SolScript.Libraries.std
         {
             bool asIds = ids?.Value ?? false;
             SolTable table = new SolTable();
-            foreach (char chr in value.Value) {
-                if (asIds) {
+            foreach (char chr in value.Value)
+            {
+                if (asIds)
+                {
                     table.Append(new SolNumber(chr));
-                } else {
+                }
+                else
+                {
                     table.Append(SolString.ValueOf(new string(chr, 1)));
                 }
             }
@@ -179,10 +190,12 @@ namespace SolScript.Libraries.std
             [SolContract(SolNumber.TYPE, true)] SolNumber start)
         {
             int intStart = 0;
-            if (start != null && !InternalHelper.NumberToInteger(start, out intStart)) {
+            if (start != null && !InternalHelper.NumberToInteger(start, out intStart))
+            {
                 throw new SolRuntimeException(context, "Tried to access index " + start + " - The index has a decimal part.");
             }
-            if (intStart >= value.Value.Length || intStart < 0) {
+            if (intStart >= value.Value.Length || intStart < 0)
+            {
                 throw new SolRuntimeException(context, "Tried to access index " + start + " - The string only has a length of " + value.Value.Length + ".");
             }
             return new SolNumber(value.Value.IndexOf(term.Value, intStart, UseLocalCulture ? StringComparison.CurrentCulture : StringComparison.Ordinal));
@@ -206,12 +219,16 @@ namespace SolScript.Libraries.std
         [SolContract(SolString.TYPE, false)]
         public SolString format(SolExecutionContext context, [SolContract(SolString.TYPE, false)] SolString value, [SolContract(SolTable.TYPE, true), CanBeNull]  params SolValue[] arguments)
         {
-            if (arguments == null) {
+            if (arguments == null)
+            {
                 return value;
             }
-            try {
+            try
+            {
                 return string.Format(value.Value, arguments);
-            } catch (FormatException ex) {
+            }
+            catch (FormatException ex)
+            {
                 throw new SolRuntimeException(context, "Invalid string format.", ex);
             }
         }
@@ -231,18 +248,24 @@ namespace SolScript.Libraries.std
         public SolString repeat(SolExecutionContext context, [SolContract(SolString.TYPE, false)] SolString value, [SolContract(SolNumber.TYPE, false)] SolNumber amount)
         {
             int intAmount;
-            if (!InternalHelper.NumberToInteger(amount, out intAmount)) {
+            if (!InternalHelper.NumberToInteger(amount, out intAmount))
+            {
                 throw new SolRuntimeException(context, "Tried to repeat the string " + amount + " times - The number has a decimal part.");
             }
-            if (intAmount < 0) {
+            if (intAmount < 0)
+            {
                 throw new SolRuntimeException(context, "Tried to repeat the string " + intAmount + " times - The number is smaller than zero.");
             }
-            if (intAmount == 1) {
+            if (intAmount == 1)
+            {
                 return value;
             }
-            try {
+            try
+            {
                 return new StringBuilder(value.Value.Length * intAmount).Insert(0, value.Value, intAmount).ToString();
-            } catch (OutOfMemoryException ex) {
+            }
+            catch (OutOfMemoryException ex)
+            {
                 throw new SolRuntimeException(context, "Tried to repeat the string " + intAmount + " times - The sequence is too long for the internal string buffer.", ex);
             }
         }
@@ -265,7 +288,8 @@ namespace SolScript.Libraries.std
         [UsedImplicitly]
         public string skip(SolExecutionContext context, string value, int amount)
         {
-            if (amount > value.Length) {
+            if (amount > value.Length)
+            {
                 throw new SolRuntimeException(context, "Tried to skip " + amount + " characters in string \"" + value + "\"(Length: " + value.Length + ").");
             }
             return value.Substring(amount, value.Length - amount);
@@ -274,7 +298,8 @@ namespace SolScript.Libraries.std
         [UsedImplicitly]
         public string take(SolExecutionContext context, string value, int amount)
         {
-            if (amount > value.Length) {
+            if (amount > value.Length)
+            {
                 throw new SolRuntimeException(context, "Tried to take " + amount + " characters in string \"" + value + "\"(Length: " + value.Length + ").");
             }
             return value.Substring(0, amount);
@@ -284,7 +309,8 @@ namespace SolScript.Libraries.std
         public string substring(SolExecutionContext context, string value, int start, int amount)
         {
             int checkIdx = start + amount;
-            if (checkIdx > value.Length || start < 0 || amount < 0) {
+            if (checkIdx > value.Length || start < 0 || amount < 0)
+            {
                 throw new SolRuntimeException(context, "Tried to substring " + amount + " characters starting at index " + start + " in string \"" + value + "\"(Length: " + value.Length + ").");
             }
             return value.Substring(start, amount);
@@ -306,7 +332,8 @@ namespace SolScript.Libraries.std
         public SolValue parse_number(string input)
         {
             double parsed;
-            if (double.TryParse(input, NumberStyles.Float, UseLocalCulture ? CultureInfo.CurrentCulture : CultureInfo.InvariantCulture, out parsed)) {
+            if (double.TryParse(input, NumberStyles.Float, UseLocalCulture ? CultureInfo.CurrentCulture : CultureInfo.InvariantCulture, out parsed))
+            {
                 return new SolNumber(parsed);
             }
             return SolNil.Instance;
@@ -316,7 +343,8 @@ namespace SolScript.Libraries.std
         public SolValue parse_bool(string input)
         {
             bool parsed;
-            if (bool.TryParse(input, out parsed)) {
+            if (bool.TryParse(input, out parsed))
+            {
                 return SolBool.ValueOf(parsed);
             }
             return SolNil.Instance;
@@ -327,29 +355,35 @@ namespace SolScript.Libraries.std
         {
             string[] splitResult = value.Split(separators, StringSplitOptions.None);
             SolTable table = new SolTable();
-            foreach (string s in splitResult) {
+            foreach (string s in splitResult)
+            {
                 table.Append(SolString.ValueOf(s));
             }
             return table;
         }
 
-        [SolContract("string", false)]
-        public SolString intern([SolContract("string", false)] SolString value)
+        [SolContract(SolString.TYPE, false)]
+        public SolString intern([SolContract(SolString.TYPE, false)] SolString value)
         {
             value.Intern();
             return value;
         }
 
-        [UsedImplicitly]
-        public SolValue regex(string pattern, string input)
+        [SolContract(SolTable.TYPE, true)]
+        public SolValue regex(
+           [SolContract(SolString.TYPE, false)]SolString pattern,
+           [SolContract(SolString.TYPE, false)]SolString input)
         {
             Match match = new Regex(pattern).Match(input);
-            if (!match.Success) {
+            if (!match.Success)
+            {
                 return SolNil.Instance;
             }
             SolTable matchTable = new SolTable();
-            foreach (Group mGrp in match.Groups) {
-                SolTable grpTable = new SolTable {
+            foreach (Group mGrp in match.Groups)
+            {
+                SolTable grpTable = new SolTable
+                {
                     [Str_index] = new SolNumber(mGrp.Index),
                     [Str_length] = new SolNumber(mGrp.Length),
                     [Str_value] = SolString.ValueOf(mGrp.Value)
@@ -358,14 +392,30 @@ namespace SolScript.Libraries.std
             }
             return matchTable;
         }
-
-        public bool ends_with(string value, string end, [SolContract(SolBool.TYPE, true)]SolBool ignoreCase)
+        [SolContract(SolString.TYPE, false)]
+        public SolString replace(
+            [SolContract(SolString.TYPE, false)]SolString value,
+            [SolContract(SolString.TYPE, false)]SolString toReplace,
+            [SolContract(SolString.TYPE, false)]SolString replacement)
         {
-            return value.EndsWith(end, ignoreCase?.Value ?? false, CultureInfo.InvariantCulture);
+            return value.Value.Replace(toReplace, replacement);
         }
-        public bool starts_with(string value, string end, [SolContract(SolBool.TYPE, true)]SolBool ignoreCase)
+
+        [SolContract(SolBool.TYPE, false)]
+        public SolBool ends_with(
+            [SolContract(SolString.TYPE, false)]SolString value,
+            [SolContract(SolString.TYPE, false)]SolString end,
+            [SolContract(SolBool.TYPE, true)]SolBool ignoreCase)
         {
-            return value.StartsWith(end, ignoreCase?.Value ?? false, CultureInfo.InvariantCulture);
+            return value.Value.EndsWith(end, ignoreCase?.Value ?? false, CultureInfo.InvariantCulture);
+        }
+        [SolContract(SolBool.TYPE, false)]
+        public SolBool starts_with(
+            [SolContract(SolString.TYPE, false)]SolString value,
+            [SolContract(SolString.TYPE, false)]SolString end,
+            [SolContract(SolBool.TYPE, true)]SolBool ignoreCase)
+        {
+            return value.Value.StartsWith(end, ignoreCase?.Value ?? false, CultureInfo.InvariantCulture);
         }
     }
 }

@@ -485,7 +485,7 @@ namespace SolScript.Interpreter
                     foreach (Assembly libraryAssembly in library.Assemblies) {
                         foreach (Type libraryType in libraryAssembly.GetTypes()) {
                             // Get descriptor
-                            SolTypeDescriptorAttribute descriptor = libraryType.GetCustomAttribute<SolTypeDescriptorAttribute>();
+                            SolTypeDescriptorAttribute descriptor = libraryType.GetCustomAttribute<SolTypeDescriptorAttribute>(false);
                             if (descriptor != null && descriptor.LibraryName == library.Name) {
                                 // Get name
                                 string name = libraryType.GetCustomAttribute<SolLibraryNameAttribute>()?.Name ?? libraryType.Name;
