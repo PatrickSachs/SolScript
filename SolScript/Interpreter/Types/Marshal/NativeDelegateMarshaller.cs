@@ -158,13 +158,13 @@ namespace SolScript.Interpreter.Types.Marshal
             protected TReturn CallFunction(params object[] objs)
             {
                 SolValue[] solArgs = SolMarshal.MarshalFromNative(Function.Assembly, objs);
-                return Function.Call(new SolExecutionContext(Function.Assembly, "bla"), solArgs).ConvertTo<TReturn>();
+                return Function.Call(new SolExecutionContext(Function.Assembly, "Dynamic native " + typeof(TDelegate)), solArgs).ConvertTo<TReturn>();
             }
 
             protected void CallFunctionVoid(params object[] objs)
             {
                 SolValue[] solArgs = SolMarshal.MarshalFromNative(Function.Assembly, objs);
-                Function.Call(new SolExecutionContext(Function.Assembly, "bla"), solArgs);
+                Function.Call(new SolExecutionContext(Function.Assembly, "Dynamic native " + typeof(TDelegate) + " (void)"), solArgs);
             }
         }
 
