@@ -26,13 +26,13 @@ namespace SolScript.test
         }
     }
 
-    [SolGlobal("test")]
+    [SolGlobalTypeDescriptor("test")]
     public static class test_G
     {
-        [SolGlobal("test")]
+        [SolLibraryVisibility("test", true)]
         public static string Field;
 
-        [SolGlobal("test")]
+        [SolLibraryVisibility("test", true)]
         public static void BREAK()
         {
             Console.WriteLine("> BREAKPOINT <");

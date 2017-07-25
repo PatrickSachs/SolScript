@@ -205,7 +205,7 @@
     <Compile Include="Libraries\std\std_IO.cs" />
     <Compile Include="Libraries\std\std_Reflect.cs" />
     <Compile Include="Interpreter\Library\SolContractAttribute.cs" />
-    <Compile Include="Interpreter\Library\SolGlobalAttribute.cs" />
+    <Compile Include="Interpreter\Library\SolGlobalTypeDescriptorAttribute.cs" />
     <Compile Include="Interpreter\Library\SolLibraryAccessModifierAttribute.cs" />
     <Compile Include="Interpreter\Library\SolLibraryNameAttribute.cs" />
     <Compile Include="Interpreter\Library\SolLibraryVisibilityAttribute.cs" />

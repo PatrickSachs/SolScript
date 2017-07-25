@@ -256,4 +256,8 @@
     <value>The SolScript grammar could not be generated. Did you modify the grammar? If so consider reading up on the NodeParser as there are slight but important differences to how Irony works by default.</value>
     <comment>0: Language state list</comment>
   </data>
+  <data name="Err_GlobalMemberMustBeStatic" xml:space="preserve">
+    <value>The global member "{0}" defined in global type descriptor "{1}" is not static.</value>
+    <comment>0: Member Name // 1: Descriptor Name</comment>
+  </data>
 </root>

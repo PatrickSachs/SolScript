@@ -15,7 +15,7 @@ namespace SolScript.Libraries.lang
     /// <summary>
     ///     All global functions and fields in the <see cref="lang" /> library.
     /// </summary>
-    [PublicAPI, SolGlobal(lang.NAME)]
+    [PublicAPI, SolGlobalTypeDescriptor(lang.NAME)]
     public static class lang_Globals
     {
         private const string DEFAULT_ERROR_MESSAGE = "An error occured.";
@@ -30,7 +30,7 @@ namespace SolScript.Libraries.lang
         ///     Throws a <see cref="SolRuntimeException" /> with the value of
         ///     <paramref name="message" /> as <see cref="Exception.Message" />.
         /// </exception>
-        [SolGlobal(lang.NAME)]
+        [SolLibraryVisibility(lang.NAME, true)]
         public static void error(SolExecutionContext context, [SolContract(SolString.TYPE, true), CanBeNull] SolString message)
         {
             string messageStr = message?.Value ?? DEFAULT_ERROR_MESSAGE;
@@ -72,7 +72,7 @@ namespace SolScript.Libraries.lang
         ///     </c>
         /// </remarks>
         /// <exception cref="SolRuntimeException">The assertion failed.</exception>
-        [SolGlobal(lang.NAME)]
+        [SolLibraryVisibility(lang.NAME, true)]
         public static void assert(SolExecutionContext context, SolValue value, [SolContract(SolString.TYPE, true), CanBeNull] SolString message)
         {
             if (value.IsFalse(context)) {
@@ -89,7 +89,7 @@ namespace SolScript.Libraries.lang
         /// <exception cref="SolRuntimeException">An I/O error occured while writing to the standard output.</exception>
         /// <exception cref="SolRuntimeException">The standard output does not support writing.</exception>
         /// <exception cref="SolRuntimeException">The standard output has been closed.</exception>
-        [SolGlobal(lang.NAME)]
+        [SolLibraryVisibility(lang.NAME, true)]
         public static void print(SolExecutionContext context, params SolValue[] values)
         {
             StringBuilder builder = new StringBuilder();
@@ -130,7 +130,8 @@ namespace SolScript.Libraries.lang
         /// </summary>
         /// <param name="value">The value.</param>
         /// <returns>The type.</returns>
-        [SolGlobal(lang.NAME), SolContract(SolString.TYPE, false)]
+        [SolLibraryVisibility(lang.NAME, true)]
+        [SolContract(SolString.TYPE, false)]
         public static SolString type([SolContract(SolValue.ANY_TYPE, true)] SolValue value)
         {
             return SolString.ValueOf(value.Type);
@@ -142,7 +143,8 @@ namespace SolScript.Libraries.lang
         /// <param name="context"></param>
         /// <param name="value">The value to convert.</param>
         /// <returns>The string representation of the given <paramref name="value" />.</returns>
-        [SolGlobal(lang.NAME), SolContract(SolString.TYPE, false)]
+        [SolLibraryVisibility(lang.NAME, true)]
+        [SolContract(SolString.TYPE, false)]
         public static SolString to_string(SolExecutionContext context, [SolContract(SolValue.ANY_TYPE, true)] SolValue value)
         {
             return value.ToString(context);
@@ -155,7 +157,8 @@ namespace SolScript.Libraries.lang
         /// <param name="value1">The first value. If this value is a class its equality meta function will be called.</param>
         /// <param name="value2">The second value.</param>
         /// <returns>true if both values can be considered equal, false if not.</returns>
-        [SolGlobal(lang.NAME), SolContract(SolBool.TYPE, false)]
+        [SolLibraryVisibility(lang.NAME, true)]
+        [SolContract(SolBool.TYPE, false)]
         public static SolBool equals(SolExecutionContext context, [SolContract(SolValue.ANY_TYPE, true)] SolValue value1, [SolContract(SolValue.ANY_TYPE, true)] SolValue value2)
         {
             return SolBool.ValueOf(value1.IsEqual(context, value2));
@@ -172,7 +175,8 @@ namespace SolScript.Libraries.lang
         ///     Primitive types are still checked for equality since they are immutable. And there is no actual use case in
         ///     which e.g. a number should not be equal to itself.
         /// </remarks>
-        [SolGlobal(lang.NAME), SolContract(SolBool.TYPE, false)]
+        [SolLibraryVisibility(lang.NAME, true)]
+        [SolContract(SolBool.TYPE, false)]
         public static SolBool reference_equals(SolExecutionContext context, [SolContract(SolValue.ANY_TYPE, true)] SolValue value1, [SolContract(SolValue.ANY_TYPE, true)] SolValue value2)
         {
             return SolBool.ValueOf(value1.IsReferenceEqual(context, value2));

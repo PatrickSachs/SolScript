@@ -3,17 +3,17 @@
 namespace SolScript.Interpreter.Library
 {
     /// <summary>
-    ///     The <see cref="SolGlobalAttribute" /> is used to mark a method as a global function in SolScript.
+    ///     This attribute is marked to create global fields and functions from the visible members of this class. All members
+    ///     must be static.
     /// </summary>
-    /// <remarks>Only classes annotated with this attribute are scanned for global methods.</remarks>
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method | AttributeTargets.Field | AttributeTargets.Property, AllowMultiple = true)]
-    public sealed class SolGlobalAttribute : Attribute
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
+    public sealed class SolGlobalTypeDescriptorAttribute : Attribute
     {
         /// <summary>
         ///     Creates a new global attribute.
         /// </summary>
         /// <param name="library">The library this attribute belongs to.</param>
-        public SolGlobalAttribute(string library)
+        public SolGlobalTypeDescriptorAttribute(string library)
         {
             Library = library;
         }

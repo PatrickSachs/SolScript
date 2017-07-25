@@ -295,6 +295,15 @@ namespace SolScript.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to The global member &quot;{0}&quot; defined in global type descriptor &quot;{1}&quot; is not static..
+        /// </summary>
+        internal static string Err_GlobalMemberMustBeStatic {
+            get {
+                return ResourceManager.GetString("Err_GlobalMemberMustBeStatic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The reference to the described object of class &quot;{0}&quot; is invalid..
         /// </summary>
         internal static string Err_InvalidClassDescribedObjectReference {

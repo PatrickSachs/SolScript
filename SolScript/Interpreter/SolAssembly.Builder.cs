@@ -523,7 +523,7 @@ namespace SolScript.Interpreter
                                 }
                             }
                             // Get global
-                            SolGlobalAttribute global = libraryType.GetCustomAttribute<SolGlobalAttribute>();
+                            SolGlobalTypeDescriptorAttribute global = libraryType.GetCustomAttribute<SolGlobalTypeDescriptorAttribute>();
                             if (global != null && global.Library == library.Name) {
                                 // Globals will be searched later since the type hierarchy needs to be
                                 // built in order to determine their return types.
@@ -655,6 +655,7 @@ namespace SolScript.Interpreter
                 // ===========================================================================
 
                 // Now that the entire class hierarchy has been built we can go ahead and build the globals
+                bool hasInvalidField = false;
                 foreach (Type globalType in globals) {
                     foreach (MethodInfo method in globalType.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)) {
                         if (method.IsSpecialName) {
@@ -670,7 +671,15 @@ namespace SolScript.Interpreter
                                 Resources.Err_FailedToBuildNativeFunction.ToString(method.FullName()),
                                 false, functionResult.Exception)
                             );
-                            return false;
+                            hasInvalidField = true;
+                            continue;
+                        }
+                        if (!method.IsStatic) {
+                            m_Assembly.m_ErrorAdder.Add(new SolError(
+                                SolSourceLocation.Native(), ErrorId.None,
+                                Resources.Err_GlobalMemberMustBeStatic.FormatWith(functionResult.Value.Name, globalType)));
+                            hasInvalidField = true;
+                            continue;
                         }
                         SolFunctionDefinition function = functionResult.Value;
                         m_Assembly.m_GlobalFunctions.Add(function.Name, function);
@@ -689,11 +698,23 @@ namespace SolScript.Interpreter
                                 Resources.Err_FailedToBuildNativeField.ToString(field.FullName()),
                                 false, fieldResult.Exception)
                             );
-                            return false;
+                            hasInvalidField = true;
+                            continue;
+                        }
+                        if (!field.IsStatic)
+                        {
+                            m_Assembly.m_ErrorAdder.Add(new SolError(
+                                SolSourceLocation.Native(), ErrorId.None,
+                                Resources.Err_GlobalMemberMustBeStatic.FormatWith(fieldResult.Value.Name, globalType)));
+                            hasInvalidField = true;
+                            continue;
                         }
                         SolFieldDefinition fieldDef = fieldResult.Value;
                         m_Assembly.m_GlobalFields.Add(fieldDef.Name, fieldDef);
                     }
+                }
+                if (hasInvalidField) {
+                    return false;
                 }
 
                 // ===========================================================================
