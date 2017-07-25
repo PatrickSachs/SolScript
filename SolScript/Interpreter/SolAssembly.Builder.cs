@@ -488,7 +488,7 @@ namespace SolScript.Interpreter
                             SolTypeDescriptorAttribute descriptor = libraryType.GetCustomAttribute<SolTypeDescriptorAttribute>(false);
                             if (descriptor != null && descriptor.LibraryName == library.Name) {
                                 // Get name
-                                string name = libraryType.GetCustomAttribute<SolLibraryNameAttribute>()?.Name ?? libraryType.Name;
+                                string name = libraryType.GetCustomAttribute<SolLibraryNameAttribute>(false)?.Name ?? libraryType.Name;
                                 // Create definition object
                                 SolClassDefinition definition = new SolClassDefinition(m_Assembly, SolSourceLocation.Native(), true) {
                                     Type = name,
