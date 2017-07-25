@@ -25,45 +25,23 @@
 // ---------------------------------------------------------------------
 // ReSharper disable ArgumentsStyleStringLiteral
 
-using Irony.Parsing;
-using NodeParser.Nodes;
-using NodeParser.Nodes.Terminals;
-using SolScript.Interpreter;
-using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Types;
-using SolScript.Parser.Nodes.Expressions;
 
-namespace SolScript.Parser.Nodes
+namespace SolScript.Interpreter
 {
     /// <summary>
-    ///     Node for variables that can be assigned and read from.
+    ///     An interface used to link a class and a class definition level.
     /// </summary>
-    public class SolNodeVariable : AParserNode<AVariable>
+    public interface IClassLevelLink
     {
-        /// <inheritdoc />
-        protected override BnfExpression Rule_Impl
-            => TERMINAL<IdentifierNode>()
-               | (NODE<SolNodeExpression>() + BRACES("[", NODE<SolNodeExpression>(), "]"))
-               | (NODE<SolNodeExpression>() + PUNCTUATION(".") + TERMINAL<IdentifierNode>())
-        ;
+        /// <summary>
+        ///     The class instance.
+        /// </summary>
+        SolClass ClassInstance { get; }
 
-        #region Overrides
-
-        /// <inheritdoc />
-        protected override AVariable BuildAndGetNode(IAstNode[] astNodes)
-        {
-            IAstNode node1 = astNodes[0];
-            if (node1 is IdentifierNode) {
-                return new AVariable.Named((string) node1.GetValue());
-            }
-            IAstNode node2 = astNodes[1];
-            if (node2 is BraceNode) {
-                return new AVariable.Indexed((SolExpression) node1.GetValue(), (SolExpression) node2.GetValue());
-            }
-            string indexName = (string) node2.GetValue();
-            return new AVariable.Indexed((SolExpression) node1.GetValue(), new Expression_Literal(SolAssembly.CurrentlyParsingThreadStatic, node2.Location, SolString.ValueOf(indexName)));
-        }
-
-        #endregion
+        /// <summary>
+        ///     The class inheritance level we are referring to in class <see cref="ClassInstance" />.
+        /// </summary>
+        SolClassDefinition InheritanceLevel { get; }
     }
 }

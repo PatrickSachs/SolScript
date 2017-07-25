@@ -99,7 +99,7 @@ namespace SolScript.Parser.Terminals
 
                         if (context.VsLineScanState.Value != 0) {
                             //We are using line-mode and begin terminal was on previous line.
-                            SourceLocation tokenStart = new SourceLocation(SolSourceLocation.NATIVE_FILE, 0, 0, 0);
+                            SourceLocation tokenStart = source.Location;
                             string lexeme = source.Text.Substring(0, source.PreviewPosition);
 
                             context.VsLineScanState.Value = 0;

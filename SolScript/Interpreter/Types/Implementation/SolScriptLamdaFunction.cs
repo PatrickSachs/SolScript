@@ -23,7 +23,7 @@ namespace SolScript.Interpreter.Types.Implementation
         /// </param>
         /// <param name="definedIn">The class the function was defined in.</param>
         public SolScriptLamdaFunction([NotNull] SolAssembly assembly, NodeLocation location, [NotNull] SolParameterInfo parameterInfo,
-            SolType returnType, [NotNull] SolChunk chunk, [CanBeNull] IVariables parentVariables, SolClass definedIn)
+            SolType returnType, [NotNull] SolChunk chunk, [CanBeNull] IVariables parentVariables, [CanBeNull] IClassLevelLink definedIn)
             : base(assembly, location, parameterInfo, returnType, definedIn)
         {
             m_Chunk = chunk;

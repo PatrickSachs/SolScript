@@ -28,7 +28,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -37,7 +36,6 @@ using JetBrains.Annotations;
 using NodeParser;
 using PSUtility.Enumerables;
 using PSUtility.Reflection;
-using SolScript.Compiler;
 using SolScript.Compiler.Native;
 using SolScript.Exceptions;
 using SolScript.Interpreter;
@@ -72,6 +70,20 @@ namespace SolScript.Utility
             typeof(Action<,,>),
             typeof(Action<,,,>)
         }.AsReadOnly();
+
+        /// <summary>
+        ///     Gets the inheritance described in this link.
+        /// </summary>
+        /// <param name="link">The link.</param>
+        /// <returns>The inheritance.</returns>
+        internal static SolClass.Inheritance Inheritance(this IClassLevelLink link)
+        {
+            SolClass.Inheritance inheritance = link as SolClass.Inheritance;
+            if (inheritance != null) {
+                return inheritance;
+            }
+            return link.ClassInstance.FindInheritance(link.InheritanceLevel);
+        }
 
         internal static NodeLocation L(this SourceLocation l, string file)
         {
@@ -111,7 +123,7 @@ namespace SolScript.Utility
             }
         }
 
-        /// <summary>
+        /*/// <summary>
         ///     Writes the source location to the binary writer.
         /// </summary>
         /// <param name="location">The location.</param>
@@ -126,7 +138,7 @@ namespace SolScript.Utility
             writer.Write(location.Position);
             writer.Write((ushort) location.Line);
             writer.Write((ushort) location.Column);
-        }
+        }*/
 
         /*internal static SolSourceLocation Location(this ParseTreeNode @this, string file)
         {
@@ -993,48 +1005,64 @@ namespace SolScript.Utility
 
         #endregion
 
-        /*internal static void GetParameterBuilders(ParameterInfo[] parameterInfo, out SolParameterBuilder[] builders, out Type[] marshalTypes, out bool allowOptional, out bool sendContext)
-        {
-            if (parameterInfo.Length == 0) {
-                builders = EmptyArray<SolParameterBuilder>.Value;
-                marshalTypes = EmptyArray<Type>.Value;
-                allowOptional = false;
-                sendContext = false;
-                return;
-            }
-            // If null     -> false 
-            // if not null -> true (+ value = optional array element type)
-            Type allowOptionalType = null;
-            int offsetStart = 0;
-            int offsetEnd = 0;
-            sendContext = false;
-            if (parameterInfo[0].ParameterType == typeof(SolExecutionContext)) {
-                sendContext = true;
-                offsetStart++;
-            }
-            if (parameterInfo[parameterInfo.Length - 1].GetCustomAttribute<ParamArrayAttribute>() != null) {
-                ParameterInfo paramsParameter = parameterInfo[parameterInfo.Length - 1];
-                allowOptionalType = paramsParameter.ParameterType.GetElementType();
-                offsetEnd++;
-            }
-            builders = new SolParameterBuilder[parameterInfo.Length - offsetStart - offsetEnd];
-            marshalTypes = new Type[builders.Length + (allowOptionalType != null ? 1 : 0)];
-            for (int i = offsetStart; i < parameterInfo.Length - offsetEnd; i++) {
-                // i is the index in the parameter info array.
-                ParameterInfo activeParameter = parameterInfo[i];
-                SolContractAttribute customContract = activeParameter.GetCustomAttribute<SolContractAttribute>();
-                SolLibraryNameAttribute customName = activeParameter.GetCustomAttribute<SolLibraryNameAttribute>();
-                builders[i - offsetStart] = new SolParameterBuilder(
-                    customName?.Name ?? activeParameter.Name,
-                    customContract != null ? SolTypeBuilder.Fixed(customContract.GetSolType()) : SolTypeBuilder.Native(activeParameter.ParameterType)
-                );
-                marshalTypes[i - offsetStart] = activeParameter.ParameterType;
-            }
-            if (allowOptionalType != null) {
-                marshalTypes[marshalTypes.Length - 1] = allowOptionalType;
-            }
-            allowOptional = allowOptionalType != null;
-        }*/
+        /*/// <summary>
+         /// Helper method to obtain the
+         /// </summary>
+         /// <param name="assembly"></param>
+         /// <param name="builder"></param>
+         /// <returns></returns>
+         internal static SolParameterInfo GetParameterInfo(SolAssembly assembly, SolFunctionBuilder builder)
+         {
+             var parameters = new SolParameter[builder.Parameters.Count];
+             for (int i = 0; i < parameters.Length; i++) {
+                 parameters[i] = builder.Parameters[i].Get(assembly);
+             }
+             if (builder.IsNative) {
+                 return new SolParameterInfo.Native(parameters, builder.NativeMarshalTypes.ToArray(), builder.AllowOptionalParameters, builder.NativeSendContext);
+             }
+             return new SolParameterInfo(parameters, builder.AllowOptionalParameters);
+         }
+
+         /// <exception cref="SolMarshallingException">No matching SolType for a parameter type.</exception>
+         internal static SolParameterInfo.Native GetParameterInfo(SolAssembly assembly, ParameterInfo[] parameterInfo)
+         {
+             if (parameterInfo.Length == 0) {
+                 return EmptyNativeParameterInfo;
+             }
+             // If null     -> false 
+             // if not null -> true (+ value = optional array element type)
+             Type allowOptional = null;
+             bool sendContext = false;
+             int offsetStart = 0;
+             int offsetEnd = 0;
+             if (parameterInfo[0].ParameterType == typeof(SolExecutionContext)) {
+                 sendContext = true;
+                 offsetStart++;
+             }
+             if (parameterInfo[parameterInfo.Length - 1].GetCustomAttribute<ParamArrayAttribute>() != null) {
+                 ParameterInfo paramsParameter = parameterInfo[parameterInfo.Length - 1];
+                 allowOptional = paramsParameter.ParameterType.GetElementType();
+                 offsetEnd++;
+             }
+             var solArray = new SolParameter[parameterInfo.Length - offsetStart - offsetEnd];
+             var typeArray = new Type[solArray.Length + (allowOptional != null ? 1 : 0)];
+             for (int i = offsetStart; i < parameterInfo.Length - offsetEnd; i++) {
+                 // i is the index in the parameter info array.
+                 ParameterInfo activeParameter = parameterInfo[i];
+                 SolContractAttribute customContract = activeParameter.GetCustomAttribute<SolContractAttribute>();
+                 SolLibraryNameAttribute customName = activeParameter.GetCustomAttribute<SolLibraryNameAttribute>();
+                 solArray[i - offsetStart] = new SolParameter(
+                     customName?.Name ?? activeParameter.Name,
+                     customContract?.GetSolType() ?? SolMarshal.GetSolType(assembly, activeParameter.ParameterType)
+                 );
+                 typeArray[i - offsetStart] = activeParameter.ParameterType;
+             }
+             if (allowOptional != null) {
+                 typeArray[typeArray.Length - 1] = allowOptional;
+             }
+             SolParameterInfo.Native infoClass = new SolParameterInfo.Native(solArray, typeArray, allowOptional != null, sendContext);
+             return infoClass;
+         }*/
 
         /*#region Nested type: StaticAttributeRef
 
@@ -1097,63 +1125,47 @@ namespace SolScript.Utility
 
         #endregion*/
 
-        /*/// <summary>
-         /// Helper method to obtain the
-         /// </summary>
-         /// <param name="assembly"></param>
-         /// <param name="builder"></param>
-         /// <returns></returns>
-         internal static SolParameterInfo GetParameterInfo(SolAssembly assembly, SolFunctionBuilder builder)
-         {
-             var parameters = new SolParameter[builder.Parameters.Count];
-             for (int i = 0; i < parameters.Length; i++) {
-                 parameters[i] = builder.Parameters[i].Get(assembly);
-             }
-             if (builder.IsNative) {
-                 return new SolParameterInfo.Native(parameters, builder.NativeMarshalTypes.ToArray(), builder.AllowOptionalParameters, builder.NativeSendContext);
-             }
-             return new SolParameterInfo(parameters, builder.AllowOptionalParameters);
-         }
-
-         /// <exception cref="SolMarshallingException">No matching SolType for a parameter type.</exception>
-         internal static SolParameterInfo.Native GetParameterInfo(SolAssembly assembly, ParameterInfo[] parameterInfo)
-         {
-             if (parameterInfo.Length == 0) {
-                 return EmptyNativeParameterInfo;
-             }
-             // If null     -> false 
-             // if not null -> true (+ value = optional array element type)
-             Type allowOptional = null;
-             bool sendContext = false;
-             int offsetStart = 0;
-             int offsetEnd = 0;
-             if (parameterInfo[0].ParameterType == typeof(SolExecutionContext)) {
-                 sendContext = true;
-                 offsetStart++;
-             }
-             if (parameterInfo[parameterInfo.Length - 1].GetCustomAttribute<ParamArrayAttribute>() != null) {
-                 ParameterInfo paramsParameter = parameterInfo[parameterInfo.Length - 1];
-                 allowOptional = paramsParameter.ParameterType.GetElementType();
-                 offsetEnd++;
-             }
-             var solArray = new SolParameter[parameterInfo.Length - offsetStart - offsetEnd];
-             var typeArray = new Type[solArray.Length + (allowOptional != null ? 1 : 0)];
-             for (int i = offsetStart; i < parameterInfo.Length - offsetEnd; i++) {
-                 // i is the index in the parameter info array.
-                 ParameterInfo activeParameter = parameterInfo[i];
-                 SolContractAttribute customContract = activeParameter.GetCustomAttribute<SolContractAttribute>();
-                 SolLibraryNameAttribute customName = activeParameter.GetCustomAttribute<SolLibraryNameAttribute>();
-                 solArray[i - offsetStart] = new SolParameter(
-                     customName?.Name ?? activeParameter.Name,
-                     customContract?.GetSolType() ?? SolMarshal.GetSolType(assembly, activeParameter.ParameterType)
-                 );
-                 typeArray[i - offsetStart] = activeParameter.ParameterType;
-             }
-             if (allowOptional != null) {
-                 typeArray[typeArray.Length - 1] = allowOptional;
-             }
-             SolParameterInfo.Native infoClass = new SolParameterInfo.Native(solArray, typeArray, allowOptional != null, sendContext);
-             return infoClass;
-         }*/
+        /*internal static void GetParameterBuilders(ParameterInfo[] parameterInfo, out SolParameterBuilder[] builders, out Type[] marshalTypes, out bool allowOptional, out bool sendContext)
+        {
+            if (parameterInfo.Length == 0) {
+                builders = EmptyArray<SolParameterBuilder>.Value;
+                marshalTypes = EmptyArray<Type>.Value;
+                allowOptional = false;
+                sendContext = false;
+                return;
+            }
+            // If null     -> false 
+            // if not null -> true (+ value = optional array element type)
+            Type allowOptionalType = null;
+            int offsetStart = 0;
+            int offsetEnd = 0;
+            sendContext = false;
+            if (parameterInfo[0].ParameterType == typeof(SolExecutionContext)) {
+                sendContext = true;
+                offsetStart++;
+            }
+            if (parameterInfo[parameterInfo.Length - 1].GetCustomAttribute<ParamArrayAttribute>() != null) {
+                ParameterInfo paramsParameter = parameterInfo[parameterInfo.Length - 1];
+                allowOptionalType = paramsParameter.ParameterType.GetElementType();
+                offsetEnd++;
+            }
+            builders = new SolParameterBuilder[parameterInfo.Length - offsetStart - offsetEnd];
+            marshalTypes = new Type[builders.Length + (allowOptionalType != null ? 1 : 0)];
+            for (int i = offsetStart; i < parameterInfo.Length - offsetEnd; i++) {
+                // i is the index in the parameter info array.
+                ParameterInfo activeParameter = parameterInfo[i];
+                SolContractAttribute customContract = activeParameter.GetCustomAttribute<SolContractAttribute>();
+                SolLibraryNameAttribute customName = activeParameter.GetCustomAttribute<SolLibraryNameAttribute>();
+                builders[i - offsetStart] = new SolParameterBuilder(
+                    customName?.Name ?? activeParameter.Name,
+                    customContract != null ? SolTypeBuilder.Fixed(customContract.GetSolType()) : SolTypeBuilder.Native(activeParameter.ParameterType)
+                );
+                marshalTypes[i - offsetStart] = activeParameter.ParameterType;
+            }
+            if (allowOptionalType != null) {
+                marshalTypes[marshalTypes.Length - 1] = allowOptionalType;
+            }
+            allowOptional = allowOptionalType != null;
+        }*/
     }
 }

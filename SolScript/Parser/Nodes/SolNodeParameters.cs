@@ -25,11 +25,11 @@
 // ---------------------------------------------------------------------
 // ReSharper disable ArgumentsStyleStringLiteral
 
+using System.Collections.Generic;
 using Irony.Parsing;
 using NodeParser;
 using NodeParser.Nodes;
 using NodeParser.Nodes.NonTerminals;
-using NodeParser.Nodes.Terminals;
 using SolScript.Interpreter;
 
 namespace SolScript.Parser.Nodes
@@ -44,15 +44,16 @@ namespace SolScript.Parser.Nodes
         protected override BnfExpression Rule_Impl
             =>
                 NODE<SolNodeParameter>().LIST<SolParameter>(PUNCTUATION(","), TermListOptions.StarList | TermListOptions.AllowTrailingDelimiter)
-                + TERM("...").OPT();
+                + TERM("...").OPT()
+        ;
 
         #region Overrides
 
         /// <inheritdoc />
         protected override SolParameterInfo BuildAndGetNode(IAstNode[] astNodes)
         {
-            var paramsList = astNodes[0].As<ListNode<SolParameter>>().GetValue();
-            var opt = astNodes[1].As<OptionalNode>();
+            IEnumerable<SolParameter> paramsList = astNodes[0].As<ListNode<SolParameter>>().GetValue();
+            OptionalNode opt = astNodes[1].As<OptionalNode>();
             return new SolParameterInfo(paramsList, opt.HasValue);
         }
 

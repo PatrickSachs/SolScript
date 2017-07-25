@@ -1,6 +1,32 @@
-﻿using System;
+﻿// ---------------------------------------------------------------------
+// SolScript - A simple but powerful scripting language.
+// Official repository: https://bitbucket.org/PatrickSachs/solscript/
+// ---------------------------------------------------------------------
+// Copyright 2017 Patrick Sachs
+// Permission is hereby granted, free of charge, to any person obtaining 
+// a copy of this software and associated documentation files (the 
+// "Software"), to deal in the Software without restriction, including 
+// without limitation the rights to use, copy, modify, merge, publish, 
+// distribute, sublicense, and/or sell copies of the Software, and to 
+// permit persons to whom the Software is furnished to do so, subject to 
+// the following conditions:
+// 
+// The above copyright notice and this permission notice shall be 
+// included in all copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, 
+// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND 
+// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS 
+// BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN 
+// ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
+// SOFTWARE.
+// ---------------------------------------------------------------------
+// ReSharper disable ArgumentsStyleStringLiteral
+
+using System;
 using System.Linq;
-using JetBrains.Annotations;
 using PSUtility.Strings;
 using SolScript.Compiler;
 using SolScript.Exceptions;
@@ -69,12 +95,12 @@ namespace SolScript.Interpreter
             /// <summary>
             ///     The value which will be indexed(e.g. a table or class) - Resolved first.
             /// </summary>
-            public SolExpression IndexableGetter { get; [UsedImplicitly] internal set; }
+            public SolExpression IndexableGetter { get; }
 
             /// <summary>
             ///     The value which will be used as a key during indexing. - Resolved second. Not resolved if the first failed.
             /// </summary>
-            public SolExpression KeyGetter { get; [UsedImplicitly] internal set; }
+            public SolExpression KeyGetter { get; }
 
             #region Overrides
 
@@ -97,8 +123,18 @@ namespace SolScript.Interpreter
                     //   get expression was declared inside the class.
                     // 2 Not found -> Only global access.
                     // Kind of funny how this little null coalescing operator handles the "deciding part" of access rights.
-                    // todo: Inheritance; the inheritance of the current class may not be found, but one the current class inherited from. 
-                    SolClass.Inheritance inheritance = context.CurrentClass != null ? solClass.FindInheritance(context.CurrentClass.InheritanceChain.Definition) : null;
+                    // (??) what does this means? -> todo: Inheritance; the inheritance of the current class may not be found, but one the current class inherited from. 
+                    SolClassEntry entry;
+                    // Q: We probably aren't always allowed to access locals if we find an inheritance. Maybe only if the
+                    // definitions match?
+                    // A: No, this is correct. If we find the inheritance of the level we are currently in we can only access
+                    // the locals of the level we are in, not all locals or the "top-level" locals.
+                    SolClass.Inheritance inheritance;
+                    if (!context.PeekClassEntry(out entry) || entry.IsGlobal) {
+                        inheritance = null;
+                    } else {
+                        inheritance = solClass.FindInheritance(entry.Level);
+                    }
                     SolValue value = inheritance?.GetVariables(SolAccessModifier.Local, SolVariableMode.All).Get(keyString.Value)
                                      ?? solClass.InheritanceChain.GetVariables(SolAccessModifier.Global, SolVariableMode.All).Get(keyString.Value);
                     return value;
@@ -126,12 +162,13 @@ namespace SolScript.Interpreter
                     if (keyString == null) {
                         throw new SolVariableException(KeyGetter.Location, $"Tried to index a class with a \"{key.Type}\" value.");
                     }
-                    // 1 Inheritance could be found -> We can access locals! An inheritance can be found if the
-                    //   get expression was declared inside the class.
-                    // 2 Not found -> Only global access.
-                    // Kind of funny how this little null coalescing operator handles the "deciding part" of access rights.
-                    // todo: Inheritance; the inheritance of the current class may not be found, but one the current class inherited from. 
-                    SolClass.Inheritance inheritance = context.CurrentClass != null ? solClass.FindInheritance(context.CurrentClass.InheritanceChain.Definition) : null;
+                    SolClassEntry entry;
+                    SolClass.Inheritance inheritance;
+                    if (!context.PeekClassEntry(out entry) || entry.IsGlobal) {
+                        inheritance = null;
+                    } else {
+                        inheritance = solClass.FindInheritance(entry.Level);
+                    }
                     value = inheritance?.GetVariables(SolAccessModifier.Local, SolVariableMode.All).Assign(keyString.Value, value)
                             ?? solClass.InheritanceChain.GetVariables(SolAccessModifier.Global, SolVariableMode.All).Assign(keyString.Value, value);
                     return value;
@@ -228,13 +265,13 @@ namespace SolScript.Interpreter
                 return new ValidationResult(success, dataType);
             }
 
-            #endregion
-
             /// <inheritdoc />
             public override string ToString()
             {
                 return IndexableGetter + "[" + KeyGetter + "]";
             }
+
+            #endregion
         }
 
         #endregion
@@ -298,13 +335,13 @@ namespace SolScript.Interpreter
                 return ValidationResult.Failure();
             }
 
-            #endregion
-
             /// <inheritdoc />
             public override string ToString()
             {
                 return Name;
             }
+
+            #endregion
         }
 
         #endregion

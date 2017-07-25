@@ -42,10 +42,16 @@
       <HintPath>..\packages\JetBrains.dotMemoryUnit.2.3.20160517.113140\lib\dotMemory.Unit.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Irony">
+    <Reference Include="Irony, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\Libraries\Irony.dll</HintPath>
     </Reference>
-    <Reference Include="PSUtility">
+    <Reference Include="NodeParser, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\Libraries\NodeParser.dll</HintPath>
+    </Reference>
+    <Reference Include="PSUtility, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\Libraries\PSUtility.dll</HintPath>
     </Reference>
     <Reference Include="System" />

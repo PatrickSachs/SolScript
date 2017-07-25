@@ -36,7 +36,7 @@
     <DocumentationFile>bin\Release\SolScript_Library.xml</DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Irony, Version=1.0.0.0, Culture=neutral, PublicKeyToken=ca48ace7223ead47, processorArchitecture=MSIL">
+    <Reference Include="Irony, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\Libraries\Irony.dll</HintPath>
     </Reference>
@@ -44,12 +44,13 @@
       <HintPath>..\packages\JetBrains.Annotations.10.4.0\lib\net\JetBrains.Annotations.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="NodeParser">
-      <HintPath>..\..\NodeParser\NodeParser\obj\Debug\NodeParser.dll</HintPath>
+    <Reference Include="NodeParser, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\NodeParser\NodeParser\bin\Debug\NodeParser.dll</HintPath>
     </Reference>
     <Reference Include="PSUtility, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\PSUtility\bin\Debug\PSUtility.dll</HintPath>
+      <HintPath>..\Libraries\PSUtility.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -63,6 +64,9 @@
     <Compile Include="Compiler\SolCompilationState.cs" />
     <Compile Include="Compiler\SolCompliationContext.cs" />
     <Compile Include="Compiler\ValidationResult.cs" />
+    <Compile Include="Interpreter\IClassLevelLink.cs" />
+    <Compile Include="Interpreter\SolAssembly.Builder.cs" />
+    <Compile Include="Interpreter\SolClassEntry.cs" />
     <Compile Include="Interpreter\SolMemberDefinition.cs" />
     <Compile Include="Interpreter\Types\Marshal\NativeDelegateMarshaller.cs" />
     <Compile Include="Interpreter\Types\Marshal\NativeEnumMarshaller.cs" />

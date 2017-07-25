@@ -25,7 +25,7 @@ namespace SolScript.Interpreter.Types.Implementation
         /// </summary>
         /// <param name="instance">The class instance this function is the constructor of.</param>
         /// <param name="definition">The function definition of this constructor.</param>
-        public SolNativeClassConstructorFunction([NotNull] SolClass instance, [NotNull] SolFunctionDefinition definition) : base(instance, definition) {}
+        public SolNativeClassConstructorFunction([NotNull] IClassLevelLink instance, [NotNull] SolFunctionDefinition definition) : base(instance, definition) {}
 
         #region Overrides
 
@@ -42,8 +42,8 @@ namespace SolScript.Interpreter.Types.Implementation
         /// <exception cref="InvalidOperationException">A critical internal error occured. Execution may have to be halted.</exception>
         protected override SolValue Call_Impl(SolExecutionContext context, params SolValue[] args)
         {
-            if (ClassInstance.IsInitialized) {
-                throw new SolRuntimeException(context, "Cannot call constructor of an initialized \"" + ClassInstance.Type + "\" class instance.");
+            if (DefinedIn.ClassInstance.IsInitialized) {
+                throw new SolRuntimeException(context, "Cannot call constructor of an initialized \"" + DefinedIn + "\" class instance.");
             }
             object[] values;
             try {
@@ -58,20 +58,20 @@ namespace SolScript.Interpreter.Types.Implementation
             // descriptor of the "actual" descriptor, but in the class of the overriding type.
             object descriptorObject = InternalHelper.SandboxInvokeMethod(context, GetMostSuitableNativeCtor(), null, values).NotNull();
             object describedObject;
-            ClassInstance.DescriptorObjectReference = new DynamicReference.FixedReference(descriptorObject);
+            DefinedIn.ClassInstance.DescriptorObjectReference = new DynamicReference.FixedReference(descriptorObject);
             if (classDefinition.DescribedType != classDefinition.DescriptorType) {
                 // todo: be able to specifcy ctor/factory in descriptor
                 describedObject = Activator.CreateInstance(classDefinition.DescribedType);
-                ClassInstance.DescribedObjectReference = new DynamicReference.FixedReference(describedObject);
+                DefinedIn.ClassInstance.DescribedObjectReference = new DynamicReference.FixedReference(describedObject);
             } else {
-                ClassInstance.DescribedObjectReference = ClassInstance.DescriptorObjectReference;
+                DefinedIn.ClassInstance.DescribedObjectReference = DefinedIn.ClassInstance.DescriptorObjectReference;
                 describedObject = descriptorObject;
             }
-            SolMarshal.GetAssemblyCache(Assembly).StoreReference(descriptorObject, ClassInstance);
+            SolMarshal.GetAssemblyCache(Assembly).StoreReference(descriptorObject, DefinedIn.ClassInstance);
             // Assigning self after storing in assembly cache.
-            SetSelf(describedObject as INativeClassSelf, ClassInstance);
+            SetSelf(describedObject as INativeClassSelf, DefinedIn.ClassInstance);
             if (!ReferenceEquals(descriptorObject, describedObject)) {
-                SetSelf(descriptorObject as INativeClassSelf, ClassInstance);
+                SetSelf(descriptorObject as INativeClassSelf, DefinedIn.ClassInstance);
             }
             return SolNil.Instance;
         }
@@ -81,7 +81,7 @@ namespace SolScript.Interpreter.Types.Implementation
         private ConstructorInfo GetMostSuitableNativeCtor()
         {
             // todo: resolve dynmaically generated ctor statically? even possible/realistic?
-            foreach (SolClassDefinition definition in ClassInstance.Definition.GetInheritanceReversed()) {
+            foreach (SolClassDefinition definition in DefinedIn.ClassInstance.Definition.GetInheritanceReversed()) {
                 // todo: dynamic native class create ctor
                 if (definition.DescriptorType != null 
                     && InternalHelper.IsClassSolCompilerGenerated(definition.DescriptorType))

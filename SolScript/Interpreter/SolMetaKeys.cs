@@ -27,7 +27,6 @@
 
 using PSUtility.Metadata;
 using SolScript.Interpreter.Expressions;
-using SolScript.Interpreter.Statements;
 
 namespace SolScript.Interpreter
 {
@@ -46,5 +45,10 @@ namespace SolScript.Interpreter
         ///     Used by the marshaller to cache information about the assembly.
         /// </summary>
         internal static readonly MetaKey<SolMarshal.AssemblyCache> SolMarshalAssemblyCache = new MetaKey<SolMarshal.AssemblyCache>(nameof(SolMarshalAssemblyCache));
+
+        /// <summary>
+        ///     An empty chunk at native code location.
+        /// </summary>
+        internal static readonly MetaKey<SolChunkWrapper> EmptyChunk = new MetaKey<SolChunkWrapper>(nameof(EmptyChunk));
     }
 }

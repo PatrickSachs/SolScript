@@ -1,8 +1,33 @@
-﻿using System.Collections.Generic;
+﻿// ---------------------------------------------------------------------
+// SolScript - A simple but powerful scripting language.
+// Official repository: https://bitbucket.org/PatrickSachs/solscript/
+// ---------------------------------------------------------------------
+// Copyright 2017 Patrick Sachs
+// Permission is hereby granted, free of charge, to any person obtaining 
+// a copy of this software and associated documentation files (the 
+// "Software"), to deal in the Software without restriction, including 
+// without limitation the rights to use, copy, modify, merge, publish, 
+// distribute, sublicense, and/or sell copies of the Software, and to 
+// permit persons to whom the Software is furnished to do so, subject to 
+// the following conditions:
+// 
+// The above copyright notice and this permission notice shall be 
+// included in all copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, 
+// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND 
+// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS 
+// BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN 
+// ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
+// SOFTWARE.
+// ---------------------------------------------------------------------
+// ReSharper disable ArgumentsStyleStringLiteral
+
 using JetBrains.Annotations;
 using PSUtility.Enumerables;
 using SolScript.Interpreter.Types;
-using SolScript.Utility;
 
 namespace SolScript.Interpreter
 {
@@ -17,11 +42,13 @@ namespace SolScript.Interpreter
         /// <param name="name">The function name.</param>
         /// <param name="type">The function return type.</param>
         /// <param name="parameterData">The parameter types of the meta function. (null if any are allowed)</param>
-        internal SolMetaFunction(string name, SolType type, [CanBeNull] ParameterData parameterData)
+        /// <param name="declaredOnly">Must this function de declared directly in the class to be used in?</param>
+        internal SolMetaFunction(string name, SolType type, [CanBeNull] ParameterData parameterData, bool declaredOnly = false)
         {
             Name = name;
             Type = type;
             Parameters = parameterData;
+            DeclaredOnly = declaredOnly;
         }
 
         /// <summary>
@@ -32,7 +59,13 @@ namespace SolScript.Interpreter
         /// <summary>
         ///     The parameters of this meta function. null if any are allowed.
         /// </summary>
-        [CanBeNull] public readonly ParameterData Parameters;
+        [CanBeNull]
+        public readonly ParameterData Parameters;
+
+        /// <summary>
+        ///     Must this function de declared directly in the class to be used in?
+        /// </summary>
+        public readonly bool DeclaredOnly;
 
         /// <summary>
         ///     The return type of this meta function.
@@ -130,7 +163,7 @@ namespace SolScript.Interpreter
         /// <summary>
         ///     The constructor.
         /// </summary>
-        public static readonly SolMetaFunction<SolNil> __new = new SolMetaFunction<SolNil>(nameof(__new), true, null);
+        public static readonly SolMetaFunction<SolNil> __new = new SolMetaFunction<SolNil>(nameof(__new), true, null, true);
 
         /// <summary>
         ///     Converts the class to a string.
@@ -222,14 +255,19 @@ namespace SolScript.Interpreter
         /// <param name="name">The function name.</param>
         /// <param name="canBeNil">Can the function return nil?</param>
         /// <param name="parameterData">The parameter types of the meta function. (null if any are allowed)</param>
-        internal SolMetaFunction(string name, bool canBeNil, ParameterData parameterData) : base(name, new SolType(SolType.PrimitiveTypeNameOf<T>(), canBeNil), parameterData) {}
+        /// <param name="declaredOnly">Should only declared functions be allowed?</param>
+        internal SolMetaFunction(string name, bool canBeNil, ParameterData parameterData, bool declaredOnly = false) 
+            : base(name, new SolType(SolType.PrimitiveTypeNameOf<T>(), canBeNil), parameterData, declaredOnly) {}
 
         /// <summary>
         ///     Casts the given <see cref="SolValue" /> to the return value type specified in <typeparamref name="T" />.
         /// </summary>
         /// <param name="value">The value to cast.</param>
         /// <returns>The casted value.</returns>
-        /// <remarks>If the <see cref="SolMetaFunction.Type" /> can be nil, this method by return <c>null</c> if a nil value was passed.</remarks>
+        /// <remarks>
+        ///     If the <see cref="SolMetaFunction.Type" /> can be nil, this method by return <c>null</c> if a nil value was
+        ///     passed.
+        /// </remarks>
         [CanBeNull]
         public T Cast(SolValue value)
         {

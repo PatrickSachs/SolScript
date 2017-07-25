@@ -54,14 +54,15 @@ namespace SolScript.Parser.Nodes.Statements
                    KEYWORD("else")
                    + NODE<SolNodeChunk>()
                ).OPT()
-               + KEYWORD("end");
+               + KEYWORD("end")
+        ;
 
         #region Overrides
 
         /// <inheritdoc />
         protected override Statement_Conditional BuildAndGetNode(IAstNode[] astNodes)
         {
-            var ifBranch = new Statement_Conditional.IfBranch(astNodes[1].As<SolNodeExpression>().GetValue(), astNodes[3].As<SolNodeChunk>().GetValue());
+            Statement_Conditional.IfBranch ifBranch = new Statement_Conditional.IfBranch(astNodes[1].As<SolNodeExpression>().GetValue(), astNodes[3].As<SolNodeChunk>().GetValue());
             IEnumerable<Statement_Conditional.IfBranch> branches = astNodes[4].As<ListNode<Statement_Conditional.IfBranch>>().GetValue().Concat(EnumerableConcat.Prepend, ifBranch);
             SolChunk elseB = astNodes[5].As<OptionalNode>().GetValue(null, list => list[1].As<SolNodeChunk>().GetValue());
             return new Statement_Conditional(SolAssembly.CurrentlyParsingThreadStatic, Location, branches, elseB);

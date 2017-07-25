@@ -21,13 +21,13 @@ namespace SolScript.Interpreter.Types.Implementation
 
         #region Overrides
 
-        /// <inheritdoc />
+        /*/// <inheritdoc />
         protected override SolClass GetClassInstance(out bool isCurrent, out bool resetOnExit)
         {
             isCurrent = true;
             resetOnExit = true;
             return null;
-        }
+        }*/
 
         /// <inheritdoc />
         public override int GetHashCode()

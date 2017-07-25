@@ -73,16 +73,15 @@ namespace SolScript.Parser.Nodes
             string name = astNodes[2].As<IdentifierNode>().GetValue();
             SolType type = astNodes[3].As<OptionalNode>().GetValue(TypeImplicit);
             SolExpression initializer = astNodes[4].As<OptionalNode>().GetValue(null, list => list[1].As<SolNodeExpression>().GetValue());
-            /*SolAccessModifier modifier = OfId<SolNodeAccessModifier>("access", true)?.GetValue() ?? AccessModifierImplict;
-            string name = OfId<IdentifierNode>("name").GetValue();
-            SolType type = OfId<SolNodeTypeReference>("type", true)?.GetValue() ?? TypeImplicit;
-            SolExpression initializer = OfId<SolNodeExpression>("init", true)?.GetValue();
-            var annotNode = OfId<ListNode<SolAnnotationDefinition>>("annotations");*/
+
             SolFieldDefinition definition = new SolFieldDefinition(SolAssembly.CurrentlyParsingThreadStatic, Location) {
                 Name = name,
                 Type = type,
                 AccessModifier = modifier,
-                Initializer = initializer != null ? new SolFieldInitializerWrapper(initializer) : null
+                // A null expression is wrapped in the initializer if the field should not be initialized. We cannot simply set a null
+                // initializer wrapper since the wrapper decides if the field is native/script based and thus changes the way the field
+                // is declared even if it is no assigned.
+                Initializer = new SolFieldInitializerWrapper(initializer)
             };
             foreach (SolAnnotationDefinition annotation in annotations) {
                 definition.AddAnnotation(annotation);

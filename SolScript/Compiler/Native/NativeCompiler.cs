@@ -120,6 +120,11 @@ namespace SolScript.Compiler.Native
                         handledFuncNames.Add(function.Name);
                         // Okay, we found a function. Now find the lowest one it overrides.
                         foreach (SolClassDefinition inhClsRev in definition.GetInheritanceReversed()) {
+                            // We don't want to step into the class the function was defined in as a function
+                            // cannot override itself.
+                            if (inhClsRev == inhCls) {
+                                break;
+                            }
                             SolFunctionDefinition overriddenDef;
                             if (inhClsRev.TryGetFunction(function.Name, true, out overriddenDef)) {
                                 // It was overridden in this class.

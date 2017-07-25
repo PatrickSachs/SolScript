@@ -45,12 +45,18 @@ namespace SolScript.Interpreter
         /// <param name="builder">The builder.</param>
         public void AppendFunctionName(StringBuilder builder)
         {
-            SolClassFunction classFunction = Function as SolClassFunction;
+            //SolClassFunction classFunction = Function as SolClassFunction;
             DefinedSolFunction definedFunction = Function as DefinedSolFunction;
-            if (classFunction != null) {
-                SolClassDefinition onClass = classFunction.ClassInstance.InheritanceChain.Definition;
-                SolClassDefinition definingClass = classFunction.Definition.DefinedIn ?? onClass;
-                builder.Append(definingClass.Type);
+            if (Function.DefinedIn != null) {
+                //SolClassDefinition onClass = classFunction.ClassInstance.InheritanceChain.Definition;
+                //SolClassDefinition definingClass = classFunction.Definition.DefinedIn ?? onClass;
+                if (Function.DefinedIn.InheritanceLevel == Function.DefinedIn.ClassInstance.Definition) {
+                    builder.Append(Function.DefinedIn.InheritanceLevel.Type);
+                } else {
+                    builder.Append(Function.DefinedIn.ClassInstance.Definition.Type);
+                    builder.Append("#");
+                    builder.Append(Function.DefinedIn.InheritanceLevel.Type);
+                }
                 builder.Append(".");
             }
             if (definedFunction != null) {

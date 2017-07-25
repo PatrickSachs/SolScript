@@ -13,9 +13,9 @@ namespace SolScript.Interpreter.Types.Implementation
         /// </summary>
         /// <param name="inClass">The class this function belongs to.</param>
         /// <param name="definition">The definition of this function.</param>
-        public SolScriptClassFunction(SolClass inClass, SolFunctionDefinition definition)
+        public SolScriptClassFunction(IClassLevelLink inClass, SolFunctionDefinition definition) : base(inClass)
         {
-            ClassInstance = inClass;
+            //ClassInstance = inClass;
             Definition = definition;
         }
 
@@ -25,8 +25,8 @@ namespace SolScript.Interpreter.Types.Implementation
         /// <inheritdoc />
         public override SolFunctionDefinition Definition { get; }
 
-        /// <inheritdoc />
-        public override SolClass ClassInstance { get; }
+        /*/// <inheritdoc />
+        public override SolClass ClassInstance { get; }*/
 
         #region Overrides
 
@@ -34,7 +34,8 @@ namespace SolScript.Interpreter.Types.Implementation
         /// <exception cref="SolRuntimeException">A runtime error occured.</exception>
         protected override SolValue Call_Impl(SolExecutionContext context, params SolValue[] args)
         {
-            SolClass.Inheritance inheritance = ClassInstance.FindInheritance(Definition.DefinedIn).NotNull();
+            //SolClass.Inheritance inheritance = ClassInstance.FindInheritance(Definition.DefinedIn).NotNull();
+            SolClass.Inheritance inheritance = DefinedIn.Inheritance();
             Variables varContext = new Variables(Assembly) {
                 Parent = inheritance.GetVariables(SolAccessModifier.Local, SolVariableMode.All)
             };

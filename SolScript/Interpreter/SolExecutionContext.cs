@@ -17,8 +17,78 @@ namespace SolScript.Interpreter
     ///     to the correct one), besides Stack Trace loss unless the old context is set as <see cref="ParentContext" /> of the
     ///     new one. You may derive your own execution context class from this one.
     /// </summary>
+    // todo: somehow tie the stack frames and class entry stack. Both have very similar uses and structure & are fired at function entry.
     public class SolExecutionContext
     {
+        /*
+        /// <summary>
+        ///     The current class we are in, containg the class instance, and which class inheritance level of said instance we are
+        ///     currently in. This is required to e.g. resolve which class inheritance level "base" exactly is.
+        /// </summary>
+        public class SolClassEntry : ICloneable
+        {
+            /// <summary>
+            ///     The class instance.
+            /// </summary>
+            public SolClass Instance { get; private set; }
+
+            /// <summary>
+            ///     The inheritance level we are at.
+            /// </summary>
+            public SolClassDefinition Level { get; private set; }
+
+            public SolClassEntry MoveTo(SolClassEntry entry)
+            {
+                
+            }
+
+            /// <summary>
+            /// Moves the entry to the given class and the given inheritance level.
+            /// </summary>
+            /// <param name="theClass">The class instance.</param>
+            /// <param name="inheritanceLevel">The inheritance level we are at.</param>
+            /// <returns>A clone of the entry before it is moved to </returns>
+            /// <exception cref="ArgumentNullException">An argument is <see langword="null"/></exception>
+            public SolClassEntry MoveTo([NotNull] SolClass theClass, [NotNull] SolClassDefinition inheritanceLevel)
+            {
+                if (theClass == null) {
+                    throw new ArgumentNullException(nameof(theClass));
+                }
+                if (inheritanceLevel == null) {
+                    throw new ArgumentNullException(nameof(inheritanceLevel));
+                }
+                Instance = theClass;
+                Level = inheritanceLevel;
+            }
+
+            /// <summary>
+            /// Moves to a global context.
+            /// </summary>
+            public SolClassEntry MoveToGlobal()
+            {
+                Instance = null;
+                Level = null;
+            }
+
+            /// <inheritdoc />
+            object ICloneable.Clone()
+            {
+                return Clone();
+            }
+
+            /// <summary>
+            /// Creates a clone of this class entry.
+            /// </summary>
+            /// <returns>The entry.</returns>
+            public SolClassEntry Clone()
+            {
+                return new SolClassEntry() {
+                    Instance = Instance,
+                    Level = Level
+                };
+            }
+        }
+        */
         /// <summary>
         ///     Creates a new <see cref="SolExecutionContext"/>.
         /// </summary>
@@ -30,12 +100,17 @@ namespace SolScript.Interpreter
             Assembly = assembly;
             CurrentLocation = SolSourceLocation.Native();
         }
-
+        
         /// <summary>
         ///     The assembly this execution context belongs to. Setting the assembly to the correct one is very important as the
         ///     Assembly field of the execution context may be the only way to get a handle to the type registry of an assembly.
         /// </summary>
         public readonly SolAssembly Assembly;
+
+        /// <summary>
+        /// The stack of classes we have entered.
+        /// </summary>
+        protected readonly Stack<SolClassEntry> ClassEntries = new Stack<SolClassEntry>();
 
         /// <summary>
         ///     The raw Stack Trace. Be very careful with this as corruption in this stack can lead to crashes in the
@@ -50,11 +125,11 @@ namespace SolScript.Interpreter
         /// </summary>
         public NodeLocation CurrentLocation { get; set; }
 
-        /// <summary>
+        /*/// <summary>
         ///     The class this context is currently in. This property is set automatically.<br /> Only change it if you know what
         ///     you are doing as changing this value can break the runtime.
         /// </summary>
-        public SolClass CurrentClass { get; set; }
+        public SolClass CurrentClass { get; set; }*/
 
         /// <summary>
         ///     The name of this execution context. This name is purely for debugging or crash report purposes and thus should have
@@ -73,6 +148,26 @@ namespace SolScript.Interpreter
         ///     Gets the amount of stack frames currently on the stack trace.
         /// </summary>
         public int StackFrameCount => StackTrace.Count;
+
+        public void PushClassEntry(SolClassEntry entry)
+        {
+            ClassEntries.Push(entry);
+        }
+
+        public SolClassEntry PopClassEntry()
+        {
+            return ClassEntries.Pop();
+        }
+
+        public bool PeekClassEntry(out SolClassEntry entry)
+        {
+            if (ClassEntries.Count == 0) {
+                entry = default(SolClassEntry);
+                return false;
+            }
+            entry = ClassEntries.Peek();
+            return true;
+        }
 
         /// <summary>
         ///     Creates a new stack frame calling the given function.

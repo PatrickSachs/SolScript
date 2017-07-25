@@ -20,7 +20,7 @@ namespace SolScript.Interpreter.Types.Implementation
             SolType returnType, 
             MethodInfo method, 
             DynamicReference instance,
-            SolClass definedIn)
+            IClassLevelLink definedIn)
             : base(assembly, SolSourceLocation.Native(), parameterInfo, returnType, definedIn)
         {
             m_Method = method;
@@ -68,8 +68,9 @@ namespace SolScript.Interpreter.Types.Implementation
         /// <param name="assembly">The assembly this function belongs to.</param>
         /// <param name="method">The native method representing this function.</param>
         /// <param name="instance">A reference to the object to invoke the method on.</param>
+        /// <param name="definedIn">The class and inheritance level link this function was created from.</param>
         /// <exception cref="SolMarshallingException">No matching SolType for a parameter type.</exception>
-        public static SolNativeLamdaFunction CreateFrom([NotNull] SolAssembly assembly, [NotNull] MethodInfo method, [NotNull] DynamicReference instance, [CanBeNull] SolClass definedIn)
+        public static SolNativeLamdaFunction CreateFrom([NotNull] SolAssembly assembly, [NotNull] MethodInfo method, [NotNull] DynamicReference instance, [CanBeNull] IClassLevelLink definedIn)
         {
             SolType returnType = InternalHelper.GetMemberReturnType(assembly, method);
             SolParameterInfo parameterInfo = InternalHelper.GetParameterInfo(assembly, method.GetParameters());

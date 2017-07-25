@@ -54,7 +54,9 @@ namespace SolScript.Interpreter.Expressions
         /// <inheritdoc />
         public override SolValue Evaluate(SolExecutionContext context, IVariables parentVariables)
         {
-            return new SolScriptLamdaFunction(Assembly, Location, Parameters, Type, Chunk, parentVariables, context.CurrentClass);
+            SolClassEntry entry;
+            IClassLevelLink link = context.PeekClassEntry(out entry) && !entry.IsGlobal ? (IClassLevelLink)entry : null;
+            return new SolScriptLamdaFunction(Assembly, Location, Parameters, Type, Chunk, parentVariables, link);
         }
 
         /// <inheritdoc />

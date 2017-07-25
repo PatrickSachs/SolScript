@@ -41,13 +41,13 @@ namespace SolScript.Interpreter.Types.Implementation
             }
         }
 
-        /// <inheritdoc />
+        /*/// <inheritdoc />
         protected override SolClass GetClassInstance(out bool isCurrent, out bool resetOnExit)
         {
             isCurrent = true;
             resetOnExit = true;
             return null;
-        }
+        }*/
 
         /// <inheritdoc />
         /// <exception cref="SolRuntimeException">A runtime error occured.</exception>

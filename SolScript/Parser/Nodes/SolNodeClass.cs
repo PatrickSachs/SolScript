@@ -52,8 +52,7 @@ namespace SolScript.Parser.Nodes
             /// <inheritdoc />
             protected override SolMemberDefinition BuildAndGetNode(IAstNode[] astNodes)
             {
-                //return (SolMemberDefinition) astNodes[0].As<DefaultAst>()[0].GetValue();
-                return (SolMemberDefinition) astNodes[0].GetValue();
+                return astNodes[0].GetValue<SolMemberDefinition>();
             }
         }
 
@@ -69,8 +68,10 @@ namespace SolScript.Parser.Nodes
                 + NODE<SolNodeClassModifier>().OPT()
                 + KEYWORD("class")
                 + TERMINAL<IdentifierNode>()
+                + (KEYWORD("extends") + TERMINAL<IdentifierNode>()).OPT()
                 + NODE<Member>().LIST<SolMemberDefinition>(null, TermListOptions.StarList)
-                + KEYWORD("end");
+                + KEYWORD("end")
+            ;
 
         #region Overrides
 
@@ -80,14 +81,13 @@ namespace SolScript.Parser.Nodes
             IEnumerable<SolAnnotationDefinition> annotations = astNodes[0].As<ListNode<SolAnnotationDefinition>>().GetValue();
             SolTypeMode typeMode = astNodes[1].As<OptionalNode>().GetValue(TypeModeImplicit);
             string name = astNodes[3].As<IdentifierNode>().GetValue();
-            IEnumerable<SolMemberDefinition> members = astNodes[4].As<ListNode<SolMemberDefinition>>().GetValue();
-            /*IEnumerable<SolAnnotationDefinition> annotations = OfId<ListNode<SolAnnotationDefinition>>("annotations").GetValue();
-            SolTypeMode typeMode = OfId<SolNodeClassModifier>("modifier", true)?.GetValue() ?? TypeModeImplicit;
-            string name = OfId<IdentifierNode>("name").GetValue();
-            IEnumerable<SolMemberDefinition> members = OfId<ListNode<SolMemberDefinition>>("members").GetValue();*/
+            string extends = astNodes[4].As<OptionalNode>().GetValue(null, list => list[1].GetValue<string>());
+            IEnumerable<SolMemberDefinition> members = astNodes[5].As<ListNode<SolMemberDefinition>>().GetValue();
+            
             SolClassDefinition definition = new SolClassDefinition(SolAssembly.CurrentlyParsingThreadStatic, Location, false) {
                 Type = name,
-                TypeMode = typeMode
+                TypeMode = typeMode,
+                BaseClassReference = extends != null ? new SolClassDefinitionReference(SolAssembly.CurrentlyParsingThreadStatic, extends) : null
             };
             // todo: validate against duplicates
             foreach (SolMemberDefinition member in members) {

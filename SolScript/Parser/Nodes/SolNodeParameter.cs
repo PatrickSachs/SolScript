@@ -60,8 +60,6 @@ namespace SolScript.Parser.Nodes
             return q.Count == 0 
                 ? new SolParameter(name, TypeImplicit) 
                 : new SolParameter(name, q[0].As<SolNodeTypeReference>().GetValue());
-            /*SolType type = astNodes.NodeValue((node, index) => node is SolNodeTypeReference, TypeImplicit);
-            return new SolParameter(name, type);*/
         }
 
         #endregion

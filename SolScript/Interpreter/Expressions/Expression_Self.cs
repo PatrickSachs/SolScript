@@ -60,11 +60,11 @@ namespace SolScript.Interpreter.Expressions
         /// <exception cref="InvalidOperationException">Self expression cannot be executed in global context.</exception>
         public override SolValue Evaluate(SolExecutionContext context, IVariables parentVariables)
         {
-            SolClass currentClass = context.CurrentClass;
-            if (currentClass == null) {
+            SolClassEntry entry;
+            if (!context.PeekClassEntry(out entry) || entry.IsGlobal) {
                 throw new InvalidOperationException("Tried to use the \"self\" expression in global context. This is not allowed.");
             }
-            return currentClass;
+            return entry.Instance;
         }
 
         /// <inheritdoc />

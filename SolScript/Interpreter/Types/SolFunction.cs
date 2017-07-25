@@ -1,5 +1,31 @@
-﻿using System;
-using Irony.Parsing;
+﻿// ---------------------------------------------------------------------
+// SolScript - A simple but powerful scripting language.
+// Official repository: https://bitbucket.org/PatrickSachs/solscript/
+// ---------------------------------------------------------------------
+// Copyright 2017 Patrick Sachs
+// Permission is hereby granted, free of charge, to any person obtaining 
+// a copy of this software and associated documentation files (the 
+// "Software"), to deal in the Software without restriction, including 
+// without limitation the rights to use, copy, modify, merge, publish, 
+// distribute, sublicense, and/or sell copies of the Software, and to 
+// permit persons to whom the Software is furnished to do so, subject to 
+// the following conditions:
+// 
+// The above copyright notice and this permission notice shall be 
+// included in all copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, 
+// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND 
+// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS 
+// BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN 
+// ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
+// SOFTWARE.
+// ---------------------------------------------------------------------
+// ReSharper disable ArgumentsStyleStringLiteral
+
+using System;
 using JetBrains.Annotations;
 using NodeParser;
 using SolScript.Exceptions;
@@ -22,7 +48,8 @@ namespace SolScript.Interpreter.Types
         /// </summary>
         /// <param name="arguments">The arguments to the function call.</param>
         /// <returns>The return value.</returns>
-        [NotNull] public delegate SolValue DirectDelegate([ItemNotNull] params SolValue[] arguments);
+        [NotNull]
+        public delegate SolValue DirectDelegate([ItemNotNull] params SolValue[] arguments);
 
         #endregion
 
@@ -44,11 +71,23 @@ namespace SolScript.Interpreter.Types
         ///     The unique Id of this function.
         /// </summary>
         public readonly uint Id;
-        
+
         /// <summary>
         ///     The <see cref="SolAssembly" /> this function belongs to.
         /// </summary>
         public abstract SolAssembly Assembly { get; }
+
+        /// <summary>
+        ///     The class and the level this function was defined in. Can be null for global functions.
+        /// </summary>
+        /// <remarks>
+        ///     WARNING: If a function returns a value from this property this does NOT mean that the function can also
+        ///     omnidirectionally be
+        ///     obtained from the class instance itself since function such as e.g. lamda functions may be defined in a certain
+        ///     class but are not a member of said class.
+        /// </remarks>
+        [CanBeNull]
+        public abstract IClassLevelLink DefinedIn { get; }
 
         /// <summary>
         ///     The parameters of this function.
@@ -89,7 +128,7 @@ namespace SolScript.Interpreter.Types
         /// <inheritdoc />
         protected override string ToString_Impl(SolExecutionContext context)
         {
-            return "function#" + Id;
+            return "function#" + Id + "<" + (DefinedIn?.ToString() ?? "global") + ">";
         }
 
         /// <inheritdoc />
@@ -109,7 +148,13 @@ namespace SolScript.Interpreter.Types
 
         #endregion
 
-        /// <summary>
+        /*/// <summary>
+        /// Creates the class entry for this function.
+        /// </summary>
+        /// <returns>The entry.</returns>
+        protected abstract SolClassEntry GetClassEntry();*/
+
+        /*/// <summary>
         ///     Gets the class instance of this function.
         /// </summary>
         /// <param name="isCurrent">
@@ -125,7 +170,7 @@ namespace SolScript.Interpreter.Types
         /// </param>
         /// <returns>The class instance. Null if none.</returns>
         [CanBeNull]
-        protected abstract SolClass GetClassInstance(out bool isCurrent, out bool resetOnExit);
+        protected abstract SolClass GetClassInstance(out bool isCurrent, out bool resetOnExit);*/
 
         /// <summary>
         ///     Calls the function.
@@ -138,27 +183,56 @@ namespace SolScript.Interpreter.Types
         [NotNull]
         public SolValue Call([NotNull] SolExecutionContext context, [ItemNotNull] params SolValue[] args)
         {
-            SolClass oldClass = context.CurrentClass;
+            SolValue returnValue;
+            context.PushClassEntry(DefinedIn != null
+                ? SolClassEntry.Class(DefinedIn.ClassInstance, DefinedIn.InheritanceLevel)
+                : SolClassEntry.Global());
+            {
+                context.PushStackFrame(this);
+                {
+                    try {
+                        args = ParameterInfo.VerifyArguments(Assembly, args);
+                    } catch (SolVariableException ex) {
+                        throw SolRuntimeException.InvalidFunctionCallParameters(context, ex);
+                    }
+                    returnValue = Call_Impl(context, args);
+                    if (!ReturnType.IsCompatible(Assembly, returnValue.Type)) {
+                        throw new SolRuntimeException(context, $"Expected a return value of type \"{ReturnType}\", recceived a value of type \"{returnValue.Type}\".");
+                    }
+                }
+                context.PopStackFrame();
+            }
+            context.PopClassEntry();
+            return returnValue;
+
+
+            /*SolClass oldClass = context.CurrentClass;
             bool isCurrent, resetOnExit;
             SolClass newClass = GetClassInstance(out isCurrent, out resetOnExit);
-            if (isCurrent) {
+            if (isCurrent)
+            {
                 context.CurrentClass = newClass;
             }
             context.PushStackFrame(this);
-            try {
+            try
+            {
                 args = ParameterInfo.VerifyArguments(Assembly, args);
-            } catch (SolVariableException ex) {
+            }
+            catch (SolVariableException ex)
+            {
                 throw SolRuntimeException.InvalidFunctionCallParameters(context, ex);
             }
             SolValue returnValue = Call_Impl(context, args);
-            if (!ReturnType.IsCompatible(Assembly, returnValue.Type)) {
+            if (!ReturnType.IsCompatible(Assembly, returnValue.Type))
+            {
                 throw new SolRuntimeException(context, $"Expected a return value of type \"{ReturnType}\", recceived a value of type \"{returnValue.Type}\".");
             }
             context.PopStackFrame();
-            if (resetOnExit) {
+            if (resetOnExit)
+            {
                 context.CurrentClass = oldClass;
             }
-            return returnValue;
+            return returnValue;*/
         }
 
         /// <inheritdoc cref="Call" />

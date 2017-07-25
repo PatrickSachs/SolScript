@@ -61,12 +61,7 @@ namespace SolScript.Parser.Nodes
         {
             string name = astNodes[0].As<IdentifierNode>().GetValue();
             IEnumerable<SolExpression> args = astNodes[1].As<OptionalNode>().GetValue(Enumerable.Empty<SolExpression>());
-            /*string name = OfId<IdentifierNode>("name").GetValue();
-            IEnumerable<SolExpression> args = OfId<ListNode<SolExpression>>("args", true)?.GetValue() ?? ArrayUtility.Empty<SolExpression>();*/
-            /*string name = (string) astNodes[0].GetValue();
-            IEnumerable<SolExpression> args = astNodes.Length == 0
-                ? Enumerable.Empty<SolExpression>()
-                : (ReadOnlyList<SolExpression>) astNodes[1].GetValue();*/
+
             return new SolAnnotationDefinition(
                 SolAssembly.CurrentlyParsingThreadStatic, Location,
                 new SolClassDefinitionReference(SolAssembly.CurrentlyParsingThreadStatic, name), args

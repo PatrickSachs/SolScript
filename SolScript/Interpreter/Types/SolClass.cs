@@ -401,15 +401,15 @@ namespace SolScript.Interpreter.Types
             // so that we can create a fake stack-frame helping
             // out with error reporting.
             SolClassDefinition.MetaFunctionLink link;
-                // If the constructor could not be found, we add a dummy function in order to have a stack trace.
+            // If the constructor could not be found, we add a dummy function in order to have a stack trace.
             if (!TryGetMetaFunction(SolMetaFunction.__new, out link)) {
-                throw new InvalidOperationException("The class \"" + callingContext.CurrentClass.Type + "\" has no constructor meta function. All classes must have a constructor.");
+                throw new InvalidOperationException("The class \"" + Type + "\" has no constructor meta function. All classes must have a constructor.");
             }
             SolFunction ctorFunction;
             try {
                 ctorFunction = link.GetFunction(this);
             } catch (SolVariableException ex) {
-                throw new SolRuntimeException(callingContext, "Failed to obtain constructor of class \"" + Definition.Type + "\" (Instance: " + callingContext.CurrentClass.Id + ")", ex);
+                throw new SolRuntimeException(callingContext, "Failed to obtain constructor of class \"" + Definition.Type + "\" (Instance: " + Id + ")", ex);
             }
             callingContext.PushStackFrame(ctorFunction);
             // ===========================================
@@ -459,7 +459,7 @@ namespace SolScript.Interpreter.Types
         ///     The <see cref="Inheritance" /> type is used to represent data related to a certain class in the inheritance chain
         ///     of a class(such as the local variables).
         /// </summary>
-        internal class Inheritance
+        internal class Inheritance : IClassLevelLink
         {
             // Creates the ... creators. Yay.
             static Inheritance()
@@ -535,6 +535,18 @@ namespace SolScript.Interpreter.Types
                         return l_variables[index] ?? (l_variables[index] = s_Creators[index](this));
                 }
             }
+
+            /// <inheritdoc />
+            public override string ToString()
+            {
+                return Instance.Type + "#" + Definition.Type;
+            }
+
+            /// <inheritdoc />
+            SolClass IClassLevelLink.ClassInstance => Instance;
+
+            /// <inheritdoc />
+            SolClassDefinition IClassLevelLink.InheritanceLevel => Definition;
 
             #region Nested type: All_Globals
 

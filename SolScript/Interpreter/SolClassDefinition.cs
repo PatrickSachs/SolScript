@@ -245,7 +245,6 @@ namespace SolScript.Interpreter
         /// <param name="link">The meta function linker. Only valid if method returned true.</param>
         /// <returns>true if the meta function exists, false if not.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="meta" /> is null.</exception>
-        /// <exception cref="InvalidOperationException">Invalid state.</exception>
         [ContractAnnotation("link:null => false")]
         public bool TryGetMetaFunction([NotNull] SolMetaFunction meta, [CanBeNull] out MetaFunctionLink link)
         {
@@ -263,11 +262,8 @@ namespace SolScript.Interpreter
         /// <remarks>This method does NOT assert state! Type checks, etc. should be performed by the <see cref="SolCompiler" />.</remarks>
         internal bool FindAndRegisterMetaFunction(SolMetaFunction meta)
         {
-            if (!DidBuildMetaFunctions) {
-                BuildMetaFunctions();
-            }
             SolFunctionDefinition definition;
-            if (TryGetFunction(meta.Name, false, out definition)) {
+            if (TryGetFunction(meta.Name, meta.DeclaredOnly, out definition)) {
                 l_meta_functions.Add(meta, new MetaFunctionLink(meta, definition));
                 return true;
             }

@@ -192,15 +192,15 @@ namespace SolScript.Interpreter
                 //ICustomAttributeProvider provider;
                 switch (functionDefinition.Chunk.ChunkType) {
                     case SolChunkWrapper.Type.ScriptChunk:
-                        function = new SolScriptClassFunction(Inheritance.Instance, functionDefinition);
+                        function = new SolScriptClassFunction(Inheritance, functionDefinition);
                         //provider = null;
                         break;
                     case SolChunkWrapper.Type.NativeMethod:
-                        function = new SolNativeClassMemberFunction(Inheritance.Instance, functionDefinition);
+                        function = new SolNativeClassMemberFunction(Inheritance, functionDefinition);
                         //provider = functionDefinition.Chunk.GetNativeMethod();
                         break;
                     case SolChunkWrapper.Type.NativeConstructor:
-                        function = new SolNativeClassConstructorFunction(Inheritance.Instance, functionDefinition);
+                        function = new SolNativeClassConstructorFunction(Inheritance, functionDefinition);
                         //provider = functionDefinition.Chunk.GetNativeConstructor();
                         break;
                     default:

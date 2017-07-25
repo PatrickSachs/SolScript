@@ -358,5 +358,14 @@ namespace SolScript.Libraries.std
             }
             return matchTable;
         }
+
+        public bool ends_with(string value, string end, [SolContract(SolBool.TYPE, true)]SolBool ignoreCase)
+        {
+            return value.EndsWith(end, ignoreCase?.Value ?? false, CultureInfo.InvariantCulture);
+        }
+        public bool starts_with(string value, string end, [SolContract(SolBool.TYPE, true)]SolBool ignoreCase)
+        {
+            return value.StartsWith(end, ignoreCase?.Value ?? false, CultureInfo.InvariantCulture);
+        }
     }
 }

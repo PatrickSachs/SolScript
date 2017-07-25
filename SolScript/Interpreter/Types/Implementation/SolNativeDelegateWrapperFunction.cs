@@ -75,12 +75,15 @@ namespace SolScript.Interpreter.Types.Implementation
         #region Overrides
 
         /// <inheritdoc />
+        public override IClassLevelLink DefinedIn => null;
+
+        /*/// <inheritdoc />
         protected override SolClass GetClassInstance(out bool isCurrent, out bool resetOnExit)
         {
             isCurrent = false;
             resetOnExit = false;
             return null;
-        }
+        }*/
 
         /// <inheritdoc />
         /// <exception cref="SolRuntimeException">A native exception occured while calling the auto delegate wrapper function.</exception>

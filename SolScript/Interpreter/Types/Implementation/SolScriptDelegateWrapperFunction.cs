@@ -68,12 +68,15 @@ namespace SolScript.Interpreter.Types.Implementation
         }
 
         /// <inheritdoc />
+        public override IClassLevelLink DefinedIn => null;
+
+        /*/// <inheritdoc />
         protected override SolClass GetClassInstance(out bool isCurrent, out bool resetOnExit)
         {
             isCurrent = false;
             resetOnExit = false;
             return null;
-        }
+        }*/
 
         #endregion
     }

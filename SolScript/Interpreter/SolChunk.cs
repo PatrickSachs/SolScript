@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using Irony.Parsing;
-using JetBrains.Annotations;
 using NodeParser;
 using PSUtility.Enumerables;
 using SolScript.Compiler;
-using SolScript.Interpreter.Expressions;
 using SolScript.Interpreter.Statements;
 using SolScript.Interpreter.Types;
 using SolScript.Utility;
@@ -64,12 +61,11 @@ namespace SolScript.Interpreter
 
             ValidationResult returnResult = null;
             foreach (SolStatement statement in Statements) {
-                var thisResult = statement.Validate(context);
+                ValidationResult thisResult = statement.Validate(context);
                 // Validate all statements even if one fails.
                 if (success && !thisResult) {
                     success = false;
                 }
-
             }
 
             /*ValidationResult lastResult = ReturnExpression?.Validate(context);

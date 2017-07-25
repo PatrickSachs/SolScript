@@ -9,10 +9,9 @@ namespace SolScript.Interpreter.Types.Implementation
     public abstract class SolNativeClassFunction : SolClassFunction
     {
         // No thrid party primitives allowed.
-        internal SolNativeClassFunction([NotNull] SolClass instance, SolFunctionDefinition definition)
+        internal SolNativeClassFunction([NotNull] IClassLevelLink definedIn, SolFunctionDefinition definition) : base(definedIn)
         {
             Definition = definition;
-            ClassInstance = instance;
         }
 
         /// <inheritdoc cref="SolFunction.ParameterInfo" />
@@ -20,9 +19,9 @@ namespace SolScript.Interpreter.Types.Implementation
 
         /// <inheritdoc />
         public override SolFunctionDefinition Definition { get; }
-
-        /// <inheritdoc />
-        public override SolClass ClassInstance { get; }
+        
+        /*/// <inheritdoc />
+        public override SolClass ClassInstance { get; }*/
 
         #region Overrides
 

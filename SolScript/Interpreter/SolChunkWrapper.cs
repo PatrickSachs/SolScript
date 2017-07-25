@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Reflection;
+using PSUtility.Enumerables;
+using SolScript.Interpreter.Statements;
 
 namespace SolScript.Interpreter
 {
@@ -98,6 +100,21 @@ namespace SolScript.Interpreter
         }
 
         #endregion
+
+        /// <summary>
+        ///     Gets an empty chunk for the given assembly.
+        /// </summary>
+        /// <param name="assembly">The assembly.</param>
+        /// <returns>The chunk.</returns>
+        public static SolChunkWrapper EmptyOf(SolAssembly assembly)
+        {
+            SolChunkWrapper chunk;
+            if (!assembly.TryGetMetaValue(SolMetaKeys.EmptyChunk, out chunk)) {
+                chunk = new SolChunkWrapper(new SolChunk(assembly, SolSourceLocation.Native(), ArrayUtility.Empty<SolStatement>()));
+                assembly.TrySetMetaValue(SolMetaKeys.EmptyChunk, chunk);
+            }
+            return chunk;
+        }
 
         /// <summary>
         ///     Obtains a reference to the <see cref="SolChunk" /> wrapper in this wrapper.
