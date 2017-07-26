@@ -260,4 +260,8 @@
     <value>The global member "{0}" defined in global type descriptor "{1}" is not static.</value>
     <comment>0: Member Name // 1: Descriptor Name</comment>
   </data>
+  <data name="Err_MarshallingArrayMismatch" xml:space="preserve">
+    <value>Marshalling requires a type for each value - Got {0} SolScript values and {1} native types, wich will be marshalled to an array of length {2} containing the native marshaller values. Marshalling will start at value array index {3} and marshal {4} values. The offset in the target array is {5}.</value>
+    <comment>0: Value Array Length // 1: Type Count // 2: Target array length // 3: Value start index // 4: Value count to marshal // 5: Target array offset</comment>
+  </data>
 </root>

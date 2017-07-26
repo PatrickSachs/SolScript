@@ -68,8 +68,10 @@
     <Compile Include="Interpreter\SolAssembly.Builder.cs" />
     <Compile Include="Interpreter\SolClassEntry.cs" />
     <Compile Include="Interpreter\SolMemberDefinition.cs" />
+    <Compile Include="Interpreter\Types\Marshal\NativeClassMarshaller.cs" />
     <Compile Include="Interpreter\Types\Marshal\NativeDelegateMarshaller.cs" />
     <Compile Include="Interpreter\Types\Marshal\NativeEnumMarshaller.cs" />
+    <Compile Include="Interpreter\Types\Marshal\NativeObjectMarshaller.cs" />
     <Compile Include="Interpreter\Types\SolTypeCode.cs" />
     <Compile Include="Parser\Nodes\Expressions\SolNodeExpressionBinary.cs" />
     <Compile Include="Parser\Nodes\Expressions\SolNodeExpressionCreateFunction.cs" />

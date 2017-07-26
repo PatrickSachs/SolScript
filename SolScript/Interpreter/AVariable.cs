@@ -193,7 +193,7 @@ namespace SolScript.Interpreter
                 }
                 SolType dataType;
                 bool success = indexable && key;
-                Type type = SolMarshal.GetNativeType(IndexableGetter.Assembly, indexable.Type.Type);
+                Type type = SolMarshal.GetNativeSolType(IndexableGetter.Assembly, indexable.Type.Type, SolMarshal.NativeClassRepresentation.SolClass);
                 // We have special handling for classes.
                 // They need to check access rights, etc.
                 if (typeof(SolClass).IsAssignableFrom(type)) {

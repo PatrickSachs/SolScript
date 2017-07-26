@@ -340,6 +340,15 @@ namespace SolScript.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Marshalling requires a type for each value - Got {0} SolScript values and {1} native types, wich will be marshalled to an array of length {2} containing the native marshaller values. Marshalling will start at value array index {3} and marshal {4} values. The offset in the target array is {5}..
+        /// </summary>
+        internal static string Err_MarshallingArrayMismatch {
+            get {
+                return ResourceManager.GetString("Err_MarshallingArrayMismatch", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The class &quot;{0}&quot; does not have a constructor..
         /// </summary>
         internal static string Err_NoClassConstructor {
