@@ -11,7 +11,7 @@ namespace PSUtility.Enumerables
     public class IdMapping<T> : IEnumerable<KeyValuePair<int, T>>
     {
         // The actual map.
-        private readonly PSDictionary<int, T> m_Data = new PSDictionary<int, T>();
+        private readonly BiDictionary<int, T> m_Data = new BiDictionary<int, T>();
         // The ids avilable in the middle of the data.
         private readonly PSList<int> m_MiddleIds = new PSList<int>();
         // The top id that will keep increaing.
@@ -30,9 +30,23 @@ namespace PSUtility.Enumerables
         }
 
         /// <summary>
+        ///     Tries to find the ID the given value is assoicated with.
+        /// </summary>
+        /// <param name="value">The value.</param>
+        /// <returns>The ID, or -1 if none could be found.</returns>
+        public int FindIdOf(T value)
+        {
+            int id;
+            if (m_Data.TryGetValue(value, out id)) {
+                return id;
+            }
+            return -1;
+        }
+
+        /// <summary>
         ///     Creates a read only lookup from this mapping.
         /// </summary>
-        public ReadOnlyDictionary<int, T> AsReadOnly() => m_Data.AsReadOnly();
+        public ReadOnlyDictionary<int, T> AsReadOnly() => m_Data.Value1AsReadOnly();
 
         /// <summary>
         ///     Clears the id mapping.
@@ -44,7 +58,11 @@ namespace PSUtility.Enumerables
             m_NextTopId = 0;
         }
 
-        private int ClaimId()
+        /// <summary>
+        ///     Claims an id.
+        /// </summary>
+        /// <returns>The claimed id.</returns>
+        public int Claim()
         {
             if (m_MiddleIds.Count != 0) {
                 int id = m_MiddleIds[0];
@@ -52,11 +70,6 @@ namespace PSUtility.Enumerables
                 return id;
             }
             return m_NextTopId++;
-        }
-
-        public int Claim()
-        {
-            return ClaimId();
         }
 
         /// <summary>
@@ -87,6 +100,12 @@ namespace PSUtility.Enumerables
             return m_Data.TryGetValue(handle, out value);
         }
 
+        /// <summary>
+        ///     Assigns a value to the given id.
+        /// </summary>
+        /// <param name="handle">jThe id.</param>
+        /// <param name="value">The value.</param>
+        /// <exception cref="ArgumentException">The ID has not been claimed.</exception>
         public void Assign(int handle, T value)
         {
             if (!IsValid(handle)) {
@@ -104,23 +123,5 @@ namespace PSUtility.Enumerables
         {
             return !m_MiddleIds.Contains(handle) && handle < m_NextTopId;
         }
-
-        /*public class ClaimHandle
-        {
-            /// <inheritdoc />
-            /// <exception cref="ArgumentNullException"><paramref name="mapping" /> is <see langword="null" /></exception>
-            public ClaimHandle(int id, IdMapping<T> mapping)
-            {
-                if (mapping == null) {
-                    throw new ArgumentNullException(nameof(mapping));
-                }
-                Id = id;
-                Mapping = mapping;
-            }
-
-            public int Id { get; }
-            public bool Valid => !Mapping.m_MiddleIds.Contains(Id) && Id < Mapping.m_NextTopId;
-            public IdMapping<T> Mapping { get; }
-        }*/
     }
 }
