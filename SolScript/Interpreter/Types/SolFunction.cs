@@ -148,30 +148,6 @@ namespace SolScript.Interpreter.Types
 
         #endregion
 
-        /*/// <summary>
-        /// Creates the class entry for this function.
-        /// </summary>
-        /// <returns>The entry.</returns>
-        protected abstract SolClassEntry GetClassEntry();*/
-
-        /*/// <summary>
-        ///     Gets the class instance of this function.
-        /// </summary>
-        /// <param name="isCurrent">
-        ///     Should the <see cref="SolExecutionContext.CurrentClass" /> of the active context be set to this
-        ///     class?
-        /// </param>
-        /// <param name="resetOnExit">
-        ///     Should the
-        ///     <see cref="SolExecutionContext.CurrentClass" /> of the execution context be reset to its previous value once
-        ///     exiting this function?<br />
-        ///     This can have an impact even if <paramref name="isCurrent" /> is false, in case e.g. a nested function changes the
-        ///     <see cref="SolExecutionContext.CurrentClass" />.
-        /// </param>
-        /// <returns>The class instance. Null if none.</returns>
-        [CanBeNull]
-        protected abstract SolClass GetClassInstance(out bool isCurrent, out bool resetOnExit);*/
-
         /// <summary>
         ///     Calls the function.
         /// </summary>
@@ -204,35 +180,6 @@ namespace SolScript.Interpreter.Types
             }
             context.PopClassEntry();
             return returnValue;
-
-
-            /*SolClass oldClass = context.CurrentClass;
-            bool isCurrent, resetOnExit;
-            SolClass newClass = GetClassInstance(out isCurrent, out resetOnExit);
-            if (isCurrent)
-            {
-                context.CurrentClass = newClass;
-            }
-            context.PushStackFrame(this);
-            try
-            {
-                args = ParameterInfo.VerifyArguments(Assembly, args);
-            }
-            catch (SolVariableException ex)
-            {
-                throw SolRuntimeException.InvalidFunctionCallParameters(context, ex);
-            }
-            SolValue returnValue = Call_Impl(context, args);
-            if (!ReturnType.IsCompatible(Assembly, returnValue.Type))
-            {
-                throw new SolRuntimeException(context, $"Expected a return value of type \"{ReturnType}\", recceived a value of type \"{returnValue.Type}\".");
-            }
-            context.PopStackFrame();
-            if (resetOnExit)
-            {
-                context.CurrentClass = oldClass;
-            }
-            return returnValue;*/
         }
 
         /// <inheritdoc cref="Call" />

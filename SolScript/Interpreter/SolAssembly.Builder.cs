@@ -541,11 +541,24 @@ namespace SolScript.Interpreter
                 // Need to be built in a different iteration since not all definitions may be
                 // created while trying to access one in the previous.
                 foreach (SolClassDefinition definition in m_Assembly.m_ClassDefinitions.Values) {
-                    // Set base class
-                    Type describedBaseType = definition.DescribedType.BaseType;
-                    SolClassDefinition baseClassDefinition;
-                    if (describedBaseType != null && m_Assembly.m_DescribedClasses.TryGetValue(describedBaseType, out baseClassDefinition)) {
-                        definition.BaseClassReference = new SolClassDefinitionReference(m_Assembly, baseClassDefinition);
+                    // We will go through the entire  type hierarchy to find a base class. This is required
+                    // in case of the following type hierarchy:
+                    //  - AType1 (described)
+                    //  - AType2 (non described)
+                    //  - AType3 (described)
+                    // Without searching the entire hierarchy AType3 would not have a base class. But we wish
+                    // it to have AType1 as base class. Potential abstract members from AType2 will be registered
+                    // in AType3.
+                    // todo: validate if the abstracts are registered correctly, since I think that it only works by sheer luck atm
+                    Type considerAsBaseClass = definition.DescribedType.BaseType;
+                    while (considerAsBaseClass != null) {
+                        SolClassDefinition baseClassDefinition;
+                        if (m_Assembly.m_DescribedClasses.TryGetValue(considerAsBaseClass, out baseClassDefinition)) {
+                            definition.BaseClassReference = new SolClassDefinitionReference(m_Assembly, baseClassDefinition);
+                            considerAsBaseClass = null;
+                        } else {
+                            considerAsBaseClass = considerAsBaseClass.BaseType;
+                        }
                     }
                 }
                 // ===========================================================================
@@ -701,8 +714,7 @@ namespace SolScript.Interpreter
                             hasInvalidField = true;
                             continue;
                         }
-                        if (!field.IsStatic)
-                        {
+                        if (!field.IsStatic) {
                             m_Assembly.m_ErrorAdder.Add(new SolError(
                                 SolSourceLocation.Native(), ErrorId.None,
                                 Resources.Err_GlobalMemberMustBeStatic.FormatWith(fieldResult.Value.Name, globalType)));
@@ -738,7 +750,7 @@ namespace SolScript.Interpreter
             /// </returns>
             private Result<SolFieldDefinition> BuildField(FieldOrPropertyInfo field)
             {
-                SolLibraryVisibilityAttribute visibility = field.GetCustomAttribute<SolLibraryVisibilityAttribute>();
+                SolVisibilityAttribute visibility = field.GetCustomAttribute<SolVisibilityAttribute>();
                 if (visibility != null && !visibility.Visible || visibility == null && !field.IsPublic) {
                     return Result<SolFieldDefinition>.Failure();
                 }
@@ -770,7 +782,7 @@ namespace SolScript.Interpreter
             {
                 // todo: flesh out ctors as well as functions
                 // todo: annotations   
-                SolLibraryVisibilityAttribute visibility = constructor.GetCustomAttribute<SolLibraryVisibilityAttribute>();
+                SolVisibilityAttribute visibility = constructor.GetCustomAttribute<SolVisibilityAttribute>();
                 if (!(visibility?.Visible ?? constructor.IsPublic)) {
                     return Result<SolFunctionDefinition>.Failure();
                 }
@@ -804,7 +816,7 @@ namespace SolScript.Interpreter
             /// </returns>
             private Result<SolFunctionDefinition> BuildFunction(MethodInfo method)
             {
-                SolLibraryVisibilityAttribute visibility = method.GetCustomAttribute<SolLibraryVisibilityAttribute>();
+                SolVisibilityAttribute visibility = method.GetCustomAttribute<SolVisibilityAttribute>();
                 if (visibility != null && !visibility.Visible || visibility == null && !method.IsPublic) {
                     return Result<SolFunctionDefinition>.Failure();
                 }

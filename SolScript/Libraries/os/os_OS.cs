@@ -16,7 +16,7 @@ namespace SolScript.Libraries.os
     [PublicAPI]
     public class os_OS
     {
-        [SolLibraryVisibility(os.NAME, false)] public const string TYPE = "OS";
+        [SolVisibility(false)] public const string TYPE = "OS";
 
         private static readonly SolString Str_ticks = SolString.ValueOf("ticks").Intern();
         private static readonly SolString Str_milliecond = SolString.ValueOf("millisecond").Intern();

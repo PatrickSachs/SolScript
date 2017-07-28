@@ -37,7 +37,7 @@ namespace SolScript.Libraries.std
         /// </summary>
         /// <param name="stream">The native stream.</param>
         /// <param name="endianness">The endianness of this stream.</param>
-        [SolLibraryVisibility(std.NAME, false)]
+        [SolVisibility( false)]
         public std_BinaryStream(Stream stream, Endianness endianness) : base(stream)
         {
             Endianness = endianness;
@@ -46,7 +46,7 @@ namespace SolScript.Libraries.std
         /// <summary>
         ///     The type name is "BinaryStream"
         /// </summary>
-        [SolLibraryVisibility(std.NAME, false)] public new const string TYPE = "BinaryStream";
+        [SolVisibility( false)] public new const string TYPE = "BinaryStream";
 
         /// <summary>
         ///     How many bytes should fit into the default buffer?

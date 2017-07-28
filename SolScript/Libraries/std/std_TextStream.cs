@@ -32,7 +32,7 @@ namespace SolScript.Libraries.std
         /// </summary>
         /// <param name="stream">The native stream.</param>
         /// <remarks>Cannot be used from SolScript.</remarks>
-        [SolLibraryVisibility(std.NAME, false)]
+        [SolVisibility( false)]
         public std_TextStream(Stream stream) : this(stream, Encoding.Default) {}
 
         /// <summary>
@@ -43,7 +43,7 @@ namespace SolScript.Libraries.std
         /// <param name="stream">The native stream.</param>
         /// <param name="encoding">The encoding.</param>
         /// <remarks>Cannot be used from SolScript.</remarks>
-        [SolLibraryVisibility(std.NAME, false)]
+        [SolVisibility( false)]
         public std_TextStream(Stream stream, Encoding encoding) : base(stream)
         {
             NativeEncoding = encoding;
@@ -55,7 +55,7 @@ namespace SolScript.Libraries.std
         /// <summary>
         ///     The type name is "FileStream".
         /// </summary>
-        [SolLibraryVisibility(std.NAME, false)] public new const string TYPE = "TextStream";
+        [SolVisibility( false)] public new const string TYPE = "TextStream";
 
         // The stream reader is used to read data from the stream (if reading is supported, otherwise null)
         [CanBeNull] private readonly StreamReader m_Reader;
@@ -63,7 +63,7 @@ namespace SolScript.Libraries.std
         /// <summary>
         ///     The encoding of the native stream. Defaults to the system encoding.
         /// </summary>
-        [SolLibraryVisibility(std.NAME, false)]
+        [SolVisibility( false)]
         public virtual Encoding NativeEncoding { get; }
 
         /// <exception cref="SolRuntimeException">The <see cref="NativeEncoding" /> is not supported on this system.</exception>

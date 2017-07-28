@@ -157,11 +157,20 @@ namespace SolScript.Interpreter.Types
             if (type == typeof(IValueIndexable)) {
                 return this;
             }
+            // Create an array from the element type.
             if (type.IsArray) {
                 Type elementType = type.GetElementType();
                 return CreateArray(elementType);
             }
-            // todo: reflection always looks ugly and is slow
+            // If we are directly requesting an IEnumerable we can just return an array.
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(IEnumerable<>)) {
+                Type elementType = type.GetGenericArguments()[0];
+                return CreateArray(elementType);
+            }
+            // If the requested type is an IList  or IDictionary we can hopefully use a
+            // suitable operator overload to create the instance.
+            // todo: check if the overload exists, and then either use ctor or Add methods.
+            // todo: reflection always looks ugly and is slow.
             foreach (Type interfce in type.GetInterfaces()) {
                 if (interfce.IsGenericType) {
                     Type openGenericInterface = interfce.GetGenericTypeDefinition();
@@ -215,35 +224,6 @@ namespace SolScript.Interpreter.Types
             builder.AppendLine("}");
             return builder.ToString();
         }
-
-        /*private bool IsEqualRecursive(SolExecutionContext context, SolTable otherTable, PSUtility.Enumerables.List<SolValue> checkedRefs)
-        {
-            if (m_Id == otherTable.m_Id)
-            {
-                return true;
-            }
-            if (Count != otherTable.Count)
-            {
-                return false;
-            }
-            if (Count == 0 && otherTable.Count == 0)
-            {
-                return true;
-            }
-            foreach (var pair in m_Table)
-            {
-                SolValue otherValue;
-                if (!otherTable.TryGet(pair.Key, out otherValue))
-                {
-                    return false;
-                }
-                checkedRefs.Add(otherValue);
-                if (!otherValue.IsEqual(context, pair.Value))
-                {
-                    return false;
-                }
-            }
-        }*/
 
         /// <inheritdoc />
         public override bool IsEqual(SolExecutionContext context, SolValue other)

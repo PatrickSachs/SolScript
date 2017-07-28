@@ -29,7 +29,7 @@ namespace SolScript.Libraries.std
         /// </summary>
         /// <param name="stream">The native stream.</param>
         /// <remarks>Cannot be used from SolScript.</remarks>
-        [SolLibraryVisibility(std.NAME, false)]
+        [SolVisibility( false)]
         public std_Stream(Stream stream)
         {
             NativeStream = stream;
@@ -38,7 +38,7 @@ namespace SolScript.Libraries.std
         /// <summary>
         ///     The type name is "Stream".
         /// </summary>
-        [SolLibraryVisibility(std.NAME, false)]
+        [SolVisibility( false)]
         public const string TYPE = "Stream";
 
         /// <summary>
@@ -59,7 +59,7 @@ namespace SolScript.Libraries.std
         /// <summary>
         ///     The underlying native stream.
         /// </summary>
-        [SolLibraryVisibility(std.NAME, false)]
+        [SolVisibility( false)]
         public virtual Stream NativeStream { get; }
 
         /// <summary>

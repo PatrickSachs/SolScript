@@ -24,7 +24,7 @@ namespace SolScript.Libraries.std
         /// <summary>
         ///     The type name is "Reflect".
         /// </summary>
-        [SolLibraryVisibility(std.NAME, false)]
+        [SolVisibility( false)]
         public const string TYPE = "Reflect";
 
         private static readonly ReadOnlyDictionary<SolTypeMode, SolString> s_TypeModeNames = new PSDictionary<SolTypeMode, SolString> {

@@ -18,7 +18,7 @@ namespace SolScript.Libraries.std
     [PublicAPI]
     public class std_Math : INativeClassSelf
     {
-        [SolLibraryVisibility(std.NAME, true)]
+        [SolVisibility( true)]
         private std_Math()
         {
             int seed = Environment.TickCount;
@@ -26,9 +26,9 @@ namespace SolScript.Libraries.std
             m_Random = new Random(seed);
         }
         
-        [SolLibraryVisibility(std.NAME, false)] public const string TYPE = "Math";
-        [SolLibraryVisibility(std.NAME, false)] private Random m_Random;
-        [SolLibraryVisibility(std.NAME, false)] private SolNumber m_RandomSeed;
+        [SolVisibility( false)] public const string TYPE = "Math";
+        [SolVisibility( false)] private Random m_Random;
+        [SolVisibility( false)] private SolNumber m_RandomSeed;
 
         /// <summary>
         ///     (Must be integer) The <see cref="randomseed" /> is used for generating random numbers. The same

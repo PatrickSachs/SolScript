@@ -176,7 +176,7 @@ namespace SolScript.Compiler.Native
                                             nameof(MethodBodyNoConvert)
                                         ),
                                         new CodeFieldReferenceExpression(new CodeThisReferenceExpression(), nameof(INativeClassSelf.Self)),
-                                        new CodePrimitiveExpression(inhCls.Type),
+                                        //new CodePrimitiveExpression(inhCls.Type),
                                         new CodeCastExpression(typeof(SolAccessModifier), new CodePrimitiveExpression((int) function.AccessModifier)),
                                         new CodePrimitiveExpression(function.Name),
                                         new CodeVariableReferenceExpression("__argArr")
@@ -190,7 +190,7 @@ namespace SolScript.Compiler.Native
                                             new CodeTypeReference(overriddenMethod.ReturnType)
                                         ),
                                         new CodeFieldReferenceExpression(new CodeThisReferenceExpression(), nameof(INativeClassSelf.Self)),
-                                        new CodePrimitiveExpression(inhCls.Type),
+                                        //new CodePrimitiveExpression(inhCls.Type),
                                         new CodeCastExpression(typeof(SolAccessModifier), new CodePrimitiveExpression((int) function.AccessModifier)),
                                         new CodePrimitiveExpression(function.Name),
                                         new CodeVariableReferenceExpression("__argArr")
@@ -240,13 +240,13 @@ namespace SolScript.Compiler.Native
         /// <exception cref="TargetInvocationException">An error occured while calling the function.</exception>
         public static T MethodBody<T>(
             SolClass instance,
-            string defName,
+            //string defName,
             SolAccessModifier defAccess,
             string funcName,
             object[] args)
         {
             try {
-                SolValue raw = MethodBodyNoConvert(instance, defName, defAccess, funcName, args);
+                SolValue raw = MethodBodyNoConvert(instance,/* defName,*/ defAccess, funcName, args);
                 return raw.ConvertTo<T>();
             } catch (Exception ex) {
                 TargetInvocationException tEs = ex as TargetInvocationException;
@@ -254,9 +254,9 @@ namespace SolScript.Compiler.Native
                     throw tEs;
                 }
                 string name = instance.Type + "." + funcName;
-                if (instance.Type != defName) {
+                /*if (instance.Type != defName) {
                     name += "#" + defName;
-                }
+                }*/
                 throw new TargetInvocationException(CompilerResources.Err_DynMapException.FormatWith(name), ex);
             }
         }
@@ -273,7 +273,7 @@ namespace SolScript.Compiler.Native
         /// <exception cref="TargetInvocationException">An error occured while calling the function.</exception>
         public static SolValue MethodBodyNoConvert(
             SolClass instance,
-            string defName,
+            //string defName,
             SolAccessModifier defAccess,
             string funcName,
             object[] args)
@@ -290,8 +290,8 @@ namespace SolScript.Compiler.Native
                 // overridden overridden members aswell.
                 // The only exception to this are locals which cannot be overridden. But that also means
                 // that we should never have local defAccess. But we'll just make sure.
-                IVariables vars;
-                switch (defAccess) {
+                IVariables vars = instance.GetVariables(defAccess, SolVariableMode.All);
+                /*switch (defAccess) {
                     case SolAccessModifier.Global:
                     case SolAccessModifier.Internal:
                         vars = instance.GetVariables(defAccess, SolVariableMode.All);
@@ -305,7 +305,7 @@ namespace SolScript.Compiler.Native
                         break;
                     default:
                         throw new ArgumentOutOfRangeException(nameof(defAccess), defAccess, null);
-                }
+                }*/
                 SolValue funcRaw = vars.Get(funcName);
                 SolFunction func = (SolFunction) funcRaw;
                 return func.Call(new SolExecutionContext(instance.Assembly, "Native calling " + func), solArgs);
@@ -315,9 +315,9 @@ namespace SolScript.Compiler.Native
                     throw tEs;
                 }
                 string name = instance.Type + "." + funcName;
-                if (instance.Type != defName) {
+                /*if (instance.Type != funcName) {
                     name += "#" + defName;
-                }
+                }*/
                 throw new TargetInvocationException(CompilerResources.Err_DynMapException.FormatWith(name), ex);
             }
         }

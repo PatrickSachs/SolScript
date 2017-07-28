@@ -20,7 +20,7 @@ namespace SolScript.Libraries.std
     [SolTypeDescriptor(std.NAME, SolTypeMode.Singleton, typeof(std_String)), SolLibraryName(TYPE), PublicAPI]
     public class std_String
     {
-        [SolLibraryVisibility(std.NAME, true)]
+        [SolVisibility( true)]
         private std_String()
         {
             UseLocalCulture = true;
@@ -29,7 +29,7 @@ namespace SolScript.Libraries.std
         /// <summary>
         ///     The type name is "String".
         /// </summary>
-        [SolLibraryVisibility(std.NAME, false)]
+        [SolVisibility( false)]
         public const string TYPE = "String";
 
         private static readonly SolString Str_index = SolString.ValueOf("index").Intern();
@@ -51,7 +51,7 @@ namespace SolScript.Libraries.std
         }
 
         /// <inheritdoc cref="use_local_culture" />
-        [SolLibraryVisibility(std.NAME, false)]
+        [SolVisibility( false)]
         public static bool UseLocalCulture { get; set; }
 
         #region Overrides

@@ -21,13 +21,13 @@ namespace SolScript.Libraries.std
     [PublicAPI]
     public class std_IO : INativeClassSelf
     {
-        [SolLibraryVisibility(std.NAME, true)]
+        [SolVisibility( true)]
         private std_IO() { }
 
         /// <summary>
         /// The type name is "IO".
         /// </summary>
-        [SolLibraryVisibility(std.NAME, false)] public const string TYPE = "IO";
+        [SolVisibility( false)] public const string TYPE = "IO";
 
         private const double SECOND_TO_MS = 1000;
 
@@ -124,7 +124,7 @@ namespace SolScript.Libraries.std
         }
 
         /// <inheritdoc />
-        [SolLibraryVisibility(std.NAME, false)]
+        [SolVisibility( false)]
         public SolClass Self { get; set; }
     }
 }

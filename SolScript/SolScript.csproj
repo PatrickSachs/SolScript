@@ -210,7 +210,7 @@
     <Compile Include="Interpreter\Library\SolGlobalTypeDescriptorAttribute.cs" />
     <Compile Include="Interpreter\Library\SolLibraryAccessModifierAttribute.cs" />
     <Compile Include="Interpreter\Library\SolLibraryNameAttribute.cs" />
-    <Compile Include="Interpreter\Library\SolLibraryVisibilityAttribute.cs" />
+    <Compile Include="Interpreter\Library\SolVisibilityAttribute.cs" />
     <Compile Include="Libraries\std\std_String.cs" />
     <Compile Include="Libraries\std\std_Table.cs" />
     <Compile Include="Interpreter\Statements\Statement_Break.cs" />

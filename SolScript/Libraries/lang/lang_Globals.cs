@@ -30,7 +30,7 @@ namespace SolScript.Libraries.lang
         ///     Throws a <see cref="SolRuntimeException" /> with the value of
         ///     <paramref name="message" /> as <see cref="Exception.Message" />.
         /// </exception>
-        [SolLibraryVisibility(lang.NAME, true)]
+        [SolVisibility(true)]
         public static void error(SolExecutionContext context, [SolContract(SolString.TYPE, true), CanBeNull] SolString message)
         {
             string messageStr = message?.Value ?? DEFAULT_ERROR_MESSAGE;
@@ -72,7 +72,7 @@ namespace SolScript.Libraries.lang
         ///     </c>
         /// </remarks>
         /// <exception cref="SolRuntimeException">The assertion failed.</exception>
-        [SolLibraryVisibility(lang.NAME, true)]
+        [SolVisibility( true)]
         public static void assert(SolExecutionContext context, SolValue value, [SolContract(SolString.TYPE, true), CanBeNull] SolString message)
         {
             if (value.IsFalse(context)) {
@@ -89,7 +89,7 @@ namespace SolScript.Libraries.lang
         /// <exception cref="SolRuntimeException">An I/O error occured while writing to the standard output.</exception>
         /// <exception cref="SolRuntimeException">The standard output does not support writing.</exception>
         /// <exception cref="SolRuntimeException">The standard output has been closed.</exception>
-        [SolLibraryVisibility(lang.NAME, true)]
+        [SolVisibility( true)]
         public static void print(SolExecutionContext context, params SolValue[] values)
         {
             StringBuilder builder = new StringBuilder();
@@ -130,7 +130,7 @@ namespace SolScript.Libraries.lang
         /// </summary>
         /// <param name="value">The value.</param>
         /// <returns>The type.</returns>
-        [SolLibraryVisibility(lang.NAME, true)]
+        [SolVisibility( true)]
         [SolContract(SolString.TYPE, false)]
         public static SolString type([SolContract(SolValue.ANY_TYPE, true)] SolValue value)
         {
@@ -143,7 +143,7 @@ namespace SolScript.Libraries.lang
         /// <param name="context"></param>
         /// <param name="value">The value to convert.</param>
         /// <returns>The string representation of the given <paramref name="value" />.</returns>
-        [SolLibraryVisibility(lang.NAME, true)]
+        [SolVisibility( true)]
         [SolContract(SolString.TYPE, false)]
         public static SolString to_string(SolExecutionContext context, [SolContract(SolValue.ANY_TYPE, true)] SolValue value)
         {
@@ -157,7 +157,7 @@ namespace SolScript.Libraries.lang
         /// <param name="value1">The first value. If this value is a class its equality meta function will be called.</param>
         /// <param name="value2">The second value.</param>
         /// <returns>true if both values can be considered equal, false if not.</returns>
-        [SolLibraryVisibility(lang.NAME, true)]
+        [SolVisibility( true)]
         [SolContract(SolBool.TYPE, false)]
         public static SolBool equals(SolExecutionContext context, [SolContract(SolValue.ANY_TYPE, true)] SolValue value1, [SolContract(SolValue.ANY_TYPE, true)] SolValue value2)
         {
@@ -175,7 +175,7 @@ namespace SolScript.Libraries.lang
         ///     Primitive types are still checked for equality since they are immutable. And there is no actual use case in
         ///     which e.g. a number should not be equal to itself.
         /// </remarks>
-        [SolLibraryVisibility(lang.NAME, true)]
+        [SolVisibility( true)]
         [SolContract(SolBool.TYPE, false)]
         public static SolBool reference_equals(SolExecutionContext context, [SolContract(SolValue.ANY_TYPE, true)] SolValue value1, [SolContract(SolValue.ANY_TYPE, true)] SolValue value2)
         {

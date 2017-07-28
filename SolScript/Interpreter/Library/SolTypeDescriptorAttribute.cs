@@ -4,7 +4,7 @@ namespace SolScript.Interpreter.Library
 {
     /// <summary>
     ///     Add this attributes to a type to describe it for SolScript. Most of the time the type wants to descibe itself. By
-    ///     default all public members are visible, use the <see cref="SolLibraryVisibilityAttribute" /> to hide or expose a
+    ///     default all public members are visible, use the <see cref="SolVisibilityAttribute" /> to hide or expose a
     ///     single member. Make sure to expose a constructor.
     ///     <br />
     ///     You can also use the attribute to describe another type. In this case you want to implement the

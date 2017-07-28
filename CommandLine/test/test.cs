@@ -29,10 +29,10 @@ namespace SolScript.test
     [SolGlobalTypeDescriptor("test")]
     public static class test_G
     {
-        [SolLibraryVisibility("test", true)]
+        [SolVisibility( true)]
         public static string Field;
 
-        [SolLibraryVisibility("test", true)]
+        [SolVisibility(true)]
         public static void BREAK()
         {
             Console.WriteLine("> BREAKPOINT <");

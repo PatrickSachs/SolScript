@@ -54,7 +54,7 @@ namespace SolScript.Libraries.os
         /// <summary>
         ///     The type name is "File".
         /// </summary>
-        [SolLibraryVisibility(std.std.NAME, false)] public const string TYPE = "File";
+        [SolVisibility( false)] public const string TYPE = "File";
 
         private static readonly SolString Str_mode_append = SolString.ValueOf("a").Intern();
         private static readonly SolString Str_mode_appendPlus = SolString.ValueOf("a+").Intern();

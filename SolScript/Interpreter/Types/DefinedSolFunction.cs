@@ -25,14 +25,11 @@ namespace SolScript.Interpreter.Types
         /// <inheritdoc />
         public override SolType ReturnType => Definition.Type;
 
-        /*#region Overrides
 
         /// <inheritdoc />
         protected override string ToString_Impl(SolExecutionContext context)
         {
-            return "function#" + Id + "<" + Definition.Name + ">";
+            return "function#" + Definition.Name + "<" + (DefinedIn?.ToString() ?? "global") + ">";
         }
-
-        #endregion*/
     }
 }
