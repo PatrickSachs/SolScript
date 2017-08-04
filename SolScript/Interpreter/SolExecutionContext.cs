@@ -163,14 +163,14 @@ namespace SolScript.Interpreter
 
         public void PushClassEntry(SolClassEntry entry)
         {
-            SolDebug.WriteLine(entry.ToString());
+            SolDebug.StackTrace(entry.ToString());
             ClassEntries.Push(entry);
         }
 
         public SolClassEntry PopClassEntry()
         {
             var popped = ClassEntries.Pop();
-            SolDebug.WriteLine(popped.ToString());
+            SolDebug.StackTrace(popped.ToString());
             return popped;
         }
 
@@ -203,7 +203,7 @@ namespace SolScript.Interpreter
         /// <param name="frame">The stack frame.</param>
         public virtual void PushStackFrame(SolStackFrame frame)
         {
-            SolDebug.WriteLine(frame.ToString());
+            SolDebug.StackTrace(frame.ToString());
             StackTrace.AddLast(frame);
         }
 
@@ -215,7 +215,7 @@ namespace SolScript.Interpreter
         public virtual SolStackFrame PopStackFrame()
         {
             SolStackFrame last = StackTrace.Last.Value;
-            SolDebug.WriteLine(last.ToString());
+            SolDebug.StackTrace(last.ToString());
             StackTrace.RemoveLast();
             return last;
         }

@@ -41,5 +41,20 @@ namespace SolScript
             Debug.WriteLine(str);
             //Console.WriteLine(str);
         }
+
+        // Should the Stack Trace be debgged? (That's just one of things you don't ever expect having to debug, but as it turns out: you do!)
+        [Conditional("DEBUG_STACKTRACE")]
+        public static void StackTrace(string message,
+#if DEBUG
+            [CallerFilePath]
+#endif
+        string caller = "?",
+#if DEBUG
+            [CallerMemberName]
+#endif
+        string member = "?")
+        {
+            WriteLine("[STACK TRACE] " + message, caller, member);
+        }
     }
 }

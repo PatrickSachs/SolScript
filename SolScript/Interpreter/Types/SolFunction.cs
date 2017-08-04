@@ -171,7 +171,7 @@ namespace SolScript.Interpreter.Types
                 ? SolClassEntry.Class(DefinedIn.ClassInstance, DefinedIn.InheritanceLevel)
                 : SolClassEntry.Global());
             {
-                SolDebug.WriteLine("Pushing from " + context.Name + "#" + context.Id);
+                SolDebug.StackTrace("Pushing from " + context.Name + "#" + context.Id);
                 context.PushStackFrame(this);
                 {
                     try {
