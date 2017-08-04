@@ -52,6 +52,20 @@ namespace SolScript.Utility
     /// </summary>
     internal static class InternalHelper
     {
+        /*/// <summary>
+        /// Gets the closest type to the given type in the given enumerable. Can be an exact match or types deriving from the one.
+        /// </summary>
+        /// <param name="type">The type.</param>
+        /// <param name="others">The enumerable of all types.</param>
+        /// <returns>The type or null.</returns>
+        [CanBeNull]
+        internal Type GetClosestDerivingType([NotNull]Type type,[ItemNotNull] IEnumerable<Type> others)
+        {
+            
+        }
+
+        internal int GetDerive*/
+
         internal const string O_PARSER_MSG = "Only used by the parser. Please use a different overload instead.";
         internal const bool O_PARSER_ERR = true;
 

@@ -46,7 +46,7 @@ namespace SolScript.Interpreter.Types
         #endregion
 
         //internal SolTypeCode TypeCode { get; }
-        
+
         /// <summary>
         ///     Tries to convert the local value into a value of a native type. May
         ///     return null.
@@ -84,7 +84,18 @@ namespace SolScript.Interpreter.Types
             return (T) ConvertTo(typeof(T));
         }
 
+        /// <summary>
+        ///     Converts the value to a string.
+        /// </summary>
+        /// <param name="context">The OPTIONAL execution context.</param>
+        /// <returns>The string.</returns>
         protected abstract string ToString_Impl([CanBeNull] SolExecutionContext context);
+
+        /// <summary>
+        ///     Converts the value to a string by providing an execution context.
+        /// </summary>
+        /// <param name="context">The context.</param>
+        /// <returns>The string value.</returns>
         public string ToString([CanBeNull] SolExecutionContext context) => ToString_Impl(context);
 
         // public new abstract int GetHashCode();

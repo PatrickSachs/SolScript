@@ -48,8 +48,6 @@ namespace SolScript.Interpreter
             //SolClassFunction classFunction = Function as SolClassFunction;
             DefinedSolFunction definedFunction = Function as DefinedSolFunction;
             if (Function.DefinedIn != null) {
-                //SolClassDefinition onClass = classFunction.ClassInstance.InheritanceChain.Definition;
-                //SolClassDefinition definingClass = classFunction.Definition.DefinedIn ?? onClass;
                 if (Function.DefinedIn.InheritanceLevel == Function.DefinedIn.ClassInstance.Definition) {
                     builder.Append(Function.DefinedIn.InheritanceLevel.Type);
                 } else {
@@ -71,19 +69,15 @@ namespace SolScript.Interpreter
         public override string ToString()
         {
             StringBuilder builder = new StringBuilder();
-            builder.Append("(");
-            builder.Append(Location);
-            builder.Append("->");
-            builder.Append(Function.Location);
-            builder.Append(")");
-            builder.Append(" : ");
+            builder.Append(" at ");
             AppendFunctionName(builder);
             builder.Append("(");
             AppendFunctionParameters(builder);
-            builder.Append(")");
-            /*builder.Append(" [@ ");
+            builder.Append(") in ");
             builder.Append(Function.Location);
-            builder.Append("]");*/
+            builder.Append(" (from ");
+            builder.Append(Location);
+            builder.Append(")");
             return builder.ToString();
         }
 

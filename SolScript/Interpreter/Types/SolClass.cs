@@ -539,7 +539,10 @@ namespace SolScript.Interpreter.Types
             /// <inheritdoc />
             public override string ToString()
             {
-                return Instance.Type + "#" + Definition.Type;
+                if (Instance.Definition != Definition) {
+                    return Instance.Type + "#" + Definition.Type;
+                }
+                return Definition.Type;
             }
 
             /// <inheritdoc />

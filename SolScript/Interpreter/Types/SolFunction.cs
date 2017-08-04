@@ -28,8 +28,10 @@
 using System;
 using JetBrains.Annotations;
 using NodeParser;
+using PSUtility.Strings;
 using SolScript.Exceptions;
 using SolScript.Interpreter.Types.Marshal;
+using SolScript.Properties;
 
 namespace SolScript.Interpreter.Types
 {
@@ -131,6 +133,11 @@ namespace SolScript.Interpreter.Types
             return "function#" + Id + "<" + (DefinedIn?.ToString() ?? "global") + ">";
         }
 
+        /// <summary>
+        /// The name of the function. This may be a rather abstract name in the case of lamdas or a concrete name in the case of defined functions. The ToString() version is more explicit for debugging.
+        /// </summary>
+        public virtual string Name => ToString_Impl(null);
+
         /// <inheritdoc />
         /// <exception cref="SolMarshallingException"> The value cannot be converted. </exception>
         public override object ConvertTo(Type type)
@@ -164,12 +171,13 @@ namespace SolScript.Interpreter.Types
                 ? SolClassEntry.Class(DefinedIn.ClassInstance, DefinedIn.InheritanceLevel)
                 : SolClassEntry.Global());
             {
+                SolDebug.WriteLine("Pushing from " + context.Name + "#" + context.Id);
                 context.PushStackFrame(this);
                 {
                     try {
                         args = ParameterInfo.VerifyArguments(Assembly, args);
                     } catch (SolVariableException ex) {
-                        throw SolRuntimeException.InvalidFunctionCallParameters(context, ex);
+                        throw new SolRuntimeException(context, Resources.Err_InvalidFunctionCallParameters.FormatWith(Name), ex);
                     }
                     returnValue = Call_Impl(context, args);
                     if (!ReturnType.IsCompatible(Assembly, returnValue.Type)) {

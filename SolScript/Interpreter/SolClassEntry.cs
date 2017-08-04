@@ -67,7 +67,13 @@ namespace SolScript.Interpreter
         /// <inheritdoc />
         public override string ToString()
         {
-            return Instance.Definition.Type + "#" + Level.Type;
+            if (IsGlobal) {
+                return "<global>";
+            }
+            if (Instance.Definition != Level) {
+                return Instance.Definition.Type + "#" + Level.Type;
+            }
+            return Level.Type;
         }
 
         /// <summary>

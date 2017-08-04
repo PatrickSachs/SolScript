@@ -32,6 +32,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Security;
+using System.Threading;
 using Irony;
 using Irony.Parsing;
 using NodeParser.Exceptions;
@@ -66,6 +67,7 @@ namespace SolScript.Interpreter
             /// </summary>
             internal Builder()
             {
+                SolDebug.WriteLine("Creating Assembly builder from thread " + Thread.CurrentThread.Name);
                 m_Libraries.Add(lang.GetLibrary());
             }
 

@@ -286,6 +286,15 @@ namespace SolScript.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to A SolScript runtime exception occured while calling the SolScript function &quot;{0}&quot; from a dynamically created native wrapper. See inner exception and Data element &quot;SolStackTrace&quot; for details..
+        /// </summary>
+        internal static string Err_DynMapSolException {
+            get {
+                return ResourceManager.GetString("Err_DynMapSolException", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Failed to validate the class &quot;{0}&quot;..
         /// </summary>
         internal static string Err_FailedToValidateClass {

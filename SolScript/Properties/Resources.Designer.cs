@@ -322,6 +322,15 @@ namespace SolScript.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Invalid function call parameters for &quot;{0}&quot;..
+        /// </summary>
+        internal static string Err_InvalidFunctionCallParameters {
+            get {
+                return ResourceManager.GetString("Err_InvalidFunctionCallParameters", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Tried to index a &quot;{0}&quot; value by a &quot;{1}&quot; value..
         /// </summary>
         internal static string Err_InvalidIndexerType {

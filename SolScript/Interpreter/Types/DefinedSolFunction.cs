@@ -1,5 +1,4 @@
-﻿using Irony.Parsing;
-using NodeParser;
+﻿using NodeParser;
 
 namespace SolScript.Interpreter.Types
 {
@@ -20,16 +19,29 @@ namespace SolScript.Interpreter.Types
         public override NodeLocation Location => Definition.Location;
 
         /// <inheritdoc />
+        public override string Name {
+            get {
+                if (DefinedIn != null) {
+                    return DefinedIn.InheritanceLevel.Type + "." + Definition.Name;
+                }
+                return Definition.Name;
+            }
+        }
+
+        /// <inheritdoc />
         public override SolParameterInfo ParameterInfo => Definition.ParameterInfo;
 
         /// <inheritdoc />
         public override SolType ReturnType => Definition.Type;
 
+        #region Overrides
 
         /// <inheritdoc />
         protected override string ToString_Impl(SolExecutionContext context)
         {
             return "function#" + Definition.Name + "<" + (DefinedIn?.ToString() ?? "global") + ">";
         }
+
+        #endregion
     }
 }

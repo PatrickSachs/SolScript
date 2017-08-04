@@ -178,15 +178,43 @@ namespace SolScript.Interpreter
         /// </summary>
         /// <param name="nativeType">The native type.</param>
         /// <param name="definition">This out value contains the found class, or null.</param>
-        /// <param name="nativeIsDescriptor">Is the given native type a type descriptor(true) or the object type itself(false)?</param>
+        /// <param name="options">Some options for getting the class, will use the default ones if null.</param>
         /// <returns>true if a class for the native type could be found, false otherwise.</returns>
+        /// <seealso cref="GetNativeClassOptions"/>
         [ContractAnnotation("definition:null => false")]
-        public bool TryGetClass(Type nativeType, [CanBeNull] out SolClassDefinition definition, bool nativeIsDescriptor = false)
+        public bool TryGetClass(Type nativeType, [CanBeNull] out SolClassDefinition definition, GetNativeClassOptions options = null)
         {
-            if (nativeIsDescriptor) {
-                return m_DescriptorClasses.TryGetValue(nativeType, out definition);
+            options = options ?? GetNativeClassOptions.Default;
+            if (options.Descriptor) {
+                if (m_DescriptorClasses.TryGetValue(nativeType, out definition)) {
+                    return !options.AllowDerived || definition.DescriptorType == nativeType;
+                }
+                if (options.AllowDerived) {
+                    Type currentBaseClass = nativeType.BaseType;
+                    while (currentBaseClass != null) {
+                        if (m_DescribedClasses.TryGetValue(currentBaseClass, out definition)) {
+                            m_DescribedClasses.Add(nativeType, definition);
+                            return true;
+                        }
+                        currentBaseClass = currentBaseClass.BaseType;
+                    }
+                }
+                return false;
             }
-            return m_DescribedClasses.TryGetValue(nativeType.NotNull(), out definition);
+            if (m_DescribedClasses.TryGetValue(nativeType.NotNull(), out definition)) {
+                return !options.AllowDerived || definition.DescribedType == nativeType;
+            }
+            if (options.AllowDerived) {
+                Type currentBaseClass = nativeType.BaseType;
+                while (currentBaseClass != null) {
+                    if (m_DescribedClasses.TryGetValue(currentBaseClass, out definition)) {
+                        m_DescribedClasses.Add(nativeType, definition);
+                        return true;
+                    }
+                    currentBaseClass = currentBaseClass.BaseType;
+                }
+            }
+            return false;
         }
 
         /// <summary>
@@ -384,6 +412,39 @@ namespace SolScript.Interpreter
                 writer.Write(indexPair.Value);
             }
         }
+
+        #region Nested type: GetNativeClassOptions
+
+        /// <summary>
+        ///     Some options for trying to get a native class using
+        ///     <see cref="SolAssembly.TryGetClass(System.Type,out SolScript.Interpreter.SolClassDefinition,GetNativeClassOptions)" />.
+        /// </summary>
+        public class GetNativeClassOptions
+        {
+            /// <summary>
+            /// The default options.
+            /// </summary>
+            public static readonly GetNativeClassOptions Default = new GetNativeClassOptions(true, false);
+
+            /// <inheritdoc />
+            public GetNativeClassOptions(bool allowDerived, bool descriptor)
+            {
+                AllowDerived = allowDerived;
+                Descriptor = descriptor;
+            }
+
+            /// <summary>
+            ///     Should we also allow derived classes(true) or only exact matches(false)?
+            /// </summary>
+            public bool AllowDerived { get; }
+
+            /// <summary>
+            ///     Should the descripor or the descibed clas be searched for? (Default: false=described)
+            /// </summary>
+            public bool Descriptor { get; }
+        }
+
+        #endregion
 
         #region Static Fields & Properties
 

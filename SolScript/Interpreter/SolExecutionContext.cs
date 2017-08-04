@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using Irony.Parsing;
 using JetBrains.Annotations;
@@ -20,6 +21,16 @@ namespace SolScript.Interpreter
     // todo: somehow tie the stack frames and class entry stack. Both have very similar uses and structure & are fired at function entry.
     public class SolExecutionContext
     {
+        /// <summary>
+        /// The Id of the context. Only used for internal printf-debugging purposes.
+        /// </summary>
+        internal readonly uint Id;
+
+        /// <summary>
+        /// Starts at 1 since 0 is reserved for an invalid/null context.
+        /// </summary>
+        private static uint s_NextId = 1;
+
         /*
         /// <summary>
         ///     The current class we are in, containg the class instance, and which class inheritance level of said instance we are
@@ -99,6 +110,7 @@ namespace SolScript.Interpreter
             Name = name;
             Assembly = assembly;
             CurrentLocation = SolSourceLocation.Native();
+            Id = s_NextId++;
         }
         
         /// <summary>
@@ -151,12 +163,15 @@ namespace SolScript.Interpreter
 
         public void PushClassEntry(SolClassEntry entry)
         {
+            SolDebug.WriteLine(entry.ToString());
             ClassEntries.Push(entry);
         }
 
         public SolClassEntry PopClassEntry()
         {
-            return ClassEntries.Pop();
+            var popped = ClassEntries.Pop();
+            SolDebug.WriteLine(popped.ToString());
+            return popped;
         }
 
         public bool PeekClassEntry(out SolClassEntry entry)
@@ -188,6 +203,7 @@ namespace SolScript.Interpreter
         /// <param name="frame">The stack frame.</param>
         public virtual void PushStackFrame(SolStackFrame frame)
         {
+            SolDebug.WriteLine(frame.ToString());
             StackTrace.AddLast(frame);
         }
 
@@ -199,6 +215,7 @@ namespace SolScript.Interpreter
         public virtual SolStackFrame PopStackFrame()
         {
             SolStackFrame last = StackTrace.Last.Value;
+            SolDebug.WriteLine(last.ToString());
             StackTrace.RemoveLast();
             return last;
         }
@@ -243,21 +260,18 @@ namespace SolScript.Interpreter
         protected virtual StringBuilder GenerateStackTrace_Impl()
         {
             StringBuilder builder = new StringBuilder();
-            builder.AppendLine("Error in execution context \"" + Name + "\".");
-            /*if (CurrentClass != null) {
-                builder.AppendLine("(Currently in class: \"" + CurrentClass.Type + "\" - Instance-Id: " + CurrentClass.Id + ")");
-            } else {
+            builder.Append("Error in execution context \"" + Name + "\".");
+            foreach (SolStackFrame frame in StackTrace.Reverse()) {
                 builder.AppendLine();
-            }*/
-            foreach (SolStackFrame frame in StackTrace) {
                 builder.Append("  ");
-                builder.AppendLine(frame.ToString());
+                builder.Append(frame);
             }
             if (ParentContext != null) {
+                builder.AppendLine();
                 builder.Append("Transitioned from ");
                 builder.Append(ParentContext.Name);
                 builder.AppendLine(":");
-                builder.AppendLine(ParentContext.GenerateStackTrace());
+                builder.Append(ParentContext.GenerateStackTrace());
             }
             return builder;
         }

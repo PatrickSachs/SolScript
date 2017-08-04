@@ -193,14 +193,18 @@
   </data>
   <data name="Err_DynMapClassIsAlreadyMapped" xml:space="preserve">
     <value>Cannot create dynmaic mapping for the SoLScript class "{0}" since it is already mapped to the native class "{1}".</value>
-    <comment>0: Sol Class Name, 1: Mapped Native Class</comment>
+    <comment>0: Sol Class Name // 1: Mapped Native Class</comment>
   </data>
   <data name="Err_DynMapCompilerError" xml:space="preserve">
     <value>The following error occured while building the dynamic mapping for {0} SolScript classes:\n{1}</value>
-    <comment>0: Error Count, 1: Error Text</comment>
+    <comment>0: Error Count // 1: Error Text</comment>
   </data>
   <data name="Err_DynMapException" xml:space="preserve">
     <value>An exception occured while calling the SolScript function "{0}" from a dynamically created native wrapper. See inner exception for details.</value>
+    <comment>0: Sol Function Name</comment>
+  </data>
+  <data name="Err_DynMapSolException" xml:space="preserve">
+    <value>A SolScript runtime exception occured while calling the SolScript function "{0}" from a dynamically created native wrapper. See inner exception and Data element "SolStackTrace" for details.</value>
     <comment>0: Sol Function Name</comment>
   </data>
   <data name="Err_DynMapFailedToWriteSourceFile" xml:space="preserve">

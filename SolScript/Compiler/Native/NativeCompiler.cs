@@ -1,4 +1,31 @@
-﻿using System;
+﻿// ---------------------------------------------------------------------
+// SolScript - A simple but powerful scripting language.
+// Official repository: https://bitbucket.org/PatrickSachs/solscript/
+// ---------------------------------------------------------------------
+// Copyright 2017 Patrick Sachs
+// Permission is hereby granted, free of charge, to any person obtaining 
+// a copy of this software and associated documentation files (the 
+// "Software"), to deal in the Software without restriction, including 
+// without limitation the rights to use, copy, modify, merge, publish, 
+// distribute, sublicense, and/or sell copies of the Software, and to 
+// permit persons to whom the Software is furnished to do so, subject to 
+// the following conditions:
+// 
+// The above copyright notice and this permission notice shall be 
+// included in all copies or substantial portions of the Software.
+// 
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, 
+// EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF 
+// MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND 
+// NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS 
+// BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN 
+// ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN 
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
+// SOFTWARE.
+// ---------------------------------------------------------------------
+// ReSharper disable ArgumentsStyleStringLiteral
+
+using System;
 using System.CodeDom;
 using System.CodeDom.Compiler;
 using System.Collections.Generic;
@@ -232,7 +259,6 @@ namespace SolScript.Compiler.Native
         /// </summary>
         /// <typeparam name="T">The return type.</typeparam>
         /// <param name="instance">The class instance to get the function from.</param>
-        /// <param name="defName">The name of the inheritance level the function was defined at.</param>
         /// <param name="defAccess">The access modifier of the function.</param>
         /// <param name="funcName">The name of the funtion.</param>
         /// <param name="args">The native argument array.</param>
@@ -240,23 +266,15 @@ namespace SolScript.Compiler.Native
         /// <exception cref="TargetInvocationException">An error occured while calling the function.</exception>
         public static T MethodBody<T>(
             SolClass instance,
-            //string defName,
             SolAccessModifier defAccess,
             string funcName,
             object[] args)
         {
             try {
-                SolValue raw = MethodBodyNoConvert(instance,/* defName,*/ defAccess, funcName, args);
+                SolValue raw = MethodBodyNoConvert(instance, defAccess, funcName, args);
                 return raw.ConvertTo<T>();
-            } catch (Exception ex) {
-                TargetInvocationException tEs = ex as TargetInvocationException;
-                if (tEs != null) {
-                    throw tEs;
-                }
+            } catch (SolMarshallingException ex) {
                 string name = instance.Type + "." + funcName;
-                /*if (instance.Type != defName) {
-                    name += "#" + defName;
-                }*/
                 throw new TargetInvocationException(CompilerResources.Err_DynMapException.FormatWith(name), ex);
             }
         }
@@ -265,60 +283,50 @@ namespace SolScript.Compiler.Native
         ///     Serves as the essective method body of a dynamically mapped native class.
         /// </summary>
         /// <param name="instance">The class instance to get the function from.</param>
-        /// <param name="defName">The name of the inheritance level the function was defined at.</param>
         /// <param name="defAccess">The access modifier of the function.</param>
         /// <param name="funcName">The name of the funtion.</param>
         /// <param name="args">The native argument array.</param>
         /// <returns>The raw return value.</returns>
-        /// <exception cref="TargetInvocationException">An error occured while calling the function.</exception>
+        /// <exception cref="TargetInvocationException">
+        ///     An error occured while invoking the SolScript method or while preparing to
+        ///     invoke it.
+        /// </exception>
         public static SolValue MethodBodyNoConvert(
             SolClass instance,
-            //string defName,
             SolAccessModifier defAccess,
             string funcName,
             object[] args)
         {
+            SolFunction function;
             try {
-                SolValue[] solArgs = SolMarshal.MarshalFromNative(instance.Assembly, args);
-                /*SolClass.Inheritance inh = instance.FindInheritance(defName);
-                if (inh == null) {
-                    throw new SolRuntimeNativeException("Failed to find inheritance level \"" + defName + "\" in class \"" + instance.Type + "\".");
-                }
-                IVariables vars = inh.GetVariables(defAccess, SolVariableMode.Declarations);*/
-
                 // We are not getting the variables from the inheritance since we wish to be able to user
                 // overridden overridden members aswell.
                 // The only exception to this are locals which cannot be overridden. But that also means
                 // that we should never have local defAccess. But we'll just make sure.
                 IVariables vars = instance.GetVariables(defAccess, SolVariableMode.All);
-                /*switch (defAccess) {
-                    case SolAccessModifier.Global:
-                    case SolAccessModifier.Internal:
-                        vars = instance.GetVariables(defAccess, SolVariableMode.All);
-                        break;
-                    case SolAccessModifier.Local:
-                        SolClass.Inheritance inh = instance.FindInheritance(defName);
-                        if (inh == null) {
-                            throw new SolRuntimeNativeException("Failed to find inheritance level \"" + defName + "\" in class \"" + instance.Type + "\".");
-                        }
-                        vars = inh.GetVariables(SolAccessModifier.Local, SolVariableMode.Declarations);
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException(nameof(defAccess), defAccess, null);
-                }*/
-                SolValue funcRaw = vars.Get(funcName);
-                SolFunction func = (SolFunction) funcRaw;
-                return func.Call(new SolExecutionContext(instance.Assembly, "Native calling " + func), solArgs);
-            } catch (Exception ex) {
-                TargetInvocationException tEs = ex as TargetInvocationException;
-                if (tEs != null) {
-                    throw tEs;
-                }
-                string name = instance.Type + "." + funcName;
-                /*if (instance.Type != funcName) {
-                    name += "#" + defName;
-                }*/
-                throw new TargetInvocationException(CompilerResources.Err_DynMapException.FormatWith(name), ex);
+                function = (SolFunction) vars.Get(funcName);
+            } catch (SolVariableException ex) {
+                throw new TargetInvocationException(CompilerResources.Err_DynMapException.FormatWith(instance.Type + "." + funcName), ex);
+            } catch (InvalidCastException ex) {
+                throw new TargetInvocationException(CompilerResources.Err_DynMapException.FormatWith(instance.Type + "." + funcName), ex);
+            }
+            SolValue[] solArgs;
+            try {
+                solArgs = SolMarshal.MarshalFromNative(instance.Assembly, args);
+            } catch (SolMarshallingException ex) {
+                throw new TargetInvocationException(CompilerResources.Err_DynMapException.FormatWith(function.Name), ex);
+            }
+            SolExecutionContext context = new SolExecutionContext(instance.Assembly, "Native calling " + function.Name);
+            try {
+                return function.Call(context, solArgs);
+            } catch (SolRuntimeException ex) {
+                var tEx = new TargetInvocationException(CompilerResources.Err_DynMapException.FormatWith(function.Name), ex);
+                SolException.InjectSolStackTrace(tEx, context.GenerateStackTrace(), context.Id);
+                throw tEx;
+            } catch (InvalidOperationException ex) {
+                var tEx = new TargetInvocationException(CompilerResources.Err_DynMapException.FormatWith(function.Name), ex);
+                SolException.InjectSolStackTrace(tEx, context.GenerateStackTrace(), context.Id);
+                throw tEx;
             }
         }
 
