@@ -488,7 +488,7 @@ namespace SolScript.Interpreter
             protected override VarOperation TryAssignValue_Impl(SolValue value)
             {
                 object reference;
-                if (m_Reference.TryGet(out reference)) {
+                if (!m_Reference.TryGet(out reference)) {
                     return new VarOperation(null, VariableState.FailedCouldNotResolveNativeReference, null);
                 }
                 object nativeValue;
