@@ -35,6 +35,11 @@ namespace PSUtility.Enumerables
     [PublicAPI, DebuggerTypeProxy(typeof(DictionaryDebugView<,>))]
     public class PSDictionary<TKey, TValue> : Dictionary<TKey, TValue>
     {
+        private static readonly Func<TKey, TValue> s_DefaultFactory = key => Activator.CreateInstance<TValue>();
+
+        [NotNull]
+        public Func<TKey, TValue> Factory { get; set; } = s_DefaultFactory;
+
         // The lazy dictionary keys.
         private ReadOnlyCollection<TKey> m_Keys;
         // The read-only representation.
@@ -84,7 +89,22 @@ namespace PSUtility.Enumerables
         /// </summary>
         /// <returns>The read only dictionary.</returns>
         public ReadOnlyDictionary<TKey, TValue> AsReadOnly() => m_ReadOnly ?? (m_ReadOnly = ReadOnlyDictionary<TKey, TValue>.Wrap(this));
-        
+
+        /// <summary>
+        /// Gets(if already exists) the value of the given key or creates a new one and registers it in this directory(uses <see cref="Factory"/>).
+        /// </summary>
+        /// <param name="key">The key.</param>
+        /// <returns>The value.</returns>
+        public TValue GetOrCreate(TKey key)
+        {
+            TValue value;
+            if (!TryGetValue(key, out value)) {
+                value = Factory(key);
+                this[key] = value;
+            }
+            return value;
+        }
+
         /// <summary>
         ///     Adds a key value pair of an item to this dictionary.
         /// </summary>
@@ -97,7 +117,7 @@ namespace PSUtility.Enumerables
         {
             Add(pair.Key, pair.Value);
         }
-
+        
         /// <summary>
         ///     Adds several new items to the dictionary.
         /// </summary>
