@@ -3,21 +3,24 @@ using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter.Expressions {
     public class Expression_Unary : SolExpression {
-        public Expression_Unary(SourceLocation location) : base(location) {
+        public Expression_Unary(SolAssembly assembly, SourceLocation location) : base(assembly, location) {
         }
 
         public OperationRef Operation;
         public SolExpression ValueGetter;
 
-        public override SolValue Evaluate(SolExecutionContext context)
-        {
+        #region Overrides
+
+        public override SolValue Evaluate(SolExecutionContext context, IVariables parentVariables) {
             context.CurrentLocation = Location;
-            return Operation.Perform(ValueGetter.Evaluate(context), context);
+            return Operation.Perform(ValueGetter.Evaluate(context, parentVariables), context);
         }
 
         protected override string ToString_Impl() {
-            return $"Expression_Unary(Operation={Operation}, ValueGetter={ValueGetter})";
+            return $"{Operation.Name}{ValueGetter}";
         }
+
+        #endregion
 
         #region Nested type: GetNOperation
 
@@ -25,11 +28,39 @@ namespace SolScript.Interpreter.Expressions {
             private GetNOperation() {
             }
 
-            public static GetNOperation Instance = new GetNOperation();
+            public static readonly GetNOperation Instance = new GetNOperation();
+            public override string Name => "#";
+
+            #region Overrides
 
             public override SolValue Perform(SolValue value, SolExecutionContext context) {
-                return value.GetN();
+                return value.GetN(context);
             }
+
+            #endregion
+        }
+
+        #endregion
+
+        #region Nested type: MinusMinusOperation
+
+        public class MinusMinusOperation : OperationRef {
+            private MinusMinusOperation() {
+            }
+
+            public static readonly MinusMinusOperation Instance = new MinusMinusOperation();
+
+            private static readonly SolValue s_Calc = new SolNumber(1);
+
+            public override string Name => "--";
+
+            #region Overrides
+
+            public override SolValue Perform(SolValue value, SolExecutionContext context) {
+                return value.Subtract(context, value);
+            }
+
+            #endregion
         }
 
         #endregion
@@ -40,11 +71,16 @@ namespace SolScript.Interpreter.Expressions {
             private MinusOperation() {
             }
 
-            public static MinusOperation Instance = new MinusOperation();
+            public static readonly MinusOperation Instance = new MinusOperation();
+            public override string Name => "-";
+
+            #region Overrides
 
             public override SolValue Perform(SolValue value, SolExecutionContext context) {
-                return value.Minus();
+                return value.Minus(context);
             }
+
+            #endregion
         }
 
         #endregion
@@ -56,10 +92,15 @@ namespace SolScript.Interpreter.Expressions {
             }
 
             public static NotOperation Instance = new NotOperation();
+            public override string Name => "!";
+
+            #region Overrides
 
             public override SolValue Perform(SolValue value, SolExecutionContext context) {
-                return value.Not();
+                return value.Not(context);
             }
+
+            #endregion
         }
 
         #endregion
@@ -67,6 +108,7 @@ namespace SolScript.Interpreter.Expressions {
         #region Nested type: OperationRef
 
         public abstract class OperationRef {
+            public abstract string Name { get; }
             public abstract SolValue Perform(SolValue value, SolExecutionContext context);
         }
 
@@ -80,9 +122,38 @@ namespace SolScript.Interpreter.Expressions {
 
             public static PlusOperation Instance = new PlusOperation();
 
+            public override string Name => "+";
+
+            #region Overrides
+
             public override SolValue Perform(SolValue value, SolExecutionContext context) {
-                return value.Plus();
+                return value.Plus(context);
             }
+
+            #endregion
+        }
+
+        #endregion
+
+        #region Nested type: PlusPlusOperation
+
+        public class PlusPlusOperation : OperationRef {
+            private PlusPlusOperation() {
+            }
+
+            public static readonly PlusPlusOperation Instance = new PlusPlusOperation();
+
+            private static readonly SolValue s_Calc = new SolNumber(1);
+
+            public override string Name => "++";
+
+            #region Overrides
+
+            public override SolValue Perform(SolValue value, SolExecutionContext context) {
+                return value.Add(context, s_Calc);
+            }
+
+            #endregion
         }
 
         #endregion

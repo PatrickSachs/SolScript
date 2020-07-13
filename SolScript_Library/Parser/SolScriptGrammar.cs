@@ -44,6 +44,9 @@ namespace SolScript.Parser {
             KeyTerm MOD = Operator("%");
             KeyTerm MULT = Operator("*");
             KeyTerm EXP = Operator("^");
+            KeyTerm NIL_COAL = Operator("??");
+            KeyTerm UPLUSPLUS = Operator("++");
+            KeyTerm UMINUSMINUS = Operator("--");
             KeyTerm CMP_EQ = Operator("==");
             KeyTerm CMP_NEQ = Operator("!=");
             KeyTerm CMP_ST = Operator("<");
@@ -60,15 +63,22 @@ namespace SolScript.Parser {
             KeyTerm IN = Keyword("in");
             KeyTerm FUNCTION = Keyword("function");
             KeyTerm RETURN = Keyword("return");
-            //KeyTerm BREAK = Keyword("break");
+            KeyTerm BREAK = Keyword("break");
+            KeyTerm CONTINUE = Keyword("continue");
             KeyTerm WHILE = Keyword("while");
             KeyTerm NOT = Keyword("not");
             KeyTerm AND = Keyword("and");
             KeyTerm OR = Keyword("or");
             KeyTerm LOCAL = Keyword("local");
+            KeyTerm INTERNAL = Keyword("internal");
+            KeyTerm EXTENDS = Keyword("extends");
             KeyTerm DO = Keyword("do");
             KeyTerm END = Keyword("end");
             KeyTerm ELLIPSIS = Keyword("...");
+            KeyTerm ANNOTATION = Keyword("annotation");
+            KeyTerm SINGLETON = Keyword("singleton");
+            KeyTerm ABSTRACT = Keyword("abstract");
+            KeyTerm SEALED = Keyword("sealed");
             // =======================================
             // === KEYWORDS
             ConstantTerminal NIL = new ConstantTerminal("nil");
@@ -142,7 +152,7 @@ namespace SolScript.Parser {
             NonTerminal NameList = new NonTerminal("name list");
             NonTerminal ExpressionList = new NonTerminal("ExpressionList");
             NonTerminal Statement_CallFunction = new NonTerminal("Statement_CallFunction");
-            NonTerminal Expression_DeclareFunc = new NonTerminal("Expression_CreateFunc");
+            NonTerminal Expression_CreateFunc = new NonTerminal("Expression_CreateFunc");
             NonTerminal FunctionBody = new NonTerminal("FunctionBody");
             NonTerminal Expression_TableConstructor = new NonTerminal("Expression_TableConstructor");
             NonTerminal Field = new NonTerminal("Field");
@@ -167,17 +177,26 @@ namespace SolScript.Parser {
             NonTerminal ClassDefinition_BodyMember_Variable_Global =
                 new NonTerminal("ClassDefinition_BodyMember_Variable_Global");
             NonTerminal ClassDefinition_BodyMemberList = new NonTerminal("ClassDefinition_BodyMemberList");
-            NonTerminal ClassDefinition_Mixins_opt = new NonTerminal("ClassDefinition_Mixins_opt");
+            NonTerminal ClassDefinition_Extends_opt = new NonTerminal("ClassDefinition_Extends_opt");
             NonTerminal ClassDefinition_Body = new NonTerminal("ClassDefinition_Body");
             NonTerminal IdentifierPlusList = new NonTerminal("IdentifierPlusList");
-            NonTerminal Annotation_opt = new NonTerminal("Annotation_opt");
+            // Misc
+            NonTerminal ClassModifier_opt = new NonTerminal("ClassModifier_opt");
             NonTerminal Annotation = new NonTerminal("Annotation");
+            NonTerminal Annotation_opt = new NonTerminal("Annotation_opt");
             NonTerminal AnnotationList = new NonTerminal("AnnotationList");
 
             #endregion
 
             #region Grammar Rules
 
+            ClassModifier_opt.Rule = 
+                Empty 
+                | ANNOTATION
+                | SINGLETON
+                | ABSTRACT
+                | SEALED
+                ;
             Root =
                 ClassDefinitionList;
             IdentifierPlusList.Rule =
@@ -187,10 +206,10 @@ namespace SolScript.Parser {
                 MakeStarRule(ClassDefinitionList, ClassDefinition)
                 ;
             ClassDefinition.Rule =
-                AnnotationList + ToTerm("class") + _identifier + ClassDefinition_Mixins_opt + ClassDefinition_Body
+                AnnotationList + ToTerm("class") + ClassModifier_opt + _identifier + ClassDefinition_Extends_opt + ClassDefinition_Body
                 ;
-            ClassDefinition_Mixins_opt.Rule =
-                ToTerm("mixin") + IdentifierPlusList
+            ClassDefinition_Extends_opt.Rule =
+                EXTENDS + _identifier
                 | Empty
                 ;
             ClassDefinition_Body.Rule =
@@ -200,8 +219,8 @@ namespace SolScript.Parser {
                 MakeStarRule(ClassDefinition_BodyMemberList, ClassDefinition_BodyMember)
                 ;
             ClassDefinition_BodyMember.Rule =
-                ClassDefinition_BodyMember_Variable
-                | ClassDefinition_BodyMember_Function
+                AnnotationList + ClassDefinition_BodyMember_Variable
+                | AnnotationList + ClassDefinition_BodyMember_Function
                 ;
             ClassDefinition_BodyMember_Variable.Rule =
                 ClassDefinition_BodyMember_Variable_Global
@@ -231,7 +250,9 @@ namespace SolScript.Parser {
                 MakeStarRule(AnnotationList, Annotation)
                 ;
             Annotation.Rule =
-                ToTerm("@") + _identifier + Arguments_trans;
+                ToTerm("@") + _identifier + Arguments_trans
+                | ToTerm("@") + _identifier
+                ;
             Annotation_opt.Rule =
                 Empty
                 | Annotation
@@ -270,8 +291,8 @@ namespace SolScript.Parser {
             Statement_DeclareFunc_Local.Rule =
                 LOCAL + FUNCTION + Variable + FunctionParameters + TypeRef_opt + FunctionBody
                 ;
-            Expression_DeclareFunc.Rule =
-                FUNCTION + FunctionParameters + FunctionBody
+            Expression_CreateFunc.Rule =
+                FUNCTION + FunctionParameters+ TypeRef_opt  + FunctionBody
                 ;
             FunctionParameters.Rule =
                 "(" + ParameterList + ")" | "(" + ")"
@@ -319,7 +340,8 @@ namespace SolScript.Parser {
             LastStatement.Rule =
                 RETURN + Expression
                 | RETURN 
-                /*| BREAK*/;
+                | BREAK
+                | CONTINUE;
             Function_Name.Rule =
                 MakePlusRule(Function_Name, DOT, _identifier)
                 ;
@@ -345,7 +367,7 @@ namespace SolScript.Parser {
                 | _string
                 | _long_string
                 | ELLIPSIS
-                | Expression_DeclareFunc
+                | Expression_CreateFunc
                 | Expression_Statement
                 | Expression_Parenthetical
                 | Expression_TableConstructor
@@ -375,8 +397,11 @@ namespace SolScript.Parser {
                 DO + Chunk + END
                 ;
             Statement_CallFunction.Rule =
-                Expression + Arguments_trans
+                Expression + "." + _identifier + Arguments_trans
                 ;
+            /*Statement_CallFunctionSelfOrLambda.Rule =
+                _identifier + Arguments_trans
+                ;*/
             Arguments_trans.Rule =
                 "(" + ExpressionList + ")"
                 ;
@@ -455,9 +480,12 @@ namespace SolScript.Parser {
                 | CMP_ST_EQ
                 | AND
                 | OR
+                | NIL_COAL
                 ;
             Expression_Unary_Operand_trans.Rule =
-                UPLUS
+                UPLUSPLUS 
+                | UMINUSMINUS 
+                | UPLUS
                 | UMINUS 
                 | NOT 
                 | "!" 
@@ -489,11 +517,13 @@ namespace SolScript.Parser {
             RegisterOperators(2, Associativity.Left, AND);
             RegisterOperators(3, Associativity.Left, CMP_GT, CMP_GT_EQ, CMP_ST, CMP_ST_EQ, CMP_EQ, CMP_NEQ);
             RegisterOperators(4, Associativity.Left, CONCAT);
-            RegisterOperators(5, Associativity.Left, MINUS, PLUS);
-            RegisterOperators(6, Associativity.Left, MULT, FDIV, MOD);
-            RegisterOperators(7, Associativity.Left, NOT, UMINUS, UPLUS);
-            RegisterOperators(8, Associativity.Right, EXP);
-            RegisterOperators(9, Associativity.Left, DOT);
+            RegisterOperators(5, Associativity.Left, NIL_COAL);
+            RegisterOperators(6, Associativity.Left, MINUS, PLUS);
+            RegisterOperators(7, Associativity.Left, MULT, FDIV, MOD);
+            RegisterOperators(8, Associativity.Left, NOT, UMINUS, UPLUS);
+            RegisterOperators(9, Associativity.Right, UPLUSPLUS, UMINUSMINUS, EXP, GETN);
+            RegisterOperators(9, Associativity.Left, UPLUSPLUS, UMINUSMINUS);
+            RegisterOperators(10, Associativity.Left, DOT);
 
             #endregion
 

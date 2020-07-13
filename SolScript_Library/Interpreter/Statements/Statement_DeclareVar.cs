@@ -5,24 +5,32 @@ using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter.Statements {
     public class Statement_DeclareVar : SolStatement {
-        public Statement_DeclareVar(SourceLocation location) : base(location) {
+        public Statement_DeclareVar([NotNull] SolAssembly assembly, SourceLocation location/*, bool local,*/, string name, SolType type, SolExpression valueGetter) : base(assembly, location) {
+            //Local = local;
+            Name = name;
+            Type = type;
+            ValueGetter = valueGetter;
         }
 
-        public bool Local;
-        public string Name;
-        public SolType Type;
-        [CanBeNull]public SolExpression ValueGetter;
+        //public readonly bool Local;
+        public readonly string Name;
+        public readonly SolType Type;
+        [CanBeNull] public readonly SolExpression ValueGetter;
 
-        public override SolValue Execute(SolExecutionContext context)
-        {
+        #region Overrides
+
+        public override SolValue Execute(SolExecutionContext context, IVariables parentVariables) {
             context.CurrentLocation = Location;
-            SolValue value = ValueGetter?.Evaluate(context);
-            context.VariableContext.DeclareVariable(Name, value, Type, Local);
-            return value ?? SolNil.Instance;
+            SolValue value = ValueGetter?.Evaluate(context, parentVariables) ?? SolNil.Instance;
+            parentVariables.Declare(Name, Type);
+            parentVariables.Assign(Name, value);
+            return value;
         }
 
         protected override string ToString_Impl() {
-            return $"Statement_DeclareVar(Name={Name}, Local={Local}, Type={Type}, ValueGetter={ValueGetter})";
+            return $"var {Name} : {Type} = {ValueGetter}";
         }
+
+        #endregion
     }
 }

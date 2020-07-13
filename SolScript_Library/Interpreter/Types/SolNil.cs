@@ -3,7 +3,9 @@ using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
 
 namespace SolScript.Interpreter.Types {
-    public class SolNil : SolValue {
+    public class SolNil : SolValue
+    {
+        public const string TYPE = "nil";
         private SolNil() {
         }
 
@@ -12,7 +14,7 @@ namespace SolScript.Interpreter.Types {
         // TODO: Nil as type constraint?
         public static readonly SolType MarshalFromCSharpType = new SolType("nil", true);
 
-        public override string Type { get; protected set; } = NIL_TYPE;
+        public override string Type => TYPE;
 
         /// <summary> Tries to convert the local value into a value of a C# type. May
         ///     return null. </summary>
@@ -45,27 +47,27 @@ namespace SolScript.Interpreter.Types {
             throw new SolScriptMarshallingException("nil", type);
         }
 
-        protected override string ToString_Impl() {
+        protected override string ToString_Impl([CanBeNull]SolExecutionContext context) {
             return "nil";
         }
 
-        public override bool IsEqual(SolValue other) {
-            return other.Type == NIL_TYPE;
+        public override bool IsEqual(SolExecutionContext context, SolValue other) {
+            return other.Type == TYPE;
         }
 
-        public override bool NotEqual(SolValue other) {
-            return other.Type != NIL_TYPE;
+        public override bool NotEqual(SolExecutionContext context, SolValue other) {
+            return other.Type != TYPE;
         }
 
         protected override int GetHashCode_Impl() {
             return 0;
         }
         
-        public override bool IsTrue() {
+        public override bool IsTrue(SolExecutionContext context) {
             return false;
         }
         
-        public override bool IsFalse() {
+        public override bool IsFalse(SolExecutionContext context) {
             return true;
         }
     }

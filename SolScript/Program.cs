@@ -2,6 +2,7 @@
 using System.IO;
 using System.Text.RegularExpressions;
 using SolScript.Interpreter;
+using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Library;
 using SolScript.Reader;
 
@@ -88,7 +89,12 @@ namespace SolScript {
                     }
                     SolAssembly script = SolAssembly.FromDirectory(dirRaw);
                     script.IncludeLibrary(SolLibrary.StandardLibrary);
-                    script.Run();
+                    //try {
+                        script.Run();
+                    /*} catch (SolScriptInterpreterException exception) {
+                        Console.WriteLine("An exception occured: " + exception.Message);
+                        throw;
+                    }*/
                     Console.WriteLine("\n === Script execution finished ... Press any key to return to the main menu.");
                     Console.ReadKey(true);
                     goto Hello;

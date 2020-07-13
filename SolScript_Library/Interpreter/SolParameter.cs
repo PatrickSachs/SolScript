@@ -8,7 +8,7 @@ namespace SolScript.Interpreter {
         /// <param name="name"> The name </param>
         public SolParameter([NotNull] string name) {
             Name = name;
-            Type = SolType.Default;
+            Type = SolType.AnyNil;
         }
 
         /// <summary> Creates a new parameter. </summary>
@@ -32,7 +32,7 @@ namespace SolScript.Interpreter {
         /// A string that represents the current object.
         /// </returns>
         public override string ToString() {
-            return $"SolParameter(Name={Name}, Type={Type})";
+            return $"{Name} : {Type}";
         }
     }
 }

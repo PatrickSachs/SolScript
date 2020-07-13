@@ -1,0 +1,12 @@
+C:\Development\VS\SolScript\SolScript_Library\bin\Release\SolScript_Library.dll
+C:\Development\VS\SolScript\SolScript_Library\bin\Release\SolScript_Library.pdb
+C:\Development\VS\SolScript\SolScript_Library\bin\Release\Ionic.Zip.dll
+C:\Development\VS\SolScript\SolScript_Library\bin\Release\Irony.dll
+C:\Development\VS\SolScript\SolScript_Library\bin\Release\Irony.Interpreter.dll
+C:\Development\VS\SolScript\SolScript_Library\bin\Release\JetBrains.Annotations.dll
+C:\Development\VS\SolScript\SolScript_Library\bin\Release\LINQPad.exe
+C:\Development\VS\SolScript\SolScript_Library\bin\Release\Newtonsoft.Json.dll
+C:\Development\VS\SolScript\SolScript_Library\bin\Release\JetBrains.Annotations.xml
+C:\Development\VS\SolScript\SolScript_Library\bin\Release\Newtonsoft.Json.xml
+C:\Development\VS\SolScript\SolScript_Library\obj\Release\SolScript_Library.dll
+C:\Development\VS\SolScript\SolScript_Library\obj\Release\SolScript_Library.pdb

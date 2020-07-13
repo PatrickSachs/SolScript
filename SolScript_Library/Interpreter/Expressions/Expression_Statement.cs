@@ -4,20 +4,22 @@ using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter.Expressions {
     public class Expression_Statement : SolExpression {
+        public Expression_Statement(SolAssembly assembly, SourceLocation location) : base(assembly, location) {
+        }
+
         public SolStatement Statement;
 
-        public override SolValue Evaluate(SolExecutionContext context)
-        {
+        #region Overrides
+
+        public override SolValue Evaluate(SolExecutionContext context, IVariables parentVariables) {
             context.CurrentLocation = Location;
-            return Statement.Execute(context);
+            return Statement.Execute(context, parentVariables);
         }
 
         protected override string ToString_Impl() {
-            SolDebug.WriteLine("EXST CALLING " + Statement.GetType().Name);
-            return $"Expression_Statement({Statement})";
+            return Statement.ToString();
         }
 
-        public Expression_Statement(SourceLocation location) : base(location) {
-        }
+        #endregion
     }
 }

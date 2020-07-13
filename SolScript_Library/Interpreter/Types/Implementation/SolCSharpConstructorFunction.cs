@@ -3,55 +3,85 @@ using System.Reflection;
 using Irony.Parsing;
 using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
+using SolScript.Interpreter.Library;
 
 namespace SolScript.Interpreter.Types.Implementation {
-    public class SolCSharpConstructorFunction : SolFunction {
-        public SolCSharpConstructorFunction(ConstructorInfo constructor, SolCustomType typeInstance, int mixinId)
-            : base(SourceLocation.Empty, new VarContext()) {
-            Constructor = constructor;
-            TypeInstance = typeInstance;
-            MixinId = mixinId;
-            Return = new SolType(typeInstance.Type, false);
+    /// <summary> This type represents a constructor imported from C#. Constructors
+    ///     needs a different implementation since they don't have a backing
+    ///     MethodInfo(instead a ConstructorInfo) and do not simply return a SolValue,
+    ///     but instead create a ClrObject which needs to be registered inside the
+    ///     SolClass to that a valid object for instance access exists. </summary>
+    public class SolCSharpConstructorFunction : SolCSharpClassFunction {
+        public SolCSharpConstructorFunction([NotNull] SolAssembly assembly, SolType returnType, 
+            bool allowOptionalParams, [NotNull] SolParameter[] parameters, [NotNull] SolClassDefinition definedIn, 
+            [NotNull] SolFunctionDefinition definition, [NotNull] Type[] marshallTypes, bool sendContext) : 
+            base(assembly, returnType, allowOptionalParams, parameters, definedIn, definition, marshallTypes, sendContext) {
         }
-        
-        public readonly ConstructorInfo Constructor;
-        public readonly int MixinId;
-        public readonly SolCustomType TypeInstance;
 
-        /// <summary> Tries to convert the local value into a value of a C# type. May
-        ///     return null. </summary>
-        /// <param name="type"> The target type </param>
-        /// <returns> The object </returns>
-        /// <exception cref="SolScriptMarshallingException"> The value cannot be converted. </exception>
+        [NotNull]
+        public static new SolCSharpConstructorFunction CreateFrom([NotNull] SolClassDefinition definedIn, SolFunctionDefinition definition)
+        {
+            // todo: duplicate code with c# func
+            ConstructorInfo constructor = definition.Creator3;
+            bool sSendContext;
+            ParamLink[] link = SolCSharpClassFunction.GetParameterInfoTypes(definedIn.Assembly, constructor.GetParameters(), out sSendContext);
+            SolParameter[] sFuncParams = new SolParameter[link.Length];
+            Type[] sMarshalTypes = new Type[link.Length];
+            bool sAllowOptional = false;
+            for (int i = 0; i < link.Length; i++)
+            {
+                ParamLink activeLink = link[i];
+                SolContract paramContract = activeLink.NativeParameter.GetCustomAttribute<SolContract>();
+                sMarshalTypes[i] = activeLink.NativeParameter.ParameterType;
+                sFuncParams[i] = paramContract == null ? activeLink.SolParameter : new SolParameter(activeLink.SolParameter.Name, paramContract.GetSolType());
+                if (i == link.Length - 1)
+                {
+                    sAllowOptional = activeLink.NativeParameter.GetCustomAttribute<ParamArrayAttribute>() != null;
+                }
+            }
+            SolContract contract = constructor.GetCustomAttribute<SolContract>();
+            SolType returnType = contract?.GetSolType() ?? SolMarshal.GetSolType(definedIn.Assembly, definedIn.NativeType);
+            return new SolCSharpConstructorFunction(definedIn.Assembly, returnType, sAllowOptional, sFuncParams, definedIn, definition, sMarshalTypes, sSendContext);
+        }
+
+        #region Overrides
+
         [CanBeNull]
         public override object ConvertTo(Type type) {
-            throw new NotSupportedException();
+            throw new NotImplementedException();
         }
 
-        protected override string ToString_Impl() {
-            return "function<clr#" +Constructor.Name+">";
+        protected override string ToString_Impl([CanBeNull] SolExecutionContext context) {
+            return "function#" + Id + "<native#" + Definition.Creator3.Name + ">";
         }
 
         protected override int GetHashCode_Impl() {
             unchecked {
-                return 12 + MixinId + TypeInstance.GetHashCode();
+                return 12 + Definition.Creator3.GetHashCode();
             }
         }
-        
-        private bool m_DidCall;
 
-        public override SolValue Call(SolValue[] args, SolExecutionContext context) {
-            if (m_DidCall) {
-                throw new SolScriptInterpreterException(Location + " : Tried to call a constructor in type " + TypeInstance.Type + " multiple times.");
+        public override SolValue Call(SolExecutionContext context, SolClass instance, params SolValue[] args) {
+            SolClass.Inheritance inheritance = instance.FindInheritance(DefinedIn);
+            if (inheritance == null) {
+                throw SolScriptInterpreterException.InvalidTypes(context, DefinedIn.Type, instance.Type, "Cannot call the constructor on this class.");
             }
-            m_DidCall = true;
-            bool sendContext;
-            // No marshall types are cached since the Ctor should only be called once anyway.
-            var marshallTypes = SolCSharpFunction.GetParameterInfoTypes(Constructor.GetParameters(), out sendContext);
-            var clrArgs = SolMarshal.Marshal(args, marshallTypes);
-            object clrObject = Constructor.Invoke(clrArgs);
-            TypeInstance.ClrObjects[MixinId] = clrObject;
-            return TypeInstance;
+            if (instance.IsInitialized) {
+                throw SolScriptInterpreterException.IllegalAccessType(context, instance.Type, "Cannot call constructor - The class is already initialized.");
+            }
+            object[] nativeObjects;
+            if (SendContext) {
+                nativeObjects = new object[MarshallTypes.Length + 1];
+                SolMarshal.MarshalFromSol(args, MarshallTypes, nativeObjects, 1);
+                nativeObjects[0] = context;
+            } else {
+                nativeObjects = SolMarshal.MarshalFromSol(args, MarshallTypes);
+            }
+            inheritance.NativeObject = Definition.Creator3.Invoke(nativeObjects);
+            instance.IsInitialized = true;
+            return instance;
         }
+
+        #endregion
     }
 }

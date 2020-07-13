@@ -3,7 +3,7 @@ using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter.Expressions {
     public class Expression_Nil : SolExpression {
-        public override SolValue Evaluate(SolExecutionContext context) {
+        public override SolValue Evaluate(SolExecutionContext context, IVariables parentVariables) {
             return SolNil.Instance;
         }
 
@@ -11,7 +11,7 @@ namespace SolScript.Interpreter.Expressions {
             return "nil";
         }
 
-        public Expression_Nil(SourceLocation location) : base(location) {
+        public Expression_Nil(SolAssembly assembly, SourceLocation location) : base(assembly, location) {
         }
     }
 }

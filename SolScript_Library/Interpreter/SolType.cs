@@ -1,16 +1,11 @@
-﻿using JetBrains.Annotations;
-using SolScript.Interpreter.Types;
+﻿using System.Linq;
+using JetBrains.Annotations;
 
 namespace SolScript.Interpreter {
     public struct SolType {
-        public static SolType Default => new SolType("any", true);
+        public static SolType AnyNil => new SolType("any", true);
 
-        public SolType(string type) {
-            Type = type;
-            CanBeNil = false;
-        }
-
-        public SolType(string type, bool canBeNil) {
+        public SolType(string type, bool canBeNil = false) {
             Type = type;
             CanBeNil = canBeNil;
         }
@@ -18,7 +13,15 @@ namespace SolScript.Interpreter {
         public readonly string Type;
         public readonly bool CanBeNil;
 
-        public bool IsCompatible(string type) {
+        /// <summary> Checks if this type is compatible with another type. Note: If you
+        ///     want to treat types in the style of "string!" check the overload. </summary>
+        /// <param name="assembly"> The assembly to check for validity in. The assembly is
+        ///     required in order to check for mixins. </param>
+        /// <param name="type"> The type (incl. nilablity) to check. </param>
+        /// <returns> true if a value of the given type can be assigned to a variable of
+        ///     this type. </returns>
+        [Pure]
+        public bool IsCompatible(SolAssembly assembly, string type) {
             if (Type == "any") {
                 return type != "nil" || CanBeNil;
             }
@@ -28,14 +31,23 @@ namespace SolScript.Interpreter {
             if (type == "nil") {
                 return CanBeNil;
             }
-            // todo: mixins!
+            SolClassDefinition classDef;
+            if (assembly.TypeRegistry.TryGetClass(type, out classDef)) {
+                if (classDef.DoesExtendInHierarchy(type)) {
+                    return true;
+                }
+            }
             return Type == type;
         }
-        
+
         /// <summary> Checks if the type of another SolType is valid for the
         ///     type/nullability of this instance. </summary>
-        public bool IsCompatible(SolType type)
-        {
+        /// <param name="assembly"> The assembly to check for validity in. The assembly is
+        ///     required in order to check for mixins. </param>
+        /// <param name="type"> The type (incl. nilablity) to check. </param>
+        /// <returns> true if a value of the given type can be assigned to a variable of
+        ///     this type. </returns>
+        public bool IsCompatible(SolAssembly assembly, SolType type) {
             if (Type == "any") {
                 if (CanBeNil) {
                     // If the local type can be nil and of any type all values are legal.
@@ -51,9 +63,15 @@ namespace SolScript.Interpreter {
                 return type.Type == "nil";
             }
             if (Type != type.Type) {
-                // todo: mixins!
-                // If the types are not the same the values is not compatible.
-                return false;
+                // If the types are not the same the values is not compatible unless it is a mixin of another @class.
+                SolClassDefinition classDef;
+                if (assembly.TypeRegistry.TryGetClass(type.Type, out classDef)) {
+                    if (classDef.DoesExtendInHierarchy(type.Type)) {
+                        return false;
+                    }
+                } else {
+                    return false;
+                }
             }
             if (CanBeNil) {
                 // If the types are the same and the value can be nil all remaining values are
@@ -64,7 +82,7 @@ namespace SolScript.Interpreter {
             // values are legal.
             return !type.CanBeNil;
         }
-        
+
         public bool Equals(SolType other) {
             return string.Equals(Type, other.Type) && CanBeNil == other.CanBeNil;
         }

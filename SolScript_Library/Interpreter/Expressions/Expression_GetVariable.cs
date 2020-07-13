@@ -1,21 +1,96 @@
 ﻿using Irony.Parsing;
+using JetBrains.Annotations;
 using SolScript.Interpreter.Exceptions;
 using SolScript.Interpreter.Types;
 using SolScript.Interpreter.Types.Interfaces;
 
 namespace SolScript.Interpreter.Expressions {
     public class Expression_GetVariable : SolExpression {
+        public Expression_GetVariable(SolAssembly assembly, SourceLocation location) : base(assembly, location) {
+        }
+
         public SourceRef Source;
 
-        public override SolValue Evaluate(SolExecutionContext context)
-        {
+        #region Overrides
+
+        public override SolValue Evaluate(SolExecutionContext context, IVariables parentVariables) {
             context.CurrentLocation = Location;
-            return Source.Get(context);
+            return Source.Get(context, parentVariables);
         }
 
         protected override string ToString_Impl() {
-            return $"Expression_GetVariable({Source})";
+            return Source.ToString();
         }
+
+        #endregion
+
+        #region Nested type: IndexedVariable
+
+        public class IndexedVariable : SourceRef {
+            public IndexedVariable(SourceLocation location) : base(location) {
+            }
+
+            public SolExpression KeyGetter;
+            public SolExpression TableGetter;
+
+            #region Overrides
+
+            public override SolValue Get(SolExecutionContext context, IVariables parentVariables) {
+                context.CurrentLocation = Location;
+                SolValue indexableRaw = TableGetter.Evaluate(context, parentVariables);
+                SolValue key = KeyGetter.Evaluate(context, parentVariables);
+                IValueIndexable indexable = indexableRaw as IValueIndexable;
+                if (indexable == null) {
+                    throw SolScriptInterpreterException.IllegalAccessType(context, indexableRaw.Type,
+                        "This type cannot be indexed.");
+                }
+                //SolDebug.WriteLine("index " + indexable + " by " + key);
+                SolValue value = indexable[key];
+                return value;
+            }
+
+            public override string ToString() {
+                return $"{TableGetter}[{KeyGetter}]";
+            }
+
+            #endregion
+        }
+
+        #endregion
+
+        #region Nested type: NamedVariable
+
+        public class NamedVariable : SourceRef {
+            public NamedVariable(SourceLocation location) : base(location) {
+            }
+
+            public string Name;
+
+            #region Overrides
+
+            public override SolValue Get(SolExecutionContext context, IVariables parentVariables) {
+                context.CurrentLocation = Location;
+                SolValue rawValue = parentVariables.Get(Name);
+                if (rawValue == null) {
+                    throw SolScriptInterpreterException.IllegalAccessName(context, Name,
+                        "This variable has not been assigned.");
+                }
+                return rawValue;
+            }
+
+            /*public string o([CanBeNull]string a) {
+                string b = "b";
+                return a ?? "c" + b;
+            }*/
+            public override string ToString() {
+
+                return $"{Name}";
+            }
+
+            #endregion
+        }
+
+        #endregion
 
         #region Nested type: SourceRef
 
@@ -25,65 +100,9 @@ namespace SolScript.Interpreter.Expressions {
             }
 
             public readonly SourceLocation Location;
-            public abstract SolValue Get(SolExecutionContext context);
+            public abstract SolValue Get(SolExecutionContext context, IVariables parentVariables);
         }
 
         #endregion
-
-        #region Nested type: NamedVariable
-
-        public class NamedVariable : SourceRef {
-            public string Name;
-
-            public override SolValue Get(SolExecutionContext context) {
-                //SolDebug.WriteLine("EVAL VAR " + Name);
-                SolValue rawValue = context.VariableContext.GetValue_X(Name);
-                if (rawValue == null) {
-                    throw new SolScriptInterpreterException(Location + " : Tried to access non-assigned variable " + Name + ".");
-                }
-                return rawValue;
-            }
-
-            public override string ToString() {
-                return $"NamedVariable({Name})";
-            }
-
-            public NamedVariable(SourceLocation location) : base(location) {
-            }
-        }
-
-        #endregion
-
-        #region Nested type: IndexedVariable
-
-        public class IndexedVariable : SourceRef {
-            public SolExpression KeyGetter;
-            public SolExpression TableGetter;
-
-            public override SolValue Get(SolExecutionContext context)
-            {
-                SolValue indexableRaw = TableGetter.Evaluate(context);
-                SolValue key = KeyGetter.Evaluate(context);
-                IValueIndexable indexable = indexableRaw as IValueIndexable;
-                if (indexable == null)
-                {
-                    throw new SolScriptInterpreterException(context.CurrentLocation + " : Tried to get an indexed value from a " + indexableRaw.Type +
-                                                            " value. This type cannot be indexed.");
-                }
-                return indexable[key];
-            }
-
-            public override string ToString() {
-                return $"IndexedVariable(TableGetter={TableGetter}, KeyGetter={KeyGetter})";
-            }
-
-            public IndexedVariable(SourceLocation location) : base(location) {
-            }
-        }
-
-        #endregion
-
-        public Expression_GetVariable(SourceLocation location) : base(location) {
-        }
     }
 }

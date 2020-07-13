@@ -11,3 +11,16 @@ C:\7BiT Studios\SolScript\SolScript\obj\Debug\SolScript_Console.csprojResolveAss
 C:\7BiT Studios\SolScript\SolScript\obj\Debug\SolScript.exe
 C:\7BiT Studios\SolScript\SolScript\obj\Debug\SolScript.pdb
 C:\7BiT Studios\SolScript\SolScript\bin\Debug\Ionic.Zip.dll
+C:\Development\VS\SolScript\SolScript\bin\Debug\SolScript.exe.config
+C:\Development\VS\SolScript\SolScript\obj\Debug\SolScript.exe
+C:\Development\VS\SolScript\SolScript\obj\Debug\SolScript.pdb
+C:\Development\VS\SolScript\SolScript\bin\Debug\SolScript.exe
+C:\Development\VS\SolScript\SolScript\bin\Debug\SolScript.pdb
+C:\Development\VS\SolScript\SolScript\bin\Debug\Irony.dll
+C:\Development\VS\SolScript\SolScript\bin\Debug\JetBrains.Annotations.dll
+C:\Development\VS\SolScript\SolScript\bin\Debug\SolScript_Library.dll
+C:\Development\VS\SolScript\SolScript\bin\Debug\Ionic.Zip.dll
+C:\Development\VS\SolScript\SolScript\bin\Debug\SolScript_Library.pdb
+C:\Development\VS\SolScript\SolScript\bin\Debug\Irony.pdb
+C:\Development\VS\SolScript\SolScript\bin\Debug\JetBrains.Annotations.xml
+C:\Development\VS\SolScript\SolScript\obj\Debug\SolScript_Console.csprojResolveAssemblyReference.cache

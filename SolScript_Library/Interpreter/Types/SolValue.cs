@@ -7,11 +7,11 @@ using SolScript.Interpreter.Exceptions;
 namespace SolScript.Interpreter.Types {
     public abstract class SolValue {
         public const string ANY_TYPE = "any";
-        public const string NIL_TYPE = "nil";
+        public const string CLASS_TYPE = "class";
 
         public static readonly SolValue[] EmptyArray = new SolValue[0];
-
-        public abstract string Type { get; protected set; }
+        public virtual bool IsClass => false;
+        public abstract string Type { get; }
 
         //private int hashCode => GetHashCode();
 
@@ -34,95 +34,94 @@ namespace SolScript.Interpreter.Types {
             return (T) ConvertTo(typeof (T));
         }
 
-        protected abstract string ToString_Impl();
+        protected abstract string ToString_Impl([CanBeNull]SolExecutionContext context);
         protected abstract int GetHashCode_Impl();
         //protected abstract bool Equals_Impl([CanBeNull] object value);
 
         public override int GetHashCode() => GetHashCode_Impl();
-        public override string ToString() => ToString_Impl();
+        public override string ToString() => ToString_Impl(null);
+        public string ToString(SolExecutionContext context) => ToString_Impl(context);
 
+        [Obsolete("You probably want to use IsEqual. This method does ignore any custom-defined equality comparisons.")]
         public override bool Equals([CanBeNull] object value) {
-            if (ReferenceEquals(null, value)) return false;
-            if (ReferenceEquals(this, value)) return true;
-            if (value.GetType() != GetType()) return false;
-            return IsEqual((SolValue) value);
+            return this == value;
         }
 
-        public abstract bool IsEqual(SolValue other);
+        public abstract bool IsEqual(SolExecutionContext context, SolValue other);
 
-        public virtual bool NotEqual(SolValue other) {
-            return !IsEqual(other);
+        public virtual bool NotEqual(SolExecutionContext context, SolValue other) {
+            return !IsEqual(context, other);
         }
 
-        public virtual SolValue Add(SolValue other) {
+        public virtual SolValue Add(SolExecutionContext context, SolValue other) {
             throw new NotSupportedException(Type + " does not support addition!");
         }
 
-        public virtual SolValue Subtract(SolValue other) {
+        public virtual SolValue Subtract(SolExecutionContext context, SolValue other) {
             throw new NotSupportedException(Type + " does not support subtraction!");
         }
 
-        public virtual SolValue Multiply(SolValue other) {
+        public virtual SolValue Multiply(SolExecutionContext context, SolValue other) {
             throw new NotSupportedException(Type + " does not support multiplication!");
         }
 
-        public virtual SolValue Divide(SolValue other) {
+        public virtual SolValue Divide(SolExecutionContext context, SolValue other) {
             throw new NotSupportedException(Type + " does not support division!");
         }
 
-        public virtual SolValue Exponentiate(SolValue other) {
+        public virtual SolValue Exponentiate(SolExecutionContext context, SolValue other) {
             throw new NotSupportedException(Type + " does not support exponentiating!");
         }
 
-        public virtual SolValue Modulu(SolValue other) {
+        public virtual SolValue Modulu(SolExecutionContext context, SolValue other) {
             throw new NotSupportedException(Type + " does not support modulu!");
         }
 
-        public virtual bool SmallerThan(SolValue other) {
+        public virtual bool SmallerThan(SolExecutionContext context, SolValue other) {
             throw new NotSupportedException(Type + " does not support smaller than comparison!");
         }
 
-        public virtual bool SmallerThanOrEqual(SolValue other) {
+        public virtual bool SmallerThanOrEqual(SolExecutionContext context, SolValue other) {
             throw new NotSupportedException(Type + " does not support smaller than or equal comparison!");
         }
 
-        public virtual bool GreaterThan(SolValue other) {
+        public virtual bool GreaterThan(SolExecutionContext context, SolValue other) {
             throw new NotSupportedException(Type + " does not support greater than comparison!");
         }
 
-        public virtual bool GreaterThanOrEqual(SolValue other) {
+        public virtual bool GreaterThanOrEqual(SolExecutionContext context, SolValue other) {
             throw new NotSupportedException(Type + " does not support greater than or equal comparison!");
         }
 
-        public virtual SolValue Concatenate(SolValue other) {
+        public virtual SolValue Concatenate(SolExecutionContext context, SolValue other) {
             return new SolString(ToString() + other);
         }
 
-        public virtual SolValue And(SolValue other) {
+        public virtual SolValue And(SolExecutionContext context, SolValue other) {
             throw new NotSupportedException(Type + " does not support and!");
         }
 
-        public virtual SolValue Or(SolValue other) {
+        public virtual SolValue Or(SolExecutionContext context, SolValue other) {
             throw new NotSupportedException(Type + " does not support or!");
         }
 
-        public virtual SolValue Not() {
+        public virtual SolValue Not(SolExecutionContext context) {
             throw new NotSupportedException(Type + " does not support not!");
         }
 
-        public virtual SolValue Minus() {
+        public virtual SolValue Minus(SolExecutionContext context) {
             throw new NotSupportedException(Type + " does not support minus!");
         }
 
-        public virtual SolValue Plus() {
+        public virtual SolValue Plus(SolExecutionContext context) {
             throw new NotSupportedException(Type + " does not support plus!");
         }
 
-        public virtual SolValue GetN() {
+        public virtual SolValue GetN(SolExecutionContext context) {
             throw new NotSupportedException(Type + " does not support get n!");
         }
 
-        public virtual IEnumerable<SolValue> Iterate() {
+        public virtual IEnumerable<SolValue> Iterate(SolExecutionContext context) {
             throw new NotSupportedException(Type + " does not support iteration!");
         }
 
@@ -141,14 +140,14 @@ namespace SolScript.Interpreter.Types {
         /// <summary> Note: By default ALL values are true and no values are false. Make
         ///     sure to override these methods to provide customized behaviour. </summary>
         /// <returns> A boolean typically used for condition checks in loops and iterators. </returns>
-        public virtual bool IsTrue() {
+        public virtual bool IsTrue(SolExecutionContext context) {
             return true;
         }
 
         /// <summary> Note: By default ALL values are true and no values are false. Make
         ///     sure to override these methods to provide customized behaviour. </summary>
         /// <returns> A boolean typically used for condition checks in loops and iterators. </returns>
-        public virtual bool IsFalse() {
+        public virtual bool IsFalse(SolExecutionContext context) {
             return false;
         }
     }

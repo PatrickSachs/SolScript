@@ -1,0 +1,13 @@
+C:\Development\VS\SolScript\SolScript\bin\Release\SolScript.exe.config
+C:\Development\VS\SolScript\SolScript\bin\Release\SolScript.exe
+C:\Development\VS\SolScript\SolScript\bin\Release\SolScript.pdb
+C:\Development\VS\SolScript\SolScript\bin\Release\Irony.dll
+C:\Development\VS\SolScript\SolScript\bin\Release\JetBrains.Annotations.dll
+C:\Development\VS\SolScript\SolScript\bin\Release\SolScript_Library.dll
+C:\Development\VS\SolScript\SolScript\bin\Release\Ionic.Zip.dll
+C:\Development\VS\SolScript\SolScript\bin\Release\SolScript_Library.pdb
+C:\Development\VS\SolScript\SolScript\bin\Release\Irony.pdb
+C:\Development\VS\SolScript\SolScript\bin\Release\JetBrains.Annotations.xml
+C:\Development\VS\SolScript\SolScript\obj\Release\SolScript_Console.csprojResolveAssemblyReference.cache
+C:\Development\VS\SolScript\SolScript\obj\Release\SolScript.exe
+C:\Development\VS\SolScript\SolScript\obj\Release\SolScript.pdb

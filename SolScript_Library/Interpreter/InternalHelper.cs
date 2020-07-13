@@ -1,16 +1,20 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
-using System.Text.RegularExpressions;
 using Irony.Parsing;
 using JetBrains.Annotations;
 
 namespace SolScript.Interpreter {
     internal static class InternalHelper {
+        [DebuggerStepThrough, MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static string JoinToString<T>(string separator, IEnumerable<T> array) {
+            return string.Join(separator, array);
+        }
+
         [ContractAnnotation("null=>null")]
-        public static string UnEscape(this string @this) {
+        internal static string UnEscape(this string @this) {
             if (string.IsNullOrEmpty(@this)) {
                 return @this;
             }
@@ -42,8 +46,7 @@ namespace SolScript.Interpreter {
             return retVal.ToString();
         }
 
-
-        [CanBeNull]
+        [CanBeNull, MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static ParseTreeNode FindChildByName(this ParseTreeNodeList @this, string name) {
             return @this.Find(p => p.Term.Name == name);
         }
@@ -55,15 +58,53 @@ namespace SolScript.Interpreter {
             }
             return @this;
         }
-
-        internal static MethodInfo GetMethodBfAll(this Type @this, string name) {
-            return @this.GetMethod(name,
-                BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
+        
+        [DebuggerStepThrough]
+        internal static Terminators BuildTerminators(bool incReturn, bool incBreak, bool incContinue) {
+            Terminators terminators = Terminators.None;
+            if (incReturn) terminators |= Terminators.Return;
+            if (incBreak) terminators |= Terminators.Break;
+            if (incContinue) terminators |= Terminators.Continue;
+            return terminators;
         }
 
-        /*[MethodImpl(MethodImplOptions.AggressiveInlining), DebuggerStepThrough]
-        internal static SolString S(this string @this) {
-            return new SolString(@this);
-        }*/
+        [DebuggerStepThrough, MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool DidReturn(Terminators terminators) {
+            return (terminators & Terminators.Return) == Terminators.Return;
+        }
+
+        [DebuggerStepThrough, MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool DidBreak(Terminators terminators) {
+            return (terminators & Terminators.Break) == Terminators.Break;
+        }
+
+        [DebuggerStepThrough, MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool DidContinue(Terminators terminators) {
+            return (terminators & Terminators.Continue) == Terminators.Continue;
+        }
+
+        [DebuggerStepThrough]
+        internal static AccessModifiers BuildModifiers(bool isLocal, bool isInternal, bool isAbstract) {
+            AccessModifiers modifiers = AccessModifiers.None;
+            if (isLocal) modifiers |= AccessModifiers.Local;
+            if (isInternal) modifiers |= AccessModifiers.Internal;
+            if (isAbstract) modifiers |= AccessModifiers.Abstract;
+            return modifiers;
+        }
+
+        [DebuggerStepThrough, MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsLocal(AccessModifiers modifiers) {
+            return (modifiers & AccessModifiers.Local) == AccessModifiers.Local;
+        }
+
+        [DebuggerStepThrough, MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsInternal(AccessModifiers modifiers) {
+            return (modifiers & AccessModifiers.Internal) == AccessModifiers.Internal;
+        }
+
+        [DebuggerStepThrough, MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static bool IsAbstract(AccessModifiers modifiers) {
+            return (modifiers & AccessModifiers.Abstract) == AccessModifiers.Abstract;
+        }
     }
 }

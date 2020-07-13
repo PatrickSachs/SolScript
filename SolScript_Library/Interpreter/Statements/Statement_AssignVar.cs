@@ -6,26 +6,25 @@ using SolScript.Interpreter.Types.Interfaces;
 
 namespace SolScript.Interpreter.Statements {
     public class Statement_AssignVar : SolStatement {
-        //public SolParameter Variable;
         public TargetRef Target;
         public SolExpression ValueGetter;
 
-        public override SolValue Execute(SolExecutionContext context)
+        public override SolValue Execute(SolExecutionContext context, IVariables parentVariables)
         {
             context.CurrentLocation = Location;
-            SolValue value = ValueGetter.Evaluate(context);
-            Target.Set(value, context);
+            SolValue value = ValueGetter.Evaluate(context, parentVariables);
+            Target.Set(value, context, parentVariables);
             return value;
         }
 
         protected override string ToString_Impl() {
-            return $"Statement_AssignVar(Target={Target}, ValueGetter={ValueGetter})";
+            return $"{Target} = {ValueGetter}";
         }
 
         #region Nested type: VarTarget
 
         public abstract class TargetRef {
-            public abstract void Set(SolValue value, SolExecutionContext context);
+            public abstract void Set(SolValue value, SolExecutionContext context, IVariables parentVariables);
         }
 
         #endregion
@@ -37,19 +36,18 @@ namespace SolScript.Interpreter.Statements {
             public SolExpression TableGetter;
 
             /// <remarks> Evaluates the TableGetter, then the KeyGetter </remarks>
-            public override void Set(SolValue value, SolExecutionContext context) {
-                SolValue indexableRaw = TableGetter.Evaluate(context);
-                // TODO: IValueIndexable for classes?
+            public override void Set(SolValue value, SolExecutionContext context, IVariables parentVariables) {
+                SolValue indexableRaw = TableGetter.Evaluate(context, parentVariables);
                 IValueIndexable indexable = indexableRaw as IValueIndexable;
                 if (indexable == null) {
-                    throw new SolScriptInterpreterException(context.CurrentLocation + " : Tried to set an indexed value to a " + indexableRaw.Type +
-                                                            " value. This type cannot be indexed.");
+                    throw SolScriptInterpreterException.IllegalAccessType(context, indexableRaw.Type,
+                        "This type cannot be indexed.");
                 }
-                indexable[KeyGetter.Evaluate(context)] = value;
+                indexable[KeyGetter.Evaluate(context, parentVariables)] = value;
             }
 
             public override string ToString() {
-                return $"IndexedVariable(TableGetter={TableGetter}, KeyGetter={KeyGetter})";
+                return $"{TableGetter}[{KeyGetter}]";
             }
         }
 
@@ -58,22 +56,20 @@ namespace SolScript.Interpreter.Statements {
         #region Nested type: VarTarget_Variable
 
         public class NamedVariable : TargetRef {
-            //public bool Local;
             public string Name;
-            //public SolType Type;
 
-            public override void Set(SolValue value, SolExecutionContext context) {
-                context.VariableContext.AssignValue(Name, value);
+            public override void Set(SolValue value, SolExecutionContext context, IVariables parentVariables) {
+                parentVariables.Assign(Name, value);
             }
 
             public override string ToString() {
-                return $"NamedVariable({Name})";
+                return Name;
             }
         }
 
         #endregion
 
-        public Statement_AssignVar(SourceLocation location) : base(location) {
+        public Statement_AssignVar(SolAssembly assembly, SourceLocation location) : base(assembly, location) {
         }
     }
 }

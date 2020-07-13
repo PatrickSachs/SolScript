@@ -1,28 +1,41 @@
-﻿using Irony.Parsing;
+﻿using System.Text;
+using Irony.Parsing;
 using SolScript.Interpreter.Types;
 
 namespace SolScript.Interpreter.Expressions {
     public class Expression_TableConstructor : SolExpression {
-        public Expression_TableConstructor(SourceLocation location) : base(location) {
+        public Expression_TableConstructor(SolAssembly assembly, SourceLocation location) : base(assembly, location) {
         }
 
         public SolExpression[] Keys;
         public SolExpression[] Values;
 
-        public override SolValue Evaluate(SolExecutionContext context) {
+        #region Overrides
+
+        public override SolValue Evaluate(SolExecutionContext context, IVariables parentVariables) {
             context.CurrentLocation = Location;
             SolTable table = new SolTable();
             for (int i = 0; i < Keys.Length; i++) {
-                SolValue key = Keys[i].Evaluate(context);
-                SolValue value = Values[i].Evaluate(context);
+                SolValue key = Keys[i].Evaluate(context, parentVariables);
+                SolValue value = Values[i].Evaluate(context, parentVariables);
                 table[key] = value;
             }
+            table.SetN(Keys.Length);
             return table;
         }
 
         protected override string ToString_Impl() {
-            return
-                $"Expression_TableConstructor(Keys={string.Join(", ", (object[]) Keys)}, Values={string.Join(", ", (object[]) Values)})";
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine("{");
+            for (int i = 0; i < Keys.Length; i++) {
+                SolExpression key = Keys[i];
+                SolExpression value = Values[i];
+                builder.AppendLine("  [" + key + "] = " + value);
+            }
+            builder.AppendLine("}");
+            return builder.ToString();
         }
+
+        #endregion
     }
 }
