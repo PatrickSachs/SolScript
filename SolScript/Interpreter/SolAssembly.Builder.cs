@@ -487,10 +487,10 @@ namespace SolScript.Interpreter
                     foreach (Assembly libraryAssembly in library.Assemblies) {
                         foreach (Type libraryType in libraryAssembly.GetTypes()) {
                             // Get descriptor
-                            SolTypeDescriptorAttribute descriptor = libraryType.GetCustomAttribute<SolTypeDescriptorAttribute>(false);
+                            SolTypeDescriptorAttribute descriptor = PSUtility.Reflection.AttributeUtility.GetCustomAttribute<SolTypeDescriptorAttribute>(libraryType, false);
                             if (descriptor != null && descriptor.LibraryName == library.Name) {
                                 // Get name
-                                string name = libraryType.GetCustomAttribute<SolLibraryNameAttribute>(false)?.Name ?? libraryType.Name;
+                                string name = PSUtility.Reflection.AttributeUtility.GetCustomAttribute<SolLibraryNameAttribute>(libraryType, false)?.Name ?? libraryType.Name;
                                 // Create definition object
                                 SolClassDefinition definition = new SolClassDefinition(m_Assembly, SolSourceLocation.Native(), true) {
                                     Type = name,

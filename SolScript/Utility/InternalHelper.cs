@@ -131,7 +131,7 @@ namespace SolScript.Utility
         internal static bool IsClassSolCompilerGenerated(Type type, bool inherit = false)
         {
             try {
-                return type.GetCustomAttribute<SolNativeCompilerGeneratedAttribute>(inherit) != null;
+                return PSUtility.Reflection.AttributeUtility.GetCustomAttribute<SolNativeCompilerGeneratedAttribute>(type, inherit) != null;
             } catch (TypeLoadException ex) {
                 throw new InvalidOperationException("Failed to check if type \"" + type + "\" was created by the SolScript native compiler.", ex);
             }
