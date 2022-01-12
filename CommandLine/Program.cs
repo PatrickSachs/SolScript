@@ -123,8 +123,7 @@ namespace SolScript
                                     goto Done;
                                 }
                             }
-                            script.New("Main", new ClassCreationOptions.Customizable().SetCallingContext(new SolExecutionContext(script, "Command Line Interpreter")),
-                                SolString.ValueOf("Hello from the command line :)"), new SolNumber(42));
+                            script.New("Main", new ClassCreationOptions.Customizable().SetCallingContext(new SolExecutionContext(script, "Command Line Interpreter")));
                         } else if (entryRaw == "1" || entryRaw == "function") {
                             SolAssembly script;
                             if (!CreateAssembly(dirRaw, out script)) {
