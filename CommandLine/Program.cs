@@ -101,6 +101,7 @@ namespace SolScript
                         goto ChooseDir;
                     }
                     ChooseEntry:
+                    // TODO: Automatically discover
                     Console.WriteLine(
                         "Main class(\"0\"/\"class\") or main function(\"1\"/\"function\") as entry point?");
                     Console.Write(" > ");

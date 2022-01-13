@@ -1,6 +1,4 @@
-/*
- * This example shows user input, string handling and simple conditional logic.
- */
+// This example shows user input, string handling and simple conditional logic.
 function main()
     var my_name: string! = IO.read("Please enter your name.")
     var my_name_lower: string! = String.to_lower(my_name)

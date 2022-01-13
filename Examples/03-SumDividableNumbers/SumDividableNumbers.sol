@@ -1,6 +1,4 @@
-/*
- * This example shows number parsing (as well as handling nilable types), control loops and some light math.
- */
+// This example shows number parsing (as well as handling nilable types), control loops and some light math.
 function main()
     var input: string! = IO.read("Enter a number:")
     var parsed: number? = String.parse_number(input)
